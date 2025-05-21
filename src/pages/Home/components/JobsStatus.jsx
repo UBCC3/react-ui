@@ -10,7 +10,7 @@ import { JobStatus } from '../../../constants'
 import StatusCard from './StatusCard'
 import { capitalizeFirstLetter } from '../../../utils'
 
-const JobStatusSection = ({ jobs }) => {
+const JobsStatus = ({ jobs }) => {
 	return (
 		<Grid container spacing={3} sx={{ mb: 4 }}>
 			<Grid item size={{ xs: 12, md: 3 }}>
@@ -54,4 +54,4 @@ const JobStatusSection = ({ jobs }) => {
 	)
 }
 
-export default JobStatusSection
+export default JobsStatus

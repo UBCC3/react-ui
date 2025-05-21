@@ -1,55 +1,22 @@
 import { useEffect, useState, useRef } from 'react';
 import {
 	Box,
-	Grid,
 	Paper,
-	Toolbar,
-	Typography,
 	Divider,
-	FormControl,
-	InputLabel,
-	Select,
-	MenuItem,
-	IconButton,
-	Tooltip,
-	TableContainer,
-	Table,
-	TableHead,
-	TableRow,
-	TableCell,
-	TableBody,
-	Chip,
 	TablePagination,
 	CircularProgress,
 	Alert,
 } from '@mui/material';
-import {
-	Refresh,
-	Visibility,
-	SwapVert,
-	Image,
-	FilterList,
-	Block,
-	CheckCircleOutlined,
-	SyncOutlined,
-	PauseCircleOutlineOutlined,
-	ErrorOutlineOutlined
-} from '@mui/icons-material';
-import { blue, blueGrey, green, orange, red } from '@mui/material/colors';
+import { blueGrey } from '@mui/material/colors';
 import { useNavigate } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import { fetchJobs, fetchStructures, updateStatus } from '../../services/api';
 import MoleculeViewerDialogue from '../../components/MoleculeViewerDialogue';
 import PageTitle from '../../components/PageTitle';
 import { JobStatus } from '../../constants';
-import JobStatusSection from './components/JobStatusSection';
-
-const statusColors = {
-	'completed': green[500],
-	'running': blue[500],
-	'pending': orange[500],
-	'failed': red[500],
-};
+import JobsStatus from './components/JobsStatus';
+import JobsToolbar from './components/JobsToolbar';
+import JobsTable from './components/JobsTable';
 
 export default function Home() {
 	const navigate = useNavigate();
@@ -75,11 +42,7 @@ export default function Home() {
 	// Filtered view
 	const [order, setOrder] = useState('desc');
 	const [orderBy, setOrderBy] = useState('submitted_at');
-	const [filteredJobs, setFilteredJobs] = useState([]);	
-
-	const handleRowClick = (jobId) => {
-		setSelectedJobId(prev => prev === jobId ? null : jobId);
-	};
+	const [filteredJobs, setFilteredJobs] = useState([]);
 
 	const jobsRef = useRef([]);
 
@@ -228,208 +191,49 @@ export default function Home() {
 					</>
 				}
 			/>
-			<JobStatusSection jobs={jobs} />
+			<JobsStatus jobs={jobs} />
 			<Paper>
-				<Toolbar sx={{ justifyContent: 'space-between', bgcolor: blueGrey['A200'] }}>
-					<Typography variant="h6" color="text.secondary">
-						Jobs History
-					</Typography>
-					<Box sx={{ display: 'flex', alignItems: 'center' }}>
-						<Box>
-							<Tooltip title="View job details">
-								<IconButton disabled={!selectedJobId} onClick={() => navigate(`/jobs/${selectedJobId}`)}>
-									<Visibility />
-								</IconButton>
-							</Tooltip>
-							<Tooltip title="View structures">
-								<IconButton disabled={!selectedJobId} onClick={() => {
-									const job = filteredJobs.find(job => job.job_id === selectedJobId);
-									setViewStructure(job.structures[0].structure_id);
-									setOpen(true);
-								}}>
-									<Image />
-								</IconButton>
-							</Tooltip>
-							<Tooltip title="Filter jobs with same structure">
-								<IconButton disabled={!selectedJobId} onClick={() => setSelectedStructure(filteredJobs.find(job => job.job_id === selectedJobId).structures[0].structure_id)}>
-									<FilterList />
-								</IconButton>
-							</Tooltip>
-							<Tooltip title="Cancel job">
-								<IconButton disabled={!selectedJobId}>
-									<Block />
-								</IconButton>
-							</Tooltip>
-						</Box>
-						<Divider orientation="vertical" flexItem sx={{ mx: 2 }} />
-						<Tooltip title="Refresh jobs">
-							<IconButton onClick={handleRefresh}>
-								<Refresh />
-							</IconButton>
-						</Tooltip>
-						<FormControl sx={{ minWidth: 160, marginLeft: 2 }}>
-							<InputLabel>Structure</InputLabel>
-							<Select
-								value={selectedStructure}
-								label="Structure"
-								onChange={(e) => setSelectedStructure(e.target.value)}
-							>
-								{structures.map((s) => (
-									<MenuItem key={s.structure_id} value={s.structure_id}>
-										{s.name}
-									</MenuItem>
-								))}
-							</Select>
-						</FormControl>
-					</Box>
-				</Toolbar>
+				<JobsToolbar
+					selectedJobId={selectedJobId}
+					onViewDetails={() => navigate(`/jobs/${selectedJobId}`)}
+					onViewStructure={() => {
+						const job = filteredJobs.find(j => j.job_id === selectedJobId);
+						if (job) {
+						setViewStructure(job.structures[0].structure_id);
+						setOpen(true);
+						}
+					}}
+					onFilterByStructure={() => {
+						const job = filteredJobs.find(j => j.job_id === selectedJobId);
+						if (job) setSelectedStructure(job.structures[0].structure_id);
+					}}
+					onCancelJob={() => {/* TODO cancel logic */}}
+					onRefresh={handleRefresh}
+					structures={structures}
+					selectedStructure={selectedStructure}
+					onStructureChange={setSelectedStructure}
+				/>
 				<Divider />
-				<TableContainer>
-					<Table>
-						<TableHead>
-							<TableRow sx={{ bgcolor: blueGrey[50] }}>
-								<TableCell sx={{ whiteSpace: 'nowrap' }}>
-									<Box
-										sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-										onClick={() => handleChangeOrderBy('job_id')}
-									>
-										<Typography variant="body2">Job ID</Typography>
-										<SwapVert fontSize="small" sx={{ ml: 0.5, color: "text.secondary" }} />
-									</Box>
-								</TableCell>
-
-								<TableCell sx={{ whiteSpace: 'nowrap' }}>
-									<Box
-										sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-										onClick={() => handleChangeOrderBy('job_name')}
-									>
-										<Typography variant="body2">Job Name</Typography>
-										<SwapVert fontSize="small" sx={{ ml: 0.5, color: "text.secondary" }} />
-									</Box>
-								</TableCell>
-
-								<TableCell sx={{ whiteSpace: 'nowrap' }}>
-									<Box
-										sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-										onClick={() => handleChangeOrderBy('status')}
-									>
-										<Typography variant="body2">Status</Typography>
-										<SwapVert fontSize="small" sx={{ ml: 0.5, color: "text.secondary" }} />
-									</Box>
-								</TableCell>
-
-								<TableCell sx={{ whiteSpace: 'nowrap' }}>
-									<Box
-										sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-										onClick={() => handleChangeOrderBy('method')}
-									>
-										<Typography variant="body2">Method</Typography>
-										<SwapVert fontSize="small" sx={{ ml: 0.5, color: "text.secondary" }} />
-									</Box>
-								</TableCell>
-
-								<TableCell sx={{ whiteSpace: 'nowrap' }}>
-									<Box
-										sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-										onClick={() => handleChangeOrderBy('basis_set')}
-									>
-										<Typography variant="body2">Basis Set</Typography>
-										<SwapVert fontSize="small" sx={{ ml: 0.5, color: "text.secondary" }} />
-									</Box>
-								</TableCell>
-
-								<TableCell sx={{ whiteSpace: 'nowrap' }}>
-									<Box
-										sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-										onClick={() => handleChangeOrderBy('structures')}
-									>
-										<Typography variant="body2">Structures</Typography>
-										<SwapVert fontSize="small" sx={{ ml: 0.5, color: "text.secondary" }} />
-									</Box>
-								</TableCell>
-
-								<TableCell sx={{ whiteSpace: 'nowrap' }}>
-									<Box
-										sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-										onClick={() => handleChangeOrderBy('submitted_at')}
-									>
-										<Typography variant="body2">Submitted At</Typography>
-										<SwapVert fontSize="small" sx={{ ml: 0.5, color: "text.secondary" }} />
-									</Box>
-								</TableCell>
-							</TableRow>
-						</TableHead>
-
-						{filteredJobs.length === 0 ? (
-							<TableBody>
-								<TableRow>
-									<TableCell colSpan={7} align="center">
-										No jobs found.
-									</TableCell>
-								</TableRow>
-							</TableBody>
-						) : (
-							<TableBody>
-								{filteredJobs
-									.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-									.map((job) => (
-										<TableRow
-											key={job.job_id}
-											onClick={() => handleRowClick(job.job_id)}
-											sx={{
-												backgroundColor: job.job_id === selectedJobId ? 'rgba(0, 0, 0, 0.1)' : 'transparent',
-												cursor: 'pointer'
-											}}
-										>
-											<TableCell>{job.job_id}</TableCell>
-											<TableCell>{job.job_name}</TableCell>
-											<TableCell>
-												<Chip
-													label={job.status}
-													variant="filled"
-													size="small"
-													sx={{
-														bgcolor: statusColors[job.status] || 'grey.300',
-														color: 'white',
-														textTransform: 'capitalize',
-													}}
-												/>
-											</TableCell>
-											<TableCell>{job.method}</TableCell>
-											<TableCell>{job.basis_set}</TableCell>
-											<TableCell>
-												{job.structures.length > 0
-													? job.structures.map((s) => (
-															<Chip
-																key={s.structure_id}
-																label={s.name}
-																variant="outlined"
-																size="small"
-																sx={{ mr: 0.5, mb: 0.5 }}
-															/>
-														))
-													: 'N/A'}
-											</TableCell>
-											<TableCell>
-												{new Date(job.submitted_at).toLocaleString()}
-											</TableCell>
-										</TableRow>
-									))}
-							</TableBody>
-						)}
-					</Table>
-
-					<TablePagination
-						component="div"
-						count={filteredJobs.length}
-						page={page}
-						onPageChange={handleChangePage}
-						rowsPerPage={rowsPerPage}
-						onRowsPerPageChange={handleChangeRowsPerPage}
-						rowsPerPageOptions={[5, 10, 25]}
-						sx={{ bgcolor: blueGrey['A200'] }}
-					/>
-				</TableContainer>
+				<JobsTable
+					jobs={filteredJobs}
+					page={page}
+					rowsPerPage={rowsPerPage}
+					order={order}
+					orderBy={orderBy}
+					selectedJobId={selectedJobId}
+					onSort={handleChangeOrderBy}
+					onRowClick={setSelectedJobId}
+				/>
+				<TablePagination
+					component="div"
+					count={filteredJobs.length}
+					page={page}
+					onPageChange={handleChangePage}
+					rowsPerPage={rowsPerPage}
+					onRowsPerPageChange={handleChangeRowsPerPage}
+					rowsPerPageOptions={[5, 10, 25]}
+					sx={{ bgcolor: blueGrey['A200'] }}
+				/>
 			</Paper>
 		</Box>
 	);
