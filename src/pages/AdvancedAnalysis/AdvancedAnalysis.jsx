@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { 
     Box, 
     Grid, 
@@ -8,7 +8,6 @@ import {
     Paper,
     TextField,
     Skeleton,
-    IconButton,
     FormControl,
     FormControlLabel,
     Radio,
@@ -17,18 +16,17 @@ import {
     MenuItem,
     InputLabel,
     FormHelperText,
-    Tooltip,
-    Checkbox,
-    CircularProgress
-} from '@mui/material'
-import MoleculeViewer from '../components/MoleculeViewer'
+    Checkbox} from '@mui/material'
+import MoleculeViewer from '../../components/MoleculeViewer'
 // import { useNavigate } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
-import { fetchStructures } from '../services/api'
+import { fetchStructures } from '../../services/api'
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline'
-import CloudUploadIcon from '@mui/icons-material/CloudUpload'
-import InfoOutlineIcon from '@mui/icons-material/InfoOutline'
 import { blueGrey } from '@mui/material/colors'
+import SourceSelector from './components/SourceSelector'
+import LibrarySelector from './components/LibrarySelector'
+import FileUploader from './components/FileUploader'
+import PageTitle from '../../components/PageTitle'
 
 const AdvancedAnalysis = () => {
     const { getAccessTokenSilently } = useAuth0();
@@ -81,13 +79,11 @@ const AdvancedAnalysis = () => {
 
 
     // Handle switching between upload / library
-    const handleSourceChange = (e) => {
-        const val = e.target.value;
-        console.log('Source changed to', val);
-        setSource(val);
+    const handleSourceChange = (source) => {
+        setSource(source);
         setSubmitAttempted(false);
         // clear the other input
-        if (val === 'upload') {
+        if (source === 'upload') {
             setSelectedStructure('');
         } else {
             setFile(null);
@@ -96,33 +92,17 @@ const AdvancedAnalysis = () => {
         setMolData('');
     };
 
-    // File input change
-    const handleFileChange = (e) => {
-        const f = e.target.files[0];
-        setFile(f);
-        setSelectedStructure('');
-        setMolData('');
-        if (f) {
-            const ext = f.name.split('.').pop().toLowerCase();
-            setMolFormat(ext === 'pdb' ? 'pdb' : 'xyz');
-            const reader = new FileReader();
-            reader.onload = (ev) => setMolData(ev.target.result);
-            reader.readAsText(f);
-        }
-    };
-
     // Library select change
-    const handleLibrarySelect = async (e) => {
-        const id = e.target.value;
-        setSelectedStructure(id);
+    const handleLibrarySelect = async (selected_id) => {
+        setSelectedStructure(selected_id);
         setFile(null);
         setUploadStructure(false);
         setMolData('');
-        if (id) {
+        if (selected_id) {
             try {
                 const token = await getAccessTokenSilently();
                 // get a presigned URL for this structure
-                const pres = await fetch(`${import.meta.env.VITE_STORAGE_API_URL}/presigned/${id}`, {
+                const pres = await fetch(`${import.meta.env.VITE_STORAGE_API_URL}/presigned/${selected_id}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 const { url } = await pres.json();
@@ -139,15 +119,10 @@ const AdvancedAnalysis = () => {
 
     return (
         <Box bgcolor="rgb(247, 249, 252)" p={4}>
-            <Grid container sx={{ display: 'flex', alignItems: 'start', flexDirection: 'column', justifyContent: 'center' }}>
-                <Typography variant="h5" color="text.primary" sx={{ flexGrow: 1, mb: 2 }}>
-                    Advanced Analysis
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                    Submit your molecule for custom analysis.
-                </Typography>
-            </Grid>
-            <Divider sx={{ my: 3 }} />
+            <PageTitle
+                title="Advanced Analysis"
+                subtitle="Submit a molecule for advanced analysis"
+            />
             <Grid container spacing={3}>
                 <Grid item size={{ xs: 12, md: 6 }}>
                     <Paper elevation={3} sx={{ padding: 4 }}>
@@ -182,83 +157,55 @@ const AdvancedAnalysis = () => {
                                 </Grid>
                                 {/* Source toggle */}
                                 <Grid item>
-                                    <FormControl>
-                                        <RadioGroup row value={source} onChange={handleSourceChange} sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
-                                            <FormControlLabel
-                                                value="upload"
-                                                control={<Radio />}
-                                                label="Upload File"
-                                            />
-                                            <FormControlLabel
-                                                value="library"
-                                                control={<Radio />}
-                                                label="Choose from Library"
-                                            />
-                                        </RadioGroup>
-                                    </FormControl>
+                                    <SourceSelector
+                                        value={source}
+                                        onChange={handleSourceChange}
+                                    />
                                 </Grid>
                                 {/* Library picker */}
                                 {source === 'library' ? (
                                     <Grid item>
-                                    <FormControl 
-                                        fullWidth 
-                                        slotProps={{ input: { readOnly: source !== "library" } }}
-                                        required={source === 'library'}
-                                        error={submitAttempted && source==='library' && !selectedStructure}
-                                    >
-                                        <InputLabel>Select Molecule</InputLabel>
-                                        <Select
-                                        value={selectedStructure}
-                                        label="Select Molecule"
-                                        onChange={handleLibrarySelect}
-                                        error={submitAttempted && source==='library' && !selectedStructure}
-                                        >
-                                        {structures.map(s => (
-                                            <MenuItem key={s.structure_id} value={s.structure_id}>
-                                            {s.name}
-                                            </MenuItem>
-                                        ))}
-                                        </Select>
-                                        {submitAttempted && source==='library' && !selectedStructure && (
-                                        <FormHelperText>Please choose a molecule</FormHelperText>
-                                        )}
-                                    </FormControl>
+                                        <LibrarySelector
+                                            structures={structures}
+                                            value={selectedStructure}
+                                            onChange={handleLibrarySelect}
+                                            disabled={source !== 'library'}
+                                            error={submitAttempted && !selectedStructure}
+                                            helperText={submitAttempted && !selectedStructure ? 'Please choose a molecule' : undefined}
+                                        />
                                     </Grid>) : (
                                     <Grid item sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
-                                        <Button
-                                            variant="contained"
-                                            component="label"
+                                        {/* File uploader */}
+                                        <FileUploader
                                             disabled={source !== 'upload'}
-                                            startIcon={<CloudUploadIcon />}
-                                            sx={{ textTransform: 'none' }}
-                                            size='large'
-                                        >
-                                            {file ? file.name : 'Select File'}
-                                            <input
-                                                hidden
-                                                type="file"
-                                                accept=".xyz,.pdb"
-                                                onChange={handleFileChange}
-                                            />
-                                        </Button>
-                                        {submitAttempted && source==='upload' && !file && (
-                                            <FormHelperText error>Please upload a file</FormHelperText>
-                                        )}
+                                            fileName={file ? file.name : 'Select File'}
+                                            onFileChange={(text, file) => {
+                                                setMolData(text);
+                                                setFile(file);
+                                            }}
+                                            error={submitAttempted && !file}
+                                            helperText={submitAttempted && !file ? 'Please upload a file' : undefined}
+                                        />
                                         <FormControlLabel
                                             disabled={source !== 'upload'}
                                             control={
-                                            <Checkbox checked={uploadStructure} onChange={() => {
-                                                setUploadStructure(!uploadStructure);
-                                            }} name="uploadStructure" />
+                                                <Checkbox 
+                                                    checked={uploadStructure} 
+                                                    onChange={() => {
+                                                        setUploadStructure(!uploadStructure);
+                                                    }}
+                                                    name="uploadStructure" 
+                                                />
                                             }
                                             label="Upload Structure to Library"
                                             sx={{ marginLeft: 2 }}
                                         />
-                                    </Grid>)}
+                                    </Grid>
+                                )}
 
-                                    {/* Molecule name if user chooses to upload to library */}
-                                    {uploadStructure && (
-                                        <Grid item>
+                                {/* Molecule name if user chooses to upload to library */}
+                                {uploadStructure && (
+                                    <Grid item>
                                         <TextField
                                             fullWidth
                                             required={uploadStructure}
@@ -270,75 +217,74 @@ const AdvancedAnalysis = () => {
                                         {submitAttempted && uploadStructure && !moleculeName && (
                                             <FormHelperText error>Please enter a name</FormHelperText>
                                         )}
-                                        </Grid>
-                                    )}
-                                    <Divider />
-                                    {/* Theory */}
+                                    </Grid>
+                                )}
+                                <Divider />
+                                {/* Theory */}
+                                <Grid item>
+                                    <Typography variant="body2" color="text.secondary">
+                                    Theory
+                                    </Typography>
+                                </Grid>
+                                <Grid item>
+                                    <FormControl>
+                                        <RadioGroup 
+                                            row 
+                                            value={theoryType} 
+                                            onChange={(e) => {
+                                                setTheoryType(e.target.value);
+                                                if (e.target.value === 'density') {
+                                                    setTheory(densityTheory[0]);
+                                                } else {
+                                                    setTheory(wavefunctionTheory[0]);
+                                                }
+                                            }}
+                                            sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}
+                                        >
+                                            <FormControlLabel
+                                                value="wavefunction"
+                                                control={<Radio />}
+                                                label="Wavefunction Theory"
+                                            />
+                                            <FormControlLabel
+                                                value="density"
+                                                control={<Radio />}
+                                                label="Density Functional Theory"
+                                            />
+                                        </RadioGroup>
+                                    </FormControl>
+                                </Grid>
+                                <Grid item>
+                                    <FormControl fullWidth>
+                                        <InputLabel>Method</InputLabel>
+                                        <Select
+                                            value={theory}
+                                            label="Theory"
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setTheory(val);
+                                            }}
+                                        >
+                                            {theoryType === 'wavefunction' ? (
+                                                wavefunctionTheory.map((theory) => (
+                                                    <MenuItem key={theory} value={theory}>
+                                                    {theory}
+                                                    </MenuItem>
+                                                ))
+                                            ) : (
+                                                densityTheory.map((theory) => (
+                                                    <MenuItem key={theory} value={theory}>
+                                                    {theory}
+                                                    </MenuItem>
+                                                ))
+                                            )}
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                                <Divider />
                                     <Grid item>
                                         <Typography variant="body2" color="text.secondary">
-                                        Theory
-                                        </Typography>
-                                    </Grid>
-                                    <Grid item>
-                                        <FormControl>
-                                            <RadioGroup 
-                                                row 
-                                                value={theoryType} 
-                                                onChange={(e) => {
-                                                    setTheoryType(e.target.value);
-                                                    if (e.target.value === 'density') {
-                                                        setTheory(densityTheory[0]);
-                                                    } else {
-                                                        setTheory(wavefunctionTheory[0]);
-                                                    }
-                                                }}
-                                                sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}
-                                            >
-                                                <FormControlLabel
-                                                    value="wavefunction"
-                                                    control={<Radio />}
-                                                    label="Wavefunction Theory"
-                                                />
-                                                <FormControlLabel
-                                                    value="density"
-                                                    control={<Radio />}
-                                                    label="Density Functional Theory"
-                                                />
-                                            </RadioGroup>
-                                        </FormControl>
-                                    </Grid>
-                                    <Grid item>
-                                        <FormControl fullWidth>
-                                            <InputLabel>Method</InputLabel>
-                                            <Select
-                                                value={theory}
-                                                label="Theory"
-                                                onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    setTheory(val);
-                                                }}
-                                            >
-                                                {theoryType === 'wavefunction' ? (
-                                                    wavefunctionTheory.map((theory) => (
-                                                        <MenuItem key={theory} value={theory}>
-                                                        {theory}
-                                                        </MenuItem>
-                                                    ))
-                                                ) : (
-                                                    densityTheory.map((theory) => (
-                                                        <MenuItem key={theory} value={theory}>
-                                                        {theory}
-                                                        </MenuItem>
-                                                    ))
-                                                )}
-                                            </Select>
-                                        </FormControl>
-                                    </Grid>
-
-                                    <Divider />
-                                    <Grid item>
-                                        <Typography variant="body2" color="text.secondary">
-                                        Calculation Parameters
+                                            Calculation Parameters
                                         </Typography>
                                     </Grid>
                                     {/* Calculation */}

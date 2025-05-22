@@ -7,7 +7,7 @@ import MenuAppBar from './components/MenuAppBar';
 import RequireAuth from './components/RequireAuth';
 import MenuDrawer from './components/MenuDrawer';
 import MoleculeLibrary from './pages/MoleculeLibrary';
-import AdvancedAnalysis from './pages/AdvancedAnalysis';
+import AdvancedAnalysis from './pages/AdvancedAnalysis/AdvancedAnalysis';
 import MainContent from './components/MainContent';
 import { DrawerProvider } from './components/DrawerContext';   // ← NEW
 import { Box, CssBaseline, Toolbar } from '@mui/material';
