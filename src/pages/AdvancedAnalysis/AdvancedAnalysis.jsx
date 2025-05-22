@@ -6,32 +6,32 @@ import {
     Divider,
     Button,
     Paper,
-    TextField,
     Skeleton,
-    FormControl,
-    FormControlLabel,
-    Radio,
-    RadioGroup,
-    Select,
-    MenuItem,
-    InputLabel,
-    FormHelperText,
-    Checkbox} from '@mui/material'
+} from '@mui/material'
 import MoleculeViewer from '../../components/MoleculeViewer'
-// import { useNavigate } from 'react-router-dom'
+import { 
+    wavefunctionTheory, 
+    densityTheory, 
+    calculationTypes, 
+    basisSets, 
+    multiplicityOptions,
+} from '../../constants'
 import { useAuth0 } from '@auth0/auth0-react'
 import { fetchStructures } from '../../services/api'
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline'
 import { blueGrey } from '@mui/material/colors'
-import SourceSelector from './components/SourceSelector'
-import LibrarySelector from './components/LibrarySelector'
-import FileUploader from './components/FileUploader'
 import PageTitle from '../../components/PageTitle'
+import {
+    MolmakerTextField,
+    MolmakerDropdown,
+    MolmakerMoleculeSelector,
+    MolmakerSectionHeader,
+    MolmakerRadioGroup,
+} from '../../MolmakerFormComponents'
 
 const AdvancedAnalysis = () => {
     const { getAccessTokenSilently } = useAuth0();
 
-    // const navigate = useNavigate();
     const [source, setSource] = useState('upload');  
     const [molData, setMolData] = useState('');                    // raw xyz/pdb text
     const [molFormat, setMolFormat] = useState('xyz');
@@ -43,24 +43,12 @@ const AdvancedAnalysis = () => {
     const [uploadStructure, setUploadStructure] = useState(false); // flag to check if user wants to upload structure to library
     const [moleculeName, setMoleculeName] = useState('');        // name of the molecule to be uploaded
     const [charge, setCharge] = useState(0);                   // charge of the molecule
-    const [calculationType, setCalculationType] = useState('energy'); // calculation type
+    const [calculationType, setCalculationType] = useState('Molecular Energy'); // calculation type
     const [multiplicity, setMultiplicity] = useState(1);       // multiplicity of the molecule
     const [theoryType, setTheoryType] = useState('wavefunction');   // theory type
-    const [theory, setTheory] = useState('Hartree-Fock');      // theory method
-    const [basisSet, setBasisSet] = useState('STO-3G');        // basis set
-
-    // --- library list state ---
+    const [theory, setTheory] = useState('scf');      // theory method
+    const [basisSet, setBasisSet] = useState('sto-3g');        // basis set
     const [structures, setStructures] = useState([]);
-
-    const wavefunctionTheory = ['Hartree-Fock', 'MP2', 'MP4', 'CCSD', 'CCSD(T)'];
-    const densityTheory = ['BLYP', 'B3LYP', 'B3LYP-D', 'B97-D', 'BP86', 'M05', 'M05-2X', 'PBE', 'PBE-D'];
-    const calculationTypes = {
-        'Molecular Energy': 'energy',
-        'Geometric Optimization': 'gradient',
-        'Vibrational Frequency': 'hessian',
-        'Molecular Orbitals': 'orbitals',
-    };
-    const basisSets = ['STO-3G', '6-31G', '6-31G(d)', '6-311G(2d,p)', 'cc-pVDZ', 'cc-pVTZ', 'cc-pVDZ', 'cc-pCVQZ', 'cc-pCVTZ', 'cc-pVQZ', 'jun-cc-pVDZ', 'aug-cc-pVDZ', 'aug-cc-pVTZ', 'aug-cc-pVQZ', 'other'];
 
     // Load library on mount
     useEffect(() => {
@@ -68,7 +56,6 @@ const AdvancedAnalysis = () => {
             try {
                 const token = await getAccessTokenSilently();
                 let res = await fetchStructures(token);
-            // insert a placeholder at top
                 res = [ { structure_id: '', name: 'Select a molecule' }, ...res ];
                 setStructures(res);
             } catch (err) {
@@ -82,7 +69,6 @@ const AdvancedAnalysis = () => {
     const handleSourceChange = (source) => {
         setSource(source);
         setSubmitAttempted(false);
-        // clear the other input
         if (source === 'upload') {
             setSelectedStructure('');
         } else {
@@ -101,7 +87,6 @@ const AdvancedAnalysis = () => {
         if (selected_id) {
             try {
                 const token = await getAccessTokenSilently();
-                // get a presigned URL for this structure
                 const pres = await fetch(`${import.meta.env.VITE_STORAGE_API_URL}/presigned/${selected_id}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
@@ -130,256 +115,177 @@ const AdvancedAnalysis = () => {
                             <Grid container direction="column" spacing={2}>
                                 {/* required info */}
                                 <Grid item>
-                                    <Typography variant="body2" color="text.secondary">
-                                    Required fields are marked with *
-                                    </Typography>
+                                    <MolmakerSectionHeader text="Required fields are marked with *"/>
                                 </Grid>
                                 {/* Job name */}
                                 <Grid item>
-                                    <TextField
-                                        required
-                                        fullWidth
+                                    <MolmakerTextField
                                         label="Job Name"
                                         value={jobName}
                                         onChange={e => setJobName(e.target.value)}
+                                        required
                                         error={submitAttempted && !jobName}
+                                        helperText={submitAttempted && !jobName ? 'Please enter a job name': undefined}
                                     />
-                                    {submitAttempted && !jobName && (
-                                        <FormHelperText error>Please enter a job name</FormHelperText>
-                                    )}
                                 </Grid>
                                 <Divider />
                                 {/* Molecule source */}
-                                <Grid item>
-                                    <Typography variant="body2" color="text.secondary">
-                                    Molecule Source
-                                    </Typography>
-                                </Grid>
-                                {/* Source toggle */}
-                                <Grid item>
-                                    <SourceSelector
-                                        value={source}
-                                        onChange={handleSourceChange}
-                                    />
-                                </Grid>
-                                {/* Library picker */}
-                                {source === 'library' ? (
-                                    <Grid item>
-                                        <LibrarySelector
-                                            structures={structures}
-                                            value={selectedStructure}
-                                            onChange={handleLibrarySelect}
-                                            disabled={source !== 'library'}
-                                            error={submitAttempted && !selectedStructure}
-                                            helperText={submitAttempted && !selectedStructure ? 'Please choose a molecule' : undefined}
-                                        />
-                                    </Grid>) : (
-                                    <Grid item sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
-                                        {/* File uploader */}
-                                        <FileUploader
-                                            disabled={source !== 'upload'}
-                                            fileName={file ? file.name : 'Select File'}
-                                            onFileChange={(text, file) => {
-                                                setMolData(text);
-                                                setFile(file);
-                                            }}
-                                            error={submitAttempted && !file}
-                                            helperText={submitAttempted && !file ? 'Please upload a file' : undefined}
-                                        />
-                                        <FormControlLabel
-                                            disabled={source !== 'upload'}
-                                            control={
-                                                <Checkbox 
-                                                    checked={uploadStructure} 
-                                                    onChange={() => {
-                                                        setUploadStructure(!uploadStructure);
-                                                    }}
-                                                    name="uploadStructure" 
-                                                />
-                                            }
-                                            label="Upload Structure to Library"
-                                            sx={{ marginLeft: 2 }}
-                                        />
-                                    </Grid>
-                                )}
-
-                                {/* Molecule name if user chooses to upload to library */}
-                                {uploadStructure && (
-                                    <Grid item>
-                                        <TextField
-                                            fullWidth
-                                            required={uploadStructure}
-                                            label="Molecule Name"
-                                            value={moleculeName}
-                                            onChange={e => setMoleculeName(e.target.value)}
-                                            error={submitAttempted && !moleculeName}
-                                        />
-                                        {submitAttempted && uploadStructure && !moleculeName && (
-                                            <FormHelperText error>Please enter a name</FormHelperText>
-                                        )}
-                                    </Grid>
-                                )}
+                                <MolmakerMoleculeSelector
+                                    source={source}
+                                    onSourceChange={handleSourceChange}
+                                    structures={structures}
+                                    selectedStructure={selectedStructure}
+                                    onLibrarySelect={handleLibrarySelect}
+                                    file={file}
+                                    onFileChange={(text, f) => {
+                                        setMolData(text);
+                                        setFile(f);
+                                    }}
+                                    uploadStructure={uploadStructure}
+                                    onUploadStructureChange={setUploadStructure}
+                                    moleculeName={moleculeName}
+                                    onMoleculeNameChange={e => setMoleculeName(e.target.value)}
+                                    submitAttempted={submitAttempted}
+                                />
                                 <Divider />
                                 {/* Theory */}
-                                <Grid item>
-                                    <Typography variant="body2" color="text.secondary">
-                                    Theory
-                                    </Typography>
-                                </Grid>
-                                <Grid item>
-                                    <FormControl>
-                                        <RadioGroup 
-                                            row 
-                                            value={theoryType} 
-                                            onChange={(e) => {
-                                                setTheoryType(e.target.value);
-                                                if (e.target.value === 'density') {
-                                                    setTheory(densityTheory[0]);
+                                <Box>
+                                    <Grid item>
+                                        <MolmakerSectionHeader text="Theory" />
+                                    </Grid>
+                                    <Grid item sx={{ mb: 1 }}>
+                                        <MolmakerRadioGroup
+                                            name="theoryType"
+                                            value={theoryType}
+                                            onChange={(e, newVal) => {
+                                                setTheoryType(newVal);
+                                                if (newVal === 'density') {
+                                                    setTheory(densityTheory[0].toLowerCase());
                                                 } else {
-                                                    setTheory(wavefunctionTheory[0]);
+                                                    setTheory(Object.values(wavefunctionTheory)[0]);
                                                 }
                                             }}
-                                            sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}
-                                        >
-                                            <FormControlLabel
-                                                value="wavefunction"
-                                                control={<Radio />}
-                                                label="Wavefunction Theory"
-                                            />
-                                            <FormControlLabel
-                                                value="density"
-                                                control={<Radio />}
-                                                label="Density Functional Theory"
-                                            />
-                                        </RadioGroup>
-                                    </FormControl>
-                                </Grid>
-                                <Grid item>
-                                    <FormControl fullWidth>
-                                        <InputLabel>Method</InputLabel>
-                                        <Select
-                                            value={theory}
-                                            label="Theory"
-                                            onChange={(e) => {
-                                                const val = e.target.value;
-                                                setTheory(val);
-                                            }}
-                                        >
-                                            {theoryType === 'wavefunction' ? (
-                                                wavefunctionTheory.map((theory) => (
-                                                    <MenuItem key={theory} value={theory}>
-                                                    {theory}
-                                                    </MenuItem>
-                                                ))
-                                            ) : (
-                                                densityTheory.map((theory) => (
-                                                    <MenuItem key={theory} value={theory}>
-                                                    {theory}
-                                                    </MenuItem>
-                                                ))
-                                            )}
-                                        </Select>
-                                    </FormControl>
-                                </Grid>
-                                <Divider />
+                                            options={[
+                                                { value: 'wavefunction', label: 'Wavefunction Theory' },
+                                                { value: 'density',     label: 'Density Functional Theory' }
+                                            ]}
+                                            row
+                                        />
+                                    </Grid>
                                     <Grid item>
-                                        <Typography variant="body2" color="text.secondary">
-                                            Calculation Parameters
-                                        </Typography>
+                                        <MolmakerDropdown
+                                            label="Theory Method"
+                                            value={theory}
+                                            onChange={(e) => setTheory(e.target.value)}
+                                            options={theoryType === 'density' ? 
+                                                densityTheory
+                                                    .map(theory => ({
+                                                        label: theory,
+                                                        value: theory.toLowerCase()
+                                                    })
+                                                ) : 
+                                                Object.entries(wavefunctionTheory)
+                                                    .map(([key, value]) => ({
+                                                        label: key,
+                                                        value: value
+                                                    })
+                                                )
+                                            }
+                                            helperText={submitAttempted && !theory ? 'Please select a theory method' : undefined}
+                                            error={submitAttempted && !theory}
+                                            required
+                                        />
                                     </Grid>
-                                    {/* Calculation */}
-                                    <Grid container spacing={2}>
-                                        <Grid item size={{ xs: 12, md: 6 }}>
-                                            <FormControl required fullWidth>
-                                                <InputLabel>Calculation Type</InputLabel>
-                                                <Select
-                                                    value={calculationType}
-                                                    label="Calculation Type"
-                                                    onChange={(e) => {
-                                                        setCalculationType(e.target.value);
-                                                    }}
-                                                >
-                                                    {Object.keys(calculationTypes).map((type) => (
-                                                        <MenuItem key={type} value={calculationTypes[type]}>
-                                                        {type}
-                                                        </MenuItem>
-                                                    ))}
-                                                </Select>
-                                            </FormControl>
-                                        </Grid>
-                                        <Grid item size={{ xs: 12, md: 6 }}>
-                                            <FormControl required fullWidth>
-                                                <InputLabel>Basis Set</InputLabel>
-                                                <Select
-                                                    value={basisSet}
-                                                    label="Basis Set"
-                                                    onChange={(e) => {
-                                                        setBasisSet(e.target.value);
-                                                    }}
-                                                >
-                                                    {basisSets.map((set) => (
-                                                        <MenuItem key={set} value={set}>
-                                                        {set}
-                                                        </MenuItem>
-                                                    ))}
-                                                </Select>
-                                            </FormControl>
-                                        </Grid>
+                                </Box>
+                                <Divider />
+                                {/* Calculation parameters */}
+                                <Box>
+                                    <Grid item>
+                                        <MolmakerSectionHeader text="Calculation Parameters" />
                                     </Grid>
-
-
-                                    {/* Charge and Multiplicity of structure */}
-                                    <Grid container spacing={2}>
+                                    <Grid container spacing={2} sx={{ my: 2 }}>
                                         <Grid item size={{ xs: 12, md: 6 }}>
-                                            <FormControl fullWidth>
-                                                <TextField
+                                            <MolmakerDropdown
+                                                label="Calculation Type"
+                                                value={calculationType}
+                                                onChange={(e) => setCalculationType(e.target.value)}
+                                                options={calculationTypes
+                                                    .map(type => ({
+                                                        label: type,
+                                                        value: type
+                                                    })
+                                                )}
+                                                helperText={submitAttempted && !calculationType ? 'Please select a calculation type' : undefined}
+                                                error={submitAttempted && !calculationType}
                                                 required
+                                            />
+                                        </Grid>
+                                        <Grid item size={{ xs: 12, md: 6 }}>
+                                            <MolmakerDropdown
+                                                label="Basis Set"
+                                                value={basisSet}
+                                                onChange={(e) => setBasisSet(e.target.value)}
+                                                options={basisSets
+                                                    .map(basis => ({
+                                                        label: basis,
+                                                        value: basis.toLowerCase()
+                                                    })
+                                                )}
+                                                helperText={submitAttempted && !basisSet ? 'Please select a basis set' : undefined}
+                                                error={submitAttempted && !basisSet}
+                                                required
+                                            />
+                                        </Grid>
+                                    </Grid>
+                                    <Grid container spacing={2}>
+                                        <Grid item size={{ xs: 12, md: 6 }}>
+                                            <MolmakerTextField
+                                                fullWidth
+                                                label="Charge"
                                                 type="number"
                                                 value={charge}
-                                                onChange={(e) => {
+                                                onChange={e => {
                                                     const val = e.target.value;
                                                     if (/^-?\d*$/.test(val)) {
-                                                    setCharge(val);
+                                                        setCharge(val);
                                                     }
                                                 }}
-                                                label="Charge"
-                                                />
-                                            </FormControl>
+                                                helperText={submitAttempted && !charge ? 'Please enter a charge' : undefined}
+                                                required
+                                            />
                                         </Grid>
                                         <Grid item size={{ xs: 12, md: 6 }}>
-                                            <FormControl required fullWidth>
-                                                <InputLabel>Multiplicity</InputLabel>
-                                                <Select
-                                                    value={multiplicity}
-                                                    label="Multiplicity"
-                                                    onChange={(e) => {
-                                                        setMultiplicity(e.target.value);
-                                                    }}
-                                                >
-                                                <MenuItem value={1}>Singlet</MenuItem>
-                                                <MenuItem value={2}>Doublet</MenuItem>
-                                                <MenuItem value={3}>Triplet</MenuItem>
-                                                <MenuItem value={4}>Quartet</MenuItem>
-                                                <MenuItem value={5}>Quintet</MenuItem>
-                                                <MenuItem value={6}>Sextet</MenuItem>
-                                                </Select>
-                                            </FormControl>
+                                            <MolmakerDropdown
+                                                fullWidth
+                                                label="Multiplicity"
+                                                value={multiplicity}
+                                                onChange={(e) => setMultiplicity(e.target.value)}
+                                                options={Object.entries(multiplicityOptions)
+                                                    .map(([key, value]) => ({
+                                                        label: key,
+                                                        value: value
+                                                    })
+                                                )}
+                                                helperText={submitAttempted && !multiplicity ? 'Please select a multiplicity' : undefined}
+                                                error={submitAttempted && !multiplicity}
+                                                required
+                                            />
                                         </Grid>
                                     </Grid>
-
-                                    <Grid item xs={12}>
-                                        <Button
-                                            type="submit"
-                                            variant="contained"
-                                            color="primary"
-                                            size="large"
-                                            startIcon={<PlayCircleOutlineIcon />}
-                                            fullWidth
-                                            sx={{ flexGrow: 1, textTransform: 'none' }}
-                                        >
-                                            Run Advanced Analysis
-                                        </Button>
-                                    </Grid>
+                                </Box>
+                                <Grid item size={12}>
+                                    <Button
+                                        type="submit"
+                                        variant="contained"
+                                        color="primary"
+                                        size="large"
+                                        startIcon={<PlayCircleOutlineIcon />}
+                                        fullWidth
+                                        sx={{ flexGrow: 1, textTransform: 'none' }}
+                                    >
+                                        Run Advanced Analysis
+                                    </Button>
+                                </Grid>
                             </Grid>
                         </Box>
                     </Paper>
@@ -438,7 +344,7 @@ const AdvancedAnalysis = () => {
                             )}
                         </Box>
                     </Paper>
-                    </Grid>
+                </Grid>
             </Grid>
         </Box>
     )
