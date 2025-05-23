@@ -30,6 +30,7 @@ import { blueGrey } from "@mui/material/colors";
 import { MolmakerMoleculePreview, MolmakerSectionHeader, MolmakerTextField } from "../MolmakerFormComponents";
 import MolmakerPageTitle from "../MolmakerFormComponents/MolmakerPageTitle";
 import MolmakerAlert from "../MolmakerFormComponents/MolmakerAlert";
+import MolmakerLoading from "../MolmakerFormComponents/MolmakerLoading";
 
 const MoleculeLibrary = () => {
 	const { getAccessTokenSilently } = useAuth0();
@@ -46,6 +47,7 @@ const MoleculeLibrary = () => {
 	const [selectedStructure, setSelectedStructure] = useState("");
 	const [notes, setNotes] = useState("");
 	const [error, setError] = useState<string | null>(null);
+	const [loading, setLoading] = useState(false);
 
 	const [page, setPage] = useState(0);
   	const [rowsPerPage, setRowsPerPage] = useState(5); 
@@ -58,6 +60,7 @@ const MoleculeLibrary = () => {
 
 	const handleRefresh = async () => {
 		try {
+			setLoading(true);
 		  const token = await getAccessTokenSilently();
 		  const structs = await fetchStructures(token);
 		  setSavedMolecules(structs);
@@ -66,6 +69,8 @@ const MoleculeLibrary = () => {
 		} catch (err) {
 		  setError('Failed to refresh molecules. Please try again later.');
 		  console.error('Failed to refresh jobs', err);
+		} finally {
+			setLoading(false);
 		}
 	};
 
@@ -73,12 +78,15 @@ const MoleculeLibrary = () => {
 		e.preventDefault();
 		setSubmitAttempted(true);
 		setError(null);
+		setLoading(true);
 		if (!file) {
 			setError('Please select a file to upload.');
+			setLoading(false);
 			return;
 		}
 		if (!name) {
 			setError('Please enter a name for the molecule.');
+			setLoading(false);
 			return;
 		}
 		try {
@@ -91,11 +99,14 @@ const MoleculeLibrary = () => {
 		} catch (err) {
 			setError('Molecule submission failed. Please try again.');
 			console.error("Molecule submission failed", err);
+		} finally {
+			setLoading(false);
 		}
 	}
 
 	const openMoleculeViewer = async (structureId) => {
         try {
+            setLoading(true);
             const token = await getAccessTokenSilently();
             const res = await fetch(`${import.meta.env.VITE_STORAGE_API_URL}/presigned/${structureId}`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -110,23 +121,34 @@ const MoleculeLibrary = () => {
         } catch (err) {
             setError('Failed to load molecule structure. Please try again.');
             console.error("Failed to load molecule structure:", err);
+        } finally {
+            setLoading(false);
         }
     };
 
 	useEffect(() => {
 		const loadSavedMolecules = async () => {
 			try {
+				setLoading(true);
 				const token = await getAccessTokenSilently();
 				const res = await fetchStructures(token);
 				setSavedMolecules(res);
 			} catch (err) {
 				setError('Failed to fetch molecules. Please try again later.');
 				console.error("Failed to fetch jobs", err);
+			} finally {
+				setLoading(false);
 			}
 		}
 
 		loadSavedMolecules();
 	}, [])
+
+	if (loading) {
+		return (
+			<MolmakerLoading />
+		);
+	}
 
 
   	return (
