@@ -2,13 +2,10 @@ import { useState, useEffect } from 'react'
 import { 
     Box, 
     Grid, 
-    Typography,
     Divider,
     Button,
     Paper,
-    Skeleton,
 } from '@mui/material'
-import MoleculeViewer from '../../components/MoleculeViewer'
 import { 
     wavefunctionTheory, 
     densityTheory, 
@@ -19,7 +16,6 @@ import {
 import { useAuth0 } from '@auth0/auth0-react'
 import { fetchStructures } from '../../services/api'
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline'
-import { blueGrey } from '@mui/material/colors'
 import PageTitle from '../../components/PageTitle'
 import {
     MolmakerTextField,
@@ -27,6 +23,7 @@ import {
     MolmakerMoleculeSelector,
     MolmakerSectionHeader,
     MolmakerRadioGroup,
+    MolmakerMoleculePreview
 } from '../../MolmakerFormComponents'
 
 const AdvancedAnalysis = () => {
@@ -291,60 +288,13 @@ const AdvancedAnalysis = () => {
                     </Paper>
                 </Grid>
                 <Grid item size={{ xs: 12, md: 6 }}>
-                    <Paper
-                        sx={{
-                            width: '100%',
-                            height: '100%',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            maxHeight: '400px'
-                        }}
-                        elevation={2}
-                    >
-                        <Typography
-                            variant="h6"
-                            color="text.secondary"
-                            sx={{ p: 2, bgcolor: blueGrey[200] }}
-                        >
-                            Molecule Preview
-                        </Typography>
-                        <Divider />
-                        <Box
-                            sx={{
-                                flex: 1,
-                                position: 'relative',
-                                border: '1px solid',
-                                borderColor: 'grey.300',
-                            }}
-                        >
-                            {molData ? (
-                                <MoleculeViewer data={molData} format={molFormat} />
-                            ) : (
-                                <Box
-                                    display="flex"
-                                    justifyContent="center"
-                                    alignItems="center"
-                                    height="100%"
-                                >
-                                    <Skeleton
-                                        variant="rectangular"
-                                        width="100%"
-                                        height="100%"
-                                    />
-                                    <Typography
-                                        variant="body2"
-                                        color="text.secondary"
-                                        sx={{ position: 'absolute' }}
-                                    >
-                                        {source === 'upload'
-                                        ? 'Upload a file to preview'
-                                        : 'Select a molecule to preview'}
-                                    </Typography>
-                                </Box>
-                            )}
-                        </Box>
-                    </Paper>
-                </Grid>
+          			<MolmakerMoleculePreview
+						data={molData}
+						format={molFormat}
+						source={source}
+                        sx={{ maxHeight: 437 }}
+					/>
+        		</Grid>
             </Grid>
         </Box>
     )

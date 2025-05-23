@@ -1,13 +1,13 @@
 // App.jsx  ────────────────────────────────────────────────────────────────
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home/Home';
-import SubmitJob from './pages/StandardAnalysis';
+import StandardAnalysis from './pages/SubmitJob/StandardAnalysis';
 import ViewJob from './pages/ViewJob';
 import MenuAppBar from './components/MenuAppBar';
 import RequireAuth from './components/RequireAuth';
 import MenuDrawer from './components/MenuDrawer';
 import MoleculeLibrary from './pages/MoleculeLibrary';
-import AdvancedAnalysis from './pages/AdvancedAnalysis/AdvancedAnalysis';
+import AdvancedAnalysis from './pages/SubmitJob/AdvancedAnalysis';
 import MainContent from './components/MainContent';
 import { DrawerProvider } from './components/DrawerContext';   // ← NEW
 import { Box, CssBaseline, Toolbar } from '@mui/material';
@@ -32,7 +32,7 @@ function App() {
 							/>
 							<Route
 								path="/submit"
-								element={<RequireAuth><SubmitJob /></RequireAuth>}
+								element={<RequireAuth><StandardAnalysis /></RequireAuth>}
 							/>
 							<Route
 								path="/library"
