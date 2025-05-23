@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home/Home';
 import StandardAnalysis from './pages/SubmitJob/StandardAnalysis';
 import ViewJob from './pages/ViewJob';
+import NotFound from './pages/NotFound';
 import MenuAppBar from './components/MenuAppBar';
 import RequireAuth from './components/RequireAuth';
 import MenuDrawer from './components/MenuDrawer';
@@ -41,6 +42,10 @@ function App() {
 							<Route
 								path="/advanced"
 								element={<RequireAuth><AdvancedAnalysis /></RequireAuth>}
+							/>
+							<Route
+								path="*"
+								element={<RequireAuth><NotFound /></RequireAuth>}
 							/>
 						</Routes>
 					</MainContent>

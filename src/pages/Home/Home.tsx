@@ -4,7 +4,6 @@ import {
 	Paper,
 	Divider,
 	TablePagination,
-	CircularProgress,
 	Alert,
 	Dialog,
 } from '@mui/material';
@@ -19,6 +18,7 @@ import JobsStatus from './components/JobsStatus';
 import JobsToolbar from './components/JobsToolbar';
 import JobsTable from './components/JobsTable';
 import { MolmakerMoleculePreview } from '../../MolmakerFormComponents';
+import MolmakerLoading from '../../MolmakerFormComponents/MolmakerLoading';
 
 export default function Home() {
 	const navigate = useNavigate();
@@ -155,9 +155,7 @@ export default function Home() {
 
 	if (loading) {
 		return (
-			<Box display="flex" justifyContent="center" p={4}>
-				<CircularProgress />
-			</Box>
+			<MolmakerLoading />
 		);
 	}
 
@@ -171,9 +169,7 @@ export default function Home() {
 			{/* Molecule Preview Dialog */}
 			<Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
 					{previewLoading ? (
-						<Box display="flex" justifyContent="center" p={4}>
-							<CircularProgress />
-						</Box>
+						<MolmakerLoading />
 					) : (
 						<Box sx={{ width: '100%', height: 400 }}>
 							<MolmakerMoleculePreview

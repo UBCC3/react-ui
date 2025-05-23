@@ -6,7 +6,6 @@ import {
 	Paper,
 	Divider,
 	Grid,
-	CircularProgress,
 	Button,
 	Tooltip,
 	IconButton
@@ -23,6 +22,7 @@ import {
 } from '../../MolmakerFormComponents'
 import { multiplicityOptions } from '../../constants';
 import MolmakerPageTitle from '../../MolmakerFormComponents/MolmakerPageTitle';
+import MolmakerLoading from '../../MolmakerFormComponents/MolmakerLoading';
 
 export default function StandardAnalysis() {
 	const navigate = useNavigate();
@@ -45,12 +45,13 @@ export default function StandardAnalysis() {
 
 	// library state
 	const [structures, setStructures] = useState([]);
-	const [loadingStructures, setLoadingStructures] = useState(true);
+	const [loading, setLoading] = useState(false);
 
 	// fetch library
 	useEffect(() => {
 		(async () => {
 			try {
+				setLoading(true);
 				const token = await getAccessTokenSilently();
 				let res = await fetchStructures(token);
 				res = [{ structure_id: '', name: 'Select a molecule' }, ...res];
@@ -58,7 +59,7 @@ export default function StandardAnalysis() {
 			} catch (err) {
 				console.error('Failed to fetch library', err);
 			} finally {
-				setLoadingStructures(false);
+				setLoading(false);
 			}
 		})();
 	}, [getAccessTokenSilently]);
@@ -93,6 +94,7 @@ export default function StandardAnalysis() {
 		if (!id) return;
 
 		try {
+			setLoading(true);
 			const token = await getAccessTokenSilently();
 			const pres = await fetch(
 				`${import.meta.env.VITE_STORAGE_API_URL}/presigned/${id}`,
@@ -105,18 +107,26 @@ export default function StandardAnalysis() {
 			setMolFormat('xyz');
 		} catch (err) {
 			console.error('Failed to load structure', err);
+		} finally {
+			setLoading(false);
 		}
 	};
 
   	const handleSubmitJob = async (e) => {
 		e.preventDefault();
 		setSubmitAttempted(true);
-		
+		setLoading(true);
 		let structureIdToUse = selectedStructure;
 		let uploadFile = file;
 
-		if (source === 'upload' && !uploadFile) return;
-		if (source === 'library' && !structureIdToUse) return;
+		if (source === 'upload' && !uploadFile) {
+			setLoading(false);
+			return;
+		}
+		if (source === 'library' && !structureIdToUse) {
+			setLoading(false);
+			return;
+		}
 
 		if (source === 'library') {
 			const blob = new Blob([molData], { type: 'text/plain' });
@@ -125,7 +135,10 @@ export default function StandardAnalysis() {
 			});
 		}
 
-    	if (!uploadFile) return;
+		if (!uploadFile) {
+			setLoading(false);
+			return;
+		}
 
 		const formData = new FormData();
 		formData.append('file', uploadFile);
@@ -170,19 +183,14 @@ export default function StandardAnalysis() {
 			navigate('/');
 		} catch (err) {
 			console.error('Submit failed:', err);
+		} finally {
+			setLoading(false);
 		}
 	};
 
-	if (loadingStructures) {
+	if (loading) {
 		return (
-			<Box
-				display="flex"
-				justifyContent="center"
-				bgcolor="rgb(247, 249, 252)"
-				p={4}
-			>
-				<CircularProgress />
-			</Box>
+			<MolmakerLoading />
 		);
 	}
 
@@ -239,7 +247,7 @@ export default function StandardAnalysis() {
 												if (/^-?\d*$/.test(val)) setCharge(val);
 											}}
 											required
-											helperText={submitAttempted && (charge < -1 || charge > 1) ? 'Charge must be -1, 0, or 1' : ''}
+											helperText={submitAttempted && !charge ? 'Please enter a charge' : ''}
 										/>
 									</Grid>
 									<Grid size={{ xs: 12, md: 6 }}>

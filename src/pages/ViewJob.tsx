@@ -3,14 +3,14 @@ import { useParams } from 'react-router-dom';
 import { useAuth0 } from "@auth0/auth0-react";
 import {
 	Box,
-	Typography,
 	Paper,
-	CircularProgress,
 	Grid,
 } from '@mui/material';
 import { fetchJob } from '../services/api';
 import MolmakerPageTitle from '../MolmakerFormComponents/MolmakerPageTitle';
 import { MolmakerTextField } from '../MolmakerFormComponents';
+import MolmakerAlert from '../MolmakerFormComponents/MolmakerAlert';
+import MolmakerLoading from '../MolmakerFormComponents/MolmakerLoading';
 
 function ViewJob() {
   	const { getAccessTokenSilently } = useAuth0();
@@ -54,14 +54,18 @@ function ViewJob() {
 
 	if (loading) {
 		return (
-			<Box display="flex" justifyContent="center" bgcolor={'rgb(247, 249, 252)'} p={4}>
-				<CircularProgress />
-			</Box>
+			<MolmakerLoading />
 		);
 	}
 
 	if (!job) {
-		return <Typography mt={4}>Job not found</Typography>;
+		return (
+			<MolmakerAlert
+				text="Job not found. Please check the job ID and try again."
+				severity="error"
+				outline="error"
+			/>
+		);
 	}
 
   	return (
