@@ -33,10 +33,15 @@ import MolmakerPageTitle from "../MolmakerFormComponents/MolmakerPageTitle";
 const MoleculeLibrary = () => {
 	const { getAccessTokenSilently } = useAuth0();
 	const [submitAttempted, setSubmitAttempted] = useState(false);
-	const [file, setFile] = useState(null);
+	const [file, setFile] = useState<File | null>(null);
 	const [name, setName] = useState("");
 	const [molData, setMolData] = useState("");
-	const [savedMolecules, setSavedMolecules] = useState([]);
+	type Molecule = {
+		structure_id: string;
+		name: string;
+		// add other properties if needed
+	};
+	const [savedMolecules, setSavedMolecules] = useState<Molecule[]>([]);
 	const [selectedStructure, setSelectedStructure] = useState("");
 	const [notes, setNotes] = useState("");
 
@@ -114,12 +119,12 @@ const MoleculeLibrary = () => {
 				subtitle="Upload and manage your molecules in the library." 
 			/>
 			<Grid container spacing={3}>
-				<Grid item size={{ xs: 12, md: 6 }}>
+				<Grid size={{ xs: 12, md: 6 }}>
 					<Paper elevation={3} sx={{ padding: 4 }}>
 						<Box component="form">
 							<Grid container direction="column" spacing={2}>
 								<MolmakerSectionHeader text="Required fields are marked with *" />
-								<Grid item sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
+								<Grid sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
 									<Button
 										variant="contained"
 										component="label"
@@ -134,30 +139,34 @@ const MoleculeLibrary = () => {
 											type="file"
 											accept=".xyz,.pdb"
 											onChange={(e) => {
-												const selected = e.target.files[0];
+												const files = e.target.files;
+												const selected = files && files[0];
 												setFile(selected);
 												if (selected) {
 													const reader = new FileReader();
-													reader.onload = (ev) => setMolData(ev.target.result);
+													reader.onload = (ev) => {
+														if (ev.target && typeof ev.target.result === "string") {
+															setMolData(ev.target.result);
+														}
+													};
 													reader.readAsText(selected);
 												}
 											}}
 										/>
 									</Button>
 								</Grid>
-								<Grid item>
+								<Grid>
 									<MolmakerTextField
 										fullWidth
 										label="Name"
 										value={name}
 										onChange={(e) => setName(e.target.value)}
-										placeholder="Enter a name for the molecule"
 										error={submitAttempted && name === ""}
 										helperText={submitAttempted && name === "" ? "Name is required" : ""}
 										required
 									/>
 								</Grid>
-								<Grid item>
+								<Grid>
 									<MolmakerTextField
 										fullWidth
 										label="Notes"
@@ -165,17 +174,15 @@ const MoleculeLibrary = () => {
 										onChange={(e) => setNotes(e.target.value)}
 										multiline
 										rows={2}
-										placeholder="Add any notes or comments about the molecule here."
 									/>
 								</Grid>
-								<Grid item>
+								<Grid>
 									<Button
 										variant="contained"
 										component="label"
 										startIcon={<AddToPhotosIcon />}
 										sx={{ textTransform: 'none' }}
 										size='large'
-										type="submit"
 										onClick={handleSubmit}
 										fullWidth
 									>
@@ -186,7 +193,7 @@ const MoleculeLibrary = () => {
 						</Box>
 					</Paper>
 				</Grid>
-				<Grid item size={{ xs: 12, md: 6 }}>
+				<Grid size={{ xs: 12, md: 6 }}>
 					<MolmakerMoleculePreview
 						data={molData}
 						format={'xyz'}
@@ -196,13 +203,11 @@ const MoleculeLibrary = () => {
 							borderColor: 'grey.300',
 							position: 'relative',
 						}}
-						loading={molData === ""}
-						loadingText="Upload a molecule to view"
 					/>
 				</Grid>
 			</Grid>
 			<Grid container spacing={3} sx={{ marginTop: 3 }}>
-				<Grid item size={{ xs: 12, md: 12 }}>
+				<Grid size={{ xs: 12, md: 12 }}>
 					<Paper elevation={3}>
 						<Toolbar sx={{ justifyContent: 'space-between', bgcolor: blueGrey[200] }}>
 							<Typography variant="h6" color="text.secondary">
@@ -255,7 +260,7 @@ const MoleculeLibrary = () => {
 										<TableRow 
 											key={molecule.structure_id} 
 											onClick={() => {
-												setSelectedStructure(molecule.structure_id == selectedStructure ? null : molecule.structure_id);
+												setSelectedStructure(molecule.structure_id == selectedStructure ? "" : molecule.structure_id);
 											}}
 											sx={{
 												backgroundColor: molecule.structure_id === selectedStructure ? 'rgba(0, 0, 0, 0.1)' : 'transparent',
