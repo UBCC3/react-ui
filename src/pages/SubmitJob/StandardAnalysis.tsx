@@ -30,18 +30,18 @@ export default function StandardAnalysis() {
 
 	// form state
 	const [jobName, setJobName] = useState('');
-	const [source, setSource] = useState('upload');
+    const [source, setSource] = useState<'upload' | 'library'>('upload');  
 	const [submitAttempted, setSubmitAttempted] = useState(false);
 	const [uploadStructure, setUploadStructure] = useState(false);
 	const [moleculeName, setMoleculeName] = useState('');
 
-	const [file, setFile] = useState(null);
+	const [file, setFile] = useState<File | null>(null);
 	const [selectedStructure, setSelectedStructure] = useState('');
 	const [molData, setMolData] = useState('');
 	const [molFormat, setMolFormat] = useState('xyz');
 
-	const [charge, setCharge] = useState(0);
-	const [multiplicity, setMultiplicity] = useState(1);
+	const [charge, setCharge] = useState<number>(0);
+	const [multiplicity, setMultiplicity] = useState<number>(1);
 
 	// library state
 	const [structures, setStructures] = useState([]);
@@ -130,8 +130,8 @@ export default function StandardAnalysis() {
 		const formData = new FormData();
 		formData.append('file', uploadFile);
 		formData.append('job_name', jobName);
-		formData.append('charge', charge);
-		formData.append('multiplicity', multiplicity);
+		formData.append('charge', charge.toString());
+		formData.append('multiplicity', multiplicity.toString());
 
 		try {
 			const token = await getAccessTokenSilently();
@@ -154,7 +154,7 @@ export default function StandardAnalysis() {
 					moleculeName,
 					token
 				);
-				if (resStruct.status === 200) {
+				if (resStruct && resStruct.status === 200) {
 					structureIdToUse = resStruct.data.structure_id;
 				}
 			}
@@ -193,14 +193,14 @@ export default function StandardAnalysis() {
 				subtitle="Submit a job for standard analysis"
 			/>
       		<Grid container spacing={3}>
-				<Grid item size={{ xs: 12, md: 6 }}>
+				<Grid size={{ xs: 12, md: 6 }}>
           			<Paper elevation={3} sx={{ p: 4 }}>
             			<Box component="form" onSubmit={handleSubmitJob}>
 							<Grid container direction="column" spacing={2}>
-								<Grid item>
+								<Grid>
 									<MolmakerSectionHeader text="Required fields are marked with *" />
 								</Grid>
-								<Grid item>
+								<Grid>
 									<MolmakerTextField
 										label="Job Name"
 										value={jobName}
@@ -211,9 +211,9 @@ export default function StandardAnalysis() {
 									/>
 								</Grid>
 								<Divider />
-								<Grid item>
+								<Grid>
 									<MolmakerMoleculeSelector
-										source={source}
+										source={source as 'upload' | 'library'}
 										onSourceChange={handleSourceChange}
 										structures={structures}
 										selectedStructure={selectedStructure}
@@ -229,7 +229,7 @@ export default function StandardAnalysis() {
 								</Grid>
 								<Divider />
 								<Grid container spacing={2}>
-									<Grid item size={{ xs: 12, md: 6 }}>
+									<Grid size={{ xs: 12, md: 6 }}>
 										<MolmakerTextField
 											label="Charge"
 											type="number"
@@ -242,7 +242,7 @@ export default function StandardAnalysis() {
 											helperText={submitAttempted && (charge < -1 || charge > 1) ? 'Charge must be -1, 0, or 1' : ''}
 										/>
 									</Grid>
-									<Grid item size={{ xs: 12, md: 6 }}>
+									<Grid size={{ xs: 12, md: 6 }}>
 										<MolmakerDropdown
 											label="Multiplicity"
 											value={multiplicity}
@@ -257,7 +257,7 @@ export default function StandardAnalysis() {
 										/>
 									</Grid>
 								</Grid>
-								<Grid item xs={12}>
+								<Grid size={12}>
 									<Box display="flex" alignItems="center" gap={1}>
 										<Button
 											type="submit"
@@ -280,7 +280,7 @@ export default function StandardAnalysis() {
             			</Box>
           			</Paper>
         		</Grid>
-				<Grid item size={{ xs: 12, md: 6 }}>
+				<Grid size={{ xs: 12, md: 6 }}>
           			<MolmakerMoleculePreview
 						data={molData}
 						format={molFormat}

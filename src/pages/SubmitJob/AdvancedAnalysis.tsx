@@ -29,7 +29,7 @@ import {
 const AdvancedAnalysis = () => {
     const { getAccessTokenSilently } = useAuth0();
 
-    const [source, setSource] = useState('upload');  
+    const [source, setSource] = useState<'upload' | 'library'>('upload');  
     const [molData, setMolData] = useState('');                    // raw xyz/pdb text
     const [molFormat, setMolFormat] = useState('xyz');
     const [jobName, setJobName] = useState('');                  // job name
@@ -106,16 +106,16 @@ const AdvancedAnalysis = () => {
                 subtitle="Submit a molecule for advanced analysis"
             />
             <Grid container spacing={3}>
-                <Grid item size={{ xs: 12, md: 6 }}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper elevation={3} sx={{ padding: 4 }}>
                         <Box component="form">
                             <Grid container direction="column" spacing={2}>
                                 {/* required info */}
-                                <Grid item>
+                                <Grid>
                                     <MolmakerSectionHeader text="Required fields are marked with *"/>
                                 </Grid>
                                 {/* Job name */}
-                                <Grid item>
+                                <Grid>
                                     <MolmakerTextField
                                         label="Job Name"
                                         value={jobName}
@@ -147,10 +147,10 @@ const AdvancedAnalysis = () => {
                                 <Divider />
                                 {/* Theory */}
                                 <Box>
-                                    <Grid item>
+                                    <Grid>
                                         <MolmakerSectionHeader text="Theory" />
                                     </Grid>
-                                    <Grid item sx={{ mb: 1 }}>
+                                    <Grid sx={{ mb: 1 }}>
                                         <MolmakerRadioGroup
                                             name="theoryType"
                                             value={theoryType}
@@ -169,7 +169,7 @@ const AdvancedAnalysis = () => {
                                             row
                                         />
                                     </Grid>
-                                    <Grid item>
+                                    <Grid>
                                         <MolmakerDropdown
                                             label="Theory Method"
                                             value={theory}
@@ -197,11 +197,11 @@ const AdvancedAnalysis = () => {
                                 <Divider />
                                 {/* Calculation parameters */}
                                 <Box>
-                                    <Grid item>
+                                    <Grid>
                                         <MolmakerSectionHeader text="Calculation Parameters" />
                                     </Grid>
                                     <Grid container spacing={2} sx={{ my: 2 }}>
-                                        <Grid item size={{ xs: 12, md: 6 }}>
+                                        <Grid size={{ xs: 12, md: 6 }}>
                                             <MolmakerDropdown
                                                 label="Calculation Type"
                                                 value={calculationType}
@@ -217,7 +217,7 @@ const AdvancedAnalysis = () => {
                                                 required
                                             />
                                         </Grid>
-                                        <Grid item size={{ xs: 12, md: 6 }}>
+                                        <Grid size={{ xs: 12, md: 6 }}>
                                             <MolmakerDropdown
                                                 label="Basis Set"
                                                 value={basisSet}
@@ -235,7 +235,7 @@ const AdvancedAnalysis = () => {
                                         </Grid>
                                     </Grid>
                                     <Grid container spacing={2}>
-                                        <Grid item size={{ xs: 12, md: 6 }}>
+                                        <Grid size={{ xs: 12, md: 6 }}>
                                             <MolmakerTextField
                                                 fullWidth
                                                 label="Charge"
@@ -251,7 +251,7 @@ const AdvancedAnalysis = () => {
                                                 required
                                             />
                                         </Grid>
-                                        <Grid item size={{ xs: 12, md: 6 }}>
+                                        <Grid size={{ xs: 12, md: 6 }}>
                                             <MolmakerDropdown
                                                 fullWidth
                                                 label="Multiplicity"
@@ -270,7 +270,7 @@ const AdvancedAnalysis = () => {
                                         </Grid>
                                     </Grid>
                                 </Box>
-                                <Grid item size={12}>
+                                <Grid size={12}>
                                     <Button
                                         type="submit"
                                         variant="contained"
@@ -287,7 +287,7 @@ const AdvancedAnalysis = () => {
                         </Box>
                     </Paper>
                 </Grid>
-                <Grid item size={{ xs: 12, md: 6 }}>
+                <Grid size={{ xs: 12, md: 6 }}>
           			<MolmakerMoleculePreview
 						data={molData}
 						format={molFormat}
