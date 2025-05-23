@@ -9,8 +9,8 @@ import {
 import { fetchJob } from '../services/api';
 import MolmakerPageTitle from '../MolmakerFormComponents/MolmakerPageTitle';
 import { MolmakerTextField } from '../MolmakerFormComponents';
-import MolmakerAlert from '../MolmakerFormComponents/MolmakerAlert';
 import MolmakerLoading from '../MolmakerFormComponents/MolmakerLoading';
+import NotFound from './NotFound';
 
 function ViewJob() {
   	const { getAccessTokenSilently } = useAuth0();
@@ -60,11 +60,7 @@ function ViewJob() {
 
 	if (!job) {
 		return (
-			<MolmakerAlert
-				text="Job not found. Please check the job ID and try again."
-				severity="error"
-				outline="error"
-			/>
+			<NotFound subject="Job" />
 		);
 	}
 

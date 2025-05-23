@@ -25,10 +25,12 @@ import {
     MolmakerRadioGroup,
     MolmakerMoleculePreview
 } from '../../MolmakerFormComponents'
+import MolmakerAlert from '../../MolmakerFormComponents/MolmakerAlert'
 
 const AdvancedAnalysis = () => {
     const { getAccessTokenSilently } = useAuth0();
 
+    const [error, setError] = useState<string | null>(null); // error state
     const [source, setSource] = useState<'upload' | 'library'>('upload');  
     const [molData, setMolData] = useState('');                    // raw xyz/pdb text
     const [molFormat, setMolFormat] = useState('xyz');
@@ -56,6 +58,7 @@ const AdvancedAnalysis = () => {
                 res = [ { structure_id: '', name: 'Select a molecule' }, ...res ];
                 setStructures(res);
             } catch (err) {
+                setError('Failed to fetch library. Please try again later.');
                 console.error('Failed to fetch library', err);
             }
         })();
@@ -73,6 +76,7 @@ const AdvancedAnalysis = () => {
             setUploadStructure(false);
         }
         setMolData('');
+        setError(null);
     };
 
     // Library select change
@@ -81,18 +85,22 @@ const AdvancedAnalysis = () => {
         setFile(null);
         setUploadStructure(false);
         setMolData('');
+        setError(null);
         if (selected_id) {
             try {
                 const token = await getAccessTokenSilently();
                 const pres = await fetch(`${import.meta.env.VITE_STORAGE_API_URL}/presigned/${selected_id}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
+                if (!pres.ok) throw new Error('Failed to get presigned URL');
                 const { url } = await pres.json();
                 const fileRes = await fetch(url);
+                if (!fileRes.ok) throw new Error('Failed to fetch structure file');
                 const xyz = await fileRes.text();
                 setMolData(xyz);
                 setMolFormat('xyz');
             } catch (err) {
+                setError('Failed to load structure. Please try again or select a different molecule.');
                 console.error('Failed to load structure', err);
             }
         }
@@ -110,6 +118,14 @@ const AdvancedAnalysis = () => {
                     <Paper elevation={3} sx={{ padding: 4 }}>
                         <Box component="form">
                             <Grid container direction="column" spacing={2}>
+                                {/* Error message */}
+                                {error && (
+                                    <MolmakerAlert
+                                        text={error}
+                                        severity="error"
+                                        outline="error"
+                                    />
+                                )}
                                 {/* required info */}
                                 <Grid>
                                     <MolmakerSectionHeader text="Required fields are marked with *"/>

@@ -23,6 +23,7 @@ import {
 import { multiplicityOptions } from '../../constants';
 import MolmakerPageTitle from '../../MolmakerFormComponents/MolmakerPageTitle';
 import MolmakerLoading from '../../MolmakerFormComponents/MolmakerLoading';
+import MolmakerAlert from '../../MolmakerFormComponents/MolmakerAlert';
 
 export default function StandardAnalysis() {
 	const navigate = useNavigate();
@@ -46,6 +47,7 @@ export default function StandardAnalysis() {
 	// library state
 	const [structures, setStructures] = useState([]);
 	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
 
 	// fetch library
 	useEffect(() => {
@@ -57,6 +59,7 @@ export default function StandardAnalysis() {
 				res = [{ structure_id: '', name: 'Select a molecule' }, ...res];
 				setStructures(res);
 			} catch (err) {
+				setError('Failed to fetch library. Please try again later.');
 				console.error('Failed to fetch library', err);
 			} finally {
 				setLoading(false);
@@ -68,6 +71,7 @@ export default function StandardAnalysis() {
 		setSource(newVal);
 		setSubmitAttempted(false);
 		setMolData('');
+		setError(null);
 
 		if (newVal === 'upload') {
 			setSelectedStructure('');
@@ -83,6 +87,7 @@ export default function StandardAnalysis() {
 		setMolData(text);
 		const ext = f.name.split('.').pop().toLowerCase();
 		setMolFormat(ext === 'pdb' ? 'pdb' : 'xyz');
+		setError(null);
 	};
 
 	const handleLibrarySelect = async (id) => {
@@ -90,6 +95,7 @@ export default function StandardAnalysis() {
 		setFile(null);
 		setUploadStructure(false);
 		setMolData('');
+		setError(null);
 
 		if (!id) return;
 
@@ -100,12 +106,15 @@ export default function StandardAnalysis() {
 				`${import.meta.env.VITE_STORAGE_API_URL}/presigned/${id}`,
 				{ headers: { Authorization: `Bearer ${token}` } }
 			);
+			if (!pres.ok) throw new Error('Failed to get presigned URL');
 			const { url } = await pres.json();
 			const fileRes = await fetch(url);
+			if (!fileRes.ok) throw new Error('Failed to fetch structure file');
 			const xyz = await fileRes.text();
 			setMolData(xyz);
 			setMolFormat('xyz');
 		} catch (err) {
+			setError('Failed to load structure. Please try again or select a different molecule.');
 			console.error('Failed to load structure', err);
 		} finally {
 			setLoading(false);
@@ -116,14 +125,17 @@ export default function StandardAnalysis() {
 		e.preventDefault();
 		setSubmitAttempted(true);
 		setLoading(true);
+		setError(null);
 		let structureIdToUse = selectedStructure;
 		let uploadFile = file;
 
 		if (source === 'upload' && !uploadFile) {
+			setError('Please upload a structure file.');
 			setLoading(false);
 			return;
 		}
 		if (source === 'library' && !structureIdToUse) {
+			setError('Please select a molecule from the library.');
 			setLoading(false);
 			return;
 		}
@@ -136,6 +148,7 @@ export default function StandardAnalysis() {
 		}
 
 		if (!uploadFile) {
+			setError('No file to upload.');
 			setLoading(false);
 			return;
 		}
@@ -182,6 +195,7 @@ export default function StandardAnalysis() {
 			if (!res2) throw new Error('Failed to add job');
 			navigate('/');
 		} catch (err) {
+			setError('Submit failed. Please check your input and try again.');
 			console.error('Submit failed:', err);
 		} finally {
 			setLoading(false);
@@ -205,6 +219,14 @@ export default function StandardAnalysis() {
           			<Paper elevation={3} sx={{ p: 4 }}>
             			<Box component="form" onSubmit={handleSubmitJob}>
 							<Grid container direction="column" spacing={2}>
+								{/* Error message */}
+								{error && (
+									<MolmakerAlert
+										text={error}
+										severity="error"
+										outline="error"
+									/>
+								)}
 								<Grid>
 									<MolmakerSectionHeader text="Required fields are marked with *" />
 								</Grid>

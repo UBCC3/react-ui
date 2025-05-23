@@ -29,6 +29,7 @@ import { fetchStructures } from "../services/api";
 import { blueGrey } from "@mui/material/colors";
 import { MolmakerMoleculePreview, MolmakerSectionHeader, MolmakerTextField } from "../MolmakerFormComponents";
 import MolmakerPageTitle from "../MolmakerFormComponents/MolmakerPageTitle";
+import MolmakerAlert from "../MolmakerFormComponents/MolmakerAlert";
 
 const MoleculeLibrary = () => {
 	const { getAccessTokenSilently } = useAuth0();
@@ -44,6 +45,7 @@ const MoleculeLibrary = () => {
 	const [savedMolecules, setSavedMolecules] = useState<Molecule[]>([]);
 	const [selectedStructure, setSelectedStructure] = useState("");
 	const [notes, setNotes] = useState("");
+	const [error, setError] = useState<string | null>(null);
 
 	const [page, setPage] = useState(0);
   	const [rowsPerPage, setRowsPerPage] = useState(5); 
@@ -60,7 +62,9 @@ const MoleculeLibrary = () => {
 		  const structs = await fetchStructures(token);
 		  setSavedMolecules(structs);
 		  setSelectedStructure("");
+		  setError(null);
 		} catch (err) {
+		  setError('Failed to refresh molecules. Please try again later.');
 		  console.error('Failed to refresh jobs', err);
 		}
 	};
@@ -68,14 +72,24 @@ const MoleculeLibrary = () => {
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 		setSubmitAttempted(true);
+		setError(null);
+		if (!file) {
+			setError('Please select a file to upload.');
+			return;
+		}
+		if (!name) {
+			setError('Please enter a name for the molecule.');
+			return;
+		}
 		try {
 			const token = await getAccessTokenSilently();
 			await submitStructure(file, name, token);
 			setFile(null);
 			setName("");
 			setMolData("");
-		}
-		catch (err) {
+			setError(null);
+		} catch (err) {
+			setError('Molecule submission failed. Please try again.');
 			console.error("Molecule submission failed", err);
 		}
 	}
@@ -83,16 +97,18 @@ const MoleculeLibrary = () => {
 	const openMoleculeViewer = async (structureId) => {
         try {
             const token = await getAccessTokenSilently();
-
             const res = await fetch(`${import.meta.env.VITE_STORAGE_API_URL}/presigned/${structureId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
+            if (!res.ok) throw new Error('Failed to get presigned URL');
             const { url } = await res.json();
-
             const fileRes = await fetch(url);
+            if (!fileRes.ok) throw new Error('Failed to fetch molecule file');
             const xyz = await fileRes.text();
             setMolData(xyz);
+            setError(null);
         } catch (err) {
+            setError('Failed to load molecule structure. Please try again.');
             console.error("Failed to load molecule structure:", err);
         }
     };
@@ -104,6 +120,7 @@ const MoleculeLibrary = () => {
 				const res = await fetchStructures(token);
 				setSavedMolecules(res);
 			} catch (err) {
+				setError('Failed to fetch molecules. Please try again later.');
 				console.error("Failed to fetch jobs", err);
 			}
 		}
@@ -123,6 +140,14 @@ const MoleculeLibrary = () => {
 					<Paper elevation={3} sx={{ padding: 4 }}>
 						<Box component="form">
 							<Grid container direction="column" spacing={2}>
+								{/* Error message */}
+								{error && (
+									<MolmakerAlert
+										text={error}
+										severity="error"
+										outline="error"
+									/>
+								)}
 								<MolmakerSectionHeader text="Required fields are marked with *" />
 								<Grid sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
 									<Button

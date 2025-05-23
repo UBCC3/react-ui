@@ -4,7 +4,6 @@ import {
 	Paper,
 	Divider,
 	TablePagination,
-	Alert,
 	Dialog,
 } from '@mui/material';
 import { blueGrey } from '@mui/material/colors';
@@ -19,6 +18,7 @@ import JobsToolbar from './components/JobsToolbar';
 import JobsTable from './components/JobsTable';
 import { MolmakerMoleculePreview } from '../../MolmakerFormComponents';
 import MolmakerLoading from '../../MolmakerFormComponents/MolmakerLoading';
+import MolmakerAlert from '../../MolmakerFormComponents/MolmakerAlert';
 
 export default function Home() {
 	const navigate = useNavigate();
@@ -43,7 +43,6 @@ export default function Home() {
 	// preview state
 	const [previewData, setPreviewData] = useState<string>('');
 	const [previewFormat, setPreviewFormat] = useState<'xyz' | 'pdb'>('xyz');
-	const [previewLoading, setPreviewLoading] = useState(false);
 
 	// sorting
 	const [order, setOrder] = useState<'asc' | 'desc'>('desc');
@@ -80,6 +79,7 @@ export default function Home() {
 
 	// load jobs & structures
 	useEffect(() => {
+		setLoading(true);
 		(async () => {
 			try {
 				const token = await getAccessTokenSilently();
@@ -102,7 +102,7 @@ export default function Home() {
 	// fetch preview structure when requested
 	useEffect(() => {
 		if (!viewStructureId) return;
-		setPreviewLoading(true);
+		setLoading(true);
 		setPreviewData('');
 		(async () => {
 			try {
@@ -118,18 +118,26 @@ export default function Home() {
 				console.error('Failed to load molecule preview:', err);
 				setError('Failed to load structure preview');
 			} finally {
-				setPreviewLoading(false);
+				setLoading(false);
 			}
 		})();
 	}, [viewStructureId]);
 
 	// filter jobs when structure filter changes
 	useEffect(() => {
-		const filtered = filterStructureId
-			? jobs.filter(job => job.structures.some(s => s.structure_id === filterStructureId))
-			: jobs;
-		setFilteredJobs(filtered);
-		setPage(0);
+		setLoading(true);
+		try {
+			const filtered = filterStructureId
+				? jobs.filter(job => job.structures.some(s => s.structure_id === filterStructureId))
+				: jobs;
+			setFilteredJobs(filtered);
+			setPage(0);
+		} catch (err) {
+			console.error('Failed to filter jobs:', err);
+			setError('Failed to filter jobs');
+		} finally {
+			setLoading(false);
+		}
 	}, [filterStructureId, jobs]);
 
 	const handleRefresh = async () => {
@@ -162,25 +170,24 @@ export default function Home() {
 	return (
 		<Box bgcolor="rgb(247, 249, 252)" p={4}>
 			{error && (
-				<Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>
-					{error}
-				</Alert>
+				<MolmakerAlert
+					text={error}
+					severity="error"
+					outline="error"
+					sx={{ mb: 4 }}
+				/>
 			)}
 			{/* Molecule Preview Dialog */}
 			<Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-					{previewLoading ? (
-						<MolmakerLoading />
-					) : (
-						<Box sx={{ width: '100%', height: 400 }}>
-							<MolmakerMoleculePreview
-								data={previewData}
-								format={previewFormat}
-								source="library"
-								title="Molecule Preview"
-								sx={{ width: '100%', height: '100%' }}
-							/>
-						</Box>
-					)}
+				<Box sx={{ width: '100%', height: 400 }}>
+					<MolmakerMoleculePreview
+						data={previewData}
+						format={previewFormat}
+						source="library"
+						title="Molecule Preview"
+						sx={{ width: '100%', height: '100%' }}
+					/>
+				</Box>
 			</Dialog>
 			<MolmakerPageTitle
 				title="Dashboard"

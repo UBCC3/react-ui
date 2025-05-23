@@ -1,5 +1,5 @@
 import React from 'react'
-import { Alert, Box } from '@mui/material'
+import { Alert } from '@mui/material'
 import PropTypes from 'prop-types'
 
 import type { AlertColor } from '@mui/material/Alert';
@@ -25,17 +25,15 @@ const MolmakerAlert: React.FC<MolmakerAlertProps> = ({
 	sx = {}
 }) => {
 	return (
-		<Box bgcolor={'rgb(247, 249, 252)'} p={4}>
-			<Alert 
-				severity={severity}
-				sx={{
-					outline: `1px solid ${colorMap[outline]}`,
-					...sx
-				}}
-			>
-				{text}
-			</Alert>
-		</Box>
+		<Alert 
+			severity={severity}
+			sx={{
+				outline: `1px solid ${colorMap[outline]}`,
+				...sx
+			}}
+		>
+			{text}
+		</Alert>
 	)
 }
 
