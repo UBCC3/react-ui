@@ -6,8 +6,6 @@ import {
 	Box,
 	Grid,
 	Button,
-	TextField,
-	Skeleton,
 	TableContainer,
 	Table,
 	TableHead,
@@ -20,7 +18,6 @@ import {
 	TablePagination,
 } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import MoleculeViewer from "../components/MoleculeViewer";
 import { useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { submitStructure } from "../services/api";
@@ -30,9 +27,12 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddToPhotosIcon from "@mui/icons-material/AddToPhotos";
 import { fetchStructures } from "../services/api";
 import { blueGrey } from "@mui/material/colors";
+import { MolmakerMoleculePreview, MolmakerSectionHeader, MolmakerTextField } from "../MolmakerFormComponents";
+import MolmakerPageTitle from "../MolmakerFormComponents/MolmakerPageTitle";
 
 const MoleculeLibrary = () => {
 	const { getAccessTokenSilently } = useAuth0();
+	const [submitAttempted, setSubmitAttempted] = useState(false);
 	const [file, setFile] = useState(null);
 	const [name, setName] = useState("");
 	const [molData, setMolData] = useState("");
@@ -62,10 +62,10 @@ const MoleculeLibrary = () => {
 
 	const handleSubmit = async (e) => {
 		e.preventDefault();
+		setSubmitAttempted(true);
 		try {
 			const token = await getAccessTokenSilently();
 			await submitStructure(file, name, token);
-			// Reset the form
 			setFile(null);
 			setName("");
 			setMolData("");
@@ -109,26 +109,16 @@ const MoleculeLibrary = () => {
 
   	return (
 		<Box bgcolor={'rgb(247, 249, 252)'} p={4}>
-			<Grid container sx={{ display: 'flex', alignItems: 'start', flexDirection: 'column', justifyContent: 'center' }}>
-				<Typography variant="h5" color="text.primary" sx={{ flexGrow: 1, mb: 2 }}>
-					Molecule Library
-				</Typography>
-				<Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
-					Upload and manage your molecules in the library.
-				</Typography>
-			</Grid>
-			<Divider sx={{ my: 3 }} />
+			<MolmakerPageTitle 
+				title="Molecule Library" 
+				subtitle="Upload and manage your molecules in the library." 
+			/>
 			<Grid container spacing={3}>
 				<Grid item size={{ xs: 12, md: 6 }}>
 					<Paper elevation={3} sx={{ padding: 4 }}>
 						<Box component="form">
 							<Grid container direction="column" spacing={2}>
-								{/* required info */}
-								<Grid item>
-									<Typography variant="body2" color="text.secondary">
-										Required fields are marked with *
-									</Typography>
-								</Grid>
+								<MolmakerSectionHeader text="Required fields are marked with *" />
 								<Grid item sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
 									<Button
 										variant="contained"
@@ -156,15 +146,19 @@ const MoleculeLibrary = () => {
 									</Button>
 								</Grid>
 								<Grid item>
-									<TextField
+									<MolmakerTextField
 										fullWidth
 										label="Name"
 										value={name}
 										onChange={(e) => setName(e.target.value)}
+										placeholder="Enter a name for the molecule"
+										error={submitAttempted && name === ""}
+										helperText={submitAttempted && name === "" ? "Name is required" : ""}
+										required
 									/>
 								</Grid>
 								<Grid item>
-									<TextField
+									<MolmakerTextField
 										fullWidth
 										label="Notes"
 										value={notes}
@@ -193,41 +187,18 @@ const MoleculeLibrary = () => {
 					</Paper>
 				</Grid>
 				<Grid item size={{ xs: 12, md: 6 }}>
-					<Paper
+					<MolmakerMoleculePreview
+						data={molData}
+						format={'xyz'}
 						sx={{
-						width: '100%',
-						height: '100%',
-						display: 'flex',
-						flexDirection: 'column'
+							width: '100%',
+							height: '100%',
+							borderColor: 'grey.300',
+							position: 'relative',
 						}}
-						elevation={2}
-					>
-						<Typography
-							variant="h6"
-							color="text.secondary"
-							sx={{ p: 2, bgcolor: blueGrey[200] }}
-						>
-							Molecule Preview
-						</Typography>
-						<Divider />
-						<Box
-							sx={{
-								height: '100%',
-								width: '100%',
-								borderColor: 'grey.300',
-								position: 'relative',
-							}}
-						>
-							{molData ? <MoleculeViewer data={molData} format={'mol'} /> : (
-								<Box display="flex" justifyContent="center" alignItems="center" height="100%">
-									<Skeleton variant="rectangular" width={'100%'} height={'100%'} />
-									<Typography variant="body2" color="text.secondary" sx={{ position: 'absolute' }}>
-										Upload a molecule to view
-									</Typography>
-								</Box>
-							)}
-						</Box>
-					</Paper>
+						loading={molData === ""}
+						loadingText="Upload a molecule to view"
+					/>
 				</Grid>
 			</Grid>
 			<Grid container spacing={3} sx={{ marginTop: 3 }}>

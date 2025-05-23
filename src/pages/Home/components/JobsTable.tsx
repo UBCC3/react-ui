@@ -18,6 +18,7 @@ export interface Job {
 	method: string;
 	basis_set: string;
 	structures: Array<{ structure_id: string; name: string }>;
+	slurm_id: string;
 	submitted_at: string;
 }
 
