@@ -22,7 +22,7 @@ import {
 	MolmakerMoleculePreview
 } from '../../MolmakerFormComponents'
 import { multiplicityOptions } from '../../constants';
-import PageTitle from '../../components/PageTitle';
+import MolmakerPageTitle from '../../MolmakerFormComponents/MolmakerPageTitle';
 
 export default function StandardAnalysis() {
 	const navigate = useNavigate();
@@ -188,7 +188,7 @@ export default function StandardAnalysis() {
 
 	return (
 		<Box bgcolor="rgb(247, 249, 252)" p={4}>
-			<PageTitle
+			<MolmakerPageTitle
 				title="Standard Analysis"
 				subtitle="Submit a job for standard analysis"
 			/>

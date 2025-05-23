@@ -16,7 +16,7 @@ import {
 import { useAuth0 } from '@auth0/auth0-react'
 import { fetchStructures } from '../../services/api'
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline'
-import PageTitle from '../../components/PageTitle'
+import MolmakerPageTitle from '../../MolmakerFormComponents/MolmakerPageTitle'
 import {
     MolmakerTextField,
     MolmakerDropdown,
@@ -101,7 +101,7 @@ const AdvancedAnalysis = () => {
 
     return (
         <Box bgcolor="rgb(247, 249, 252)" p={4}>
-            <PageTitle
+            <MolmakerPageTitle
                 title="Advanced Analysis"
                 subtitle="Submit a molecule for advanced analysis"
             />

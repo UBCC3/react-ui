@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import { fetchJobs, fetchStructures, updateStatus } from '../../services/api';
 import MoleculeViewerDialogue from '../../components/MoleculeViewerDialogue';
-import PageTitle from '../../components/PageTitle';
+import MolmakerPageTitle from '../../MolmakerFormComponents/MolmakerPageTitle';
 import { JobStatus } from '../../constants';
 import JobsStatus from './components/JobsStatus';
 import JobsToolbar from './components/JobsToolbar';
@@ -182,7 +182,7 @@ export default function Home() {
 				</Alert>
 			)}
 			<MoleculeViewerDialogue structure_id={viewStructure} open={open} setOpen={setOpen} />
-			<PageTitle
+			<MolmakerPageTitle
 				title="Dashboard"
 				subtitle={
 					<>

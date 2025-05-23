@@ -5,7 +5,7 @@ import {
 } from '@mui/material'
 import React from 'react'
 
-const PageTitle = ({ title, subtitle }) => {
+const MolmakerPageTitle = ({ title, subtitle }) => {
   	return (
 		<React.Fragment>
 			<Grid container sx={{ display: 'flex', alignItems: 'start', flexDirection: 'column', justifyContent: 'center' }}>
@@ -21,4 +21,4 @@ const PageTitle = ({ title, subtitle }) => {
   	)
 }
 
-export default PageTitle
+export default MolmakerPageTitle
