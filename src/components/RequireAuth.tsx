@@ -1,4 +1,3 @@
-// components/RequireAuth.jsx
 import { useAuth0 } from "@auth0/auth0-react";
 import { CircularProgress, Box } from "@mui/material";
 

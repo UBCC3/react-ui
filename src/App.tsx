@@ -9,21 +9,17 @@ import MenuDrawer from './components/MenuDrawer';
 import MoleculeLibrary from './pages/MoleculeLibrary';
 import AdvancedAnalysis from './pages/SubmitJob/AdvancedAnalysis';
 import MainContent from './components/MainContent';
-import { DrawerProvider } from './components/DrawerContext';   // ← NEW
-import { Box, CssBaseline, Toolbar } from '@mui/material';
+import { DrawerProvider } from './components/DrawerContext';
+import { Box, CssBaseline } from '@mui/material';
 
 function App() {
 	return (
 		<BrowserRouter>
-			<DrawerProvider>          {/* ← provides width & toggle to every child */}
+			<DrawerProvider>
 				<Box sx={{ display: 'flex' }}>
 					<CssBaseline />
-
-					{/* Drawer + AppBar no longer need props */}
 					<MenuDrawer />
 					<MenuAppBar />
-
-					{/* Main content resizes automatically */}
 					<MainContent>
 						<Routes>
 							<Route

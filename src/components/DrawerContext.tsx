@@ -1,10 +1,15 @@
-// DrawerContext.tsx ----------------------------------------------------------
-import { createContext, useContext, useState, useMemo, PropsWithChildren } from 'react';
+import { 
+	createContext, 
+	useContext, 
+	useState, 
+	useMemo, 
+	PropsWithChildren 
+} from 'react';
 
 type DrawerCtx = {
-	open: boolean;                  // is the drawer expanded?
-	width: number;                  // px, depends on `open`
-	toggle: () => void;             // call from any component
+	open: boolean
+	width: number;
+	toggle: () => void;
 };
 
 const defaultCtx: DrawerCtx = { open: true, width: 250, toggle: () => {} };

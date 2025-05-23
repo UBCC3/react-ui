@@ -69,9 +69,9 @@ function MenuAppBar() {
 							onClose={handleClose}
 							onClick={handleClose}
 						>
-							<MenuItem disabled>{user.name}</MenuItem>
+							<MenuItem disabled>{user?.name}</MenuItem>
 							<Divider />
-							<MenuItem onClick={() => logout({ returnTo: window.location.origin })}>
+							<MenuItem onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}>
 								<ListItemIcon>
 									<Logout fontSize="small" />
 								</ListItemIcon>

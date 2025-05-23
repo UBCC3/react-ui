@@ -18,6 +18,7 @@ import { TextField } from '@mui/material';
  * - multiline: bool
  * - rows: number (only if multiline)
  * - sx: object (optional styling overrides)
+ * - slotProps: object (optional props for TextField slots)
  */
 const MolmakerTextField = ({
 	label,
@@ -31,7 +32,8 @@ const MolmakerTextField = ({
 	fullWidth = true,
 	multiline = false,
 	rows = 1,
-	sx = {}
+	sx = {},
+	slotProps = {},
 }) => (
 	<TextField
 		label={label}
@@ -46,13 +48,14 @@ const MolmakerTextField = ({
 		multiline={multiline}
 		rows={multiline ? rows : undefined}
 		sx={sx}
+		slotProps={slotProps}
 	/>
 );
 
 MolmakerTextField.propTypes = {
 	label: PropTypes.string.isRequired,
 	value: PropTypes.any.isRequired,
-	onChange: PropTypes.func.isRequired,
+	onChange: PropTypes.func,
 	required: PropTypes.bool,
 	error: PropTypes.bool,
 	helperText: PropTypes.string,
@@ -61,7 +64,8 @@ MolmakerTextField.propTypes = {
 	fullWidth: PropTypes.bool,
 	multiline: PropTypes.bool,
 	rows: PropTypes.number,
-	sx: PropTypes.object
+	sx: PropTypes.object,
+	slotProps: PropTypes.object,
 };
 
 export default MolmakerTextField;
