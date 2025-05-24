@@ -10,15 +10,15 @@ import { blueGrey } from '@mui/material/colors';
 import { useNavigate } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import { fetchJobs, fetchStructures, updateStatus } from '../../services/api';
-import MolmakerPageTitle from '../../MolmakerFormComponents/MolmakerPageTitle';
+import MolmakerPageTitle from '../../components/custom/MolmakerPageTitle';
 import { JobStatus } from '../../constants';
-import { Job } from './components/JobsTable';
 import JobsStatus from './components/JobsStatus';
 import JobsToolbar from './components/JobsToolbar';
 import JobsTable from './components/JobsTable';
-import { MolmakerMoleculePreview } from '../../MolmakerFormComponents';
-import MolmakerLoading from '../../MolmakerFormComponents/MolmakerLoading';
-import MolmakerAlert from '../../MolmakerFormComponents/MolmakerAlert';
+import { MolmakerMoleculePreview } from '../../components/custom';
+import MolmakerLoading from '../../components/custom/MolmakerLoading';
+import MolmakerAlert from '../../components/custom/MolmakerAlert';
+import type { Job } from '../../types';
 
 export default function Home() {
 	const navigate = useNavigate();

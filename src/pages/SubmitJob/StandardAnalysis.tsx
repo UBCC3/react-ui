@@ -19,11 +19,11 @@ import {
     MolmakerMoleculeSelector,
 	MolmakerSectionHeader,
 	MolmakerMoleculePreview
-} from '../../MolmakerFormComponents'
+} from '../../components/custom'
 import { multiplicityOptions } from '../../constants';
-import MolmakerPageTitle from '../../MolmakerFormComponents/MolmakerPageTitle';
-import MolmakerLoading from '../../MolmakerFormComponents/MolmakerLoading';
-import MolmakerAlert from '../../MolmakerFormComponents/MolmakerAlert';
+import MolmakerPageTitle from '../../components/custom/MolmakerPageTitle';
+import MolmakerLoading from '../../components/custom/MolmakerLoading';
+import MolmakerAlert from '../../components/custom/MolmakerAlert';
 
 export default function StandardAnalysis() {
 	const navigate = useNavigate();

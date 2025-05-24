@@ -27,10 +27,10 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddToPhotosIcon from "@mui/icons-material/AddToPhotos";
 import { fetchStructures } from "../services/api";
 import { blueGrey } from "@mui/material/colors";
-import { MolmakerMoleculePreview, MolmakerSectionHeader, MolmakerTextField } from "../MolmakerFormComponents";
-import MolmakerPageTitle from "../MolmakerFormComponents/MolmakerPageTitle";
-import MolmakerAlert from "../MolmakerFormComponents/MolmakerAlert";
-import MolmakerLoading from "../MolmakerFormComponents/MolmakerLoading";
+import { MolmakerMoleculePreview, MolmakerSectionHeader, MolmakerTextField } from "../components/custom";
+import MolmakerPageTitle from "../components/custom/MolmakerPageTitle";
+import MolmakerAlert from "../components/custom/MolmakerAlert";
+import MolmakerLoading from "../components/custom/MolmakerLoading";
 import type { Molecule } from "../types";
 
 const MoleculeLibrary = () => {

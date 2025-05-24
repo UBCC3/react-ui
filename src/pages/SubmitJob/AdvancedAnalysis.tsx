@@ -16,7 +16,7 @@ import {
 import { useAuth0 } from '@auth0/auth0-react'
 import { fetchStructures } from '../../services/api'
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline'
-import MolmakerPageTitle from '../../MolmakerFormComponents/MolmakerPageTitle'
+import MolmakerPageTitle from '../../components/custom/MolmakerPageTitle'
 import {
     MolmakerTextField,
     MolmakerDropdown,
@@ -24,8 +24,8 @@ import {
     MolmakerSectionHeader,
     MolmakerRadioGroup,
     MolmakerMoleculePreview
-} from '../../MolmakerFormComponents'
-import MolmakerAlert from '../../MolmakerFormComponents/MolmakerAlert'
+} from '../../components/custom'
+import MolmakerAlert from '../../components/custom/MolmakerAlert'
 
 const AdvancedAnalysis = () => {
     const { getAccessTokenSilently } = useAuth0();

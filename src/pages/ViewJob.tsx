@@ -7,9 +7,9 @@ import {
 	Grid,
 } from '@mui/material';
 import { fetchJob } from '../services/api';
-import MolmakerPageTitle from '../MolmakerFormComponents/MolmakerPageTitle';
-import { MolmakerTextField } from '../MolmakerFormComponents';
-import MolmakerLoading from '../MolmakerFormComponents/MolmakerLoading';
+import MolmakerPageTitle from '../components/custom/MolmakerPageTitle';
+import { MolmakerTextField } from '../components/custom';
+import MolmakerLoading from '../components/custom/MolmakerLoading';
 import NotFound from './NotFound';
 import type { Job } from '../types';
 

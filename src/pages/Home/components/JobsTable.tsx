@@ -9,7 +9,7 @@ import {
 	Chip,
 	Box
 } from '@mui/material';
-import { ArrowUpwardOutlined, ArrowDownwardOutlined } from '@mui/icons-material';
+import { ArrowDropUpOutlined, ArrowDropDownOutlined } from '@mui/icons-material';
 import { statusColors } from '../../../constants';
 import { blueGrey } from '@mui/material/colors';
 import type { Job } from '../../../types';
@@ -73,14 +73,14 @@ export default function JobsTable({
 			sx={{ whiteSpace: 'nowrap', cursor: 'pointer' }}
 			onClick={() => onSort(column)}
 		>
-			<Box sx={{ display: 'flex', alignItems: 'center' }}>
+			<Box sx={{ display: 'flex', alignItems: 'bottom' }}>
 				{label}
 				{orderBy === column && (
-				<Box sx={{ ml: 0.5 }}>
+				<Box sx={{ ml: 1 }}>
 					{order === 'asc' ? (
-						<ArrowUpwardOutlined fontSize="small" color="primary" />
+						<ArrowDropUpOutlined color="primary" />
 					) : (
-						<ArrowDownwardOutlined fontSize="small" color="primary" />
+						<ArrowDropDownOutlined color="primary" />
 					)}
 				</Box>
 				)}
