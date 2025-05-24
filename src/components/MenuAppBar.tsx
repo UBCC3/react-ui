@@ -10,7 +10,7 @@ import { Avatar, Button, Divider, ListItemIcon } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
 import Logout from '@mui/icons-material/Logout';
 import { useDrawer } from './DrawerContext';
-import logo from '../assets/logo.svg';
+import logo from '../../public/logo.svg';
 
 
 function MenuAppBar() {
