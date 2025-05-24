@@ -51,15 +51,15 @@ export default function JobsTable({
 		let bVal: string | number = b[orderBy] as any;
 
 		if (orderBy === 'submitted_at') {
-		aVal = new Date(a.submitted_at).getTime();
-		bVal = new Date(b.submitted_at).getTime();
+			aVal = new Date(a.submitted_at).getTime();
+			bVal = new Date(b.submitted_at).getTime();
 		} else if (orderBy === 'structures') {
-		aVal = a.structures.length;
-		bVal = b.structures.length;
+			aVal = a.structures.length;
+			bVal = b.structures.length;
 		} else {
-		// coerce to lowercase for string compare
-		aVal = String(aVal).toLowerCase();
-		bVal = String(bVal).toLowerCase();
+			// coerce to lowercase for string compare
+			aVal = String(aVal).toLowerCase();
+			bVal = String(bVal).toLowerCase();
 		}
 
 		if (aVal < bVal) return order === 'asc' ? -1 : 1;
@@ -83,18 +83,18 @@ export default function JobsTable({
 			sx={{ whiteSpace: 'nowrap', cursor: 'pointer' }}
 			onClick={() => onSort(column)}
 		>
-		<Box sx={{ display: 'flex', alignItems: 'center' }}>
-			{label}
-			{orderBy === column && (
-			<Box sx={{ ml: 0.5 }}>
-				{order === 'asc' ? (
-					<ArrowUpwardOutlined fontSize="small" color="primary" />
-				) : (
-					<ArrowDownwardOutlined fontSize="small" color="primary" />
+			<Box sx={{ display: 'flex', alignItems: 'center' }}>
+				{label}
+				{orderBy === column && (
+				<Box sx={{ ml: 0.5 }}>
+					{order === 'asc' ? (
+						<ArrowUpwardOutlined fontSize="small" color="primary" />
+					) : (
+						<ArrowDownwardOutlined fontSize="small" color="primary" />
+					)}
+				</Box>
 				)}
 			</Box>
-			)}
-		</Box>
 		</TableCell>
 	);
 
