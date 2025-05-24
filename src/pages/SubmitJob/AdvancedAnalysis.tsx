@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { 
     Box, 
     Grid, 
@@ -14,91 +15,107 @@ import {
     multiplicityOptions,
 } from '../../constants'
 import { useAuth0 } from '@auth0/auth0-react'
-import { getLibraryStructures } from '../../services/api'
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline'
-import MolmakerPageTitle from '../../components/custom/MolmakerPageTitle'
 import {
+    MolmakerPageTitle,
     MolmakerTextField,
     MolmakerDropdown,
     MolmakerMoleculeSelector,
     MolmakerSectionHeader,
     MolmakerRadioGroup,
-    MolmakerMoleculePreview
+    MolmakerMoleculePreview,
+    MolmakerAlert,
+    MolmakerLoading
 } from '../../components/custom'
-import MolmakerAlert from '../../components/custom/MolmakerAlert'
+import { getLibraryStructures, getStructureDataFromS3 } from '../../services/api'
+import { Structure } from '../../types'
 
 const AdvancedAnalysis = () => {
+    const navigate = useNavigate();
     const { getAccessTokenSilently } = useAuth0();
 
-    const [error, setError] = useState<string | null>(null); // error state
-    const [source, setSource] = useState<'upload' | 'library'>('upload');  
-    const [molData, setMolData] = useState('');                    // raw xyz/pdb text
-    const [molFormat, setMolFormat] = useState('xyz');
-    const [jobName, setJobName] = useState('');                  // job name
-    const [submitAttempted, setSubmitAttempted] = useState(false); // flag to check if submit was attempted
-    const [file, setFile] = useState(null);                    // file to be uploaded
+    // state for user experience
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+    const [submitAttempted, setSubmitAttempted] = useState<boolean>(false);
 
-    const [selectedStructure, setSelectedStructure] = useState(''); // selected structure from library
-    const [uploadStructure, setUploadStructure] = useState(false); // flag to check if user wants to upload structure to library
-    const [moleculeName, setMoleculeName] = useState('');        // name of the molecule to be uploaded
-    const [charge, setCharge] = useState(0);                   // charge of the molecule
-    const [calculationType, setCalculationType] = useState('Molecular Energy'); // calculation type
-    const [multiplicity, setMultiplicity] = useState(1);       // multiplicity of the molecule
-    const [theoryType, setTheoryType] = useState('wavefunction');   // theory type
-    const [theory, setTheory] = useState('scf');      // theory method
-    const [basisSet, setBasisSet] = useState('sto-3g');        // basis set
-    const [structures, setStructures] = useState([]);
+    // state for molecule preview
+    const [structureData, setStructureData] = useState<string>('');
+
+    // state for form
+    const [jobName, setJobName] = useState<string>('');
+    const [source, setSource] = useState<'upload' | 'library'>('upload');  
+    const [file, setFile] = useState<File | null>(null);
+    const [uploadStructure, setUploadStructure] = useState<boolean>(false);
+    const [structures, setStructures] = useState<Structure[]>([]);
+    const [selectedStructure, setSelectedStructure] = useState<string>('');
+    const [structureName, setStructureName] = useState<string>('');
+    const [charge, setCharge] = useState<number>(0);
+    const [calculationType, setCalculationType] = useState<string>('Molecular Energy');
+    const [multiplicity, setMultiplicity] = useState<number>(1);
+    const [theoryType, setTheoryType] = useState('wavefunction');
+    const [theory, setTheory] = useState<string>('scf');
+    const [basisSet, setBasisSet] = useState<string>('sto-3g');
 
     // Load library on mount
     useEffect(() => {
-        (async () => {
+        const loadLibrary = async () => {
             try {
                 const token = await getAccessTokenSilently();
                 let res = await getLibraryStructures(token);
-                res = [ { structure_id: '', name: 'Select a molecule' }, ...res ];
+                res = [{
+                    structure_id: '',
+                    name: 'Select a molecule',
+                    user_sub: '',
+                    location: ''
+                }, ...res ];
                 setStructures(res);
             } catch (err) {
                 setError('Failed to fetch library. Please try again later.');
                 console.error('Failed to fetch library', err);
+            } finally {
+                setLoading(false);
             }
-        })();
+        }
+
+        setLoading(true);
+        loadLibrary();
     }, [getAccessTokenSilently]);
 
 
     // Handle switching between upload / library
-    const handleSourceChange = (source) => {
+    const handleSourceChange = (source: 'upload' | 'library') => {
         setSource(source);
         setSubmitAttempted(false);
+
         if (source === 'upload') {
             setSelectedStructure('');
         } else {
             setFile(null);
             setUploadStructure(false);
         }
-        setMolData('');
+
+        setStructureData('');
         setError(null);
     };
 
     // Library select change
-    const handleLibrarySelect = async (selected_id) => {
-        setSelectedStructure(selected_id);
+    const handleLibrarySelect = async (selected_structure_id: string) => {
+        setSelectedStructure(selected_structure_id);
         setFile(null);
         setUploadStructure(false);
-        setMolData('');
+        setStructureData('');
         setError(null);
-        if (selected_id) {
+
+        if (selected_structure_id) {
             try {
                 const token = await getAccessTokenSilently();
-                const pres = await fetch(`${import.meta.env.VITE_STORAGE_API_URL}/presigned/${selected_id}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (!pres.ok) throw new Error('Failed to get presigned URL');
-                const { url } = await pres.json();
-                const fileRes = await fetch(url);
-                if (!fileRes.ok) throw new Error('Failed to fetch structure file');
-                const xyz = await fileRes.text();
-                setMolData(xyz);
-                setMolFormat('xyz');
+                const structureData = await getStructureDataFromS3(selected_structure_id, token);
+                if (!structureData) {
+                    setError('Failed to load structure. Please try again or select a different molecule.');
+                    return;
+                }
+                setStructureData(structureData);
             } catch (err) {
                 setError('Failed to load structure. Please try again or select a different molecule.');
                 console.error('Failed to load structure', err);
@@ -106,6 +123,64 @@ const AdvancedAnalysis = () => {
         }
     };
 
+    const handleSubmitJob = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setSubmitAttempted(true);
+        setError(null);
+
+        let structureIdToUse = selectedStructure;
+        let uploadFile = file;
+
+        if (!jobName || !structureData || !theory || !calculationType || !basisSet || !charge || !multiplicity) {
+            setError('Please fill in all required fields');
+            return;
+        }
+        if (source === 'upload' && !file) {
+            setError('Please upload a file');
+            return;
+        }
+        if (source === 'library' && !structureIdToUse) {
+            setError('Please select a molecule from the library');
+            return;
+        }
+
+        if (source === 'library') {
+			const blob = new Blob([structureData], { type: 'text/plain' });
+			uploadFile = new File([blob], `${structureIdToUse}.xyz`, {
+				type: 'text/plain'
+			});
+		}
+
+		if (!uploadFile) {
+			setError('No file to upload.');
+			setLoading(false);
+			return;
+		}
+
+        const formData = new FormData();
+        formData.append('file', uploadFile);
+        formData.append('charge', charge.toString());
+        formData.append('multiplicity', multiplicity.toString());
+        formData.append('theory', theory);
+        formData.append('calculation_type', calculationType);
+        formData.append('basis_set', basisSet);
+
+        setLoading(true);
+        try {
+            navigate('/');
+        } catch (err) {
+            setError('Failed to submit job. Please try again later.');
+            console.error('Failed to submit job', err);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    if (loading) {
+		return (
+			<MolmakerLoading />
+		);
+	}
 
     return (
         <Box bgcolor="rgb(247, 249, 252)" p={4}>
@@ -116,7 +191,7 @@ const AdvancedAnalysis = () => {
             <Grid container spacing={3}>
                 <Grid size={{ xs: 12, md: 6 }}>
                     <Paper elevation={3} sx={{ padding: 4 }}>
-                        <Box component="form">
+                        <Box component="form" onSubmit={handleSubmitJob}>
                             <Grid container direction="column" spacing={2}>
                                 {/* Error message */}
                                 {error && (
@@ -135,7 +210,7 @@ const AdvancedAnalysis = () => {
                                     <MolmakerTextField
                                         label="Job Name"
                                         value={jobName}
-                                        onChange={e => setJobName(e.target.value)}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setJobName(e.target.value)}
                                         required
                                         error={submitAttempted && !jobName}
                                         helperText={submitAttempted && !jobName ? 'Please enter a job name': undefined}
@@ -150,14 +225,14 @@ const AdvancedAnalysis = () => {
                                     selectedStructure={selectedStructure}
                                     onLibrarySelect={handleLibrarySelect}
                                     file={file}
-                                    onFileChange={(text, f) => {
-                                        setMolData(text);
-                                        setFile(f);
+                                    onFileChange={(data: string, file: File) => {
+                                        setStructureData(data);
+                                        setFile(file);
                                     }}
                                     uploadStructure={uploadStructure}
                                     onUploadStructureChange={setUploadStructure}
-                                    moleculeName={moleculeName}
-                                    onMoleculeNameChange={e => setMoleculeName(e.target.value)}
+                                    moleculeName={structureName}
+                                    onMoleculeNameChange={(e: React.ChangeEvent<HTMLInputElement>) => setStructureName(e.target.value)}
                                     submitAttempted={submitAttempted}
                                 />
                                 <Divider />
@@ -170,9 +245,9 @@ const AdvancedAnalysis = () => {
                                         <MolmakerRadioGroup
                                             name="theoryType"
                                             value={theoryType}
-                                            onChange={(e, newVal) => {
-                                                setTheoryType(newVal);
-                                                if (newVal === 'density') {
+                                            onChange={(event: unknown, theory: string) => {
+                                                setTheoryType(theory);
+                                                if (theory === 'density') {
                                                     setTheory(densityTheory[0].toLowerCase());
                                                 } else {
                                                     setTheory(Object.values(wavefunctionTheory)[0]);
@@ -189,7 +264,7 @@ const AdvancedAnalysis = () => {
                                         <MolmakerDropdown
                                             label="Theory Method"
                                             value={theory}
-                                            onChange={(e) => setTheory(e.target.value)}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTheory(e.target.value)}
                                             options={theoryType === 'density' ? 
                                                 densityTheory
                                                     .map(theory => ({
@@ -221,7 +296,7 @@ const AdvancedAnalysis = () => {
                                             <MolmakerDropdown
                                                 label="Calculation Type"
                                                 value={calculationType}
-                                                onChange={(e) => setCalculationType(e.target.value)}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>)  => setCalculationType(e.target.value)}
                                                 options={calculationTypes
                                                     .map(type => ({
                                                         label: type,
@@ -237,7 +312,7 @@ const AdvancedAnalysis = () => {
                                             <MolmakerDropdown
                                                 label="Basis Set"
                                                 value={basisSet}
-                                                onChange={(e) => setBasisSet(e.target.value)}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBasisSet(e.target.value)}
                                                 options={basisSets
                                                     .map(basis => ({
                                                         label: basis,
@@ -257,10 +332,10 @@ const AdvancedAnalysis = () => {
                                                 label="Charge"
                                                 type="number"
                                                 value={charge}
-                                                onChange={e => {
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                                     const val = e.target.value;
                                                     if (/^-?\d*$/.test(val)) {
-                                                        setCharge(val);
+                                                        setCharge(parseInt(val));
                                                     }
                                                 }}
                                                 helperText={submitAttempted && !charge ? 'Please enter a charge' : undefined}
@@ -272,7 +347,7 @@ const AdvancedAnalysis = () => {
                                                 fullWidth
                                                 label="Multiplicity"
                                                 value={multiplicity}
-                                                onChange={(e) => setMultiplicity(e.target.value)}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMultiplicity(parseInt(e.target.value))}
                                                 options={Object.entries(multiplicityOptions)
                                                     .map(([key, value]) => ({
                                                         label: key,
@@ -305,8 +380,8 @@ const AdvancedAnalysis = () => {
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
           			<MolmakerMoleculePreview
-						data={molData}
-						format={molFormat}
+						data={structureData}
+						format='xyz'
 						source={source}
                         sx={{ maxHeight: 437 }}
 					/>

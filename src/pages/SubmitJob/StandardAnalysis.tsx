@@ -10,53 +10,65 @@ import {
 	Tooltip,
 	IconButton
 } from '@mui/material';
-import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
-import InfoOutlineIcon from '@mui/icons-material/InfoOutlined';
-import { addjob, getLibraryStructures, submitStructure } from '../../services/api';
+import {
+	PlayCircleOutlineOutlined,
+	InfoOutline,
+} from '@mui/icons-material';
 import {
     MolmakerTextField,
     MolmakerDropdown,
     MolmakerMoleculeSelector,
 	MolmakerSectionHeader,
-	MolmakerMoleculePreview
+	MolmakerMoleculePreview,
+	MolmakerLoading,
+	MolmakerAlert,
+	MolmakerPageTitle
 } from '../../components/custom'
+import { 
+	addjob, 
+	getLibraryStructures, 
+	getStructureDataFromS3, 
+	submitStructure,
+} from '../../services/api';
 import { multiplicityOptions } from '../../constants';
-import MolmakerPageTitle from '../../components/custom/MolmakerPageTitle';
-import MolmakerLoading from '../../components/custom/MolmakerLoading';
-import MolmakerAlert from '../../components/custom/MolmakerAlert';
+import { Structure } from '../../types';
 
 export default function StandardAnalysis() {
 	const navigate = useNavigate();
 	const { getAccessTokenSilently } = useAuth0();
 
-	// form state
-	const [jobName, setJobName] = useState('');
+	// state for user experience
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+    const [submitAttempted, setSubmitAttempted] = useState<boolean>(false);
+
+	// state for molecule preview
+    const [structureData, setStructureData] = useState<string>('');
+
+	// state for form
+    const [jobName, setJobName] = useState<string>('');
     const [source, setSource] = useState<'upload' | 'library'>('upload');  
-	const [submitAttempted, setSubmitAttempted] = useState(false);
-	const [uploadStructure, setUploadStructure] = useState(false);
-	const [moleculeName, setMoleculeName] = useState('');
-
-	const [file, setFile] = useState<File | null>(null);
-	const [selectedStructure, setSelectedStructure] = useState('');
-	const [molData, setMolData] = useState('');
-	const [molFormat, setMolFormat] = useState('xyz');
-
-	const [charge, setCharge] = useState<number>(0);
-	const [multiplicity, setMultiplicity] = useState<number>(1);
-
-	// library state
-	const [structures, setStructures] = useState([]);
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState<string | null>(null);
+    const [file, setFile] = useState<File | null>(null);
+    const [uploadStructure, setUploadStructure] = useState<boolean>(false);
+    const [structures, setStructures] = useState<Structure[]>([]);
+    const [selectedStructure, setSelectedStructure] = useState<string>('');
+    const [structureName, setStructureName] = useState<string>('');
+    const [charge, setCharge] = useState<number>(0);
+    const [multiplicity, setMultiplicity] = useState<number>(1);
 
 	// fetch library
 	useEffect(() => {
-		(async () => {
+		const loadLibraryStructures = async () => {
 			try {
 				setLoading(true);
 				const token = await getAccessTokenSilently();
 				let res = await getLibraryStructures(token);
-				res = [{ structure_id: '', name: 'Select a molecule' }, ...res];
+				res = [{ 
+					structure_id: '',
+					name: 'Select a molecule',
+					user_sub: '',
+					location: '',
+				}, ...res];
 				setStructures(res);
 			} catch (err) {
 				setError('Failed to fetch library. Please try again later.');
@@ -64,55 +76,53 @@ export default function StandardAnalysis() {
 			} finally {
 				setLoading(false);
 			}
-		})();
+		}
+
+		setLoading(true);
+		loadLibraryStructures();
 	}, [getAccessTokenSilently]);
 
-	const handleSourceChange = (newVal) => {
-		setSource(newVal);
-		setSubmitAttempted(false);
-		setMolData('');
-		setError(null);
+	// Handle switching between upload / library
+    const handleSourceChange = (source: 'upload' | 'library') => {
+        setSource(source);
+        setSubmitAttempted(false);
 
-		if (newVal === 'upload') {
-			setSelectedStructure('');
-		} else {
-			setFile(null);
-			setUploadStructure(false);
-		}
-	};
+        if (source === 'upload') {
+            setSelectedStructure('');
+        } else {
+            setFile(null);
+            setUploadStructure(false);
+        }
+
+        setStructureData('');
+        setError(null);
+    };
 
 	const handleFileChange = async (text, f) => {
 		setFile(f);
 		setSelectedStructure('');
-		setMolData(text);
-		const ext = f.name.split('.').pop().toLowerCase();
-		setMolFormat(ext === 'pdb' ? 'pdb' : 'xyz');
+		setStructureData(text);
 		setError(null);
 	};
 
-	const handleLibrarySelect = async (id) => {
-		setSelectedStructure(id);
+	const handleLibrarySelect = async (structure_id: string) => {
+		setSelectedStructure(structure_id);
 		setFile(null);
 		setUploadStructure(false);
-		setMolData('');
+		setStructureData('');
 		setError(null);
 
-		if (!id) return;
+		if (!structure_id) return;
 
 		try {
 			setLoading(true);
 			const token = await getAccessTokenSilently();
-			const pres = await fetch(
-				`${import.meta.env.VITE_STORAGE_API_URL}/presigned/${id}`,
-				{ headers: { Authorization: `Bearer ${token}` } }
-			);
-			if (!pres.ok) throw new Error('Failed to get presigned URL');
-			const { url } = await pres.json();
-			const fileRes = await fetch(url);
-			if (!fileRes.ok) throw new Error('Failed to fetch structure file');
-			const xyz = await fileRes.text();
-			setMolData(xyz);
-			setMolFormat('xyz');
+			const structureData = await getStructureDataFromS3(structure_id, token);
+			if (!structureData) {
+				setError('Failed to load structure. Please try again or select a different molecule.');
+				return;
+			}
+			setStructureData(structureData);
 		} catch (err) {
 			setError('Failed to load structure. Please try again or select a different molecule.');
 			console.error('Failed to load structure', err);
@@ -121,11 +131,11 @@ export default function StandardAnalysis() {
 		}
 	};
 
-  	const handleSubmitJob = async (e) => {
+  	const handleSubmitJob = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		setSubmitAttempted(true);
-		setLoading(true);
 		setError(null);
+
 		let structureIdToUse = selectedStructure;
 		let uploadFile = file;
 
@@ -141,8 +151,8 @@ export default function StandardAnalysis() {
 		}
 
 		if (source === 'library') {
-			const blob = new Blob([molData], { type: 'text/plain' });
-			uploadFile = new File([blob], `${structureIdToUse}.${molFormat}`, {
+			const blob = new Blob([structureData], { type: 'text/plain' });
+			uploadFile = new File([blob], `${structureIdToUse}.xyz`, {
 				type: 'text/plain'
 			});
 		}
@@ -159,14 +169,15 @@ export default function StandardAnalysis() {
 		formData.append('charge', charge.toString());
 		formData.append('multiplicity', multiplicity.toString());
 
+		setLoading(true);
 		try {
 			const token = await getAccessTokenSilently();
 			const res = await fetch(
 				`${import.meta.env.VITE_API_URL}/upload_submit`,
 				{
-				method: 'POST',
-				headers: { Authorization: `Bearer ${token}` },
-				body: formData
+					method: 'POST',
+					headers: { Authorization: `Bearer ${token}` },
+					body: formData
 				}
 			);
 			if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -177,7 +188,7 @@ export default function StandardAnalysis() {
 			if (uploadStructure && source === 'upload') {
 				const resStruct = await submitStructure(
 					uploadFile,
-					moleculeName,
+					structureName,
 					token
 				);
 				if (resStruct && resStruct.status === 200) {
@@ -232,73 +243,83 @@ export default function StandardAnalysis() {
 										outline="error"
 									/>
 								)}
+								{/* Info message */}
 								<Grid>
 									<MolmakerSectionHeader text="Required fields are marked with *" />
 								</Grid>
+								{/* Job name */}
 								<Grid>
 									<MolmakerTextField
 										label="Job Name"
 										value={jobName}
-										onChange={e => setJobName(e.target.value)}
+										onChange={(e: React.ChangeEvent<HTMLInputElement>) => setJobName(e.target.value)}
 										required
 										error={submitAttempted && !jobName}
 										helperText={submitAttempted && !jobName ? 'Please enter a job name' : ''}
 									/>
 								</Grid>
 								<Divider />
-								<Grid>
-									<MolmakerMoleculeSelector
-										source={source as 'upload' | 'library'}
-										onSourceChange={handleSourceChange}
-										structures={structures}
-										selectedStructure={selectedStructure}
-										onLibrarySelect={handleLibrarySelect}
-										file={file}
-										onFileChange={handleFileChange}
-										uploadStructure={uploadStructure}
-										onUploadStructureChange={setUploadStructure}
-										moleculeName={moleculeName}
-										onMoleculeNameChange={e => setMoleculeName(e.target.value)}
-										submitAttempted={submitAttempted}
-									/>
-								</Grid>
+								{/* Molecule selector */}
+								<MolmakerMoleculeSelector
+									source={source as 'upload' | 'library'}
+									onSourceChange={handleSourceChange}
+									structures={structures}
+									selectedStructure={selectedStructure}
+									onLibrarySelect={handleLibrarySelect}
+									file={file}
+									onFileChange={handleFileChange}
+									uploadStructure={uploadStructure}
+									onUploadStructureChange={setUploadStructure}
+									moleculeName={structureName}
+									onMoleculeNameChange={(e: React.ChangeEvent<HTMLInputElement>) => setStructureName(e.target.value)}
+									submitAttempted={submitAttempted}
+								/>
 								<Divider />
-								<Grid container spacing={2}>
-									<Grid size={{ xs: 12, md: 6 }}>
-										<MolmakerTextField
-											label="Charge"
-											type="number"
-											value={charge}
-											onChange={e => {
-												const val = e.target.value;
-												if (/^-?\d*$/.test(val)) setCharge(val);
-											}}
-											required
-											helperText={submitAttempted && !charge ? 'Please enter a charge' : ''}
-										/>
+								{/* Calculation parameters */}
+								<Box>
+									<Grid>
+										<MolmakerSectionHeader text="Calculation Parameters" />
 									</Grid>
-									<Grid size={{ xs: 12, md: 6 }}>
-										<MolmakerDropdown
-											label="Multiplicity"
-											value={multiplicity}
-											onChange={e => setMultiplicity(e.target.value)}
-											options={Object.entries(multiplicityOptions)
-												.map(([key, value]) => ({
-													label: key,
-													value: value
-												})
-											)}
-											required
-										/>
+									<Grid container spacing={2} sx={{ mt: 2 }}>
+										<Grid size={{ xs: 12, md: 6 }}>
+											<MolmakerTextField
+												label="Charge"
+												type="number"
+												value={charge}
+												onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+													const val = e.target.value;
+													if (/^-?\d*$/.test(val)) {
+														setCharge(parseInt(val));
+													}
+												}}
+												required
+												helperText={submitAttempted && !charge ? 'Please enter a charge' : ''}
+											/>
+										</Grid>
+										<Grid size={{ xs: 12, md: 6 }}>
+											<MolmakerDropdown
+												label="Multiplicity"
+												value={multiplicity}
+												onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMultiplicity(parseInt(e.target.value))}
+												options={Object.entries(multiplicityOptions)
+													.map(([key, value]) => ({
+														label: key,
+														value: value
+													})
+												)}
+												required
+											/>
+										</Grid>
 									</Grid>
-								</Grid>
+								</Box>
+								{/* Submit button */}
 								<Grid size={12}>
 									<Box display="flex" alignItems="center" gap={1}>
 										<Button
 											type="submit"
 											variant="contained"
 											size="large"
-											startIcon={<PlayCircleOutlineIcon />}
+											startIcon={<PlayCircleOutlineOutlined />}
 											fullWidth
 											sx={{ textTransform: 'none' }}
 										>
@@ -306,7 +327,7 @@ export default function StandardAnalysis() {
 										</Button>
 										<Tooltip title="This will run a three step calculation: Geometry Optimization, Vibrational Frequency Analysis, and Molecular Orbital Analysis.">
 											<IconButton>
-												<InfoOutlineIcon />
+												<InfoOutline />
 											</IconButton>
 										</Tooltip>
 									</Box>
@@ -317,8 +338,8 @@ export default function StandardAnalysis() {
         		</Grid>
 				<Grid size={{ xs: 12, md: 6 }}>
           			<MolmakerMoleculePreview
-						data={molData}
-						format={molFormat}
+						data={structureData}
+						format='xyz'
 						source={source}
 					/>
         		</Grid>

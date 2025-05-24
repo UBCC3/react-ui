@@ -70,6 +70,7 @@ const MoleculeLibrary = () => {
 			const token = await getAccessTokenSilently();
 			const structures = await getLibraryStructures(token);
 			setLibraryStructures(structures);
+			setFilteredStructures(structures);
 			setSelectedStructureId("");
 			setError(null);
 		} catch (err) {
@@ -110,6 +111,7 @@ const MoleculeLibrary = () => {
 			// Refresh the library after successful submission
 			const structures = await getLibraryStructures(token);
 			setLibraryStructures(structures);
+			setFilteredStructures(structures);
 
 			// Reset form state
 			setUploadedFile(null);
@@ -169,6 +171,7 @@ const MoleculeLibrary = () => {
 				const token = await getAccessTokenSilently();
 				const structures = await getLibraryStructures(token);
 				setLibraryStructures(structures);
+				setFilteredStructures(structures);
 			} catch (err) {
 				setError('Failed to fetch molecules. Please try again later.');
 				console.error("Failed to fetch jobs", err);
@@ -209,17 +212,18 @@ const MoleculeLibrary = () => {
 
 	const onSort = (column: keyof Structure) => {
 		const isAsc = orderBy === column && order === 'asc';
-		setOrder(isAsc ? 'desc' : 'asc');
+		const newOrder = isAsc ? 'desc' : 'asc';
+		setOrder(newOrder);
 		setOrderBy(column);
-		libraryStructures.sort((a, b) => {
+		const sorted = [...filteredStructures].sort((a, b) => {
 			const aValue = a[column];
 			const bValue = b[column];
 			if (typeof aValue === 'string' && typeof bValue === 'string') {
-				return isAsc ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+				return newOrder === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
 			}
-			return isAsc ? (aValue < bValue ? -1 : 1) : (aValue > bValue ? -1 : 1);
+			return newOrder === 'asc' ? (aValue < bValue ? -1 : 1) : (aValue > bValue ? -1 : 1);
 		});
-		setFilteredStructures([...libraryStructures]);
+		setFilteredStructures(sorted);
 	};
 
   	return (
@@ -350,7 +354,7 @@ const MoleculeLibrary = () => {
 									</TableRow>
 								</TableHead>
 								<TableBody>
-									{libraryStructures.length === 0 && (
+									{filteredStructures.length === 0 && (
 										<TableRow>
 											<TableCell colSpan={3} align="center">
 												<Typography variant="body2" color="text.secondary">
@@ -359,7 +363,7 @@ const MoleculeLibrary = () => {
 											</TableCell>
 										</TableRow>
 									)}
-									{libraryStructures.map((molecule) => (
+									{filteredStructures.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((molecule) => (
 										<TableRow 
 											key={molecule.structure_id} 
 											onClick={() => {

@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useAuth0 } from '@auth0/auth0-react';
+import { useNavigate } from 'react-router-dom';
 import {
 	Box,
 	Paper,
@@ -7,18 +9,24 @@ import {
 	Dialog,
 } from '@mui/material';
 import { blueGrey } from '@mui/material/colors';
-import { useNavigate } from 'react-router-dom';
-import { useAuth0 } from '@auth0/auth0-react';
-import { fetchJobs, getLibraryStructures, updateStatus } from '../../services/api';
-import MolmakerPageTitle from '../../components/custom/MolmakerPageTitle';
+import { 
+	getAllJobs, 
+	getJobStatusBySlurmID, 
+	getLibraryStructures, 
+	getStructureDataFromS3, 
+	updateStatus,
+} from '../../services/api';
 import { JobStatus } from '../../constants';
 import JobsStatus from './components/JobsStatus';
 import JobsToolbar from './components/JobsToolbar';
 import JobsTable from './components/JobsTable';
-import { MolmakerMoleculePreview } from '../../components/custom';
-import MolmakerLoading from '../../components/custom/MolmakerLoading';
-import MolmakerAlert from '../../components/custom/MolmakerAlert';
-import type { Job } from '../../types';
+import {
+	MolmakerPageTitle,
+	MolmakerMoleculePreview, 
+	MolmakerLoading, 
+	MolmakerAlert
+} from '../../components/custom';
+import type { Job, Structure } from '../../types';
 
 export default function Home() {
 	const navigate = useNavigate();
@@ -26,23 +34,21 @@ export default function Home() {
 
 	// data state
 	const [jobs, setJobs] = useState<Job[]>([]);
-	const [structures, setStructures] = useState<{ structure_id: string; name: string }[]>([]);
+	const [structures, setStructures] = useState<Structure[]>([]);
 
 	// UI state
 	const [error, setError] = useState<string | null>(null);
-	const [open, setOpen] = useState(false);
-	const [page, setPage] = useState(0);
-	const [rowsPerPage, setRowsPerPage] = useState(5);
-	const [loading, setLoading] = useState(true);
+	const [open, setOpen] = useState<boolean>(false);
+	const [page, setPage] = useState<number>(0);
+	const [rowsPerPage, setRowsPerPage] = useState<number>(5);
+	const [loading, setLoading] = useState<boolean>(true);
 
 	// selection
 	const [selectedJobId, setSelectedJobId] = useState<string>('');
 	const [filterStructureId, setFilterStructureId] = useState<string>('');
-	const [viewStructureId, setViewStructureId] = useState<string>('');
 
 	// preview state
 	const [previewData, setPreviewData] = useState<string>('');
-	const [previewFormat, setPreviewFormat] = useState<'xyz' | 'pdb'>('xyz');
 
 	// sorting
 	const [order, setOrder] = useState<'asc' | 'desc'>('desc');
@@ -60,68 +66,54 @@ export default function Home() {
 			for (const job of jobsRef.current) {
 				if (![JobStatus.COMPLETED, JobStatus.FAILED].includes(job.status)) {
 					try {
-						const res = await fetch(`${import.meta.env.VITE_API_URL}/status/${job.slurm_id}`);
-						const data = await res.json();
-						const newStatus = data.state.toLowerCase();
+						const newStatus = await getJobStatusBySlurmID(job.slurm_id as string);
+						if (newStatus === job.status) continue;
 						await updateStatus(job.job_id, newStatus, token);
 						setJobs(prev => prev.map(j =>
-							j.job_id === job.job_id ? { ...j, status: newStatus } : j
+							j.job_id === job.job_id ? { ...j, status: newStatus as string } : j
 						));
 					} catch (err) {
-						console.error('Status check failed:', err);
 						setError('Failed to update job status');
+						console.error('Status check failed:', err);
 					}
 				}
 			}
 		}, 5000);
+
 		return () => clearInterval(interval);
-	}, [getAccessTokenSilently]);
+	}, []);
 
 	// load jobs & structures
 	useEffect(() => {
-		setLoading(true);
-		(async () => {
+		const loadData = async () => {
 			try {
 				const token = await getAccessTokenSilently();
-				const [jobsRes, structsRes] = await Promise.all([
-					fetchJobs(token), getLibraryStructures(token)
+				const [allJobs, allStructures] = await Promise.all([
+					getAllJobs(token),
+					getLibraryStructures(token)
 				]);
-				setJobs(jobsRes);
-				setFilteredJobs(jobsRes);
-				const sorted = structsRes.sort((a, b) => a.name.localeCompare(b.name));
-				setStructures([{ structure_id: '', name: 'All' }, ...sorted]);
-			} catch (err) {
-				console.error('Failed to load data', err);
-				setError('Failed to load data');
-			} finally {
-				setLoading(false);
-			}
-		})();
-	}, [getAccessTokenSilently]);
+				
+				setJobs(allJobs);
+				setFilteredJobs(allJobs);
 
-	// fetch preview structure when requested
-	useEffect(() => {
-		if (!viewStructureId) return;
-		setLoading(true);
-		setPreviewData('');
-		(async () => {
-			try {
-				const res = await fetch(
-					`${import.meta.env.VITE_STORAGE_API_URL}/presigned/${viewStructureId}`
-				);
-				const { url } = await res.json();
-				const fileRes = await fetch(url);
-				const text = await fileRes.text();
-				setPreviewData(text);
-				setPreviewFormat('xyz');
+				const sortedStructures = allStructures.sort((a, b) => a.name.localeCompare(b.name));
+				setStructures([{ 
+					structure_id: '', 
+					name: 'All', 
+					user_sub: '', 
+					location: '' 
+				}, ...sortedStructures]);
 			} catch (err) {
-				console.error('Failed to load molecule preview:', err);
-				setError('Failed to load structure preview');
+				setError('Failed to load data');
+				console.error('Failed to load data', err);
 			} finally {
 				setLoading(false);
 			}
-		})();
-	}, [viewStructureId]);
+		}
+
+		setLoading(true);
+		loadData();
+	}, []);
 
 	// filter jobs when structure filter changes
 	useEffect(() => {
@@ -133,32 +125,49 @@ export default function Home() {
 			setFilteredJobs(filtered);
 			setPage(0);
 		} catch (err) {
-			console.error('Failed to filter jobs:', err);
 			setError('Failed to filter jobs');
+			console.error('Failed to filter jobs:', err);
 		} finally {
 			setLoading(false);
 		}
 	}, [filterStructureId, jobs]);
 
-	const handleRefresh = async () => {
+	const openMoleculeViewer = async (structureId: string) => {
 		setLoading(true);
+		setError(null);
+
 		try {
 			const token = await getAccessTokenSilently();
-			const refreshed = await fetchJobs(token);
-			setJobs(refreshed);
-			setFilterStructureId('');
+			const data = await getStructureDataFromS3(structureId, token);
+			if (!data) {
+				setError('Failed to load molecule structure. Please try again.');
+				return;
+			}
+			setPreviewData(data);
+			setError(null);
+			setOpen(true);
 		} catch (err) {
-			console.error('Failed to refresh jobs', err);
-			setError('Failed to refresh jobs');
+			setError('Failed to load molecule structure. Please try again.');
+			console.error("Failed to load molecule structure:", err);
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	// close preview dialog
-	const handleClose = () => {
-		setOpen(false);
-		setViewStructureId('');
+	const handleRefresh = async () => {
+		setLoading(true);
+
+		try {
+			const token = await getAccessTokenSilently();
+			const refreshed = await getAllJobs(token);
+			setJobs(refreshed);
+			setFilterStructureId('');
+		} catch (err) {
+			setError('Failed to refresh jobs');
+			console.error('Failed to refresh jobs', err);
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	if (loading) {
@@ -178,11 +187,11 @@ export default function Home() {
 				/>
 			)}
 			{/* Molecule Preview Dialog */}
-			<Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+			<Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
 				<Box sx={{ width: '100%', height: 400 }}>
 					<MolmakerMoleculePreview
 						data={previewData}
-						format={previewFormat}
+						format='xyz'
 						source="library"
 						title="Molecule Preview"
 						sx={{ width: '100%', height: '100%' }}
@@ -205,8 +214,7 @@ export default function Home() {
 					onViewStructure={() => {
 						const job = filteredJobs.find(j => j.job_id === selectedJobId);
 						if (job?.structures.length) {
-							setViewStructureId(job.structures[0].structure_id);
-							setOpen(true);
+							openMoleculeViewer(job.structures[0].structure_id);
 						}
 					}}
 					onFilterByStructure={() => {

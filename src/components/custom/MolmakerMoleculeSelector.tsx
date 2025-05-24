@@ -12,6 +12,7 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import MolmakerRadioGroup from './MolmakerRadioGroup';
 import MolmakerDropdown from './MolmakerDropdown';
 import MolmakerTextField from './MolmakerTextField';
+import MolmakerSectionHeader from './MolmakerSectionHeader';
 
 /**
  * Unified molecule source selector, combining upload & library options.
@@ -45,6 +46,9 @@ const MolmakerMoleculeSelector = ({
 	submitAttempted
 }) => (
   	<Grid container sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+		<Grid>
+			<MolmakerSectionHeader text="Molecule Source" />
+		</Grid>
 		{/* Source radios */}
 		<Grid>
 			<MolmakerRadioGroup

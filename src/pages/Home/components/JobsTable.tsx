@@ -102,58 +102,57 @@ export default function JobsTable({
 						{renderHeader('Submitted At', 'submitted_at')}
 					</TableRow>
 				</TableHead>
-
 				<TableBody>
-				{paginatedJobs.length === 0 ? (
-					<TableRow>
-						<TableCell colSpan={7} align="center">
-							No jobs found.
-						</TableCell>
-					</TableRow>
-				) : (
-					paginatedJobs.map((job) => (
-						<TableRow
-							key={job.job_id}
-							onClick={() => onRowClick(job.job_id)}
-							sx={{
-							backgroundColor:
-								job.job_id === selectedJobId ? 'rgba(0,0,0,0.08)' : 'transparent',
-							cursor: 'pointer'
-							}}
-						>
-							<TableCell>{job.job_id}</TableCell>
-							<TableCell>{job.job_name}</TableCell>
-							<TableCell>
-								<Chip
-									label={job.status}
-									size="small"
-									sx={{
-									bgcolor: statusColors[job.status] ?? 'grey.300',
-									color: 'white',
-									textTransform: 'capitalize'
-									}}
-								/>
-							</TableCell>
-							<TableCell>{job.method}</TableCell>
-							<TableCell>{job.basis_set}</TableCell>
-							<TableCell>
-								{job.structures.length ? job.structures
-									.map((s) => (
-										<Chip
-										key={s.structure_id}
-										label={s.name}
-										variant="outlined"
-										size="small"
-										sx={{ mr: 0.5, mb: 0.5 }}
-										/>
-									)) : 'N/A'}
-							</TableCell>
-							<TableCell>
-								{new Date(job.submitted_at).toLocaleString()}
+					{paginatedJobs.length === 0 ? (
+						<TableRow>
+							<TableCell colSpan={7} align="center">
+								No jobs found.
 							</TableCell>
 						</TableRow>
-					))
-		  		)}
+					) : (
+						paginatedJobs.map((job) => (
+							<TableRow
+								key={job.job_id}
+								onClick={() => onRowClick(job.job_id)}
+								sx={{
+								backgroundColor:
+									job.job_id === selectedJobId ? 'rgba(0,0,0,0.08)' : 'transparent',
+								cursor: 'pointer'
+								}}
+							>
+								<TableCell>{job.job_id}</TableCell>
+								<TableCell>{job.job_name}</TableCell>
+								<TableCell>
+									<Chip
+										label={job.status}
+										size="small"
+										sx={{
+										bgcolor: statusColors[job.status] ?? 'grey.300',
+										color: 'white',
+										textTransform: 'capitalize'
+										}}
+									/>
+								</TableCell>
+								<TableCell>{job.method}</TableCell>
+								<TableCell>{job.basis_set}</TableCell>
+								<TableCell>
+									{job.structures.length ? job.structures
+										.map((s) => (
+											<Chip
+											key={s.structure_id}
+											label={s.name}
+											variant="outlined"
+											size="small"
+											sx={{ mr: 0.5, mb: 0.5 }}
+											/>
+										)) : 'N/A'}
+								</TableCell>
+								<TableCell>
+									{new Date(job.submitted_at).toLocaleString()}
+								</TableCell>
+							</TableRow>
+						))
+					)}
 				</TableBody>
 	  		</Table>
 		</TableContainer>

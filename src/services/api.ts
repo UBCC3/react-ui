@@ -1,7 +1,9 @@
 import axios from 'axios';
 import { Structure, Job } from '../types'
 
-export const createAuthAPI = (token) => {
+export const createBackendAPI = (
+	token: any
+) => {
 	return axios.create({
 		baseURL: import.meta.env.VITE_STORAGE_API_URL,
 		headers: {
@@ -9,6 +11,34 @@ export const createAuthAPI = (token) => {
 		},
 	});
 };
+
+export const createClusterAPI = (
+	token: any
+) => {
+	return axios.create({
+		baseURL: import.meta.env.VITE_API_URL,
+		headers: {
+			Authorization: `Bearer ${token}`,
+		},
+	});
+};
+
+export const getJobStatusBySlurmID = async (
+	slurmId: string,
+): Promise<string | null> => {
+	try {
+		const res = await fetch(`${import.meta.env.VITE_API_URL}/status/${slurmId}`);
+		if (!res.ok) {
+			throw new Error(`HTTP ${res.status}`);
+		}
+		const data = await res.json();
+		return data.state.toLowerCase();
+	} catch (error) {
+		console.error("Failed to fetch job status", error);
+		return null;
+	}
+};
+
 
 export const addjob = async (jobName, method, basis_set, calculation_type, charge, multiplicity, file, structure_id, slurm_id, token) => {
 	const formData = new FormData();
@@ -23,7 +53,7 @@ export const addjob = async (jobName, method, basis_set, calculation_type, charg
 	formData.append("slurm_id", slurm_id);
 
 	try {
-		const API = createAuthAPI(token);
+		const API = createBackendAPI(token);
 		const response = await API.post("/add_job/", formData);
 		console.log("Job submission response:", response);
 		return {
@@ -38,7 +68,7 @@ export const addjob = async (jobName, method, basis_set, calculation_type, charg
 
 export const updateStatus = async (jobId, status, token) => {
 	try {
-		const API = createAuthAPI(token);
+		const API = createBackendAPI(token);
 		const res = await API.post(`/update_status/${jobId}/${status}`);
 		return res.data;
 	} catch (error) {
@@ -46,7 +76,6 @@ export const updateStatus = async (jobId, status, token) => {
 		return null;
 	}
 }
-
 
 export const submitJob = async (jobName, file, engine, calculation_type, method, basis_set, structure_id, token) => {
 	const formData = new FormData();
@@ -59,7 +88,7 @@ export const submitJob = async (jobName, file, engine, calculation_type, method,
 	formData.append("basis_set", basis_set);
 
 	try {
-		const API = createAuthAPI(token);
+		const API = createBackendAPI(token);
 		const response = await API.post("/jobs/", formData);
 		return response.status === 200;
 	} catch (error) {
@@ -77,7 +106,7 @@ export const submitStandardWorkflow = async (jobName, file, structure_id, charge
 	formData.append("multiplicity", multiplicity);
 
 	try {
-		const API = createAuthAPI(token);
+		const API = createBackendAPI(token);
 		const response = await API.post("/jobs/", formData);
 		console.log("Standard workflow submission response:", response);
 		return {
@@ -96,7 +125,7 @@ export const submitStructure = async (file, name, token) => {
 	formData.append("name", name);
 
 	try {
-		const API = createAuthAPI(token);
+		const API = createBackendAPI(token);
 		const response = await API.post("/structures/", formData);
 		console.log("Structure submission response:", response);
 		return {
@@ -109,9 +138,11 @@ export const submitStructure = async (file, name, token) => {
 	}
 };
 
-export const fetchJobs = async (token : any) => {
+export const getAllJobs = async (
+	token: any
+) => {
 	try {
-		const API = createAuthAPI(token);
+		const API = createBackendAPI(token);
 		const res = await API.get("/jobs/");
 		return res.data;
 	} catch (error) {
@@ -125,7 +156,7 @@ export const getStructureDataFromS3 = async (
 	token: any,
 ): Promise<string | null> => {
 	try {
-		const API = createAuthAPI(token);
+		const API = createBackendAPI(token);
 		const res = await API.get(`/presigned/${structureId}`);
 		if (res.status !== 200) {
 			throw new Error(`HTTP ${res.status}`);
@@ -141,10 +172,10 @@ export const getStructureDataFromS3 = async (
 };
 
 export const getLibraryStructures = async (
-	token : any,
+	token: any,
 ): Promise<Structure[]> => {
 	try {
-		const API = createAuthAPI(token);
+		const API = createBackendAPI(token);
 		const res = await API.get("/structures/");
 		return res.data;
 	} catch (error) {
@@ -154,11 +185,11 @@ export const getLibraryStructures = async (
 }
 
 export const getJobByJobID = async (
-	jobId : string, 
-	token : any,
+	jobId: string, 
+	token: any,
 ): Promise<Job | null> => {
 	try {
-		const API = createAuthAPI(token);
+		const API = createBackendAPI(token);
 		const res = await API.get(`/jobs/${jobId}`);
 		return res.data;
 	} catch (error) {
