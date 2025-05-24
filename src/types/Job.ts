@@ -1,14 +1,19 @@
 interface Job {
-	calculation_type: string;
-	result(result: any, arg1: null, arg2: number): unknown;
 	job_id: string;
 	job_name: string;
+	filename: string;
 	status: string;
+	calculation_type: string;
 	method: string;
 	basis_set: string;
-	structures: Array<{ structure_id: string; name: string }>;
-	slurm_id: string;
+	charge: number;
+	multiplicity: number;
 	submitted_at: string;
+	completed_at: string | null;
+	user_sub: string;
+	slurm_id: string | null;
+	structures: Array<{ structure_id: string; name: string }>;
+	result(result: any, arg1: null, arg2: number): unknown;
 }
 
 export default Job;

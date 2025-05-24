@@ -20,6 +20,7 @@ import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined';
 import logo from '../assets/logo.svg';
 import { useNavigate } from 'react-router-dom';
 import { useDrawer } from './DrawerContext';
+import { blueGrey, cyan, lightBlue } from '@mui/material/colors';
 
 const DRAWER_WIDTH  = 250;
 const CLOSED_WIDTH  = 56;
@@ -95,10 +96,26 @@ export default function MenuDrawer() {
 				component="nav"
 			>
 				{[
-					{ text: 'Dashboard',          icon: <DashboardOutlinedIcon />,  path: '/'        },
-					{ text: 'Standard Analysis',  icon: <AutoModeIcon />,        path: '/submit'  },
-					{ text: 'Advanced Analysis',  icon: <TuneOutlinedIcon />,       path: '/advanced'},
-					{ text: 'Molecule Library',   icon: <CollectionsOutlinedIcon />,path: '/library' },
+					{
+						text: 'Dashboard',
+						icon: <DashboardOutlinedIcon />,
+						path: '/'
+					},
+					{
+						text: 'Standard Analysis',
+						icon: <AutoModeIcon />,
+						path: '/submit'
+					},
+					{
+						text: 'Advanced Analysis', 
+						icon: <TuneOutlinedIcon />,
+						path: '/advanced'
+					},
+					{ 
+						text: 'Molecule Library',
+						icon: <CollectionsOutlinedIcon />,
+						path: '/library'
+					},
 				].map(({ text, icon, path }, idx) => (
 					<ListItemButton
 						key={text}

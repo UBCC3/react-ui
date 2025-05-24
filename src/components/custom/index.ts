@@ -4,12 +4,18 @@ import MolmakerDropdown from './MolmakerDropdown';
 import MolmakerSectionHeader from './MolmakerSectionHeader';
 import MolmakerMoleculeSelector from './MolmakerMoleculeSelector';
 import MolmakerMoleculePreview from './MolmakerMoleculePreview';
+import MolmakerAlert from './MolmakerAlert';
+import MolmakerPageTitle from './MolmakerPageTitle';
+import MolmakerLoading from './MolmakerLoading';
 
 export {
+	MolmakerAlert,
 	MolmakerRadioGroup,
 	MolmakerDropdown,
 	MolmakerSectionHeader,
 	MolmakerTextField,
 	MolmakerMoleculeSelector,
-	MolmakerMoleculePreview
+	MolmakerMoleculePreview,
+	MolmakerPageTitle,
+	MolmakerLoading,
 }

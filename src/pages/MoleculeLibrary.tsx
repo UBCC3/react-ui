@@ -1,4 +1,5 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
 import {
 	Paper,
 	Typography,
@@ -17,81 +18,107 @@ import {
 	Tooltip,
 	TablePagination,
 } from "@mui/material";
-import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import { useState } from "react";
-import { useAuth0 } from "@auth0/auth0-react";
-import { submitStructure } from "../services/api";
-import RefreshIcon from '@mui/icons-material/Refresh';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import DeleteIcon from '@mui/icons-material/Delete';
-import AddToPhotosIcon from "@mui/icons-material/AddToPhotos";
-import { fetchStructures } from "../services/api";
+import {
+	CloudUpload,
+	Refresh,
+	Visibility,
+	Delete,
+	AddToPhotos,
+	ArrowDropUpOutlined,
+	ArrowDropDownOutlined,
+} from "@mui/icons-material";
 import { blueGrey } from "@mui/material/colors";
-import { MolmakerMoleculePreview, MolmakerSectionHeader, MolmakerTextField } from "../components/custom";
-import MolmakerPageTitle from "../components/custom/MolmakerPageTitle";
-import MolmakerAlert from "../components/custom/MolmakerAlert";
-import MolmakerLoading from "../components/custom/MolmakerLoading";
-import type { Molecule } from "../types";
+import { 
+	MolmakerMoleculePreview, 
+	MolmakerSectionHeader, 
+	MolmakerTextField,
+	MolmakerPageTitle,
+	MolmakerAlert,
+	MolmakerLoading,
+} from "../components/custom";
+import { 
+	getStructureDataFromS3, 
+	submitStructure, 
+	getLibraryStructures 
+} from "../services/api";
+import type { Structure } from "../types";
 
 const MoleculeLibrary = () => {
 	const { getAccessTokenSilently } = useAuth0();
-	const [submitAttempted, setSubmitAttempted] = useState(false);
-	const [file, setFile] = useState<File | null>(null);
-	const [name, setName] = useState("");
-	const [molData, setMolData] = useState("");
-	const [savedMolecules, setSavedMolecules] = useState<Molecule[]>([]);
-	const [selectedStructure, setSelectedStructure] = useState("");
-	const [notes, setNotes] = useState("");
+
+	// state for user experience
 	const [error, setError] = useState<string | null>(null);
-	const [loading, setLoading] = useState(false);
+	const [loading, setLoading] = useState<boolean>(true);
+	const [submitAttempted, setSubmitAttempted] = useState(false);
+	const [order, setOrder] = useState<'asc' | 'desc'>('asc');
+	const [orderBy, setOrderBy] = useState<keyof Structure>('name');
+	const [page, setPage] = useState<number>(0);
+  	const [rowsPerPage, setRowsPerPage] = useState<number>(5);
 
-	const [page, setPage] = useState(0);
-  	const [rowsPerPage, setRowsPerPage] = useState(5); 
-
-	const handleChangePage = (_, newPage) => setPage(newPage);
-	const handleChangeRowsPerPage = (e) => {                              
-		setRowsPerPage(parseInt(e.target.value, 10));
-		setPage(0);
-	};   
+	// form state
+	const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+	const [structureName, setStructureName] = useState<string>("");
+	const [notes, setNotes] = useState<string>("");
+	const [structureData, setStructureData] = useState<string>("");
+	const [libraryStructures, setLibraryStructures] = useState<Structure[]>([]);
+	const [filteredStructures, setFilteredStructures] = useState<Structure[]>([]);
+	const [selectedStructureId, setSelectedStructureId] = useState<string>("");
 
 	const handleRefresh = async () => {
+		setLoading(true);
 		try {
-			setLoading(true);
-		  const token = await getAccessTokenSilently();
-		  const structs = await fetchStructures(token);
-		  setSavedMolecules(structs);
-		  setSelectedStructure("");
-		  setError(null);
+			const token = await getAccessTokenSilently();
+			const structures = await getLibraryStructures(token);
+			setLibraryStructures(structures);
+			setSelectedStructureId("");
+			setError(null);
 		} catch (err) {
-		  setError('Failed to refresh molecules. Please try again later.');
-		  console.error('Failed to refresh jobs', err);
+			setError('Failed to refresh molecules. Please try again later.');
+			console.error('Failed to refresh jobs', err);
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	const handleSubmit = async (e) => {
-		e.preventDefault();
-		setSubmitAttempted(true);
-		setError(null);
-		setLoading(true);
-		if (!file) {
+	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+
+		// prevent multiple submissions and submission while loading
+		if (submitAttempted) return;
+		if (loading) return;
+
+		// validate inputs
+		if (!uploadedFile) {
 			setError('Please select a file to upload.');
 			setLoading(false);
 			return;
 		}
-		if (!name) {
+		if (!structureName) {
 			setError('Please enter a name for the molecule.');
 			setLoading(false);
 			return;
 		}
+		
+		setSubmitAttempted(true);
+		setError(null);
+		setLoading(true);
+
 		try {
 			const token = await getAccessTokenSilently();
-			await submitStructure(file, name, token);
-			setFile(null);
-			setName("");
-			setMolData("");
+			await submitStructure(uploadedFile, structureName, token);
+
+			// Refresh the library after successful submission
+			const structures = await getLibraryStructures(token);
+			setLibraryStructures(structures);
+
+			// Reset form state
+			setUploadedFile(null);
+			setStructureName("");
+			setStructureData("");
+			setNotes("");
+			setSelectedStructureId("");
 			setError(null);
+			setSubmitAttempted(false);
 		} catch (err) {
 			setError('Molecule submission failed. Please try again.');
 			console.error("Molecule submission failed", err);
@@ -100,19 +127,18 @@ const MoleculeLibrary = () => {
 		}
 	}
 
-	const openMoleculeViewer = async (structureId) => {
-        try {
-            setLoading(true);
+	const openMoleculeViewer = async (structureId: string) => {
+		setLoading(true);
+		setError(null);
+
+		try {
             const token = await getAccessTokenSilently();
-            const res = await fetch(`${import.meta.env.VITE_STORAGE_API_URL}/presigned/${structureId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (!res.ok) throw new Error('Failed to get presigned URL');
-            const { url } = await res.json();
-            const fileRes = await fetch(url);
-            if (!fileRes.ok) throw new Error('Failed to fetch molecule file');
-            const xyz = await fileRes.text();
-            setMolData(xyz);
+            const data = await getStructureDataFromS3(structureId, token);
+			if (!data) {
+				setError('Failed to load molecule structure. Please try again.');
+				return;
+			}
+            setStructureData(data);
             setError(null);
         } catch (err) {
             setError('Failed to load molecule structure. Please try again.');
@@ -122,13 +148,27 @@ const MoleculeLibrary = () => {
         }
     };
 
+	const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		const files = event.target.files;
+		const selected = files && files[0];
+		setUploadedFile(selected);
+		if (selected) {
+			const reader = new FileReader();
+			reader.onload = (ev) => {
+				if (ev.target && typeof ev.target.result === "string") {
+					setStructureData(ev.target.result);
+				}
+			};
+			reader.readAsText(selected);
+		}
+	};
+
 	useEffect(() => {
 		const loadSavedMolecules = async () => {
 			try {
-				setLoading(true);
 				const token = await getAccessTokenSilently();
-				const res = await fetchStructures(token);
-				setSavedMolecules(res);
+				const structures = await getLibraryStructures(token);
+				setLibraryStructures(structures);
 			} catch (err) {
 				setError('Failed to fetch molecules. Please try again later.');
 				console.error("Failed to fetch jobs", err);
@@ -137,6 +177,7 @@ const MoleculeLibrary = () => {
 			}
 		}
 
+		setLoading(true);
 		loadSavedMolecules();
 	}, [])
 
@@ -146,6 +187,40 @@ const MoleculeLibrary = () => {
 		);
 	}
 
+	const renderHeader = (label: string, column: keyof Structure) => (
+		<TableCell
+			sx={{ whiteSpace: 'nowrap', cursor: 'pointer' }}
+			onClick={() => onSort(column)}
+		>
+			<Box sx={{ display: 'flex', alignItems: 'bottom' }}>
+				{label}
+				{orderBy === column && (
+				<Box sx={{ ml: 1 }}>
+					{order === 'asc' ? (
+						<ArrowDropUpOutlined color="primary" />
+					) : (
+						<ArrowDropDownOutlined color="primary" />
+					)}
+				</Box>
+				)}
+			</Box>
+		</TableCell>
+	);
+
+	const onSort = (column: keyof Structure) => {
+		const isAsc = orderBy === column && order === 'asc';
+		setOrder(isAsc ? 'desc' : 'asc');
+		setOrderBy(column);
+		libraryStructures.sort((a, b) => {
+			const aValue = a[column];
+			const bValue = b[column];
+			if (typeof aValue === 'string' && typeof bValue === 'string') {
+				return isAsc ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+			}
+			return isAsc ? (aValue < bValue ? -1 : 1) : (aValue > bValue ? -1 : 1);
+		});
+		setFilteredStructures([...libraryStructures]);
+	};
 
   	return (
 		<Box bgcolor={'rgb(247, 249, 252)'} p={4}>
@@ -156,7 +231,7 @@ const MoleculeLibrary = () => {
 			<Grid container spacing={3}>
 				<Grid size={{ xs: 12, md: 6 }}>
 					<Paper elevation={3} sx={{ padding: 4 }}>
-						<Box component="form">
+						<Box component="form" onSubmit={handleSubmit}>
 							<Grid container direction="column" spacing={2}>
 								{/* Error message */}
 								{error && (
@@ -171,30 +246,17 @@ const MoleculeLibrary = () => {
 									<Button
 										variant="contained"
 										component="label"
-										startIcon={<CloudUploadIcon />}
+										startIcon={<CloudUpload />}
 										sx={{ textTransform: 'none' }}
 										size='large'
 										fullWidth
 									>
-										{file ? file.name : 'Select File'}
+										{uploadedFile ? uploadedFile.name : 'Select File'}
 										<input
 											hidden
 											type="file"
-											accept=".xyz,.pdb"
-											onChange={(e) => {
-												const files = e.target.files;
-												const selected = files && files[0];
-												setFile(selected);
-												if (selected) {
-													const reader = new FileReader();
-													reader.onload = (ev) => {
-														if (ev.target && typeof ev.target.result === "string") {
-															setMolData(ev.target.result);
-														}
-													};
-													reader.readAsText(selected);
-												}
-											}}
+											accept=".xyz"
+											onChange={handleFileChange}
 										/>
 									</Button>
 								</Grid>
@@ -202,10 +264,10 @@ const MoleculeLibrary = () => {
 									<MolmakerTextField
 										fullWidth
 										label="Name"
-										value={name}
-										onChange={(e) => setName(e.target.value)}
-										error={submitAttempted && name === ""}
-										helperText={submitAttempted && name === "" ? "Name is required" : ""}
+										value={structureName}
+										onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStructureName(e.target.value)}
+										error={submitAttempted && structureName === ""}
+										helperText={submitAttempted && structureName === "" ? "Name is required" : ""}
 										required
 									/>
 								</Grid>
@@ -214,7 +276,7 @@ const MoleculeLibrary = () => {
 										fullWidth
 										label="Notes"
 										value={notes}
-										onChange={(e) => setNotes(e.target.value)}
+										onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNotes(e.target.value)}
 										multiline
 										rows={2}
 									/>
@@ -222,11 +284,10 @@ const MoleculeLibrary = () => {
 								<Grid>
 									<Button
 										variant="contained"
-										component="label"
-										startIcon={<AddToPhotosIcon />}
+										type="submit"
+										startIcon={<AddToPhotos />}
 										sx={{ textTransform: 'none' }}
 										size='large'
-										onClick={handleSubmit}
 										fullWidth
 									>
 										Add to Library
@@ -238,7 +299,7 @@ const MoleculeLibrary = () => {
 				</Grid>
 				<Grid size={{ xs: 12, md: 6 }}>
 					<MolmakerMoleculePreview
-						data={molData}
+						data={structureData}
 						format={'xyz'}
 						sx={{
 							width: '100%',
@@ -250,7 +311,7 @@ const MoleculeLibrary = () => {
 				</Grid>
 			</Grid>
 			<Grid container spacing={3} sx={{ marginTop: 3 }}>
-				<Grid size={{ xs: 12, md: 12 }}>
+				<Grid size={12}>
 					<Paper elevation={3}>
 						<Toolbar sx={{ justifyContent: 'space-between', bgcolor: blueGrey[200] }}>
 							<Typography variant="h6" color="text.secondary">
@@ -259,22 +320,22 @@ const MoleculeLibrary = () => {
 							<Box sx={{ display: 'flex', alignItems: 'center' }}>
 								<Box sx={{ display: 'flex', alignItems: 'center' }}>
 									<Tooltip title="View structure">
-										<IconButton disabled={!selectedStructure} onClick={() => {
-											openMoleculeViewer(selectedStructure);
+										<IconButton disabled={!selectedStructureId} onClick={() => {
+											openMoleculeViewer(selectedStructureId);
 										}}>
-											<VisibilityIcon />
+											<Visibility />
 										</IconButton>
 									</Tooltip>
 									<Tooltip title="Delete structure">
-										<IconButton disabled={!selectedStructure}>
-											<DeleteIcon />
+										<IconButton disabled={!selectedStructureId}>
+											<Delete />
 										</IconButton>
 									</Tooltip>
 								</Box>
 								<Divider orientation="vertical" flexItem sx={{ mx: 2 }} />
 								<Tooltip title="Refresh structures">
 									<IconButton onClick={handleRefresh}>
-										<RefreshIcon />
+										<Refresh />
 									</IconButton>
 								</Tooltip>
 							</Box>
@@ -284,12 +345,12 @@ const MoleculeLibrary = () => {
 							<Table>
 								<TableHead>
 									<TableRow sx={{ bgcolor: blueGrey[50] }}>
-										<TableCell>Structure ID</TableCell>
-										<TableCell>Name</TableCell>
+										{renderHeader('Structure ID', 'structure_id')}
+										{renderHeader('Name', 'name')}
 									</TableRow>
 								</TableHead>
 								<TableBody>
-									{savedMolecules.length === 0 && (
+									{libraryStructures.length === 0 && (
 										<TableRow>
 											<TableCell colSpan={3} align="center">
 												<Typography variant="body2" color="text.secondary">
@@ -298,15 +359,14 @@ const MoleculeLibrary = () => {
 											</TableCell>
 										</TableRow>
 									)}
-									{/* Map through saved molecules and create rows */}
-									{savedMolecules.map((molecule) => (
+									{libraryStructures.map((molecule) => (
 										<TableRow 
 											key={molecule.structure_id} 
 											onClick={() => {
-												setSelectedStructure(molecule.structure_id == selectedStructure ? "" : molecule.structure_id);
+												setSelectedStructureId(molecule.structure_id == selectedStructureId ? "" : molecule.structure_id);
 											}}
 											sx={{
-												backgroundColor: molecule.structure_id === selectedStructure ? 'rgba(0, 0, 0, 0.1)' : 'transparent',
+												backgroundColor: molecule.structure_id === selectedStructureId ? 'rgba(0, 0, 0, 0.1)' : 'transparent',
 												cursor: 'pointer'
 											}}
 										>
@@ -320,11 +380,11 @@ const MoleculeLibrary = () => {
 						<TablePagination
 							component="div"
 							rowsPerPageOptions={[5, 10, 25]}
-							count={savedMolecules.length}
+							count={filteredStructures.length}
 							rowsPerPage={rowsPerPage}
 							page={page}
-							onPageChange={handleChangePage}
-							onRowsPerPageChange={handleChangeRowsPerPage}
+							onPageChange={(_, newPage) => setPage(newPage)}
+							onRowsPerPageChange={e => { setRowsPerPage(+e.target.value); setPage(0); }}
 							sx={{ bgcolor: blueGrey[200] }}
 						/>
 					</Paper>

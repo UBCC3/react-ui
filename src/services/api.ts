@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { Structure, Job } from '../types'
 
 export const createAuthAPI = (token) => {
 	return axios.create({
@@ -9,10 +10,15 @@ export const createAuthAPI = (token) => {
 	});
 };
 
-export const addjob = async (jobName, file, structure_id, slurm_id, token) => {
+export const addjob = async (jobName, method, basis_set, calculation_type, charge, multiplicity, file, structure_id, slurm_id, token) => {
 	const formData = new FormData();
 	formData.append("file", file);
 	formData.append("job_name", jobName);
+	formData.append("method", method);
+	formData.append("basis_set", basis_set);
+	formData.append("calculation_type", calculation_type);
+	formData.append("charge", charge);
+	formData.append("multiplicity", multiplicity);
 	formData.append("structure_id", structure_id);
 	formData.append("slurm_id", slurm_id);
 
@@ -103,7 +109,7 @@ export const submitStructure = async (file, name, token) => {
 	}
 };
 
-export const fetchJobs = async (token) => {
+export const fetchJobs = async (token : any) => {
 	try {
 		const API = createAuthAPI(token);
 		const res = await API.get("/jobs/");
@@ -114,7 +120,29 @@ export const fetchJobs = async (token) => {
 	}
 };
 
-export const fetchStructures = async (token) => {
+export const getStructureDataFromS3 = async (
+	structureId: string,
+	token: any,
+): Promise<string | null> => {
+	try {
+		const API = createAuthAPI(token);
+		const res = await API.get(`/presigned/${structureId}`);
+		if (res.status !== 200) {
+			throw new Error(`HTTP ${res.status}`);
+		}
+		const { url } = res.data;
+		const fileRes = await fetch(url);
+		const text = await fileRes.text();
+		return text;
+	} catch (error) {
+		console.error("Failed to fetch structure from S3", error);
+		return null;
+	}
+};
+
+export const getLibraryStructures = async (
+	token : any,
+): Promise<Structure[]> => {
 	try {
 		const API = createAuthAPI(token);
 		const res = await API.get("/structures/");
@@ -125,7 +153,10 @@ export const fetchStructures = async (token) => {
 	}
 }
 
-export const fetchJob = async (jobId, token) => {
+export const getJobByJobID = async (
+	jobId : string, 
+	token : any,
+): Promise<Job | null> => {
 	try {
 		const API = createAuthAPI(token);
 		const res = await API.get(`/jobs/${jobId}`);

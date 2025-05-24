@@ -1,9 +1,9 @@
+import React from 'react'
 import { 
 	Grid, 
 	Typography, 
 	Divider 
 } from '@mui/material'
-import React from 'react'
 
 const MolmakerPageTitle = ({ title, subtitle }) => {
   	return (

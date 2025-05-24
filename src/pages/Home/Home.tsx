@@ -9,7 +9,7 @@ import {
 import { blueGrey } from '@mui/material/colors';
 import { useNavigate } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
-import { fetchJobs, fetchStructures, updateStatus } from '../../services/api';
+import { fetchJobs, getLibraryStructures, updateStatus } from '../../services/api';
 import MolmakerPageTitle from '../../components/custom/MolmakerPageTitle';
 import { JobStatus } from '../../constants';
 import JobsStatus from './components/JobsStatus';
@@ -84,7 +84,7 @@ export default function Home() {
 			try {
 				const token = await getAccessTokenSilently();
 				const [jobsRes, structsRes] = await Promise.all([
-					fetchJobs(token), fetchStructures(token)
+					fetchJobs(token), getLibraryStructures(token)
 				]);
 				setJobs(jobsRes);
 				setFilteredJobs(jobsRes);

@@ -14,7 +14,7 @@ import {
     multiplicityOptions,
 } from '../../constants'
 import { useAuth0 } from '@auth0/auth0-react'
-import { fetchStructures } from '../../services/api'
+import { getLibraryStructures } from '../../services/api'
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline'
 import MolmakerPageTitle from '../../components/custom/MolmakerPageTitle'
 import {
@@ -54,7 +54,7 @@ const AdvancedAnalysis = () => {
         (async () => {
             try {
                 const token = await getAccessTokenSilently();
-                let res = await fetchStructures(token);
+                let res = await getLibraryStructures(token);
                 res = [ { structure_id: '', name: 'Select a molecule' }, ...res ];
                 setStructures(res);
             } catch (err) {

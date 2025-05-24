@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import InfoOutlineIcon from '@mui/icons-material/InfoOutlined';
-import { addjob, fetchStructures, submitStructure } from '../../services/api';
+import { addjob, getLibraryStructures, submitStructure } from '../../services/api';
 import {
     MolmakerTextField,
     MolmakerDropdown,
@@ -55,7 +55,7 @@ export default function StandardAnalysis() {
 			try {
 				setLoading(true);
 				const token = await getAccessTokenSilently();
-				let res = await fetchStructures(token);
+				let res = await getLibraryStructures(token);
 				res = [{ structure_id: '', name: 'Select a molecule' }, ...res];
 				setStructures(res);
 			} catch (err) {
@@ -187,6 +187,11 @@ export default function StandardAnalysis() {
 
 			const res2 = await addjob(
 				jobName,
+				"mp2",
+				"6-311+G(2d,p)",
+				"energy",
+				charge,
+				multiplicity,
 				uploadFile,
 				structureIdToUse,
 				slurm_id,
