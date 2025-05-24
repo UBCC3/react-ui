@@ -11,28 +11,12 @@ import MolmakerPageTitle from '../MolmakerFormComponents/MolmakerPageTitle';
 import { MolmakerTextField } from '../MolmakerFormComponents';
 import MolmakerLoading from '../MolmakerFormComponents/MolmakerLoading';
 import NotFound from './NotFound';
+import type { Job } from '../types';
 
 function ViewJob() {
   	const { getAccessTokenSilently } = useAuth0();
 
 	const { jobId } = useParams();
-
-	type Structure = {
-		name: string;
-		// TODO: add other properties
-	};
-
-	type Job = {
-		job_id: string;
-		job_name: string;
-		status: string;
-		structures: Structure[];
-		calculation_type: string;
-		method: string;
-		basis_set: string;
-		result: any;
-		// TODO: add other properties
-	};
 
 	const [job, setJob] = useState<Job | null>(null);
 	const [loading, setLoading] = useState(true);

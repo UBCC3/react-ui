@@ -31,6 +31,7 @@ import { MolmakerMoleculePreview, MolmakerSectionHeader, MolmakerTextField } fro
 import MolmakerPageTitle from "../MolmakerFormComponents/MolmakerPageTitle";
 import MolmakerAlert from "../MolmakerFormComponents/MolmakerAlert";
 import MolmakerLoading from "../MolmakerFormComponents/MolmakerLoading";
+import type { Molecule } from "../types";
 
 const MoleculeLibrary = () => {
 	const { getAccessTokenSilently } = useAuth0();
@@ -38,11 +39,6 @@ const MoleculeLibrary = () => {
 	const [file, setFile] = useState<File | null>(null);
 	const [name, setName] = useState("");
 	const [molData, setMolData] = useState("");
-	type Molecule = {
-		structure_id: string;
-		name: string;
-		// add other properties if needed
-	};
 	const [savedMolecules, setSavedMolecules] = useState<Molecule[]>([]);
 	const [selectedStructure, setSelectedStructure] = useState("");
 	const [notes, setNotes] = useState("");

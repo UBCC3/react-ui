@@ -9,7 +9,7 @@ declare global {
 	}
 }
 
-export interface MolmakerMoleculePreview {
+interface MolmakerMoleculePreview {
 	data?: string;
 	format: string;
 	source?: 'upload' | 'library';

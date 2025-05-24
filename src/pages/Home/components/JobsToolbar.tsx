@@ -20,7 +20,7 @@ import {
 } from '@mui/icons-material';
 import { blueGrey } from '@mui/material/colors';
 
-export interface JobsToolbarProps {
+interface JobsToolbarProps {
 	selectedJobId: string | null;
 	onViewDetails: () => void;
 	onViewStructure: () => void;

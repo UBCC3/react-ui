@@ -17,7 +17,7 @@ import AutoModeIcon from '@mui/icons-material/AutoMode';
 import CollectionsOutlinedIcon from '@mui/icons-material/CollectionsOutlined';
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined';
-import logo from '../../public/logo.svg';
+import logo from '../assets/logo.svg';
 import { useNavigate } from 'react-router-dom';
 import { useDrawer } from './DrawerContext';
 

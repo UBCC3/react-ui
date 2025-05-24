@@ -12,19 +12,9 @@ import {
 import { ArrowUpwardOutlined, ArrowDownwardOutlined } from '@mui/icons-material';
 import { statusColors } from '../../../constants';
 import { blueGrey } from '@mui/material/colors';
+import type { Job } from '../../../types';
 
-export interface Job {
-	job_id: string;
-	job_name: string;
-	status: string;
-	method: string;
-	basis_set: string;
-	structures: Array<{ structure_id: string; name: string }>;
-	slurm_id: string;
-	submitted_at: string;
-}
-
-export interface JobsTableProps {
+interface JobsTableProps {
 	jobs: Job[];
 	page: number;
 	rowsPerPage: number;
