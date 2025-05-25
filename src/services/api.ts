@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Structure, Job } from '../types'
+import { Response } from '../types'
 
 export const createBackendAPI = (
 	token: any
@@ -25,101 +25,123 @@ export const createClusterAPI = (
 
 export const getJobStatusBySlurmID = async (
 	slurmId: string,
-): Promise<string | null> => {
+	token: any
+): Promise<Response> => {
 	try {
-		const res = await fetch(`${import.meta.env.VITE_API_URL}/status/${slurmId}`);
-		if (!res.ok) {
-			throw new Error(`HTTP ${res.status}`);
+		const API = createClusterAPI(token);
+		const response = await API.get(`/status/${slurmId}`);
+		if (response.status !== 200) {
+			throw new Error(`HTTP ${response.status}`);
 		}
-		const data = await res.json();
-		return data.state.toLowerCase();
+		const { status } = response.data;
+		return {
+			status: response.status,
+			data: status,
+		};
 	} catch (error) {
 		console.error("Failed to fetch job status", error);
-		return null;
+		return {
+			status: 500,
+			error: `Failed to fetch job status: ${error.message}`,
+		};
 	}
 };
 
+export const submitStandardAnalysis = async (
+	jobName: string,
+	file: File | Blob,
+	charge: number,
+	multiplicity: number,
+	structure_id: string,
+	token: any
+): Promise<Response> => {
+	const formData = new FormData();
+	formData.append("file", file);
+	formData.append("job_name", jobName);
+	formData.append("charge", charge.toString());
+	formData.append("multiplicity", multiplicity.toString());
+	formData.append("structure_id", structure_id);
+	try {
+		const API = createClusterAPI(token);
+		const response = await API.post("/upload_submit/", formData);
+		return {
+			status: response.status,
+			data: response.data,
+		};
+	} catch (error) {
+		console.error("Standard analysis submission failed", error);
+		return {
+			status: 500,
+			error: `Failed to submit job: ${error.message}`,
+		};
+	}
+};
 
-export const addjob = async (jobName, method, basis_set, calculation_type, charge, multiplicity, file, structure_id, slurm_id, token) => {
+export const addJobToDB = async (
+	jobName: string,
+	method: string,
+	basis_set: string,
+	calculation_type: string,
+	charge: number,
+	multiplicity: number,
+	file: File | Blob,
+	structure_id: string,
+	slurm_id: string,
+	token: string
+): Promise<Response> => {
 	const formData = new FormData();
 	formData.append("file", file);
 	formData.append("job_name", jobName);
 	formData.append("method", method);
 	formData.append("basis_set", basis_set);
 	formData.append("calculation_type", calculation_type);
-	formData.append("charge", charge);
-	formData.append("multiplicity", multiplicity);
+	formData.append("charge", charge.toString());
+	formData.append("multiplicity", multiplicity.toString());
 	formData.append("structure_id", structure_id);
 	formData.append("slurm_id", slurm_id);
 
 	try {
 		const API = createBackendAPI(token);
 		const response = await API.post("/add_job/", formData);
-		console.log("Job submission response:", response);
 		return {
 			status: response.status,
 			data: response.data,
-		}
+		};
 	} catch (error) {
 		console.error("Job submission failed", error);
-		return false;
+		return {
+			status: 500,
+			error: `Failed to submit job: ${error.message}`,
+		}
 	}
 };
 
-export const updateStatus = async (jobId, status, token) => {
+export const updateJobStatus = async (
+	jobId: string, 
+	status: string,
+	token: any,
+): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
 		const res = await API.post(`/update_status/${jobId}/${status}`);
-		return res.data;
+		return {
+			status: res.status,
+			data: res.data,
+		};
 	} catch (error) {
 		console.error("Failed to fetch job details", error);
-		return null;
-	}
-}
-
-export const submitJob = async (jobName, file, engine, calculation_type, method, basis_set, structure_id, token) => {
-	const formData = new FormData();
-	formData.append("job_name", jobName);
-	formData.append("file", file);
-	formData.append("engine", engine);
-	formData.append("calculation_type", calculation_type);
-	formData.append("method", method);
-	formData.append("structure_id", structure_id);
-	formData.append("basis_set", basis_set);
-
-	try {
-		const API = createBackendAPI(token);
-		const response = await API.post("/jobs/", formData);
-		return response.status === 200;
-	} catch (error) {
-		console.error("Job submission failed", error);
-		return false;
-	}
-};
-
-export const submitStandardWorkflow = async (jobName, file, structure_id, charge, multiplicity, token) => {
-	const formData = new FormData();
-	formData.append("job_name", jobName);
-	formData.append("file", file);
-	formData.append("structure_id", structure_id);
-	formData.append("charge", charge);
-	formData.append("multiplicity", multiplicity);
-
-	try {
-		const API = createBackendAPI(token);
-		const response = await API.post("/jobs/", formData);
-		console.log("Standard workflow submission response:", response);
 		return {
-			status: response.status,
-			data: response.data,
-		}
-	} catch (error) {
-		console.error("Standard workflow submission failed", error);
-		return false;
+			status: 500,
+			error: `Failed to update job status: ${error.message}`,
+		};
 	}
 }
 
-export const submitStructure = async (file, name, token) => {
+export const AddAndUploadStructureToS3 = async (
+	file: File | Blob,
+	name: string,
+	token: any,
+): Promise<Response> => {
 	const formData = new FormData();
 	formData.append("file", file);
 	formData.append("name", name);
@@ -127,34 +149,42 @@ export const submitStructure = async (file, name, token) => {
 	try {
 		const API = createBackendAPI(token);
 		const response = await API.post("/structures/", formData);
-		console.log("Structure submission response:", response);
 		return {
 			status: response.status,
 			data: response.data,
 		}
 	} catch (error) {
 		console.error("Structure submission failed", error);
-		return false;
+		return {
+			status: 500,
+			error: `Failed to submit structure: ${error.message}`,
+		}
 	}
 };
 
 export const getAllJobs = async (
 	token: any
-) => {
+): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
 		const res = await API.get("/jobs/");
-		return res.data;
+		return {
+			status: res.status,
+			data: res.data,
+		}
 	} catch (error) {
 		console.error("Failed to fetch jobs", error);
-		return [];
+		return {
+			status: 500,
+			error: `Failed to fetch jobs: ${error.message}`,
+		}
 	}
 };
 
 export const getStructureDataFromS3 = async (
 	structureId: string,
 	token: any,
-): Promise<string | null> => {
+): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
 		const res = await API.get(`/presigned/${structureId}`);
@@ -164,36 +194,54 @@ export const getStructureDataFromS3 = async (
 		const { url } = res.data;
 		const fileRes = await fetch(url);
 		const text = await fileRes.text();
-		return text;
+		return {
+			status: fileRes.status,
+			data: text,
+		}
 	} catch (error) {
 		console.error("Failed to fetch structure from S3", error);
-		return null;
+		return {
+			status: 500,
+			error: `Failed to fetch structure from S3: ${error.message}`,
+		}
 	}
 };
 
 export const getLibraryStructures = async (
 	token: any,
-): Promise<Structure[]> => {
+): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
 		const res = await API.get("/structures/");
-		return res.data;
+		return {
+			status: res.status,
+			data: res.data,
+		}
 	} catch (error) {
 		console.error("Failed to fetch structures", error);
-		return [];
+		return {
+			status: 500,
+			error: `Failed to fetch structures: ${error.message}`,
+		};
 	}
 }
 
 export const getJobByJobID = async (
 	jobId: string, 
 	token: any,
-): Promise<Job | null> => {
+): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get(`/jobs/${jobId}`);
-		return res.data;
+		const response = await API.get(`/jobs/${jobId}`);
+		return {
+			status: response.status,
+			data: response.data,
+		};
 	} catch (error) {
 		console.error("Failed to fetch job details", error);
-		return null;
+		return {
+			status: 500,
+			error: `Failed to fetch job details: ${error.message}`,
+		};
 	}
 }

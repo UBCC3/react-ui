@@ -38,7 +38,7 @@ import {
 } from "../components/custom";
 import { 
 	getStructureDataFromS3, 
-	submitStructure, 
+	AddAndUploadStructureToS3, 
 	getLibraryStructures 
 } from "../services/api";
 import type { Structure } from "../types";
@@ -68,9 +68,9 @@ const MoleculeLibrary = () => {
 		setLoading(true);
 		try {
 			const token = await getAccessTokenSilently();
-			const structures = await getLibraryStructures(token);
-			setLibraryStructures(structures);
-			setFilteredStructures(structures);
+			const response = await getLibraryStructures(token);
+			setLibraryStructures(response.data);
+			setFilteredStructures(response.data);
 			setSelectedStructureId("");
 			setError(null);
 		} catch (err) {
@@ -106,12 +106,12 @@ const MoleculeLibrary = () => {
 
 		try {
 			const token = await getAccessTokenSilently();
-			await submitStructure(uploadedFile, structureName, token);
+			await AddAndUploadStructureToS3(uploadedFile, structureName, token);
 
 			// Refresh the library after successful submission
-			const structures = await getLibraryStructures(token);
-			setLibraryStructures(structures);
-			setFilteredStructures(structures);
+			const response = await getLibraryStructures(token);
+			setLibraryStructures(response.data);
+			setFilteredStructures(response.data);
 
 			// Reset form state
 			setUploadedFile(null);
@@ -135,12 +135,12 @@ const MoleculeLibrary = () => {
 
 		try {
             const token = await getAccessTokenSilently();
-            const data = await getStructureDataFromS3(structureId, token);
-			if (!data) {
+            const response = await getStructureDataFromS3(structureId, token);
+			if (response.error) {
 				setError('Failed to load molecule structure. Please try again.');
 				return;
 			}
-            setStructureData(data);
+            setStructureData(response.data);
             setError(null);
         } catch (err) {
             setError('Failed to load molecule structure. Please try again.');
@@ -169,9 +169,9 @@ const MoleculeLibrary = () => {
 		const loadSavedMolecules = async () => {
 			try {
 				const token = await getAccessTokenSilently();
-				const structures = await getLibraryStructures(token);
-				setLibraryStructures(structures);
-				setFilteredStructures(structures);
+				const response = await getLibraryStructures(token);
+				setLibraryStructures(response.data);
+				setFilteredStructures(response.data);
 			} catch (err) {
 				setError('Failed to fetch molecules. Please try again later.');
 				console.error("Failed to fetch jobs", err);

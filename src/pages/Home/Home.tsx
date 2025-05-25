@@ -14,7 +14,7 @@ import {
 	getJobStatusBySlurmID, 
 	getLibraryStructures, 
 	getStructureDataFromS3, 
-	updateStatus,
+	updateJobStatus,
 } from '../../services/api';
 import { JobStatus } from '../../constants';
 import JobsStatus from './components/JobsStatus';
@@ -66,9 +66,10 @@ export default function Home() {
 			for (const job of jobsRef.current) {
 				if (![JobStatus.COMPLETED, JobStatus.FAILED].includes(job.status)) {
 					try {
-						const newStatus = await getJobStatusBySlurmID(job.slurm_id as string);
+						const response = await getJobStatusBySlurmID(job.slurm_id as string, token);
+						const newStatus = response.data;
 						if (newStatus === job.status) continue;
-						await updateStatus(job.job_id, newStatus, token);
+						await updateJobStatus(job.job_id, newStatus, token);
 						setJobs(prev => prev.map(j =>
 							j.job_id === job.job_id ? { ...j, status: newStatus as string } : j
 						));
@@ -88,15 +89,15 @@ export default function Home() {
 		const loadData = async () => {
 			try {
 				const token = await getAccessTokenSilently();
-				const [allJobs, allStructures] = await Promise.all([
+				const [jobsResponse, structuresResponse] = await Promise.all([
 					getAllJobs(token),
 					getLibraryStructures(token)
 				]);
 				
-				setJobs(allJobs);
-				setFilteredJobs(allJobs);
+				setJobs(jobsResponse.data);
+				setFilteredJobs(jobsResponse.data);
 
-				const sortedStructures = allStructures.sort((a, b) => a.name.localeCompare(b.name));
+				const sortedStructures = structuresResponse.data.sort((a, b) => a.name.localeCompare(b.name));
 				setStructures([{ 
 					structure_id: '', 
 					name: 'All', 
@@ -138,12 +139,12 @@ export default function Home() {
 
 		try {
 			const token = await getAccessTokenSilently();
-			const data = await getStructureDataFromS3(structureId, token);
-			if (!data) {
+			const response = await getStructureDataFromS3(structureId, token);
+			if (response.error) {
 				setError('Failed to load molecule structure. Please try again.');
 				return;
 			}
-			setPreviewData(data);
+			setPreviewData(response.data);
 			setError(null);
 			setOpen(true);
 		} catch (err) {
@@ -159,8 +160,8 @@ export default function Home() {
 
 		try {
 			const token = await getAccessTokenSilently();
-			const refreshed = await getAllJobs(token);
-			setJobs(refreshed);
+			const response = await getAllJobs(token);
+			setJobs(response.data);
 			setFilterStructureId('');
 		} catch (err) {
 			setError('Failed to refresh jobs');

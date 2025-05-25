@@ -25,10 +25,11 @@ import {
 	MolmakerPageTitle
 } from '../../components/custom'
 import { 
-	addjob, 
+	addJobToDB, 
 	getLibraryStructures, 
 	getStructureDataFromS3, 
-	submitStructure,
+	submitStandardAnalysis, 
+	AddAndUploadStructureToS3,
 } from '../../services/api';
 import { multiplicityOptions } from '../../constants';
 import { Structure } from '../../types';
@@ -62,7 +63,12 @@ export default function StandardAnalysis() {
 			try {
 				setLoading(true);
 				const token = await getAccessTokenSilently();
-				let res = await getLibraryStructures(token);
+				const response = await getLibraryStructures(token);
+				if (response.error) {
+					setError('Failed to fetch library. Please try again later.');
+					return;
+				}
+				let res = response.data;
 				res = [{ 
 					structure_id: '',
 					name: 'Select a molecule',
@@ -117,12 +123,12 @@ export default function StandardAnalysis() {
 		try {
 			setLoading(true);
 			const token = await getAccessTokenSilently();
-			const structureData = await getStructureDataFromS3(structure_id, token);
-			if (!structureData) {
+			const response = await getStructureDataFromS3(structure_id, token);
+			if (response.error) {
 				setError('Failed to load structure. Please try again or select a different molecule.');
 				return;
 			}
-			setStructureData(structureData);
+			setStructureData(response.data);
 		} catch (err) {
 			setError('Failed to load structure. Please try again or select a different molecule.');
 			console.error('Failed to load structure', err);
@@ -141,12 +147,10 @@ export default function StandardAnalysis() {
 
 		if (source === 'upload' && !uploadFile) {
 			setError('Please upload a structure file.');
-			setLoading(false);
 			return;
 		}
 		if (source === 'library' && !structureIdToUse) {
 			setError('Please select a molecule from the library.');
-			setLoading(false);
 			return;
 		}
 
@@ -159,7 +163,6 @@ export default function StandardAnalysis() {
 
 		if (!uploadFile) {
 			setError('No file to upload.');
-			setLoading(false);
 			return;
 		}
 
@@ -172,31 +175,32 @@ export default function StandardAnalysis() {
 		setLoading(true);
 		try {
 			const token = await getAccessTokenSilently();
-			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/upload_submit`,
-				{
-					method: 'POST',
-					headers: { Authorization: `Bearer ${token}` },
-					body: formData
-				}
+			let response = await submitStandardAnalysis(
+				jobName,
+				uploadFile,
+				charge,
+				multiplicity,
+				structureIdToUse,
+				token
 			);
-			if (!res.ok) throw new Error(`HTTP ${res.status}`);
-			const data = await res.json();
-			const { job_id, slurm_id } = data;
-			if (!job_id || !slurm_id) throw new Error('Invalid response');
+			if (response.error) {
+				throw new Error(response.error);
+			}
+			const { job_id, slurm_id } = response.data;
 
 			if (uploadStructure && source === 'upload') {
-				const resStruct = await submitStructure(
+				response = await AddAndUploadStructureToS3(
 					uploadFile,
 					structureName,
 					token
 				);
-				if (resStruct && resStruct.status === 200) {
-					structureIdToUse = resStruct.data.structure_id;
+				if (response.error) {
+					throw new Error(response.error);
 				}
+				structureIdToUse = response.data.structure_id;
 			}
 
-			const res2 = await addjob(
+			response = await addJobToDB(
 				jobName,
 				"mp2",
 				"6-311+G(2d,p)",
@@ -208,7 +212,9 @@ export default function StandardAnalysis() {
 				slurm_id,
 				token
 			);
-			if (!res2) throw new Error('Failed to add job');
+			if (response.error) {
+				throw new Error(response.error);
+			}
 			navigate('/');
 		} catch (err) {
 			setError('Submit failed. Please check your input and try again.');

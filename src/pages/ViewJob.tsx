@@ -27,8 +27,12 @@ function ViewJob() {
 		const loadJob = async () => {
 			try {
 				const token = await getAccessTokenSilently();
-				const res = await getJobByJobID(jobId as string, token);
-				setJob(res);
+				const response = await getJobByJobID(jobId as string, token);
+				if (response.error) {
+					setError(response.error);
+					return;
+				}
+				setJob(response.data);
 			} catch (err) {
 				setError("Failed to fetch job details");
 				console.error("Failed to fetch job details", err);

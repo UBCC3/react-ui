@@ -62,14 +62,19 @@ const AdvancedAnalysis = () => {
         const loadLibrary = async () => {
             try {
                 const token = await getAccessTokenSilently();
-                let res = await getLibraryStructures(token);
-                res = [{
+                const response = await getLibraryStructures(token);
+                if (response.error) {
+                    setError('Failed to fetch library. Please try again later.');
+                    return;
+                }
+                let structures = response.data;
+                structures = [{
                     structure_id: '',
                     name: 'Select a molecule',
                     user_sub: '',
                     location: ''
-                }, ...res ];
-                setStructures(res);
+                }, ...structures ];
+                setStructures(structures);
             } catch (err) {
                 setError('Failed to fetch library. Please try again later.');
                 console.error('Failed to fetch library', err);
@@ -110,12 +115,12 @@ const AdvancedAnalysis = () => {
         if (selected_structure_id) {
             try {
                 const token = await getAccessTokenSilently();
-                const structureData = await getStructureDataFromS3(selected_structure_id, token);
-                if (!structureData) {
+                const response = await getStructureDataFromS3(selected_structure_id, token);
+                if (response.error) {
                     setError('Failed to load structure. Please try again or select a different molecule.');
                     return;
                 }
-                setStructureData(structureData);
+                setStructureData(response.data);
             } catch (err) {
                 setError('Failed to load structure. Please try again or select a different molecule.');
                 console.error('Failed to load structure', err);
