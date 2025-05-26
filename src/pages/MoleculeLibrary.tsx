@@ -61,7 +61,6 @@ const MoleculeLibrary = () => {
 	const [notes, setNotes] = useState<string>("");
 	const [structureData, setStructureData] = useState<string>("");
 	const [libraryStructures, setLibraryStructures] = useState<Structure[]>([]);
-	const [filteredStructures, setFilteredStructures] = useState<Structure[]>([]);
 	const [selectedStructureId, setSelectedStructureId] = useState<string>("");
 
 	const handleRefresh = async () => {
@@ -70,7 +69,6 @@ const MoleculeLibrary = () => {
 			const token = await getAccessTokenSilently();
 			const response = await getLibraryStructures(token);
 			setLibraryStructures(response.data);
-			setFilteredStructures(response.data);
 			setSelectedStructureId("");
 			setError(null);
 		} catch (err) {
@@ -111,8 +109,6 @@ const MoleculeLibrary = () => {
 			// Refresh the library after successful submission
 			const response = await getLibraryStructures(token);
 			setLibraryStructures(response.data);
-			setFilteredStructures(response.data);
-
 			// Reset form state
 			setUploadedFile(null);
 			setStructureName("");
@@ -171,7 +167,6 @@ const MoleculeLibrary = () => {
 				const token = await getAccessTokenSilently();
 				const response = await getLibraryStructures(token);
 				setLibraryStructures(response.data);
-				setFilteredStructures(response.data);
 			} catch (err) {
 				setError('Failed to fetch molecules. Please try again later.');
 				console.error("Failed to fetch jobs", err);
@@ -215,7 +210,7 @@ const MoleculeLibrary = () => {
 		const newOrder = isAsc ? 'desc' : 'asc';
 		setOrder(newOrder);
 		setOrderBy(column);
-		const sorted = [...filteredStructures].sort((a, b) => {
+		const sorted = [...libraryStructures].sort((a, b) => {
 			const aValue = a[column];
 			const bValue = b[column];
 			if (typeof aValue === 'string' && typeof bValue === 'string') {
@@ -223,7 +218,7 @@ const MoleculeLibrary = () => {
 			}
 			return newOrder === 'asc' ? (aValue < bValue ? -1 : 1) : (aValue > bValue ? -1 : 1);
 		});
-		setFilteredStructures(sorted);
+		setLibraryStructures(sorted);
 	};
 
   	return (
@@ -354,7 +349,7 @@ const MoleculeLibrary = () => {
 									</TableRow>
 								</TableHead>
 								<TableBody>
-									{filteredStructures.length === 0 && (
+									{libraryStructures.length === 0 && (
 										<TableRow>
 											<TableCell colSpan={3} align="center">
 												<Typography variant="body2" color="text.secondary">
@@ -363,7 +358,7 @@ const MoleculeLibrary = () => {
 											</TableCell>
 										</TableRow>
 									)}
-									{filteredStructures.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((molecule) => (
+									{libraryStructures.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((molecule) => (
 										<TableRow 
 											key={molecule.structure_id} 
 											onClick={() => {
@@ -384,7 +379,7 @@ const MoleculeLibrary = () => {
 						<TablePagination
 							component="div"
 							rowsPerPageOptions={[5, 10, 25]}
-							count={filteredStructures.length}
+							count={libraryStructures.length}
 							rowsPerPage={rowsPerPage}
 							page={page}
 							onPageChange={(_, newPage) => setPage(newPage)}
