@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useAuth0 } from '@auth0/auth0-react'
 import { useNavigate } from 'react-router-dom'
 import { 
     Box, 
@@ -7,14 +8,6 @@ import {
     Button,
     Paper,
 } from '@mui/material'
-import { 
-    wavefunctionTheory, 
-    densityTheory, 
-    calculationTypes, 
-    basisSets, 
-    multiplicityOptions,
-} from '../../constants'
-import { useAuth0 } from '@auth0/auth0-react'
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline'
 import {
     MolmakerPageTitle,
@@ -27,7 +20,15 @@ import {
     MolmakerAlert,
     MolmakerLoading
 } from '../../components/custom'
-import { getLibraryStructures, getStructureDataFromS3 } from '../../services/api'
+import { 
+    getCalculationTypes, 
+    getLibraryStructures, 
+    getStructureDataFromS3,
+    getWavefunctionMethods,
+    getDensityFunctionalMethods,
+    getBasisSets,
+    getMultiplicities,
+} from '../../services/api'
 import { Structure } from '../../types'
 
 const AdvancedAnalysis = () => {
@@ -57,8 +58,56 @@ const AdvancedAnalysis = () => {
     const [theory, setTheory] = useState<string>('scf');
     const [basisSet, setBasisSet] = useState<string>('sto-3g');
 
+    // dropdown options state
+    const [wavefunctionTheory, setWavefunctionTheory] = useState<{ [key: string]: string }>({});
+    const [densityTheory, setDensityTheory] = useState<string[]>([]);
+    const [calculationTypes, setCalculationTypes] = useState<string[]>([]);
+    const [basisSets, setBasisSets] = useState<string[]>([]);
+    const [multiplicityOptions, setMultiplicityOptions] = useState<{ [key: string]: number }>({});
+
     // Load library on mount
     useEffect(() => {
+        // Load dropdown options
+        const loadDropdownOptions = async () => {
+            try {
+                const token = await getAccessTokenSilently();
+                let response = await getCalculationTypes(token);
+                if (response.error) {
+                    setError('Failed to load calculation types. Please try again later.');
+                    return;
+                }
+                setCalculationTypes(response.data);
+                response = await getWavefunctionMethods(token);
+                if (response.error) {
+                    setError('Failed to load wavefunction methods. Please try again later.');
+                    return;
+                }
+                setWavefunctionTheory(response.data);
+                response = await getDensityFunctionalMethods(token);
+                if (response.error) {
+                    setError('Failed to load density functional methods. Please try again later.');
+                    return;
+                }
+                setDensityTheory(response.data);
+                response = await getBasisSets(token);
+                if (response.error) {
+                    setError('Failed to load basis sets. Please try again later.');
+                    return;
+                }
+                setBasisSets(response.data);
+                response = await getMultiplicities(token);
+                if (response.error) {
+                    setError('Failed to load multiplicities. Please try again later.');
+                    return;
+                }
+                setMultiplicityOptions(response.data);
+            } catch (err) {
+                setError('Failed to load calculation types. Please try again later.');
+                console.error('Failed to load calculation types', err);
+            } finally {
+                setLoading(false);
+            }
+        }
         const loadLibrary = async () => {
             try {
                 const token = await getAccessTokenSilently();
@@ -84,6 +133,7 @@ const AdvancedAnalysis = () => {
         }
 
         setLoading(true);
+        loadDropdownOptions();
         loadLibrary();
     }, [getAccessTokenSilently]);
 

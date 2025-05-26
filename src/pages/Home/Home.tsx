@@ -67,6 +67,7 @@ export default function Home() {
 				if (![JobStatus.COMPLETED, JobStatus.FAILED].includes(job.status)) {
 					try {
 						const response = await getJobStatusBySlurmID(job.slurm_id as string, token);
+						console.log('Polling job status:', job.slurm_id, response);
 						const newStatus = response.data;
 						if (newStatus === job.status) continue;
 						await updateJobStatus(job.job_id, newStatus, token);

@@ -25,13 +25,13 @@ import {
 	MolmakerPageTitle
 } from '../../components/custom'
 import { 
-	addJobToDB, 
+	createJob, 
 	getLibraryStructures, 
 	getStructureDataFromS3, 
 	submitStandardAnalysis, 
 	AddAndUploadStructureToS3,
+	getMultiplicities
 } from '../../services/api';
-import { multiplicityOptions } from '../../constants';
 import { Structure } from '../../types';
 
 export default function StandardAnalysis() {
@@ -57,8 +57,28 @@ export default function StandardAnalysis() {
     const [charge, setCharge] = useState<number>(0);
     const [multiplicity, setMultiplicity] = useState<number>(1);
 
+	// dropdown options for multiplicity
+	const [multiplicityOptions, setMultiplicityOptions] = useState<{ [key: string]: number }>({});
+
 	// fetch library
 	useEffect(() => {
+		const loadMultiplicityOptions = async () => {
+			try {
+				const token = await getAccessTokenSilently();
+				const response = await getMultiplicities(token);
+                if (response.error) {
+                    setError('Failed to load multiplicities. Please try again later.');
+                    return;
+                }
+                setMultiplicityOptions(response.data);
+			} catch (err) {
+				setError('Failed to fetch multiplicity options. Please try again later.');
+				console.error('Failed to fetch multiplicity options', err);
+			} finally {
+				setLoading(false);
+			}
+		}
+
 		const loadLibraryStructures = async () => {
 			try {
 				setLoading(true);
@@ -85,6 +105,7 @@ export default function StandardAnalysis() {
 		}
 
 		setLoading(true);
+		loadMultiplicityOptions();
 		loadLibraryStructures();
 	}, [getAccessTokenSilently]);
 
@@ -200,14 +221,14 @@ export default function StandardAnalysis() {
 				structureIdToUse = response.data.structure_id;
 			}
 
-			response = await addJobToDB(
+			response = await createJob(
+				uploadFile,
 				jobName,
 				"mp2",
 				"6-311+G(2d,p)",
 				"energy",
 				charge,
 				multiplicity,
-				uploadFile,
 				structureIdToUse,
 				slurm_id,
 				token
