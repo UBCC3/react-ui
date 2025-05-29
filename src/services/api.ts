@@ -47,6 +47,37 @@ export const getJobStatusBySlurmID = async (
 	}
 };
 
+export const submitAdvancedAnalysis = async (
+	file: File | Blob,
+	calculationType: string,
+	method: string,
+	basisSet: string,
+	charge: number,
+	multiplicity: number,
+): Promise<Response> => {
+	const formData = new FormData();
+	formData.append("file", file);
+	formData.append("calculation_type", calculationType);
+	formData.append("method", method);
+	formData.append("basis_set", basisSet);
+	formData.append("charge", charge.toString());
+	formData.append("multiplicity", multiplicity.toString());
+	try {
+		const API = createClusterAPI(null); // No token needed for this endpoint
+		const response = await API.post("/run_advance_analysis/", formData);
+		return {
+			status: response.status,
+			data: response.data,
+		};
+	} catch (error) {
+		console.error("Advanced analysis submission failed", error);
+		return {
+			status: 500,
+			error: `Failed to submit advanced analysis: ${error.message}`,
+		};
+	}
+};
+
 export const submitStandardAnalysis = async (
 	jobName: string,
 	file: File | Blob,

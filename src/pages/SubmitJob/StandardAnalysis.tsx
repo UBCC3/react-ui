@@ -320,7 +320,6 @@ export default function StandardAnalysis() {
 													}
 												}}
 												required
-												helperText={submitAttempted && !charge ? 'Please enter a charge' : ''}
 											/>
 										</Grid>
 										<Grid size={{ xs: 12, md: 6 }}>

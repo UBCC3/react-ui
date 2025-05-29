@@ -30,6 +30,7 @@ import {
     getMultiplicities,
 } from '../../services/api'
 import { Structure } from '../../types'
+import { submitAdvancedAnalysis } from '../../services/api'
 
 const AdvancedAnalysis = () => {
     const navigate = useNavigate();
@@ -186,7 +187,7 @@ const AdvancedAnalysis = () => {
         let structureIdToUse = selectedStructure;
         let uploadFile = file;
 
-        if (!jobName || !structureData || !theory || !calculationType || !basisSet || !charge || !multiplicity) {
+        if (!jobName || !structureData || !theory || !calculationType || !basisSet || !multiplicity) {
             setError('Please fill in all required fields');
             return;
         }
@@ -222,6 +223,22 @@ const AdvancedAnalysis = () => {
 
         setLoading(true);
         try {
+            const token = await getAccessTokenSilently();
+            const response = await submitAdvancedAnalysis(
+                uploadFile,
+                calculationType,
+                theory,
+                basisSet,
+                charge,
+                multiplicity
+            );
+            if (response.status !== 200) {
+                setError(`Failed to submit job: ${response.error || 'Unknown error'}`);
+                console.error('Failed to submit job', response.error);
+                return;
+            }
+            // Job submitted successfully, redirect to job list
+            setSubmitAttempted(false);
             navigate('/');
         } catch (err) {
             setError('Failed to submit job. Please try again later.');
@@ -393,7 +410,6 @@ const AdvancedAnalysis = () => {
                                                         setCharge(parseInt(val));
                                                     }
                                                 }}
-                                                helperText={submitAttempted && !charge ? 'Please enter a charge' : undefined}
                                                 required
                                             />
                                         </Grid>
