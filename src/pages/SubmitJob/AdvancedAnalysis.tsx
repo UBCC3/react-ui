@@ -28,6 +28,8 @@ import {
     getDensityFunctionalMethods,
     getBasisSets,
     getMultiplicities,
+    createJob,
+    AddAndUploadStructureToS3,
 } from '../../services/api'
 import { Structure } from '../../types'
 import { submitAdvancedAnalysis } from '../../services/api'
@@ -53,7 +55,7 @@ const AdvancedAnalysis = () => {
     const [selectedStructure, setSelectedStructure] = useState<string>('');
     const [structureName, setStructureName] = useState<string>('');
     const [charge, setCharge] = useState<number>(0);
-    const [calculationType, setCalculationType] = useState<string>('Molecular Energy');
+    const [calculationType, setCalculationType] = useState<string>('energy');
     const [multiplicity, setMultiplicity] = useState<number>(1);
     const [theoryType, setTheoryType] = useState('wavefunction');
     const [theory, setTheory] = useState<string>('scf');
@@ -62,7 +64,7 @@ const AdvancedAnalysis = () => {
     // dropdown options state
     const [wavefunctionTheory, setWavefunctionTheory] = useState<{ [key: string]: string }>({});
     const [densityTheory, setDensityTheory] = useState<string[]>([]);
-    const [calculationTypes, setCalculationTypes] = useState<string[]>([]);
+    const [calculationTypes, setCalculationTypes] = useState<{ [key: string]: number }>({});
     const [basisSets, setBasisSets] = useState<string[]>([]);
     const [multiplicityOptions, setMultiplicityOptions] = useState<{ [key: string]: number }>({});
 
@@ -224,18 +226,47 @@ const AdvancedAnalysis = () => {
         setLoading(true);
         try {
             const token = await getAccessTokenSilently();
-            const response = await submitAdvancedAnalysis(
+            let response = await submitAdvancedAnalysis(
                 uploadFile,
                 calculationType,
                 theory,
                 basisSet,
                 charge,
-                multiplicity
+                multiplicity,
+                token
             );
-            if (response.status !== 200) {
-                setError(`Failed to submit job: ${response.error || 'Unknown error'}`);
-                console.error('Failed to submit job', response.error);
-                return;
+            if (response.error) {
+                throw new Error(response.error);
+            }
+            const { job_id, slurm_id } = response.data;
+
+            if (uploadStructure && source === 'upload') {
+                response = await AddAndUploadStructureToS3(
+                    uploadFile,
+                    structureName,
+                    token
+                );
+                if (response.error) {
+                    throw new Error(response.error);
+                }
+                structureIdToUse = response.data.structure_id;
+            }
+
+            response = await createJob(
+                uploadFile,
+                job_id,
+                jobName,
+                theory,
+                basisSet,
+                calculationType,
+                charge,
+                multiplicity,
+                structureIdToUse,
+                slurm_id,
+                token
+            );
+            if (response.error) {
+                throw new Error(response.error);
             }
             // Job submitted successfully, redirect to job list
             setSubmitAttempted(false);
@@ -369,10 +400,10 @@ const AdvancedAnalysis = () => {
                                                 label="Calculation Type"
                                                 value={calculationType}
                                                 onChange={(e: React.ChangeEvent<HTMLInputElement>)  => setCalculationType(e.target.value)}
-                                                options={calculationTypes
-                                                    .map(type => ({
-                                                        label: type,
-                                                        value: type
+                                                options={Object.entries(calculationTypes)
+                                                    .map(([key, value]) => ({
+                                                        label: key,
+                                                        value: value
                                                     })
                                                 )}
                                                 helperText={submitAttempted && !calculationType ? 'Please select a calculation type' : undefined}

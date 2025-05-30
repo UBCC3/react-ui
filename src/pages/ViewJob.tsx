@@ -6,7 +6,7 @@ import {
 	Paper,
 	Grid,
 } from '@mui/material';
-import { getJobByJobID } from '../services/api';
+import { fetchJobError, fetchJobResults, getJobByJobID } from '../services/api';
 import { MolmakerPageTitle, MolmakerTextField, MolmakerAlert } from '../components/custom';
 import MolmakerLoading from '../components/custom/MolmakerLoading';
 import NotFound from './NotFound';
@@ -24,29 +24,49 @@ function ViewJob() {
 	const [job, setJob] = useState<Job | null>(null);
 
   	useEffect(() => {
-		const loadJob = async () => {
+		if (!jobId) {
+			setError("Job ID is required");
+			setLoading(false);
+			return;
+		}
+
+		const fetchJobAndResult = async () => {
+			setLoading(true);
 			try {
 				const token = await getAccessTokenSilently();
 				const response = await getJobByJobID(jobId as string, token);
 				if (response.error) {
 					setError(response.error);
+					setLoading(false);
 					return;
 				}
-				setJob(response.data);
+				const jobData = response.data;
+				setJob(jobData);
+
+				// Fetch result or error only based on job status
+				let resultResponse: { data?: any; error?: string } | null = null;
+				if (jobData.status === 'completed') {
+					resultResponse = await fetchJobResults(jobId as string, token);
+				} else if (jobData.status === 'error' || jobData.status === 'failed') {
+					resultResponse = await fetchJobError(jobId as string, token);
+				}
+
+				if (resultResponse) {
+					if (resultResponse.error) {
+						setError(resultResponse.error);
+					} else if (resultResponse.data) {
+						setJob((prevJob) => prevJob ? { ...prevJob, result: resultResponse!.data } : prevJob);
+					}
+				}
 			} catch (err) {
-				setError("Failed to fetch job details");
-				console.error("Failed to fetch job details", err);
+				setError("Failed to fetch job details or results");
+				console.error("Failed to fetch job details or results", err);
 			} finally {
 				setLoading(false);
 			}
 		};
 
-		if (!jobId) {
-			setLoading(false);
-			return;
-		}
-		setLoading(true);
-		loadJob();
+		fetchJobAndResult();
 	}, [jobId]);
 
 	if (loading) {
@@ -172,10 +192,7 @@ function ViewJob() {
 								<MolmakerTextField
 									fullWidth
 									label="Result"
-									value={job.status === 'completed' ?
-										JSON.stringify(job.result, null, 2) :
-										job.status === 'pending' ? 'Pending' : 'Error'
-									}
+									value={JSON.stringify(job.result, null, 2) || 'No result available'}
 									onChange={() => {}}
 									sx={{ mb: 2 }}
 									slotProps={{
@@ -184,6 +201,7 @@ function ViewJob() {
 										},
 									}}
 									multiline
+									rows={10}
 								/>
 							</Grid>
 						</Box>

@@ -223,6 +223,7 @@ export default function StandardAnalysis() {
 
 			response = await createJob(
 				uploadFile,
+				job_id,
 				jobName,
 				"mp2",
 				"6-311+G(2d,p)",

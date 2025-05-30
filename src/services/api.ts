@@ -54,6 +54,7 @@ export const submitAdvancedAnalysis = async (
 	basisSet: string,
 	charge: number,
 	multiplicity: number,
+	token: any
 ): Promise<Response> => {
 	const formData = new FormData();
 	formData.append("file", file);
@@ -63,7 +64,7 @@ export const submitAdvancedAnalysis = async (
 	formData.append("charge", charge.toString());
 	formData.append("multiplicity", multiplicity.toString());
 	try {
-		const API = createClusterAPI(null); // No token needed for this endpoint
+		const API = createClusterAPI(token); // No token needed for this endpoint
 		const response = await API.post("/run_advance_analysis/", formData);
 		return {
 			status: response.status,
@@ -230,8 +231,43 @@ export const getJobById = async (
   }
 };
 
+export const fetchJobResults = async (
+	jobId: string,
+	token: string
+): Promise<Response> => {
+	try {
+		const API = createClusterAPI(token);
+		const res = await API.get(`/result/${jobId}`);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to fetch job results', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+export const fetchJobError = async (
+	jobId: string,
+	token: string
+): Promise<Response> => {
+	try {
+		const API = createClusterAPI(token);
+		const res = await API.get(`/error/${jobId}`);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to fetch job error', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
 export const createJob = async (
 	file: File | Blob,
+	jobId: string,
 	jobName: string,
 	method: string,
 	basisSet: string,
@@ -244,6 +280,7 @@ export const createJob = async (
 ): Promise<Response> => {
 	const formData = new FormData();
 	formData.append('file', file);
+	formData.append('job_id', jobId);
 	formData.append('job_name', jobName);
 	formData.append('method', method);
 	formData.append('basis_set', basisSet);
