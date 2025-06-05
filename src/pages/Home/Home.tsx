@@ -7,9 +7,12 @@ import {
 	Divider,
 	TablePagination,
 	Dialog,
+	Alert,
+	Snackbar,
 } from '@mui/material';
 import { blueGrey } from '@mui/material/colors';
 import { 
+	cancelJobBySlurmID,
 	getAllJobs, 
 	getJobStatusBySlurmID, 
 	getLibraryStructures, 
@@ -55,6 +58,11 @@ export default function Home() {
 	const [orderBy, setOrderBy] = useState<keyof Job>('submitted_at');
 	const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
 
+	// general alert
+	const [alertShow, setAlertShow] = useState<boolean>(false);
+	const [alertMsg, setAlertMsg] = useState<string>('');
+	const [alertSeverity, setAlertSeverity] = useState<'success' | 'error' | 'info' | 'warning'>('info');
+
 	// track jobs for polling
 	const jobsRef = useRef<Job[]>([]);
 	useEffect(() => { jobsRef.current = jobs; }, [jobs]);
@@ -64,7 +72,7 @@ export default function Home() {
 		const interval = setInterval(async () => {
 			const token = await getAccessTokenSilently();
 			for (const job of jobsRef.current) {
-				if (![JobStatus.COMPLETED, JobStatus.FAILED].includes(job.status)) {
+				if (![JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED].includes(job.status)) {
 					try {
 						const response = await getJobStatusBySlurmID(job.slurm_id as string, token);
 						console.log('Polling job status:', job.slurm_id, response);
@@ -172,6 +180,45 @@ export default function Home() {
 		}
 	};
 
+	const handleCancel = async () => {
+		setLoading(true);
+		
+		try {
+			const token = await getAccessTokenSilently();
+			const jobToCancel = jobs.find(j => j.job_id === selectedJobId);
+			const response = await cancelJobBySlurmID(jobToCancel.slurm_id, token);
+	
+			if (response.data === 'cancelled') {
+				setAlertMsg(`Job ${jobToCancel.job_name} cancelled successfully!`);
+				setAlertSeverity('success');
+				setAlertShow(true)
+				// setTimeout(() => {
+				// 	setAlertShow(false)
+				// }, 5000)
+			}
+		} catch (err) {
+			setAlertMsg('Failed to cancel the job');
+			setAlertSeverity('error');
+			setAlertShow(true);
+			console.error('Failed to cancel the job', err);
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const cancelDisabled = (selectedJobId: string):boolean => {
+		if (selectedJobId === '') {
+			return true;
+		}
+
+		const jobToCancel = jobs.find(j => j.job_id === selectedJobId);
+		if (jobToCancel.status === 'cancelled') {
+			return true
+		}
+
+		return false
+	}
+
 	if (loading) {
 		return (
 			<MolmakerLoading />
@@ -200,6 +247,35 @@ export default function Home() {
 					/>
 				</Box>
 			</Dialog>
+			<Box
+				sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+			>
+				{/* TODO which style is better */}
+				{/* {alertShow && (
+					<MolmakerAlert
+						text={alertMsg}
+						severity={alertSeverity}
+						outline={alertSeverity}
+						sx={{ mb: 2, maxWidth: 500 }}
+					/>
+				)} */}
+				<Snackbar 
+					open={alertShow} 
+					autoHideDuration={5000}
+					onClose={() => { setAlertShow(false) }}
+					anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+					sx={{ top: { xs: '48px', sm: '80px' } }}
+				>
+					<div>
+						<MolmakerAlert
+							text={alertMsg}
+							severity={alertSeverity}
+							outline={alertSeverity}
+							sx={{ mb: 2, maxWidth: 500 }}
+						/>
+					</div>
+				</Snackbar>
+			</Box>
 			<MolmakerPageTitle
 				title="Dashboard"
 				subtitle={
@@ -225,7 +301,8 @@ export default function Home() {
 							setFilterStructureId(job.structures[0].structure_id);
 						}
 					}}
-					onCancelJob={() => {}}
+					cancelDisabled={cancelDisabled}
+					onCancelJob={handleCancel}
 					onRefresh={handleRefresh}
 					structures={structures}
 					selectedStructure={filterStructureId}

@@ -33,6 +33,11 @@ import {
 } from '../../services/api'
 import { Structure } from '../../types'
 import { submitAdvancedAnalysis } from '../../services/api'
+import * as React from 'react'
+import {
+    Keyword,
+    KeywordEditor
+} from './KeywordEditor'
 
 const AdvancedAnalysis = () => {
     const navigate = useNavigate();
@@ -65,8 +70,15 @@ const AdvancedAnalysis = () => {
     const [wavefunctionTheory, setWavefunctionTheory] = useState<{ [key: string]: string }>({});
     const [densityTheory, setDensityTheory] = useState<string[]>([]);
     const [calculationTypes, setCalculationTypes] = useState<{ [key: string]: number }>({});
-    const [basisSets, setBasisSets] = useState<string[]>([]);
+    const [basisSets, setBasisSets] = useState<{ [key: string]: string }>({});
     const [multiplicityOptions, setMultiplicityOptions] = useState<{ [key: string]: number }>({});
+
+    // keywords (optional)
+    const [keywords, setKeywords] = useState<Keyword[]>([]);
+
+    const handleKeywordsChange = (updatedKeywords: Keyword[]) => {
+        setKeywords(updatedKeywords);
+    }
 
     // Load library on mount
     useEffect(() => {
@@ -223,6 +235,20 @@ const AdvancedAnalysis = () => {
         formData.append('calculation_type', calculationType);
         formData.append('basis_set', basisSet);
 
+        let keywordsJsonFile: File | undefined = undefined;
+        if (keywords.length > 0) {
+            const payload: Record<string, any> = keywords.reduce((obj, { key, value }) => {
+                obj[key] = value;
+                return obj;
+            }, {});
+            const keywordsJsonStr = JSON.stringify(payload);
+            const keywordsBlob = new Blob([keywordsJsonStr], { type: "application/json" });
+            keywordsJsonFile = new File([keywordsBlob], `keywords.json`, {
+                type: 'text/plain'
+            });
+            formData.append('keywords', keywordsJsonFile);
+        }
+
         setLoading(true);
         try {
             const token = await getAccessTokenSilently();
@@ -233,7 +259,8 @@ const AdvancedAnalysis = () => {
                 basisSet,
                 charge,
                 multiplicity,
-                token
+                token,
+                keywordsJsonFile
             );
             if (response.error) {
                 throw new Error(response.error);
@@ -416,10 +443,10 @@ const AdvancedAnalysis = () => {
                                                 label="Basis Set"
                                                 value={basisSet}
                                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBasisSet(e.target.value)}
-                                                options={basisSets
-                                                    .map(basis => ({
-                                                        label: basis,
-                                                        value: basis.toLowerCase()
+                                                options={Object.entries(basisSets)
+                                                    .map(([key, value]) => ({
+                                                        label: key,
+                                                        value: value
                                                     })
                                                 )}
                                                 helperText={submitAttempted && !basisSet ? 'Please select a basis set' : undefined}
@@ -462,6 +489,13 @@ const AdvancedAnalysis = () => {
                                             />
                                         </Grid>
                                     </Grid>
+                                </Box>
+                                <Divider />
+                                <Box>
+                                    <Grid>
+                                        <MolmakerSectionHeader text="Calculation Keywords" />
+                                    </Grid>
+                                    <KeywordEditor maxEntries={20} onChange={handleKeywordsChange} />
                                 </Box>
                                 <Grid size={12}>
                                     <Button
