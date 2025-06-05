@@ -25,6 +25,7 @@ interface JobsToolbarProps {
 	onViewDetails: () => void;
 	onViewStructure: () => void;
 	onFilterByStructure: () => void;
+	cancelDisabled: (selectedJobId: string) => boolean;
 	onCancelJob: () => void;
 	onRefresh: () => void;
 	structures: Array<{ structure_id: string; name: string }>;
@@ -37,6 +38,7 @@ export default function JobsToolbar({
 	onViewDetails,
 	onViewStructure,
 	onFilterByStructure,
+	cancelDisabled,
 	onCancelJob,
 	onRefresh,
 	structures,
@@ -83,7 +85,8 @@ export default function JobsToolbar({
 					<Tooltip title="Cancel job">
 						<span>
 							<IconButton
-								disabled={!selectedJobId}
+								// disabled={!selectedJobId}
+								disabled={cancelDisabled(selectedJobId)}
 								onClick={onCancelJob}
 							>
 								<Block />

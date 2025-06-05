@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useNavigate } from 'react-router-dom'
-import { 
-    Box, 
-    Grid, 
+import {
+    Box,
+    Grid,
     Divider,
     Button,
-    Paper,
+    Paper, Accordion, AccordionSummary, AccordionDetails,
 } from '@mui/material'
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline'
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
 import {
     MolmakerPageTitle,
     MolmakerTextField,
@@ -33,6 +34,11 @@ import {
 } from '../../services/api'
 import { Structure } from '../../types'
 import { submitAdvancedAnalysis } from '../../services/api'
+import * as React from 'react'
+import {
+    Keyword,
+    KeywordEditor
+} from './KeywordEditor'
 
 const AdvancedAnalysis = () => {
     const navigate = useNavigate();
@@ -65,8 +71,15 @@ const AdvancedAnalysis = () => {
     const [wavefunctionTheory, setWavefunctionTheory] = useState<{ [key: string]: string }>({});
     const [densityTheory, setDensityTheory] = useState<string[]>([]);
     const [calculationTypes, setCalculationTypes] = useState<{ [key: string]: number }>({});
-    const [basisSets, setBasisSets] = useState<string[]>([]);
+    const [basisSets, setBasisSets] = useState<{ [key: string]: string }>({});
     const [multiplicityOptions, setMultiplicityOptions] = useState<{ [key: string]: number }>({});
+
+    // keywords (optional)
+    const [keywords, setKeywords] = useState<Keyword[]>([]);
+
+    const handleKeywordsChange = (updatedKeywords: Keyword[]) => {
+        setKeywords(updatedKeywords);
+    }
 
     // Load library on mount
     useEffect(() => {
@@ -223,6 +236,20 @@ const AdvancedAnalysis = () => {
         formData.append('calculation_type', calculationType);
         formData.append('basis_set', basisSet);
 
+        let keywordsJsonFile: File | undefined = undefined;
+        if (keywords.length > 0) {
+            const payload: Record<string, any> = keywords.reduce((obj, { key, value }) => {
+                obj[key] = value;
+                return obj;
+            }, {});
+            const keywordsJsonStr = JSON.stringify(payload);
+            const keywordsBlob = new Blob([keywordsJsonStr], { type: "application/json" });
+            keywordsJsonFile = new File([keywordsBlob], `keywords.json`, {
+                type: 'text/plain'
+            });
+            formData.append('keywords', keywordsJsonFile);
+        }
+
         setLoading(true);
         try {
             const token = await getAccessTokenSilently();
@@ -233,7 +260,8 @@ const AdvancedAnalysis = () => {
                 basisSet,
                 charge,
                 multiplicity,
-                token
+                token,
+                keywordsJsonFile
             );
             if (response.error) {
                 throw new Error(response.error);
@@ -416,10 +444,10 @@ const AdvancedAnalysis = () => {
                                                 label="Basis Set"
                                                 value={basisSet}
                                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBasisSet(e.target.value)}
-                                                options={basisSets
-                                                    .map(basis => ({
-                                                        label: basis,
-                                                        value: basis.toLowerCase()
+                                                options={Object.entries(basisSets)
+                                                    .map(([key, value]) => ({
+                                                        label: key,
+                                                        value: value
                                                     })
                                                 )}
                                                 helperText={submitAttempted && !basisSet ? 'Please select a basis set' : undefined}
@@ -463,6 +491,52 @@ const AdvancedAnalysis = () => {
                                         </Grid>
                                     </Grid>
                                 </Box>
+                                {/* Calculation Keywords */}
+                                <Accordion disableGutters elevation={0} sx={{ mt: 2 }} >
+                                    <AccordionSummary
+                                        expandIcon={ <ExpandMoreIcon /> }
+                                        aria-controls="keywords-content"
+                                        id="keywords-header"
+                                        sx={{
+                                            pl: 0,
+                                            "& .MuiAccordionSummary-content": {
+                                                ml: 0,
+                                            },
+                                            display: "flex",
+                                            justifyContent: "space-between",
+                                            alignItems: "center",
+                                            "& .MuiAccordionSummary-expandIconWrapper": {
+                                                bgcolor: "primary.main",
+                                                width: 32,
+                                                height: 32,
+                                                borderRadius: 1,
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                            },
+                                            "& .MuiAccordionSummary-expandIconWrapper svg": {
+                                                color: "#fff",
+                                            },
+                                            "& .MuiAccordionSummary-expandIconWrapper.Mui-expanded": {
+                                                transform: "rotate(180deg)",
+                                            },
+                                        }}
+                                    >
+                                        <MolmakerSectionHeader text="Calculation Keywords" />
+                                    </AccordionSummary>
+                                    <AccordionDetails
+                                        sx={{
+                                            pt: 0,
+                                            px: 0,
+                                            width: "100%",
+                                        }}
+                                    >
+                                        <Box>
+                                            <KeywordEditor maxEntries={20} onChange={handleKeywordsChange} />
+                                        </Box>
+                                    </AccordionDetails>
+                                </Accordion>
+
                                 <Grid size={12}>
                                     <Button
                                         type="submit"

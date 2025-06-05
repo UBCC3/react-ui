@@ -23,6 +23,30 @@ export const createClusterAPI = (
 	});
 };
 
+export const cancelJobBySlurmID = async (
+	slurmId: string,
+	token: any
+): Promise<Response> => {
+	try {
+		const API = createClusterAPI(token);
+		const response = await API.post(`/cancel/${slurmId}`);
+		if (response.status !== 200) {
+			throw new Error(`HTTP ${response.status}`);
+		}
+		const success = response.data.success;
+		return {
+			status: response.status,
+			data: success.toLowerCase(),
+		};
+	} catch (error) {
+		console.error("Failed to cancel the job", error);
+		return {
+			status: 500,
+			error: `Failed to cancel the job: ${error.message}`,
+		};
+	}
+}
+
 export const getJobStatusBySlurmID = async (
 	slurmId: string,
 	token: any
@@ -54,7 +78,8 @@ export const submitAdvancedAnalysis = async (
 	basisSet: string,
 	charge: number,
 	multiplicity: number,
-	token: any
+	token: any,
+	keywords?: File,
 ): Promise<Response> => {
 	const formData = new FormData();
 	formData.append("file", file);
@@ -63,6 +88,9 @@ export const submitAdvancedAnalysis = async (
 	formData.append("basis_set", basisSet);
 	formData.append("charge", charge.toString());
 	formData.append("multiplicity", multiplicity.toString());
+	if (keywords !== undefined) {
+		formData.append("keywords", keywords);
+	}
 	try {
 		const API = createClusterAPI(token); // No token needed for this endpoint
 		const response = await API.post("/run_advance_analysis/", formData);
