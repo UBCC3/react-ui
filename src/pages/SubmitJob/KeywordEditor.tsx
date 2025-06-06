@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { MolmakerDropdown, MolmakerTextField } from "../../components/custom";
-import {Button, Divider, Grid, IconButton, TextField} from "@mui/material";
-import {AddCircle, Delete} from "@mui/icons-material";
+import { Button, Grid, Box, IconButton, TextField } from "@mui/material";
+import { Add, DeleteOutlineOutlined } from "@mui/icons-material";
 import * as React from "react";
 
 
@@ -12,19 +12,17 @@ export interface Keyword {
 }
 
 const KEYWORD_VALUE_TYPE = [
-        { label: "String", value: "string" },
-        { label: "Integer", value: "int" },
-        { label: "Float", value: "float" },
-        { label: "List", value: "list" },
-        { label: "Boolean", value: "bool" },
-    ]
+    { label: "String", value: "string" },
+    { label: "Integer", value: "int" },
+    { label: "Float", value: "float" },
+    { label: "List", value: "list" },
+    { label: "Boolean", value: "bool" },
+]
+
 const keywordBlankRow: Keyword = { key: "", type: "string", value: ""}
 
-
 export function KeywordEditor({ maxEntries = 20, onChange }) {
-    const [keywords, setKeywords] = useState([
-        keywordBlankRow,
-    ]);
+    const [keywords, setKeywords] = useState([]);
 
     const renderValueField = (row, idx) => {
         const commonProps = {
@@ -110,15 +108,15 @@ export function KeywordEditor({ maxEntries = 20, onChange }) {
 
     const deleteKeywordRow = (idx:number) => {
         const nextRows = keywords.filter((_, i) => i !== idx);
-        setKeywords(nextRows.length ? nextRows : [keywordBlankRow]);
+        setKeywords(nextRows.length ? nextRows : []);
         onChange?.(nextRows.filter(r => r.key.trim() !== ""));
     }
 
     return (
-        <div>
+        <Box>
             {keywords.map((keywordRow, idx) => (
-                <Grid container spacing={2} sx={{ my: 2 }}>
-                    <Grid size={{ xs: 8, md: 4 }}>
+                <Grid container spacing={2} sx={{ my: 2 }} display="flex" alignItems="center" justifyContent="center" key={idx}>
+                    <Grid size={{ xs: 8, md: 3 }}>
                         <MolmakerTextField
                             fullWidth={true}
                             label="Keyword"
@@ -129,47 +127,48 @@ export function KeywordEditor({ maxEntries = 20, onChange }) {
                             })}
                         />
                     </Grid>
-                    <Grid size={{ xs: 4, md: 2 }}>
+                    <Grid size={{ xs: 4, md: 3 }}>
                         <MolmakerDropdown
-                            fullWidth={true}
+                            fullWidth
                             label={"Type"}
                             value={keywordRow.type}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                 updateKeywordRow(idx, "type", e.target.value)
                             }}
                             options={KEYWORD_VALUE_TYPE.map((availableType) => ({
-                                label: availableType.label,
-                                value: availableType.value,
-                            }))
-                            }
+                                    label: availableType.label,
+                                    value: availableType.value,
+                                })
+                            )}
                         />
                     </Grid>
-                    <Grid size="grow">
+                    <Grid size={{ xs: 11, md: 5 }}>
                         { renderValueField(keywordRow, idx) }
                     </Grid>
-                    {keywords.length !== 1 ? (
-                        <Grid>
-                            <IconButton
-                                aria-label="delete row"
-                                color="error"
-                                onClick={() => deleteKeywordRow(idx)}
-                            >
-                                <Delete fontSize="small" />
-                            </IconButton>
-                        </Grid>
-                    ): null}
+                    <Grid size={1}>
+                        <IconButton
+                            aria-label="delete row"
+                            color="error"
+                            onClick={() => deleteKeywordRow(idx)}
+                        >
+                            <DeleteOutlineOutlined fontSize="small" />
+                        </IconButton>
+                    </Grid>
                 </Grid>
             ))}
             <Grid container justifyContent="flex-end">
                 <Button
-                    variant="contained"
-                    startIcon={<AddCircle />}
+                    variant="outlined"
+                    startIcon={<Add />}
                     disabled={keywords.length >= maxEntries}
                     onClick={addKeywordRow}
+                    sx={{
+                        textTransform: "none",
+                    }}
                 >
                     Add keyword
                 </Button>
             </Grid>
-        </div>
+        </Box>
     )
 }

@@ -39,6 +39,7 @@ import {
     Keyword,
     KeywordEditor
 } from './KeywordEditor'
+import { grey } from '@mui/material/colors'
 
 const AdvancedAnalysis = () => {
     const navigate = useNavigate();
@@ -492,51 +493,31 @@ const AdvancedAnalysis = () => {
                                     </Grid>
                                 </Box>
                                 {/* Calculation Keywords */}
-                                <Accordion disableGutters elevation={0} sx={{ mt: 2 }} >
+                                <Accordion disableGutters elevation={0} sx={{ mt: 3 }} >
                                     <AccordionSummary
                                         expandIcon={ <ExpandMoreIcon /> }
                                         aria-controls="keywords-content"
                                         id="keywords-header"
                                         sx={{
-                                            pl: 0,
-                                            "& .MuiAccordionSummary-content": {
-                                                ml: 0,
-                                            },
-                                            display: "flex",
-                                            justifyContent: "space-between",
-                                            alignItems: "center",
-                                            "& .MuiAccordionSummary-expandIconWrapper": {
-                                                bgcolor: "primary.main",
-                                                width: 32,
-                                                height: 32,
-                                                borderRadius: 1,
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "center",
-                                            },
-                                            "& .MuiAccordionSummary-expandIconWrapper svg": {
-                                                color: "#fff",
-                                            },
-                                            "& .MuiAccordionSummary-expandIconWrapper.Mui-expanded": {
-                                                transform: "rotate(180deg)",
-                                            },
+                                            px: 0,
+                                            mx: 0,
+                                            width: "100%",
                                         }}
                                     >
                                         <MolmakerSectionHeader text="Calculation Keywords" />
                                     </AccordionSummary>
                                     <AccordionDetails
                                         sx={{
-                                            pt: 0,
-                                            px: 0,
+                                            p: 2,
+                                            // border: '1px solid rgba(0, 0, 0, 0.12)',
+                                            borderRadius: 2,
                                             width: "100%",
+                                            bgcolor: grey[100],
                                         }}
                                     >
-                                        <Box>
-                                            <KeywordEditor maxEntries={20} onChange={handleKeywordsChange} />
-                                        </Box>
+                                        <KeywordEditor maxEntries={20} onChange={handleKeywordsChange} />
                                     </AccordionDetails>
                                 </Accordion>
-
                                 <Grid size={12}>
                                     <Button
                                         type="submit"

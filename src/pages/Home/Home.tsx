@@ -88,7 +88,7 @@ export default function Home() {
 					}
 				}
 			}
-		}, 5000);
+		}, 10000);
 
 		return () => clearInterval(interval);
 	}, []);
@@ -192,9 +192,6 @@ export default function Home() {
 				setAlertMsg(`Job ${jobToCancel.job_name} cancelled successfully!`);
 				setAlertSeverity('success');
 				setAlertShow(true)
-				// setTimeout(() => {
-				// 	setAlertShow(false)
-				// }, 5000)
 			}
 		} catch (err) {
 			setAlertMsg('Failed to cancel the job');
