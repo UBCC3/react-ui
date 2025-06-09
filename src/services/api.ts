@@ -140,11 +140,13 @@ export const submitStandardAnalysis = async (
 export const AddAndUploadStructureToS3 = async (
 	file: File | Blob,
 	name: string,
+	notes: string,
 	token: any,
 ): Promise<Response> => {
 	const formData = new FormData();
 	formData.append("file", file);
 	formData.append("name", name);
+	formData.append("notes", notes);
 
 	try {
 		const API = createBackendAPI(token);
@@ -297,6 +299,7 @@ export const createJob = async (
 	file: File | Blob,
 	jobId: string,
 	jobName: string,
+	jobNotes: string | null,
 	method: string,
 	basisSet: string,
 	calculationType: string,
@@ -317,7 +320,8 @@ export const createJob = async (
 	formData.append('multiplicity', multiplicity.toString());
 	if (structureId) formData.append('structure_id', structureId);
 	if (slurmId) formData.append('slurm_id', slurmId);
-
+	if (jobNotes) formData.append('job_notes', jobNotes);
+	
 	try {
 		const API = createBackendAPI(token);
 		const res = await API.post('/jobs/', formData);

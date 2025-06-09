@@ -1,6 +1,7 @@
 interface Job {
 	job_id: string;
 	job_name: string;
+	job_notes: string | null;
 	filename: string;
 	status: string;
 	calculation_type: string;

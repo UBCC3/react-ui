@@ -29,6 +29,8 @@ import MolmakerSectionHeader from './MolmakerSectionHeader';
  * - onUploadStructureChange: fn(bool)
  * - moleculeName: string
  * - onMoleculeNameChange: fn(event)
+ * - moleculeNotes: string
+ * - onMoleculeNotesChange: fn(event)
  * - submitAttempted: bool
  */
 const MolmakerMoleculeSelector = ({
@@ -43,6 +45,8 @@ const MolmakerMoleculeSelector = ({
 	onUploadStructureChange,
 	moleculeName,
 	onMoleculeNameChange,
+	moleculeNotes,
+	onMoleculeNotesChange,
 	submitAttempted
 }) => (
   	<Grid container sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -127,13 +131,23 @@ const MolmakerMoleculeSelector = ({
 			<Grid>
 				<MolmakerTextField
 					fullWidth
-					label="Molecule Name"
+					label="Structure Name"
 					value={moleculeName}
 					onChange={onMoleculeNameChange}
 					required
 					error={submitAttempted && !moleculeName}
 					helperText={submitAttempted && !moleculeName ? 'Please enter a name' : ''}
 					sx={{ mt: 1 }}
+				/>
+				<MolmakerTextField
+					fullWidth
+					label="Structure Notes"
+					value={moleculeNotes}
+					onChange={onMoleculeNotesChange}
+					helperText="Optional notes about this structure"
+					multiline
+					rows={3}
+					sx={{ mt: 2 }}
 				/>
 			</Grid>
 		)}
@@ -157,6 +171,8 @@ MolmakerMoleculeSelector.propTypes = {
 	onUploadStructureChange: PropTypes.func.isRequired,
 	moleculeName: PropTypes.string.isRequired,
 	onMoleculeNameChange: PropTypes.func.isRequired,
+	moleculeNotes: PropTypes.string,
+	onMoleculeNotesChange: PropTypes.func.isRequired,
 	submitAttempted: PropTypes.bool.isRequired
 };
 

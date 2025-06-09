@@ -104,7 +104,7 @@ const MoleculeLibrary = () => {
 
 		try {
 			const token = await getAccessTokenSilently();
-			await AddAndUploadStructureToS3(uploadedFile, structureName, token);
+			await AddAndUploadStructureToS3(uploadedFile, structureName, notes, token);
 
 			// Refresh the library after successful submission
 			const response = await getLibraryStructures(token);
@@ -166,7 +166,13 @@ const MoleculeLibrary = () => {
 			try {
 				const token = await getAccessTokenSilently();
 				const response = await getLibraryStructures(token);
-				setLibraryStructures(response.data);
+				setLibraryStructures(response.data.map((item: any) => ({
+					structure_id: item.structure_id,
+					user_sub: item.user_sub,
+					name: item.name,
+					notes: item.notes || '',
+					location: item.location,
+				})));
 			} catch (err) {
 				setError('Failed to fetch molecules. Please try again later.');
 				console.error("Failed to fetch jobs", err);
@@ -216,6 +222,10 @@ const MoleculeLibrary = () => {
 			if (typeof aValue === 'string' && typeof bValue === 'string') {
 				return newOrder === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
 			}
+			// Handle undefined values
+			if (aValue === undefined && bValue === undefined) return 0;
+			if (aValue === undefined) return newOrder === 'asc' ? 1 : -1;
+			if (bValue === undefined) return newOrder === 'asc' ? -1 : 1;
 			return newOrder === 'asc' ? (aValue < bValue ? -1 : 1) : (aValue > bValue ? -1 : 1);
 		});
 		setLibraryStructures(sorted);
@@ -344,8 +354,8 @@ const MoleculeLibrary = () => {
 							<Table>
 								<TableHead>
 									<TableRow sx={{ bgcolor: blueGrey[50] }}>
-										{renderHeader('Structure ID', 'structure_id')}
 										{renderHeader('Name', 'name')}
+										{renderHeader('Notes', 'notes')}
 									</TableRow>
 								</TableHead>
 								<TableBody>
@@ -369,8 +379,8 @@ const MoleculeLibrary = () => {
 												cursor: 'pointer'
 											}}
 										>
-											<TableCell>{molecule.structure_id}</TableCell>
 											<TableCell>{molecule.name}</TableCell>
+											<TableCell>{molecule.notes}</TableCell>
 										</TableRow>
 									))}
 								</TableBody>

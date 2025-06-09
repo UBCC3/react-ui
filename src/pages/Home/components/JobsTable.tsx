@@ -93,8 +93,8 @@ export default function JobsTable({
 			<Table>
 				<TableHead sx={{ bgcolor: blueGrey[50] }}>
 					<TableRow>
-						{renderHeader('Job ID', 'job_id')}
 						{renderHeader('Job Name', 'job_name')}
+						{renderHeader('Job Notes', 'job_notes')}
 						{renderHeader('Status', 'status')}
 						{renderHeader('Method', 'method')}
 						{renderHeader('Basis Set', 'basis_set')}
@@ -120,8 +120,8 @@ export default function JobsTable({
 								cursor: 'pointer'
 								}}
 							>
-								<TableCell>{job.job_id}</TableCell>
 								<TableCell>{job.job_name}</TableCell>
+								<TableCell>{job.job_notes || 'N/A'}</TableCell>
 								<TableCell>
 									<Chip
 										label={job.status}

@@ -55,12 +55,14 @@ const AdvancedAnalysis = () => {
 
     // state for form
     const [jobName, setJobName] = useState<string>('');
+    const [jobNotes, setJobNotes] = useState<string>('');
     const [source, setSource] = useState<'upload' | 'library'>('upload');  
     const [file, setFile] = useState<File | null>(null);
     const [uploadStructure, setUploadStructure] = useState<boolean>(false);
     const [structures, setStructures] = useState<Structure[]>([]);
     const [selectedStructure, setSelectedStructure] = useState<string>('');
     const [structureName, setStructureName] = useState<string>('');
+    const [structureNotes, setStructureNotes] = useState<string>('');
     const [charge, setCharge] = useState<number>(0);
     const [calculationType, setCalculationType] = useState<string>('energy');
     const [multiplicity, setMultiplicity] = useState<number>(1);
@@ -273,6 +275,7 @@ const AdvancedAnalysis = () => {
                 response = await AddAndUploadStructureToS3(
                     uploadFile,
                     structureName,
+                    structureNotes,
                     token
                 );
                 if (response.error) {
@@ -285,6 +288,7 @@ const AdvancedAnalysis = () => {
                 uploadFile,
                 job_id,
                 jobName,
+                jobNotes,
                 theory,
                 basisSet,
                 calculationType,
@@ -347,6 +351,15 @@ const AdvancedAnalysis = () => {
                                         error={submitAttempted && !jobName}
                                         helperText={submitAttempted && !jobName ? 'Please enter a job name': undefined}
                                     />
+                                    <MolmakerTextField
+                                        label="Job Notes"
+                                        value={jobNotes}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setJobNotes(e.target.value)}
+                                        multiline
+                                        rows={3}
+                                        helperText="Optional notes about this job"
+                                        sx={{ mt: 2 }}
+                                    />
                                 </Grid>
                                 <Divider />
                                 {/* Molecule source */}
@@ -363,8 +376,10 @@ const AdvancedAnalysis = () => {
                                     }}
                                     uploadStructure={uploadStructure}
                                     onUploadStructureChange={setUploadStructure}
-                                    moleculeName={structureName}
+                                    moleculeName={structureName}                                    
                                     onMoleculeNameChange={(e: React.ChangeEvent<HTMLInputElement>) => setStructureName(e.target.value)}
+                                    moleculeNotes={structureNotes}
+                                    onMoleculeNotesChange={(e: React.ChangeEvent<HTMLInputElement>) => setStructureNotes(e.target.value)}
                                     submitAttempted={submitAttempted}
                                 />
                                 <Divider />

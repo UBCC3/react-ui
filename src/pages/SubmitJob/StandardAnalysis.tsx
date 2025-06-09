@@ -48,12 +48,14 @@ export default function StandardAnalysis() {
 
 	// state for form
     const [jobName, setJobName] = useState<string>('');
+	const [jobNotes, setJobNotes] = useState<string>('');
     const [source, setSource] = useState<'upload' | 'library'>('upload');  
     const [file, setFile] = useState<File | null>(null);
     const [uploadStructure, setUploadStructure] = useState<boolean>(false);
     const [structures, setStructures] = useState<Structure[]>([]);
     const [selectedStructure, setSelectedStructure] = useState<string>('');
     const [structureName, setStructureName] = useState<string>('');
+	const [structureNotes, setStructureNotes] = useState<string>('');
     const [charge, setCharge] = useState<number>(0);
     const [multiplicity, setMultiplicity] = useState<number>(1);
 
@@ -213,6 +215,7 @@ export default function StandardAnalysis() {
 				response = await AddAndUploadStructureToS3(
 					uploadFile,
 					structureName,
+					structureNotes,
 					token
 				);
 				if (response.error) {
@@ -225,6 +228,7 @@ export default function StandardAnalysis() {
 				uploadFile,
 				job_id,
 				jobName,
+				jobNotes,
 				"mp2",
 				"6-311+G(2d,p)",
 				"energy",
@@ -285,6 +289,15 @@ export default function StandardAnalysis() {
 										error={submitAttempted && !jobName}
 										helperText={submitAttempted && !jobName ? 'Please enter a job name' : ''}
 									/>
+									<MolmakerTextField
+										label="Job Notes"
+										value={jobNotes}
+										onChange={(e: React.ChangeEvent<HTMLInputElement>) => setJobNotes(e.target.value)}
+										multiline
+										rows={3}
+										helperText="Optional notes about this job"
+										sx={{ mt: 2 }}
+									/>
 								</Grid>
 								<Divider />
 								{/* Molecule selector */}
@@ -300,6 +313,8 @@ export default function StandardAnalysis() {
 									onUploadStructureChange={setUploadStructure}
 									moleculeName={structureName}
 									onMoleculeNameChange={(e: React.ChangeEvent<HTMLInputElement>) => setStructureName(e.target.value)}
+									moleculeNotes={structureNotes}
+									onMoleculeNotesChange={(e: React.ChangeEvent<HTMLInputElement>) => setStructureNotes(e.target.value)}
 									submitAttempted={submitAttempted}
 								/>
 								<Divider />

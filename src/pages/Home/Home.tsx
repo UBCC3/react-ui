@@ -186,6 +186,20 @@ export default function Home() {
 		try {
 			const token = await getAccessTokenSilently();
 			const jobToCancel = jobs.find(j => j.job_id === selectedJobId);
+			if (!jobToCancel) {
+				setAlertMsg('Selected job not found.');
+				setAlertSeverity('error');
+				setAlertShow(true);
+				setLoading(false);
+				return;
+			}
+			if (!jobToCancel.slurm_id) {
+				setAlertMsg('Job Slurm ID is missing.');
+				setAlertSeverity('error');
+				setAlertShow(true);
+				setLoading(false);
+				return;
+			}
 			const response = await cancelJobBySlurmID(jobToCancel.slurm_id, token);
 	
 			if (response.data === 'cancelled') {
@@ -203,13 +217,16 @@ export default function Home() {
 		}
 	};
 
-	const cancelDisabled = (selectedJobId: string):boolean => {
-		if (selectedJobId === '') {
+	const cancelDisabled = (selectedJobId: string | null) : boolean => {
+		if (!selectedJobId) {
 			return true;
 		}
 
 		const jobToCancel = jobs.find(j => j.job_id === selectedJobId);
-		if (jobToCancel.status === 'cancelled') {
+		if (!jobToCancel) {
+			return true;
+		}
+		if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED].includes(jobToCancel.status)) {
 			return true
 		}
 
@@ -247,15 +264,6 @@ export default function Home() {
 			<Box
 				sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
 			>
-				{/* TODO which style is better */}
-				{/* {alertShow && (
-					<MolmakerAlert
-						text={alertMsg}
-						severity={alertSeverity}
-						outline={alertSeverity}
-						sx={{ mb: 2, maxWidth: 500 }}
-					/>
-				)} */}
 				<Snackbar 
 					open={alertShow} 
 					autoHideDuration={5000}
