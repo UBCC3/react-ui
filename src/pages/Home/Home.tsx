@@ -7,7 +7,6 @@ import {
 	Divider,
 	TablePagination,
 	Dialog,
-	Alert,
 	Snackbar,
 } from '@mui/material';
 import { blueGrey } from '@mui/material/colors';
@@ -111,7 +110,9 @@ export default function Home() {
 					structure_id: '', 
 					name: 'All', 
 					user_sub: '', 
-					location: '' 
+					location: '',
+					uploaded_at: '',
+					notes: ''
 				}, ...sortedStructures]);
 			} catch (err) {
 				setError('Failed to load data');
@@ -249,14 +250,14 @@ export default function Home() {
 					sx={{ mb: 4 }}
 				/>
 			)}
-			{/* Molecule Preview Dialog */}
+			{/* Structure Preview Dialog */}
 			<Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
 				<Box sx={{ width: '100%', height: 400 }}>
 					<MolmakerMoleculePreview
 						data={previewData}
 						format='xyz'
 						source="library"
-						title="Molecule Preview"
+						title="Structure Preview"
 						sx={{ width: '100%', height: '100%' }}
 					/>
 				</Box>

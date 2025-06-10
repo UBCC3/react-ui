@@ -16,7 +16,9 @@ import {
 	Visibility,
 	Image,
 	FilterList,
-	Block
+	Block,
+	AutoMode,
+	TuneOutlined
 } from '@mui/icons-material';
 import { blueGrey } from '@mui/material/colors';
 
@@ -51,6 +53,23 @@ export default function JobsToolbar({
 				Jobs History
 			</Typography>
 			<Box sx={{ display: 'flex', alignItems: 'center' }}>
+				<Box>
+					<Tooltip title="Run Standard Job">
+						<IconButton
+							onClick={() => window.location.href = '/submit'}
+						>
+							<AutoMode />
+						</IconButton>
+					</Tooltip>
+					<Tooltip title="Add Advanced Job">
+						<IconButton
+							onClick={() => window.location.href = '/advanced'}
+						>
+							<TuneOutlined />
+						</IconButton>
+					</Tooltip>
+				</Box>
+				<Divider orientation="vertical" flexItem sx={{ mx: 2 }} />
 				<Box>
 					<Tooltip title="View job details">
 						<span>

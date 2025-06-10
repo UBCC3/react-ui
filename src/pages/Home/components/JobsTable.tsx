@@ -7,9 +7,12 @@ import {
 	TableCell,
 	TableBody,
 	Chip,
-	Box
+	Box,
+	Typography,
+	Button,
+	Grid
 } from '@mui/material';
-import { ArrowDropUpOutlined, ArrowDropDownOutlined } from '@mui/icons-material';
+import { ArrowDropUpOutlined, ArrowDropDownOutlined, AutoMode, TuneOutlined } from '@mui/icons-material';
 import { statusColors } from '../../../constants';
 import { blueGrey } from '@mui/material/colors';
 import type { Job } from '../../../types';
@@ -96,17 +99,41 @@ export default function JobsTable({
 						{renderHeader('Job Name', 'job_name')}
 						{renderHeader('Job Notes', 'job_notes')}
 						{renderHeader('Status', 'status')}
-						{renderHeader('Method', 'method')}
-						{renderHeader('Basis Set', 'basis_set')}
 						{renderHeader('Structures', 'structures')}
 						{renderHeader('Submitted At', 'submitted_at')}
+						{renderHeader('Completed At', 'completed_at')}
 					</TableRow>
 				</TableHead>
 				<TableBody>
 					{paginatedJobs.length === 0 ? (
 						<TableRow>
-							<TableCell colSpan={7} align="center">
-								No jobs found.
+							<TableCell colSpan={8} align="center">
+								<Typography variant="body2" color="text.secondary">
+									No jobs added yet.
+								</Typography>
+								<Grid container sx={{ mt: 2, justifyContent: 'center' }} spacing={2}>
+									<Grid>
+										<Button
+											variant="contained"
+											color="primary"
+											sx={{ textTransform: 'none' }}
+											startIcon={<AutoMode />}
+											onClick={() => window.location.href = '/submit'}
+										>
+											Run Standard Analysis
+										</Button>
+									</Grid>
+									<Grid>
+										<Button
+											variant="outlined"
+											sx={{ textTransform: 'none' }}
+											startIcon={<TuneOutlined />}
+											onClick={() => window.location.href = '/advanced'}
+										>
+											Run Advanced Analysis
+										</Button>
+									</Grid>
+								</Grid>
 							</TableCell>
 						</TableRow>
 					) : (
@@ -133,8 +160,6 @@ export default function JobsTable({
 										}}
 									/>
 								</TableCell>
-								<TableCell>{job.method}</TableCell>
-								<TableCell>{job.basis_set}</TableCell>
 								<TableCell>
 									{job.structures.length ? job.structures
 										.map((s) => (
@@ -149,6 +174,9 @@ export default function JobsTable({
 								</TableCell>
 								<TableCell>
 									{new Date(job.submitted_at).toLocaleString()}
+								</TableCell>
+								<TableCell>
+									{job.completed_at ? new Date(job.completed_at).toLocaleString() : 'N/A'}
 								</TableCell>
 							</TableRow>
 						))

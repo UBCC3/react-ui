@@ -22,7 +22,7 @@ const MolmakerMoleculePreview: React.FC<MolmakerMoleculePreview> = ({
 	data = '',
 	format,
 	source = 'upload',
-	title = 'Molecule Preview',
+	title = 'Structure Preview',
 	maxHeight,
 	sx = {}
 }) => {

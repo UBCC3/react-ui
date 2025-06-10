@@ -142,11 +142,15 @@ export const AddAndUploadStructureToS3 = async (
 	name: string,
 	notes: string,
 	token: any,
+	tags: string[] = [],
 ): Promise<Response> => {
 	const formData = new FormData();
 	formData.append("file", file);
 	formData.append("name", name);
 	formData.append("notes", notes);
+	if (tags && tags.length > 0) {
+		tags.forEach(tag => formData.append("tags", tag));
+	}
 
 	try {
 		const API = createBackendAPI(token);
@@ -208,6 +212,56 @@ export const getLibraryStructures = async (
 		};
 	}
 }
+
+export const getStructureById = async (
+	structureId: string,
+	token: any,
+): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.get(`/structures/${structureId}`);
+		return {
+			status: res.status,
+			data: res.data,
+		}
+	} catch (error) {
+		console.error("Failed to fetch structure details", error);
+		return {
+			status: 500,
+			error: `Failed to fetch structure details: ${error.message}`,
+		};
+	}
+};
+
+export const updateStructure = async (
+	structureId: string,
+	name: string,
+	notes: string,
+	token: any,
+	tags: string[] = [],
+): Promise<Response> => {
+	const formData = new FormData();
+	formData.append("name", name);
+	formData.append("notes", notes);
+	if (tags && tags.length > 0) {
+		tags.forEach(tag => formData.append("tags", tag));
+	}
+
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.patch(`/structures/${structureId}`, formData);
+		return {
+			status: res.status,
+			data: res.data,
+		};
+	} catch (error) {
+		console.error("Failed to update structure", error);
+		return {
+			status: 500,
+			error: `Failed to update structure: ${error.message}`,
+		};
+	}
+};
 
 export const getJobByJobID = async (
 	jobId: string, 
@@ -321,7 +375,7 @@ export const createJob = async (
 	if (structureId) formData.append('structure_id', structureId);
 	if (slurmId) formData.append('slurm_id', slurmId);
 	if (jobNotes) formData.append('job_notes', jobNotes);
-	
+
 	try {
 		const API = createBackendAPI(token);
 		const res = await API.post('/jobs/', formData);
@@ -424,3 +478,18 @@ export const getMultiplicities = async (token: string): Promise<Response> => {
 		};
 	}
 }
+
+export const getStructuresTags = async (token: string): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.get('/structures/tags/');
+		return { status: res.status, data: res.data };
+	}
+	catch (error: any) {
+		console.error('Failed to fetch structures tags', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};

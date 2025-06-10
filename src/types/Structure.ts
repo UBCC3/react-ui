@@ -4,6 +4,8 @@ interface Structure {
     name: string;
     notes?: string;
     location: string;
+    uploaded_at: string;
+    tags: string[];
 }
 
 export default Structure;

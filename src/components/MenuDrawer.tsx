@@ -20,7 +20,6 @@ import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined';
 import logo from '../assets/logo.svg';
 import { useNavigate } from 'react-router-dom';
 import { useDrawer } from './DrawerContext';
-import { blueGrey, cyan, lightBlue } from '@mui/material/colors';
 
 const DRAWER_WIDTH  = 250;
 const CLOSED_WIDTH  = 56;
@@ -112,7 +111,7 @@ export default function MenuDrawer() {
 						path: '/advanced'
 					},
 					{ 
-						text: 'Molecule Library',
+						text: 'My Structure Library',
 						icon: <CollectionsOutlinedIcon />,
 						path: '/library'
 					},

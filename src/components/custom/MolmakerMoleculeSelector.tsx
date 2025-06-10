@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import {
   Box,
@@ -6,13 +6,17 @@ import {
   Button,
   FormHelperText,
   Checkbox,
-  FormControlLabel
+  FormControlLabel,
+  Autocomplete,
+  TextField
 } from '@mui/material';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import CloudUploadOutlined from '@mui/icons-material/CloudUploadOutlined';
 import MolmakerRadioGroup from './MolmakerRadioGroup';
 import MolmakerDropdown from './MolmakerDropdown';
 import MolmakerTextField from './MolmakerTextField';
 import MolmakerSectionHeader from './MolmakerSectionHeader';
+import { getStructuresTags } from '../../services/api';
+import { useAuth0 } from '@auth0/auth0-react';
 
 /**
  * Unified molecule source selector, combining upload & library options.
@@ -47,8 +51,30 @@ const MolmakerMoleculeSelector = ({
 	onMoleculeNameChange,
 	moleculeNotes,
 	onMoleculeNotesChange,
-	submitAttempted
-}) => (
+	submitAttempted,
+	structureTags,
+	onStructureTagsChange,
+}) => {
+	const [options, setOptions] = useState<string[]>([]);
+	const { getAccessTokenSilently } = useAuth0();
+
+	useEffect(() => {
+		const fetchTags = async () => {
+			try {
+				const token = await getAccessTokenSilently()
+				const response = await getStructuresTags(token)
+				if (response.data) {
+					setOptions(response.data)
+				}
+			}
+			catch (err) {
+				console.error("Failed to fetch tags", err)
+			}
+		}
+		fetchTags()
+	}, [])
+
+	return (
   	<Grid container sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
 		<Grid>
 			<MolmakerSectionHeader text="Molecule Source" />
@@ -88,7 +114,7 @@ const MolmakerMoleculeSelector = ({
 						variant="contained"
 						component="label"
 						disabled={source !== 'upload'}
-						startIcon={<CloudUploadIcon />}
+						startIcon={<CloudUploadOutlined />}
 						sx={{ textTransform: 'none', minWidth: 180 }}
 					>
 						{file ? file.name : 'Select File'}
@@ -144,15 +170,31 @@ const MolmakerMoleculeSelector = ({
 					label="Structure Notes"
 					value={moleculeNotes}
 					onChange={onMoleculeNotesChange}
-					helperText="Optional notes about this structure"
 					multiline
 					rows={3}
 					sx={{ mt: 2 }}
 				/>
+				<Autocomplete
+					multiple
+					freeSolo
+					id="tags-input"
+					options={options}
+					value={structureTags}
+					onChange={onStructureTagsChange}
+					renderInput={(params) => (
+						<TextField
+							{...params}
+							variant="outlined"
+							label="Tags"
+							placeholder="Press enter to add tags"
+						/>
+					)}
+					sx={{ mt: 2 }}
+				/>
 			</Grid>
 		)}
-	</Grid>
-);
+	</Grid>)
+};
 
 MolmakerMoleculeSelector.propTypes = {
 	source: PropTypes.oneOf(['upload', 'library']).isRequired,
@@ -173,7 +215,9 @@ MolmakerMoleculeSelector.propTypes = {
 	onMoleculeNameChange: PropTypes.func.isRequired,
 	moleculeNotes: PropTypes.string,
 	onMoleculeNotesChange: PropTypes.func.isRequired,
-	submitAttempted: PropTypes.bool.isRequired
+	submitAttempted: PropTypes.bool.isRequired,
+	structureTags: PropTypes.arrayOf(PropTypes.string),
+	onStructureTagsChange: PropTypes.func,
 };
 
 export default MolmakerMoleculeSelector;

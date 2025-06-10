@@ -50,7 +50,7 @@ const AdvancedAnalysis = () => {
     const [error, setError] = useState<string | null>(null);
     const [submitAttempted, setSubmitAttempted] = useState<boolean>(false);
 
-    // state for molecule preview
+    // state for structure preview
     const [structureData, setStructureData] = useState<string>('');
 
     // state for form
@@ -63,6 +63,7 @@ const AdvancedAnalysis = () => {
     const [selectedStructure, setSelectedStructure] = useState<string>('');
     const [structureName, setStructureName] = useState<string>('');
     const [structureNotes, setStructureNotes] = useState<string>('');
+    const [structureTags, setStructureTags] = useState<string[]>([]);
     const [charge, setCharge] = useState<number>(0);
     const [calculationType, setCalculationType] = useState<string>('energy');
     const [multiplicity, setMultiplicity] = useState<number>(1);
@@ -276,7 +277,8 @@ const AdvancedAnalysis = () => {
                     uploadFile,
                     structureName,
                     structureNotes,
-                    token
+                    token,
+                    structureTags
                 );
                 if (response.error) {
                     throw new Error(response.error);
@@ -381,6 +383,10 @@ const AdvancedAnalysis = () => {
                                     moleculeNotes={structureNotes}
                                     onMoleculeNotesChange={(e: React.ChangeEvent<HTMLInputElement>) => setStructureNotes(e.target.value)}
                                     submitAttempted={submitAttempted}
+                                    structureTags={structureTags}
+                                    onStructureTagsChange={(e, newValue) => {
+                                        setStructureTags(newValue.filter(tag => tag.trim() !== ''));
+                                    }}
                                 />
                                 <Divider />
                                 {/* Theory */}

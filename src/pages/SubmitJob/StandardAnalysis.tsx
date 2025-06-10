@@ -43,7 +43,7 @@ export default function StandardAnalysis() {
     const [error, setError] = useState<string | null>(null);
     const [submitAttempted, setSubmitAttempted] = useState<boolean>(false);
 
-	// state for molecule preview
+	// state for structure preview
     const [structureData, setStructureData] = useState<string>('');
 
 	// state for form
@@ -58,6 +58,7 @@ export default function StandardAnalysis() {
 	const [structureNotes, setStructureNotes] = useState<string>('');
     const [charge, setCharge] = useState<number>(0);
     const [multiplicity, setMultiplicity] = useState<number>(1);
+	const [structureTags, setStructureTags] = useState<string[]>([]);
 
 	// dropdown options for multiplicity
 	const [multiplicityOptions, setMultiplicityOptions] = useState<{ [key: string]: number }>({});
@@ -316,6 +317,10 @@ export default function StandardAnalysis() {
 									moleculeNotes={structureNotes}
 									onMoleculeNotesChange={(e: React.ChangeEvent<HTMLInputElement>) => setStructureNotes(e.target.value)}
 									submitAttempted={submitAttempted}
+									structureTags={structureTags}
+                                    onStructureTagsChange={(e, newValue) => {
+                                        setStructureTags(newValue.filter(tag => tag.trim() !== ''));
+                                    }}
 								/>
 								<Divider />
 								{/* Calculation parameters */}
