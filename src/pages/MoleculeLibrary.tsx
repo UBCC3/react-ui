@@ -19,11 +19,9 @@ import {
 	TablePagination,
 } from "@mui/material";
 import {
-	CloudUpload,
 	Refresh,
-	Visibility,
-	Delete,
-	AddToPhotos,
+	VisibilityOutlined,
+	DeleteOutlineOutlined,
 	ArrowDropUpOutlined,
 	ArrowDropDownOutlined,
 	Add
@@ -181,12 +179,12 @@ const MoleculeLibrary = () => {
 										<IconButton disabled={!selectedStructureId} onClick={() => {
 											setOpen(true);
 										}}>
-											<Visibility />
+											<VisibilityOutlined />
 										</IconButton>
 									</Tooltip>
 									<Tooltip title="Delete structure">
 										<IconButton disabled={!selectedStructureId}>
-											<Delete />
+											<DeleteOutlineOutlined />
 										</IconButton>
 									</Tooltip>
 								</Box>
