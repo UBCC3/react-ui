@@ -100,6 +100,8 @@ export default function JobsTable({
 						{renderHeader('Job Notes', 'job_notes')}
 						{renderHeader('Status', 'status')}
 						{renderHeader('Structures', 'structures')}
+						{renderHeader('Tags', 'tags')}
+						{renderHeader('Runtime', 'runtime')}
 						{renderHeader('Submitted At', 'submitted_at')}
 						{renderHeader('Completed At', 'completed_at')}
 					</TableRow>
@@ -171,6 +173,16 @@ export default function JobsTable({
 											sx={{ mr: 0.5, mb: 0.5 }}
 											/>
 										)) : 'N/A'}
+								</TableCell>
+								<TableCell>
+									{job.tags.length > 0 ? (
+										job.tags.join(', ')
+									) : (
+										<Typography variant="body2" color="text.secondary">No tags</Typography>
+									)}
+								</TableCell>
+								<TableCell>
+									{job.runtime ? job.runtime : 'unavailable'}
 								</TableCell>
 								<TableCell>
 									{new Date(job.submitted_at).toLocaleString()}

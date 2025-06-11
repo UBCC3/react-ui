@@ -55,8 +55,8 @@ const MoleculeLibrary = () => {
 	// state for user experience
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState<boolean>(true);
-	const [order, setOrder] = useState<'asc' | 'desc'>('asc');
-	const [orderBy, setOrderBy] = useState<keyof Structure>('name');
+	const [order, setOrder] = useState<'asc' | 'desc'>('desc');
+	const [orderBy, setOrderBy] = useState<keyof Structure>('uploaded_at');
 	const [page, setPage] = useState<number>(0);
   	const [rowsPerPage, setRowsPerPage] = useState<number>(5);
 
@@ -205,8 +205,8 @@ const MoleculeLibrary = () => {
 									<TableRow sx={{ bgcolor: blueGrey[50] }}>
 										{renderHeader('Name', 'name')}
 										{renderHeader('Notes', 'notes')}
-										{renderHeader('Uploaded At', 'uploaded_at')}
 										{renderHeader('Tags', 'tags')}
+										{renderHeader('Uploaded At', 'uploaded_at')}
 									</TableRow>
 								</TableHead>
 								<TableBody>
@@ -241,7 +241,6 @@ const MoleculeLibrary = () => {
 										>
 											<TableCell>{molecule.name}</TableCell>
 											<TableCell>{molecule.notes}</TableCell>
-											<TableCell>{new Date(molecule.uploaded_at).toLocaleString()}</TableCell>
 											<TableCell>
 												{molecule.tags.length > 0 ? (
 													molecule.tags.join(', ')
@@ -249,6 +248,7 @@ const MoleculeLibrary = () => {
 													<Typography variant="body2" color="text.secondary">No tags</Typography>
 												)}
 											</TableCell>
+											<TableCell>{new Date(molecule.uploaded_at).toLocaleString()}</TableCell>
 										</TableRow>
 									))}
 								</TableBody>

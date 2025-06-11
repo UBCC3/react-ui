@@ -14,6 +14,8 @@ interface Job {
 	user_sub: string;
 	slurm_id: string | null;
 	structures: Array<{ structure_id: string; name: string }>;
+	tags: string[];
+	runtime: string | null;
 	result(result: any, arg1: null, arg2: number): unknown;
 }
 

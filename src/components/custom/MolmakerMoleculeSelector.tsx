@@ -17,6 +17,7 @@ import MolmakerTextField from './MolmakerTextField';
 import MolmakerSectionHeader from './MolmakerSectionHeader';
 import { getStructuresTags } from '../../services/api';
 import { useAuth0 } from '@auth0/auth0-react';
+import { grey } from '@mui/material/colors';
 
 /**
  * Unified molecule source selector, combining upload & library options.
@@ -79,120 +80,122 @@ const MolmakerMoleculeSelector = ({
 		<Grid>
 			<MolmakerSectionHeader text="Molecule Source" />
 		</Grid>
-		{/* Source radios */}
-		<Grid>
-			<MolmakerRadioGroup
-				name="source"
-				value={source}
-				onChange={(_, newVal) => onSourceChange(newVal)}
-				options={[
-					{ value: 'upload', label: 'Upload File' },
-					{ value: 'library', label: 'Select from Library' }
-				]}
-				row
-			/>
-		</Grid>
-
-		{/* Library selector or File uploader */}
-		{source === 'library' ? (
+		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, bgcolor: grey[100], p: 2, borderRadius: 1 }}>
+			{/* Source radios */}
 			<Grid>
-				<MolmakerDropdown
-					fullWidth
-					label="Select Molecule"
-					value={selectedStructure}
-					onChange={e => onLibrarySelect(e.target.value)}
-					options={structures.map(s => ({ value: s.structure_id, label: s.name }))}
-					required
-					error={submitAttempted && !selectedStructure}
-					helperText={submitAttempted && !selectedStructure ? 'Please choose a molecule' : ''}
+				<MolmakerRadioGroup
+					name="source"
+					value={source}
+					onChange={(_, newVal) => onSourceChange(newVal)}
+					options={[
+						{ value: 'upload', label: 'Upload File' },
+						{ value: 'library', label: 'Select from Library' }
+					]}
+					row
 				/>
 			</Grid>
-		) : (
-			<Grid sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
-				<Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-					<Button
-						variant="contained"
-						component="label"
+
+			{/* Library selector or File uploader */}
+			{source === 'library' ? (
+				<Grid>
+					<MolmakerDropdown
+						fullWidth
+						label="Select Molecule"
+						value={selectedStructure}
+						onChange={e => onLibrarySelect(e.target.value)}
+						options={structures.map(s => ({ value: s.structure_id, label: s.name }))}
+						required
+						error={submitAttempted && !selectedStructure}
+						helperText={submitAttempted && !selectedStructure ? 'Please choose a molecule' : ''}
+					/>
+				</Grid>
+			) : (
+				<Grid sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
+					<Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+						<Button
+							variant="contained"
+							component="label"
+							disabled={source !== 'upload'}
+							startIcon={<CloudUploadOutlined />}
+							sx={{ textTransform: 'none', minWidth: 180 }}
+						>
+							{file ? file.name : 'Select File'}
+							<input
+								hidden
+								type="file"
+								accept=".xyz"
+								onChange={async e => {
+									const f = e.target.files?.[0];
+									if (!f) return;
+									const reader = new FileReader();
+									reader.onload = ev => onFileChange(ev.target?.result, f);
+									reader.readAsText(f);
+								}}
+							/>
+						</Button>
+						{submitAttempted && !file && (
+							<FormHelperText error sx={{ mt: 1, ml: 0 }}>
+								Please upload a file
+							</FormHelperText>
+						)}
+					</Box>
+					<FormControlLabel
 						disabled={source !== 'upload'}
-						startIcon={<CloudUploadOutlined />}
-						sx={{ textTransform: 'none', minWidth: 180 }}
-					>
-						{file ? file.name : 'Select File'}
-						<input
-							hidden
-							type="file"
-							accept=".xyz"
-							onChange={async e => {
-								const f = e.target.files?.[0];
-								if (!f) return;
-								const reader = new FileReader();
-								reader.onload = ev => onFileChange(ev.target?.result, f);
-								reader.readAsText(f);
-							}}
-						/>
-					</Button>
-					{submitAttempted && !file && (
-						<FormHelperText error sx={{ mt: 1, ml: 0 }}>
-							Please upload a file
-						</FormHelperText>
-					)}
-				</Box>
-				<FormControlLabel
-					disabled={source !== 'upload'}
-					control={
-						<Checkbox
-							checked={uploadStructure}
-							onChange={() => onUploadStructureChange(!uploadStructure)}
-							name="uploadStructure"
-						/>
-					}
-					label="Upload Structure to Library"
-					sx={{ ml: 2 }}
-				/>
-			</Grid>
-		)}
+						control={
+							<Checkbox
+								checked={uploadStructure}
+								onChange={() => onUploadStructureChange(!uploadStructure)}
+								name="uploadStructure"
+							/>
+						}
+						label="Upload Structure to Library"
+						sx={{ ml: 2 }}
+					/>
+				</Grid>
+			)}
 
-		{/* Molecule name when uploading to library */}
-		{source === 'upload' && uploadStructure && (
-			<Grid>
-				<MolmakerTextField
-					fullWidth
-					label="Structure Name"
-					value={moleculeName}
-					onChange={onMoleculeNameChange}
-					required
-					error={submitAttempted && !moleculeName}
-					helperText={submitAttempted && !moleculeName ? 'Please enter a name' : ''}
-					sx={{ mt: 1 }}
-				/>
-				<MolmakerTextField
-					fullWidth
-					label="Structure Notes"
-					value={moleculeNotes}
-					onChange={onMoleculeNotesChange}
-					multiline
-					rows={3}
-					sx={{ mt: 2 }}
-				/>
-				<Autocomplete
-					multiple
-					freeSolo
-					id="tags-input"
-					options={options}
-					value={structureTags}
-					onChange={onStructureTagsChange}
-					renderInput={(params) => (
-						<TextField
-							{...params}
-							variant="outlined"
-							label="Tags"
-							placeholder="Press enter to add tags"
-						/>
-					)}
-					sx={{ mt: 2 }}
-				/>
-			</Grid>
-		)}
+			{/* Molecule name when uploading to library */}
+			{source === 'upload' && uploadStructure && (
+				<Grid>
+					<MolmakerTextField
+						fullWidth
+						label="Structure Name"
+						value={moleculeName}
+						onChange={onMoleculeNameChange}
+						required
+						error={submitAttempted && !moleculeName}
+						helperText={submitAttempted && !moleculeName ? 'Please enter a name' : ''}
+						sx={{ mt: 1 }}
+					/>
+					<MolmakerTextField
+						fullWidth
+						label="Structure Notes"
+						value={moleculeNotes}
+						onChange={onMoleculeNotesChange}
+						multiline
+						rows={3}
+						sx={{ mt: 2 }}
+					/>
+					<Autocomplete
+						multiple
+						freeSolo
+						id="tags-input"
+						options={options}
+						value={structureTags}
+						onChange={onStructureTagsChange}
+						renderInput={(params) => (
+							<TextField
+								{...params}
+								variant="outlined"
+								label="Structure Tags"
+								placeholder="Press enter to add tags"
+							/>
+						)}
+						sx={{ mt: 2 }}
+					/>
+				</Grid>
+			)}
+		</Box>
 	</Grid>)
 };
 

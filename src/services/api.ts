@@ -57,10 +57,20 @@ export const getJobStatusBySlurmID = async (
 		if (response.status !== 200) {
 			throw new Error(`HTTP ${response.status}`);
 		}
-		const { state } = response.data;
+		const raw = response.data.state as string;
+		const parsed = JSON.parse(raw) as {
+			slurm_id: string;
+			state: string;
+			elapsed: string;
+		};
+
 		return {
 			status: response.status,
-			data: state.toLowerCase(),
+			data: {
+				slurm_id: parsed.slurm_id,
+				state: parsed.state.toLowerCase(),
+				elapsed: parsed.elapsed,
+			},
 		};
 	} catch (error) {
 		console.error("Failed to fetch job status", error);
@@ -361,7 +371,8 @@ export const createJob = async (
 	multiplicity: number,
 	structureId: string | null,
 	slurmId: string | null,
-	token: string
+	token: string,
+	tags: string[] = []
 ): Promise<Response> => {
 	const formData = new FormData();
 	formData.append('file', file);
@@ -375,6 +386,7 @@ export const createJob = async (
 	if (structureId) formData.append('structure_id', structureId);
 	if (slurmId) formData.append('slurm_id', slurmId);
 	if (jobNotes) formData.append('job_notes', jobNotes);
+	tags.forEach(tag => formData.append('tags', tag));
 
 	try {
 		const API = createBackendAPI(token);
@@ -402,6 +414,66 @@ export const updateJobStatus = async (
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error('Failed to update job status', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+interface JobUpdateBody {
+  runtime?: string;   // "HH:MM:SS"
+  status?: string;    // e.g. "RUNNING", "FAILED", etc.
+}
+
+interface UpdateJobResponse {
+  job_id: string;
+  runtime: string;    // if you’re using INTERVAL it’ll come back as "HH:MM:SS"
+  state: string;
+  message?: string;
+}
+
+
+export const updateJob = async (
+	jobId: string,
+	state: string,
+	runtime: string,
+	token: string
+): Promise<UpdateJobResponse> => {
+	console.log('Updating job:', { jobId, state, runtime });
+	const formData = new FormData();
+	formData.append('state', state);
+	formData.append('runtime', runtime);
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.patch(`/jobs/${jobId}`, formData);
+		return {
+			job_id: res.data.job_id,
+			runtime: res.data.runtime,
+			state: res.data.state,
+			message: res.data.message || '',
+		};
+	}
+	catch (error: any) {
+		console.error('Failed to update job', error);
+		throw {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+export const updateJobRuntime = async (
+	jobId: string,
+	runtime: string,
+	token: string
+): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.patch(`/jobs/${jobId}/${runtime}`);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to update job runtime', error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,

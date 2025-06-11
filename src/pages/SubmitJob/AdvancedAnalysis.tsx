@@ -7,6 +7,8 @@ import {
     Divider,
     Button,
     Paper, Accordion, AccordionSummary, AccordionDetails,
+    Autocomplete,
+    TextField,
 } from '@mui/material'
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline'
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
@@ -31,6 +33,7 @@ import {
     getMultiplicities,
     createJob,
     AddAndUploadStructureToS3,
+    getStructuresTags,
 } from '../../services/api'
 import { Structure } from '../../types'
 import { submitAdvancedAnalysis } from '../../services/api'
@@ -56,6 +59,7 @@ const AdvancedAnalysis = () => {
     // state for form
     const [jobName, setJobName] = useState<string>('');
     const [jobNotes, setJobNotes] = useState<string>('');
+    const [jobTags, setJobTags] = useState<string[]>([]);
     const [source, setSource] = useState<'upload' | 'library'>('upload');  
     const [file, setFile] = useState<File | null>(null);
     const [uploadStructure, setUploadStructure] = useState<boolean>(false);
@@ -70,6 +74,7 @@ const AdvancedAnalysis = () => {
     const [theoryType, setTheoryType] = useState('wavefunction');
     const [theory, setTheory] = useState<string>('scf');
     const [basisSet, setBasisSet] = useState<string>('sto-3g');
+    const [options, setOptions] = useState<string[]>([]);
 
     // dropdown options state
     const [wavefunctionTheory, setWavefunctionTheory] = useState<{ [key: string]: string }>({});
@@ -152,11 +157,24 @@ const AdvancedAnalysis = () => {
             }
         }
 
+        const fetchTags = async () => {
+            try {
+                const token = await getAccessTokenSilently()
+                const response = await getStructuresTags(token)
+                if (response.data) {
+                    setOptions(response.data)
+                }
+            }
+            catch (err) {
+                console.error("Failed to fetch tags", err)
+            }
+        }
+
         setLoading(true);
         loadDropdownOptions();
         loadLibrary();
+        fetchTags();
     }, [getAccessTokenSilently]);
-
 
     // Handle switching between upload / library
     const handleSourceChange = (source: 'upload' | 'library') => {
@@ -298,7 +316,8 @@ const AdvancedAnalysis = () => {
                 multiplicity,
                 structureIdToUse,
                 slurm_id,
-                token
+                token,
+                jobTags
             );
             if (response.error) {
                 throw new Error(response.error);
@@ -359,7 +378,25 @@ const AdvancedAnalysis = () => {
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setJobNotes(e.target.value)}
                                         multiline
                                         rows={3}
-                                        helperText="Optional notes about this job"
+                                        sx={{ mt: 2 }}
+                                    />
+                                    <Autocomplete
+                                        multiple
+                                        freeSolo
+                                        id="tags-input"
+                                        options={options}
+                                        value={jobTags}
+                                        onChange={(e, newValue) => {
+                                            setJobTags(newValue.filter(tag => tag.trim() !== ''));
+                                        }}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                variant="outlined"
+                                                label="Tags"
+                                                placeholder="Press enter to add tags"
+                                            />
+                                        )}
                                         sx={{ mt: 2 }}
                                     />
                                 </Grid>
@@ -530,7 +567,6 @@ const AdvancedAnalysis = () => {
                                     <AccordionDetails
                                         sx={{
                                             p: 2,
-                                            // border: '1px solid rgba(0, 0, 0, 0.12)',
                                             borderRadius: 2,
                                             width: "100%",
                                             bgcolor: grey[100],

@@ -16,7 +16,7 @@ import {
 	getJobStatusBySlurmID, 
 	getLibraryStructures, 
 	getStructureDataFromS3, 
-	updateJobStatus,
+	updateJob
 } from '../../services/api';
 import { JobStatus } from '../../constants';
 import JobsStatus from './components/JobsStatus';
@@ -68,29 +68,85 @@ export default function Home() {
 
 	// poll statuses every 5s
 	useEffect(() => {
-		const interval = setInterval(async () => {
+		const tick = async () => {
+		try {
 			const token = await getAccessTokenSilently();
-			for (const job of jobsRef.current) {
-				if (![JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED].includes(job.status)) {
-					try {
-						const response = await getJobStatusBySlurmID(job.slurm_id as string, token);
-						console.log('Polling job status:', job.slurm_id, response);
-						const newStatus = response.data;
-						if (newStatus === job.status) continue;
-						await updateJobStatus(job.job_id, newStatus, token);
-						setJobs(prev => prev.map(j =>
-							j.job_id === job.job_id ? { ...j, status: newStatus as string } : j
-						));
-					} catch (err) {
-						setError('Failed to update job status');
-						console.error('Status check failed:', err);
-					}
-				}
-			}
-		}, 10000);
 
-		return () => clearInterval(interval);
-	}, []);
+			// Gather all the changes we need to apply
+			const toUpdate: Array<{
+				jobId: string;
+				newStatus?: string;
+				newRuntime?: string;
+			}> = [];
+
+			for (const job of jobsRef.current) {
+			// skip terminal jobs
+			if (
+				[JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED]
+				.includes(job.status)
+			) {
+				continue;
+			}
+
+			// fetch latest from backend
+			const resp = await getJobStatusBySlurmID(job.slurm_id!, token);
+			if (resp.error) {
+				console.warn(`Failed to fetch status for job ${job.job_id}:`, resp.error);
+				continue; // skip this job if there's an error
+			}
+			const fetchedStatus = resp.data.state;
+			const fetchedRuntime = resp.data.elapsed;
+
+			// if anything changed, queue it up
+			if (
+				fetchedStatus !== job.status ||
+				fetchedRuntime !== job.runtime
+			) {
+				toUpdate.push({
+					jobId: job.job_id,
+					newStatus: fetchedStatus,
+					newRuntime: fetchedRuntime,
+				});
+			}
+			}
+
+			if (toUpdate.length === 0) {
+				return; // nothing to do
+			}
+
+			// Apply updates on the server one by one (or you could Promise.all)
+			await Promise.all(
+				toUpdate.map(({ jobId, newStatus, newRuntime }) =>
+					updateJob(jobId ?? '', newStatus ?? '', newRuntime ?? '', token)
+				)
+			);
+
+			// And mirror them in local state
+			setJobs((prev) =>
+			prev.map((j) => {
+				const upd = toUpdate.find((u) => u.jobId === j.job_id);
+				return upd
+				? {
+					...j,
+					status:  upd.newStatus  ?? j.status,
+					runtime: upd.newRuntime ?? j.runtime,
+					}
+				: j;
+			})
+			);
+		} catch (err: any) {
+			console.error("Polling error:", err);
+			setError("Failed to refresh job statuses.");
+		}
+		};
+
+		// start pool
+		const id = setInterval(tick, 5000);
+		// run immediately once
+		tick();
+
+		return () => clearInterval(id);
+	}, [getAccessTokenSilently]);
 
 	// load jobs & structures
 	useEffect(() => {

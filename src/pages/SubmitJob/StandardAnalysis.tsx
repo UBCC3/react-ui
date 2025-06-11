@@ -237,7 +237,7 @@ export default function StandardAnalysis() {
 				multiplicity,
 				structureIdToUse,
 				slurm_id,
-				token
+				token,
 			);
 			if (response.error) {
 				throw new Error(response.error);
