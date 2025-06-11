@@ -13,12 +13,13 @@ import {
 } from '@mui/material';
 import {
 	Refresh,
-	Visibility,
-	Image,
+	VisibilityOutlined,
+	PhotoOutlined,
 	FilterList,
 	Block,
 	AutoMode,
-	TuneOutlined
+	TuneOutlined,
+	DeleteOutlineOutlined
 } from '@mui/icons-material';
 import { blueGrey } from '@mui/material/colors';
 
@@ -28,7 +29,9 @@ interface JobsToolbarProps {
 	onViewStructure: () => void;
 	onFilterByStructure: () => void;
 	cancelDisabled: (selectedJobId: string | null) => boolean;
+	deleteDisabled: (selectedJobId: string | null) => boolean;
 	onCancelJob: () => void;
+	onDeleteJob: () => void;
 	onRefresh: () => void;
 	structures: Array<{ structure_id: string; name: string }>;
 	selectedStructure: string;
@@ -41,7 +44,9 @@ export default function JobsToolbar({
 	onViewStructure,
 	onFilterByStructure,
 	cancelDisabled,
+	deleteDisabled,
 	onCancelJob,
+	onDeleteJob,
 	onRefresh,
 	structures,
 	selectedStructure,
@@ -77,7 +82,7 @@ export default function JobsToolbar({
 								disabled={!selectedJobId}
 								onClick={onViewDetails}
 							>
-								<Visibility />
+								<VisibilityOutlined />
 							</IconButton>
 						</span>
 					</Tooltip>
@@ -87,7 +92,7 @@ export default function JobsToolbar({
 								disabled={!selectedJobId}
 								onClick={onViewStructure}
 							>
-								<Image />
+								<PhotoOutlined />
 							</IconButton>
 						</span>
 					</Tooltip>
@@ -108,6 +113,16 @@ export default function JobsToolbar({
 								onClick={onCancelJob}
 							>
 								<Block />
+							</IconButton>
+						</span>
+					</Tooltip>
+					<Tooltip title="Delete job">
+						<span>
+							<IconButton
+								disabled={deleteDisabled(selectedJobId)}
+								onClick={onDeleteJob}
+							>
+								<DeleteOutlineOutlined />
 							</IconButton>
 						</span>
 					</Tooltip>

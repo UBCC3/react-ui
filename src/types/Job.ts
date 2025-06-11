@@ -16,6 +16,7 @@ interface Job {
 	structures: Array<{ structure_id: string; name: string }>;
 	tags: string[];
 	runtime: string | null;
+	is_deleted: boolean;
 	result(result: any, arg1: null, arg2: number): unknown;
 }
 

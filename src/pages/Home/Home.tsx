@@ -8,6 +8,12 @@ import {
 	TablePagination,
 	Dialog,
 	Snackbar,
+	Typography,
+	Button,
+	DialogTitle,
+	DialogContent,
+	DialogContentText,
+	DialogActions,
 } from '@mui/material';
 import { blueGrey } from '@mui/material/colors';
 import { 
@@ -16,7 +22,8 @@ import {
 	getJobStatusBySlurmID, 
 	getLibraryStructures, 
 	getStructureDataFromS3, 
-	updateJob
+	updateJob,
+	deleteJob
 } from '../../services/api';
 import { JobStatus } from '../../constants';
 import JobsStatus from './components/JobsStatus';
@@ -26,13 +33,18 @@ import {
 	MolmakerPageTitle,
 	MolmakerMoleculePreview, 
 	MolmakerLoading, 
-	MolmakerAlert
+	MolmakerAlert,
+	MolmakerConfirmDelete
 } from '../../components/custom';
 import type { Job, Structure } from '../../types';
 
 export default function Home() {
 	const navigate = useNavigate();
 	const { user, getAccessTokenSilently } = useAuth0();
+
+	// confirm delete job
+	const [openConfirmDelete, setOpenConfirmDelete] = useState<boolean>(false);
+	const handleOpenConfirmDelete = () => setOpenConfirmDelete(true);
 
 	// data state
 	const [jobs, setJobs] = useState<Job[]>([]);
@@ -158,7 +170,7 @@ export default function Home() {
 					getLibraryStructures(token)
 				]);
 				
-				setJobs(jobsResponse.data);
+				setJobs(jobsResponse.data.filter(job => job.is !== JobStatus.PENDING));
 				setFilteredJobs(jobsResponse.data);
 
 				const sortedStructures = structuresResponse.data.sort((a, b) => a.name.localeCompare(b.name));
@@ -274,6 +286,32 @@ export default function Home() {
 		}
 	};
 
+	const handleDelete = async () => {
+		setLoading(true);
+		try {
+			const token = await getAccessTokenSilently();
+			const response = await deleteJob(selectedJobId, token);
+			if (response.error) {
+				setAlertMsg('Failed to delete the job');
+				setAlertSeverity('error');
+				setAlertShow(true);
+				return;
+			}
+			setJobs(jobs.filter(job => job.job_id !== selectedJobId));
+			setSelectedJobId('');
+			setAlertMsg('Job deleted successfully!');
+			setAlertSeverity('success');
+			setAlertShow(true);
+		} catch (err) {
+			setAlertMsg('Failed to delete the job');
+			setAlertSeverity('error');
+			setAlertShow(true);
+			console.error('Failed to delete the job', err);
+		} finally {
+			setLoading(false);
+		}
+	};
+
 	const cancelDisabled = (selectedJobId: string | null) : boolean => {
 		if (!selectedJobId) {
 			return true;
@@ -288,6 +326,20 @@ export default function Home() {
 		}
 
 		return false
+	}
+
+	const deleteDisabled = (selectedJobId: string | null) : boolean => {
+		if (!selectedJobId) {
+			return true;
+		}
+		const jobToDelete = jobs.find(j => j.job_id === selectedJobId);
+		if (!jobToDelete) {
+			return true;
+		}
+		if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED].includes(jobToDelete.status)) {
+			return false;
+		}
+		return true;
 	}
 
 	if (loading) {
@@ -318,6 +370,14 @@ export default function Home() {
 					/>
 				</Box>
 			</Dialog>
+			<MolmakerConfirmDelete
+				open={openConfirmDelete}
+				onClose={() => setOpenConfirmDelete(false)}
+				onConfirm={() => {
+					handleDelete();
+					setOpenConfirmDelete(false);
+				}}
+			/>
 			<Box
 				sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
 			>
@@ -364,7 +424,9 @@ export default function Home() {
 						}
 					}}
 					cancelDisabled={cancelDisabled}
+					deleteDisabled={deleteDisabled}
 					onCancelJob={handleCancel}
+					onDeleteJob={handleOpenConfirmDelete}
 					onRefresh={handleRefresh}
 					structures={structures}
 					selectedStructure={filterStructureId}

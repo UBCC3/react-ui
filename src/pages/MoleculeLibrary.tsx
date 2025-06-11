@@ -212,7 +212,7 @@ const MoleculeLibrary = () => {
 								<TableBody>
 									{libraryStructures.length === 0 && (
 										<TableRow>
-											<TableCell colSpan={3} align="center">
+											<TableCell colSpan={4} align="center">
 												<Typography variant="body2" color="text.secondary">
 													No structures have been added yet.
 												</Typography>

@@ -433,6 +433,22 @@ interface UpdateJobResponse {
   message?: string;
 }
 
+export const deleteJob = async (
+	jobId: string,
+	token: string
+): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.delete(`/jobs/${jobId}`);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to delete job', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
 
 export const updateJob = async (
 	jobId: string,
