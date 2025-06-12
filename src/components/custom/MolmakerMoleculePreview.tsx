@@ -16,7 +16,16 @@ interface MolmakerMoleculePreview {
 	title?: string;
 	maxHeight?: number;
 	sx?: SxProps<Theme>;
+	onSnapshot?: (dataURL: string) => void;
 }
+
+const captureSnapshot = (element: HTMLDivElement, callback: (dataUrl: string) => void) => {
+	setTimeout(() => {
+		const canvas = element.querySelector("canvas");
+		const dataURL = canvas!.toDataURL('image/png');
+		callback(dataURL!);
+	}, 500);
+};
 
 const MolmakerMoleculePreview: React.FC<MolmakerMoleculePreview> = ({
 	data = '',
@@ -24,7 +33,8 @@ const MolmakerMoleculePreview: React.FC<MolmakerMoleculePreview> = ({
 	source = 'upload',
 	title = 'Structure Preview',
 	maxHeight,
-	sx = {}
+	sx = {},
+	onSnapshot,
 }) => {
   	const viewerRef = useRef<HTMLDivElement>(null);
 
@@ -40,6 +50,10 @@ const MolmakerMoleculePreview: React.FC<MolmakerMoleculePreview> = ({
 		viewer.resize();
 		viewer.zoomTo();
 		viewer.render();
+
+		if (onSnapshot) {
+			captureSnapshot(element, onSnapshot);
+		}
 	}, [data, format]);
 
 	return (

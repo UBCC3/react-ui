@@ -147,13 +147,26 @@ export const submitStandardAnalysis = async (
 	}
 };
 
+function dataURLToBlob(dataURL) {
+	const parts = dataURL.split(',');
+	const mime = parts[0].match(/:(.*?);/)[1];
+	const binary = atob(parts[1]);
+	let array = new Uint8Array(binary.length);
+	for (let i = 0; i < binary.length; i++) {
+			array[i] = binary.charCodeAt(i);
+	}
+	return new Blob([array], { type: mime });
+}
+
 export const AddAndUploadStructureToS3 = async (
 	file: File | Blob,
 	name: string,
 	notes: string,
+	image: string,
 	token: any,
 	tags: string[] = [],
 ): Promise<Response> => {
+	const imageBlob = dataURLToBlob(image);
 	const formData = new FormData();
 	formData.append("file", file);
 	formData.append("name", name);
@@ -161,6 +174,7 @@ export const AddAndUploadStructureToS3 = async (
 	if (tags && tags.length > 0) {
 		tags.forEach(tag => formData.append("tags", tag));
 	}
+	formData.append("image", imageBlob, `image.png`);
 
 	try {
 		const API = createBackendAPI(token);
