@@ -27,18 +27,14 @@ import {
 	Add
 } from "@mui/icons-material";
 import { blueGrey } from "@mui/material/colors";
-import { 
-	MolmakerMoleculePreview, 
-	MolmakerSectionHeader, 
-	MolmakerTextField,
+import {
 	MolmakerPageTitle,
-	MolmakerAlert,
 	MolmakerLoading,
+	MolmakerConfirmDelete
 } from "../components/custom";
-import { 
-	getStructureDataFromS3, 
-	AddAndUploadStructureToS3, 
-	getLibraryStructures 
+import {
+	getLibraryStructures,
+	deleteStructure,
 } from "../services/api";
 import type { Structure } from "../types";
 import MoleculeInfo from "../components/MoleculeInfo";
@@ -49,6 +45,7 @@ const MoleculeLibrary = () => {
 
 	const [open, setOpen] = useState<boolean>(false);
 	const [openAdd, setOpenAdd] = useState<boolean>(false);
+	const [openConfirmDelete, setOpenConfirmDelete] = useState<boolean>(false);
 
 	// state for user experience
 	const [error, setError] = useState<string | null>(null);
@@ -75,6 +72,21 @@ const MoleculeLibrary = () => {
 			console.error('Failed to refresh jobs', err);
 		} finally {
 			setLoading(false);
+		}
+	};
+
+	const handleDelete = async () => {
+		if (!selectedStructureId) return;
+
+		try {
+			const token = await getAccessTokenSilently();
+			await deleteStructure(selectedStructureId, token);
+			setLibraryStructures(prev => prev.filter(molecule => molecule.structure_id !== selectedStructureId));
+			setSelectedStructureId("");
+			setError(null);
+		} catch (err) {
+			setError('Failed to delete molecule. Please try again later.');
+			console.error('Failed to delete molecule', err);
 		}
 	};
 
@@ -152,6 +164,14 @@ const MoleculeLibrary = () => {
 
   	return (
 		<Box bgcolor={'rgb(247, 249, 252)'} p={4}>
+			<MolmakerConfirmDelete 
+				open={openConfirmDelete}
+				onClose={() => setOpenConfirmDelete(false)}
+				onConfirm={() => {
+					handleDelete();
+					setOpenConfirmDelete(false);
+				}}
+			/>
 			<MoleculeUpload open={openAdd} setOpen={setOpenAdd} setLibraryStructures={setLibraryStructures} />
 			<MoleculeInfo open={open} setOpen={setOpen} selectedStructureId={selectedStructureId} />
 			<MolmakerPageTitle
@@ -183,7 +203,10 @@ const MoleculeLibrary = () => {
 										</IconButton>
 									</Tooltip>
 									<Tooltip title="Delete structure">
-										<IconButton disabled={!selectedStructureId}>
+										<IconButton 
+											disabled={!selectedStructureId}
+											onClick={() => setOpenConfirmDelete(true)}
+										>
 											<DeleteOutlineOutlined />
 										</IconButton>
 									</Tooltip>

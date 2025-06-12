@@ -15,7 +15,7 @@ const MolmakerConfirmDelete = ({ open, onClose, onConfirm }) => {
 			</DialogTitle>
 			<DialogContent>
 				<DialogContentText>
-					Are you sure you want to delete this job? This action cannot be undone.
+					Are you sure you want to delete this row? This action cannot be undone.
 				</DialogContentText>
 			</DialogContent>
 			<DialogActions>

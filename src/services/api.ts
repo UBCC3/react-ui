@@ -421,11 +421,6 @@ export const updateJobStatus = async (
 	}
 };
 
-interface JobUpdateBody {
-  runtime?: string;   // "HH:MM:SS"
-  status?: string;    // e.g. "RUNNING", "FAILED", etc.
-}
-
 interface UpdateJobResponse {
   job_id: string;
   runtime: string;    // if you’re using INTERVAL it’ll come back as "HH:MM:SS"
@@ -443,6 +438,23 @@ export const deleteJob = async (
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error('Failed to delete job', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+export const deleteStructure = async (
+	structureId: string,
+	token: string
+): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.delete(`/structures/${structureId}`);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to delete structure', error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
