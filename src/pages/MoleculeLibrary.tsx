@@ -17,6 +17,7 @@ import {
 	IconButton,
 	Tooltip,
 	TablePagination,
+	Avatar,
 } from "@mui/material";
 import {
 	Refresh,
@@ -103,6 +104,7 @@ const MoleculeLibrary = () => {
 					location: item.location,
 					uploaded_at: item.uploaded_at,
 					tags: item.tags || [],
+					imageS3URL: item.imageS3URL,
 				})));
 			} catch (err) {
 				setError('Failed to fetch molecules. Please try again later.');
@@ -225,6 +227,7 @@ const MoleculeLibrary = () => {
 								<TableHead>
 									<TableRow sx={{ bgcolor: blueGrey[50] }}>
 										{renderHeader('Name', 'name')}
+										{renderHeader('Image','imageS3URL')}
 										{renderHeader('Notes', 'notes')}
 										{renderHeader('Tags', 'tags')}
 										{renderHeader('Uploaded At', 'uploaded_at')}
@@ -261,6 +264,14 @@ const MoleculeLibrary = () => {
 											}}
 										>
 											<TableCell>{molecule.name}</TableCell>
+											<TableCell>
+												<Avatar
+													variant="square"
+													alt={`Thumbnail for ${molecule.name}`}
+													src={molecule.imageS3URL}
+													sx={{ width: 64, height: 64 }}
+												/>
+											</TableCell>
 											<TableCell>{molecule.notes}</TableCell>
 											<TableCell>
 												{molecule.tags.length > 0 ? (
