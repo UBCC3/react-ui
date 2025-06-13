@@ -6,8 +6,7 @@ interface Structure {
     location: string;
     uploaded_at: string;
     tags: string[];
-    imageURL?: string;
-    imageS3URL?: any;
+    imageS3URL?: string;
 }
 
 export default Structure;

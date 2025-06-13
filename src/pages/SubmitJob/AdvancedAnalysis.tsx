@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -20,6 +20,8 @@ import {
     MolmakerSectionHeader,
     MolmakerRadioGroup,
     MolmakerMoleculePreview,
+    MolmakerMoleculePreviewRef,
+    getStructureImageData,
     MolmakerAlert,
     MolmakerLoading
 } from '../../components/custom'
@@ -67,6 +69,7 @@ const AdvancedAnalysis = () => {
     const [selectedStructure, setSelectedStructure] = useState<string>('');
     const [structureName, setStructureName] = useState<string>('');
     const [structureNotes, setStructureNotes] = useState<string>('');
+    const previewRef = useRef<MolmakerMoleculePreviewRef>(null);
     const [structureTags, setStructureTags] = useState<string[]>([]);
     const [charge, setCharge] = useState<number>(0);
     const [calculationType, setCalculationType] = useState<string>('energy');
@@ -271,9 +274,10 @@ const AdvancedAnalysis = () => {
             });
             formData.append('keywords', keywordsJsonFile);
         }
-
-        setLoading(true);
         try {
+            // must capture MolmakerMoleculePreview canvas before loading page (otherwise it would be unmounted
+            const structureImageData = await getStructureImageData(previewRef);
+            setLoading(true);
             const token = await getAccessTokenSilently();
             let response = await submitAdvancedAnalysis(
                 uploadFile,
@@ -295,6 +299,7 @@ const AdvancedAnalysis = () => {
                     uploadFile,
                     structureName,
                     structureNotes,
+                    structureImageData,
                     token,
                     structureTags
                 );
@@ -598,6 +603,7 @@ const AdvancedAnalysis = () => {
 						format='xyz'
 						source={source}
                         sx={{ maxHeight: 437 }}
+                        ref={previewRef}
 					/>
         		</Grid>
             </Grid>

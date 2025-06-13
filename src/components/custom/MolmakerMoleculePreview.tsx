@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, {forwardRef, useEffect, useImperativeHandle, useRef} from 'react';
 import { Paper, Typography, Divider, Box, Skeleton, SxProps, Theme } from '@mui/material';
 import { blueGrey } from '@mui/material/colors';
 
@@ -9,30 +9,51 @@ declare global {
 	}
 }
 
-interface MolmakerMoleculePreview {
+interface MolmakerMoleculePreviewProp {
 	data?: string;
 	format: string;
 	source?: 'upload' | 'library';
 	title?: string;
 	maxHeight?: number;
 	sx?: SxProps<Theme>;
-	onSnapshot?: (dataURL: string) => void;
 }
 
 export interface MolmakerMoleculePreviewRef {
 	captureCurrentView: () => string;
 }
 
-const MolmakerMoleculePreview: React.FC<MolmakerMoleculePreview> = ({
+export async function getStructureImageData(previewRef: React.RefObject<MolmakerMoleculePreviewRef>): Promise<string> {
+	for (let i = 0; i < 5; i++) {
+		if (previewRef.current) {
+			return previewRef.current.captureCurrentView();
+		}
+		await new Promise((res) => setTimeout(res, 100));
+	}
+	throw new Error('Failed to get structure image');
+}
+
+export const MolmakerMoleculePreview = forwardRef<MolmakerMoleculePreviewRef, MolmakerMoleculePreviewProp>(({
 	data = '',
 	format,
 	source = 'upload',
 	title = 'Structure Preview',
 	maxHeight,
 	sx = {},
-	onSnapshot,
-}) => {
+}, ref) => {
   	const viewerRef = useRef<HTMLDivElement>(null);
+	  
+	useImperativeHandle(ref, () => ({
+        captureCurrentView: () => {
+            const element = viewerRef.current;
+            if (!element) return null;
+
+            const canvas = element.querySelector('canvas');
+            if (canvas instanceof HTMLCanvasElement) {
+                return canvas.toDataURL("image/png");
+            }
+            return null;
+        }
+	}))
 
 	useEffect(() => {
 		if (!data || !window.$3Dmol) return;
@@ -47,9 +68,6 @@ const MolmakerMoleculePreview: React.FC<MolmakerMoleculePreview> = ({
 		viewer.zoomTo();
 		viewer.render();
 
-		if (onSnapshot) {
-			captureSnapshot(element, onSnapshot);
-		}
 	}, [data, format]);
 
 	return (
@@ -92,6 +110,4 @@ const MolmakerMoleculePreview: React.FC<MolmakerMoleculePreview> = ({
 			</Box>
 		</Paper>
 	);
-};
-
-export default MolmakerMoleculePreview;
+});

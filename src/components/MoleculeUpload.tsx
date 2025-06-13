@@ -1,6 +1,11 @@
-import React, {useState, useEffect} from 'react'
+import React, {useState, useEffect, useRef} from 'react'
 import { Box, Button, Drawer, Grid, Autocomplete, Chip, TextField } from '@mui/material'
-import { MolmakerMoleculePreview, MolmakerTextField, MolmakerSectionHeader,  } from '../components/custom'
+import {
+	MolmakerMoleculePreview,
+	MolmakerTextField,
+	MolmakerSectionHeader,
+	getStructureImageData,
+} from '../components/custom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { CloudUploadOutlined, AddPhotoAlternateOutlined, Close } from '@mui/icons-material'
 import { AddAndUploadStructureToS3, getLibraryStructures, getStructuresTags } from '../services/api'
@@ -13,7 +18,8 @@ const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
 	const [structureData, setStructureData] = useState<string>('')
 	const [structureName, setStructureName] = useState<string>('')
 	const [structureNotes, setStructureNotes] = useState<string>('')
-	const [strucutreImageURL, setStructureImageURL] = useState<string>('')
+	// const [structureImageData, setStructureImageData] = useState<string>('')
+	const previewRef = useRef<any>(null)
 	const [loading, setLoading] = useState<boolean>(false)
 	const [error, setError] = useState<string | null>(null)
 	const [uploadedFile, setUploadedFile] = useState<File | null>(null)
@@ -76,7 +82,8 @@ const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
 
 		try {
 			const token = await getAccessTokenSilently();
-			await AddAndUploadStructureToS3(uploadedFile, structureName, structureNotes, strucutreImageURL, token, tags);
+			const structureImageData = await getStructureImageData(previewRef);
+			await AddAndUploadStructureToS3(uploadedFile, structureName, structureNotes, structureImageData, token, tags);
 
 			// Refresh the library after successful submission
 			const response = await getLibraryStructures(token);
@@ -157,7 +164,7 @@ const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
 						position: 'relative',
 					}}
 					title="Add Structure"
-					onSnapshot={setStructureImageURL}
+					ref={previewRef}
 				/>
 				<Box sx={{ padding: 2, display: 'flex', flexDirection: 'column', gap: 2 }} component="form" onSubmit={handleSubmit}>
 					<MolmakerSectionHeader text="Structure Information" />

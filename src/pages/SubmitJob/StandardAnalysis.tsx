@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import {
@@ -15,14 +15,15 @@ import {
 	InfoOutline,
 } from '@mui/icons-material';
 import {
-    MolmakerTextField,
-    MolmakerDropdown,
-    MolmakerMoleculeSelector,
+	MolmakerTextField,
+	MolmakerDropdown,
+	MolmakerMoleculeSelector,
 	MolmakerSectionHeader,
 	MolmakerMoleculePreview,
 	MolmakerLoading,
 	MolmakerAlert,
-	MolmakerPageTitle
+	MolmakerPageTitle,
+	MolmakerMoleculePreviewRef, getStructureImageData,
 } from '../../components/custom'
 import { 
 	createJob, 
@@ -52,6 +53,7 @@ export default function StandardAnalysis() {
     const [source, setSource] = useState<'upload' | 'library'>('upload');  
     const [file, setFile] = useState<File | null>(null);
     const [uploadStructure, setUploadStructure] = useState<boolean>(false);
+    const previewRef = useRef<MolmakerMoleculePreviewRef>(null);
     const [structures, setStructures] = useState<Structure[]>([]);
     const [selectedStructure, setSelectedStructure] = useState<string>('');
     const [structureName, setStructureName] = useState<string>('');
@@ -196,8 +198,9 @@ export default function StandardAnalysis() {
 		formData.append('charge', charge.toString());
 		formData.append('multiplicity', multiplicity.toString());
 
-		setLoading(true);
 		try {
+			const structureImageData = await  getStructureImageData(previewRef);
+			setLoading(true);
 			const token = await getAccessTokenSilently();
 			let response = await submitStandardAnalysis(
 				jobName,
@@ -217,6 +220,7 @@ export default function StandardAnalysis() {
 					uploadFile,
 					structureName,
 					structureNotes,
+					structureImageData,
 					token
 				);
 				if (response.error) {
@@ -388,6 +392,7 @@ export default function StandardAnalysis() {
 						data={structureData}
 						format='xyz'
 						source={source}
+                        ref={previewRef}
 					/>
         		</Grid>
       		</Grid>
