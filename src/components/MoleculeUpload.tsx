@@ -5,6 +5,7 @@ import {
 	MolmakerTextField,
 	MolmakerSectionHeader,
 	getStructureImageData,
+	MolmakerMoleculePreviewRef,
 } from '../components/custom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { CloudUploadOutlined, AddPhotoAlternateOutlined, Close } from '@mui/icons-material'
@@ -18,8 +19,7 @@ const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
 	const [structureData, setStructureData] = useState<string>('')
 	const [structureName, setStructureName] = useState<string>('')
 	const [structureNotes, setStructureNotes] = useState<string>('')
-	// const [structureImageData, setStructureImageData] = useState<string>('')
-	const previewRef = useRef<any>(null)
+	const previewRef = useRef<MolmakerMoleculePreviewRef>(null)
 	const [loading, setLoading] = useState<boolean>(false)
 	const [error, setError] = useState<string | null>(null)
 	const [uploadedFile, setUploadedFile] = useState<File | null>(null)
