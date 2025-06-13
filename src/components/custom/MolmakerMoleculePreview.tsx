@@ -19,13 +19,9 @@ interface MolmakerMoleculePreview {
 	onSnapshot?: (dataURL: string) => void;
 }
 
-const captureSnapshot = (element: HTMLDivElement, callback: (dataUrl: string) => void) => {
-	setTimeout(() => {
-		const canvas = element.querySelector("canvas");
-		const dataURL = canvas!.toDataURL('image/png');
-		callback(dataURL!);
-	}, 500);
-};
+export interface MolmakerMoleculePreviewRef {
+	captureCurrentView: () => string;
+}
 
 const MolmakerMoleculePreview: React.FC<MolmakerMoleculePreview> = ({
 	data = '',
