@@ -11,7 +11,7 @@ import type {MolmakerMoleculePreviewRef} from './MolmakerMoleculePreview';
 import MolmakerAlert from './MolmakerAlert';
 import MolmakerPageTitle from './MolmakerPageTitle';
 import MolmakerLoading from './MolmakerLoading';
-import MolmakerConfirmDelete from './MolmakerConfirmDelete';
+import MolmakerConfirm from './MolmakerConfirm';
 
 export {
 	MolmakerAlert,
@@ -25,5 +25,5 @@ export {
 	getStructureImageData,
 	MolmakerPageTitle,
 	MolmakerLoading,
-	MolmakerConfirmDelete
+	MolmakerConfirm
 }

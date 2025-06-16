@@ -28,7 +28,7 @@ import {
 	MolmakerMoleculePreview, 
 	MolmakerLoading, 
 	MolmakerAlert,
-	MolmakerConfirmDelete
+	MolmakerConfirm
 } from '../../components/custom';
 import type { Job, Structure } from '../../types';
 
@@ -364,7 +364,7 @@ export default function Home() {
 					/>
 				</Box>
 			</Dialog>
-			<MolmakerConfirmDelete
+			<MolmakerConfirm
 				open={openConfirmDelete}
 				onClose={() => setOpenConfirmDelete(false)}
 				onConfirm={() => {

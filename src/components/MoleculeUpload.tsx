@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from 'react'
+import React, {useState, useEffect, useRef, forwardRef, useImperativeHandle} from 'react'
 import { Box, Button, Drawer, Grid, Autocomplete, Chip, TextField } from '@mui/material'
 import {
 	MolmakerMoleculePreview,
@@ -10,9 +10,25 @@ import {
 import { useAuth0 } from '@auth0/auth0-react'
 import { CloudUploadOutlined, AddPhotoAlternateOutlined, Close } from '@mui/icons-material'
 import { AddAndUploadStructureToS3, getLibraryStructures, getStructuresTags } from '../services/api'
+import {Structure} from "../types";
 
+interface MoleculeUploadProps {
+	open: boolean,
+	setOpen: React.Dispatch<React.SetStateAction<boolean>>,
+	setLibraryStructures:  React.Dispatch<React.SetStateAction<Structure[]>>,
+	setOpenConfirmImage: React.Dispatch<React.SetStateAction<boolean>>,
+}
 
-const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
+export interface MoleculeUploadRef {
+	performUpload: () => Promise<void>
+}
+
+export const MoleculeUpload = forwardRef<MoleculeUploadRef, MoleculeUploadProps>(({
+	open,
+	setOpen,
+	setLibraryStructures,
+    setOpenConfirmImage,
+}, ref) => {
 	const [state, setState] = useState({
 		right: false,
 	})
@@ -26,6 +42,19 @@ const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
 	const [submitAttempted, setSubmitAttempted] = useState<boolean>(false)
 	const [tags, setTags] = useState<string[]>([])
 	const [options, setOptions] = useState<string[]>([])
+
+	useImperativeHandle(ref, ()=>({
+		performUpload: performUpload,
+	}), [
+        submitAttempted,
+        loading,
+        tags,
+        uploadedFile,
+        structureName,
+        error,
+        structureNotes,
+        options
+    ])
 
 	useEffect(() => {
 		const fetchTags = async () => {
@@ -54,9 +83,7 @@ const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
 		}
 	}, [open])
 
-	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-		event.preventDefault();
-
+	async function performUpload() {
 		// prevent multiple submissions and submission while loading
 		if (submitAttempted) return;
 		if (loading) return;
@@ -78,11 +105,11 @@ const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
 		
 		setSubmitAttempted(true);
 		setError(null);
-		setLoading(true);
-
+        
 		try {
-			const token = await getAccessTokenSilently();
+            const token = await getAccessTokenSilently();
 			const structureImageData = await getStructureImageData(previewRef);
+            setLoading(true);
 			await AddAndUploadStructureToS3(uploadedFile, structureName, structureNotes, structureImageData, token, tags);
 
 			// Refresh the library after successful submission
@@ -103,6 +130,11 @@ const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
 		} finally {
 			setLoading(false);
 		}
+	}
+
+	const handleSubmit = (event: React.FormEvent<HTMLFormElement>):void => {
+		event.preventDefault();
+		setOpenConfirmImage(true);
 	}
 	
 	const { getAccessTokenSilently } = useAuth0()
@@ -247,6 +279,4 @@ const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
 			</Drawer>
 		</React.Fragment>
 	)
-}
-
-export default MoleculeUpload
+});

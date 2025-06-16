@@ -23,7 +23,7 @@ import {
 	MolmakerLoading,
 	MolmakerAlert,
 	MolmakerPageTitle,
-	MolmakerMoleculePreviewRef, getStructureImageData,
+	MolmakerMoleculePreviewRef, getStructureImageData, MolmakerConfirm,
 } from '../../components/custom'
 import { 
 	createJob, 
@@ -64,6 +64,9 @@ export default function StandardAnalysis() {
 
 	// dropdown options for multiplicity
 	const [multiplicityOptions, setMultiplicityOptions] = useState<{ [key: string]: number }>({});
+
+	// structure preview snapshot confirm
+	const [openConfirmImage, setOpenConfirmImage] = useState<boolean>(false);
 
 	// fetch library
 	useEffect(() => {
@@ -163,8 +166,7 @@ export default function StandardAnalysis() {
 		}
 	};
 
-  	const handleSubmitJob = async (e: React.FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
+	async function performSubmitJob() {
 		setSubmitAttempted(true);
 		setError(null);
 
@@ -181,7 +183,7 @@ export default function StandardAnalysis() {
 		}
 
 		if (source === 'library') {
-			const blob = new Blob([structureData], { type: 'text/plain' });
+			const blob = new Blob([structureData], {type: 'text/plain'});
 			uploadFile = new File([blob], `${structureIdToUse}.xyz`, {
 				type: 'text/plain'
 			});
@@ -199,7 +201,7 @@ export default function StandardAnalysis() {
 		formData.append('multiplicity', multiplicity.toString());
 
 		try {
-			const structureImageData = await  getStructureImageData(previewRef);
+			const structureImageData = await getStructureImageData(previewRef);
 			setLoading(true);
 			const token = await getAccessTokenSilently();
 			let response = await submitStandardAnalysis(
@@ -213,7 +215,7 @@ export default function StandardAnalysis() {
 			if (response.error) {
 				throw new Error(response.error);
 			}
-			const { job_id, slurm_id } = response.data;
+			const {job_id, slurm_id} = response.data;
 
 			if (uploadStructure && source === 'upload') {
 				response = await AddAndUploadStructureToS3(
@@ -253,6 +255,11 @@ export default function StandardAnalysis() {
 		} finally {
 			setLoading(false);
 		}
+	}
+
+	const handleSubmitJob = (e: React.FormEvent<HTMLFormElement>) => {
+		e.preventDefault();
+		setOpenConfirmImage(true);
 	};
 
 	if (loading) {
@@ -263,6 +270,21 @@ export default function StandardAnalysis() {
 
 	return (
 		<Box bgcolor="rgb(247, 249, 252)" p={4}>
+			<MolmakerConfirm
+				open={openConfirmImage}
+				onClose={() => setOpenConfirmImage(false)}
+				textToShow={
+					<>
+						Confirm the current zoom and orientation to capture the structure image.<br />
+						This view will be captured and saved as the snapshot for this structure.<br />
+						You can scroll to zoom and drag to rotate the molecule before confirming.
+					</>
+				}
+				onConfirm={async () => {
+					await performSubmitJob();
+					setOpenConfirmImage(false);
+				}}
+			/>
 			<MolmakerPageTitle
 				title="Standard Analysis"
 				subtitle="Submit a job for standard analysis"

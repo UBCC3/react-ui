@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, {useState, useEffect, useRef} from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
 	Paper,
@@ -31,7 +31,7 @@ import { blueGrey } from "@mui/material/colors";
 import {
 	MolmakerPageTitle,
 	MolmakerLoading,
-	MolmakerConfirmDelete
+	MolmakerConfirm
 } from "../components/custom";
 import {
 	getLibraryStructures,
@@ -39,7 +39,7 @@ import {
 } from "../services/api";
 import type { Structure } from "../types";
 import MoleculeInfo from "../components/MoleculeInfo";
-import MoleculeUpload from "../components/MoleculeUpload";
+import {MoleculeUpload, MoleculeUploadRef} from "../components/MoleculeUpload";
 
 const MoleculeLibrary = () => {
 	const { getAccessTokenSilently } = useAuth0();
@@ -47,6 +47,8 @@ const MoleculeLibrary = () => {
 	const [open, setOpen] = useState<boolean>(false);
 	const [openAdd, setOpenAdd] = useState<boolean>(false);
 	const [openConfirmDelete, setOpenConfirmDelete] = useState<boolean>(false);
+	const [openConfirmImage, setOpenConfirmImage] = useState<boolean>(false);
+	const moleculeUploadRef = useRef<MoleculeUploadRef>(null);
 
 	// state for user experience
 	const [error, setError] = useState<string | null>(null);
@@ -166,15 +168,39 @@ const MoleculeLibrary = () => {
 
   	return (
 		<Box bgcolor={'rgb(247, 249, 252)'} p={4}>
-			<MolmakerConfirmDelete 
+			<MolmakerConfirm
 				open={openConfirmDelete}
 				onClose={() => setOpenConfirmDelete(false)}
+				textToShow={
+					"Are you sure you want to delete this row? This action cannot be undone."
+				}
 				onConfirm={() => {
 					handleDelete();
 					setOpenConfirmDelete(false);
 				}}
 			/>
-			<MoleculeUpload open={openAdd} setOpen={setOpenAdd} setLibraryStructures={setLibraryStructures} />
+			<MolmakerConfirm
+				open={openConfirmImage}
+				onClose={() => setOpenConfirmImage(false)}
+				textToShow={
+					<>
+						Confirm the current zoom and orientation to capture the structure image.<br />
+						This view will be captured and saved as the snapshot for this structure.<br />
+						You can scroll to zoom and drag to rotate the molecule before confirming.
+					</>
+				}
+				onConfirm={async () => {
+					await moleculeUploadRef.current.performUpload();
+					setOpenConfirmImage(false);
+				}}
+			/>
+			<MoleculeUpload
+				open={openAdd}
+				setOpen={setOpenAdd}
+				setLibraryStructures={setLibraryStructures}
+				setOpenConfirmImage={setOpenConfirmImage}
+				ref={moleculeUploadRef}
+			/>
 			<MoleculeInfo open={open} setOpen={setOpen} selectedStructureId={selectedStructureId} />
 			<MolmakerPageTitle
 				title="My Structure Library" 

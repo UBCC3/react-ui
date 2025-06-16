@@ -7,7 +7,12 @@ import {
 	Button
 } from '@mui/material'
 
-const MolmakerConfirmDelete = ({ open, onClose, onConfirm }) => {
+const MolmakerConfirm = ({ 
+	open,
+	onClose,
+	textToShow,
+	onConfirm 
+}) => {
 	return (
 		<Dialog open={open} onClose={onClose}>
 			<DialogTitle>
@@ -15,12 +20,12 @@ const MolmakerConfirmDelete = ({ open, onClose, onConfirm }) => {
 			</DialogTitle>
 			<DialogContent>
 				<DialogContentText>
-					Are you sure you want to delete this row? This action cannot be undone.
+					{textToShow}
 				</DialogContentText>
 			</DialogContent>
 			<DialogActions>
 				<Button onClick={onConfirm} variant="contained" color="error" sx={{ textTransform: 'none' }}>
-					Delete
+					Confirm
 				</Button>
 				<Button onClick={onClose} variant="outlined" sx={{ textTransform: 'none' }}>
 					Cancel
@@ -30,4 +35,4 @@ const MolmakerConfirmDelete = ({ open, onClose, onConfirm }) => {
 	)
 }
 
-export default MolmakerConfirmDelete
+export default MolmakerConfirm
