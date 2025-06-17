@@ -2,12 +2,12 @@ interface Structure {
     structure_id: string;
     user_sub: string;
     name: string;
+    formula: string;
     notes?: string;
     location: string;
     uploaded_at: string;
     tags: string[];
-    imageURL?: string;
-    imageS3URL?: any;
+    imageS3URL?: string;
 }
 
 export default Structure;

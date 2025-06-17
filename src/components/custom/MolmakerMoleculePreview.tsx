@@ -19,6 +19,7 @@ interface MolmakerMoleculePreview {
 	onSnapshot?: (dataURL: string) => void;
 }
 
+// TODO: replace logic to take ss only when add structure is being added
 const captureSnapshot = (element: HTMLDivElement, callback: (dataUrl: string) => void) => {
 	setTimeout(() => {
 		const canvas = element.querySelector("canvas");
