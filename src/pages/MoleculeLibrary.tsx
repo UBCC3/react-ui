@@ -100,6 +100,7 @@ const MoleculeLibrary = () => {
 					structure_id: item.structure_id,
 					user_sub: item.user_sub,
 					name: item.name,
+					formula: item.formula || '',
 					notes: item.notes || '',
 					location: item.location,
 					uploaded_at: item.uploaded_at,
@@ -227,16 +228,17 @@ const MoleculeLibrary = () => {
 								<TableHead>
 									<TableRow sx={{ bgcolor: blueGrey[50] }}>
 										{renderHeader('Name', 'name')}
-										{renderHeader('Image','imageS3URL')}
+										{renderHeader('Chemical Formula', 'formula')}
 										{renderHeader('Notes', 'notes')}
 										{renderHeader('Tags', 'tags')}
 										{renderHeader('Uploaded At', 'uploaded_at')}
+										{renderHeader('Image','imageS3URL')}
 									</TableRow>
 								</TableHead>
 								<TableBody>
 									{libraryStructures.length === 0 && (
 										<TableRow>
-											<TableCell colSpan={4} align="center">
+											<TableCell colSpan={6} align="center">
 												<Typography variant="body2" color="text.secondary">
 													No structures have been added yet.
 												</Typography>
@@ -264,14 +266,7 @@ const MoleculeLibrary = () => {
 											}}
 										>
 											<TableCell>{molecule.name}</TableCell>
-											<TableCell>
-												<Avatar
-													variant="square"
-													alt={`Thumbnail for ${molecule.name}`}
-													src={molecule.imageS3URL}
-													sx={{ width: 64, height: 64 }}
-												/>
-											</TableCell>
+											<TableCell>{molecule.formula}</TableCell>
 											<TableCell>{molecule.notes}</TableCell>
 											<TableCell>
 												{molecule.tags.length > 0 ? (
@@ -281,6 +276,14 @@ const MoleculeLibrary = () => {
 												)}
 											</TableCell>
 											<TableCell>{new Date(molecule.uploaded_at).toLocaleString()}</TableCell>
+											<TableCell>
+												<Avatar
+													variant="square"
+													alt={`Thumbnail for ${molecule.name}`}
+													src={molecule.imageS3URL}
+													sx={{ width: 64, height: 64 }}
+												/>
+											</TableCell>
 										</TableRow>
 									))}
 								</TableBody>

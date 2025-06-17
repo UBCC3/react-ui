@@ -3,7 +3,7 @@ import { Box, Button, Drawer, Grid, Autocomplete, Chip, TextField } from '@mui/m
 import { MolmakerMoleculePreview, MolmakerTextField, MolmakerSectionHeader,  } from '../components/custom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { CloudUploadOutlined, AddPhotoAlternateOutlined, Close } from '@mui/icons-material'
-import { AddAndUploadStructureToS3, getLibraryStructures, getStructuresTags } from '../services/api'
+import { AddAndUploadStructureToS3, getLibraryStructures, getStructuresTags, getChemicalFormula } from '../services/api' 
 
 
 const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
@@ -20,6 +20,7 @@ const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
 	const [submitAttempted, setSubmitAttempted] = useState<boolean>(false)
 	const [tags, setTags] = useState<string[]>([])
 	const [options, setOptions] = useState<string[]>([])
+	const [chemicalFormula, setChemicalFormula] = useState<string>('')
 
 	useEffect(() => {
 		const fetchTags = async () => {
@@ -55,8 +56,6 @@ const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
 		if (submitAttempted) return;
 		if (loading) return;
 
-		console.log("tags", tags)
-
 		// validate inputs
 		if (!uploadedFile) {
 			setError('Please select a file to upload.');
@@ -76,7 +75,7 @@ const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
 
 		try {
 			const token = await getAccessTokenSilently();
-			await AddAndUploadStructureToS3(uploadedFile, structureName, structureNotes, strucutreImageURL, token, tags);
+			await AddAndUploadStructureToS3(uploadedFile, structureName, chemicalFormula, structureNotes, strucutreImageURL, token, tags);
 
 			// Refresh the library after successful submission
 			const response = await getLibraryStructures(token);
@@ -116,7 +115,7 @@ const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
 		}
 	}
 
-	const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+	const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
 		const files = event.target.files;
 		const selected = files && files[0];
 		setUploadedFile(selected);
@@ -128,6 +127,20 @@ const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
 				}
 			};
 			reader.readAsText(selected);
+		}
+
+		if (selected && selected.name.endsWith('.xyz')) {
+			try {
+				const token = await getAccessTokenSilently();
+				const formula = await getChemicalFormula(selected, token);
+				setChemicalFormula(formula.data['formula'] || '');
+			} catch (err) {
+				console.error("Failed to get chemical formula", err);
+				setError('Failed to get chemical formula. Please try again.');
+			}
+		} else {
+			setError('Please upload a valid .xyz file.');
+			setStructureData('');
 		}
 	};
 
@@ -183,6 +196,15 @@ const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
 						onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStructureName(e.target.value)}
 						error={submitAttempted && structureName === ""}
 						helperText={submitAttempted && structureName === "" ? "Name is required" : ""}
+						required
+					/>
+					<MolmakerTextField
+						fullWidth
+						label="Chemical Formula"
+						value={chemicalFormula}
+						onChange={(e: React.ChangeEvent<HTMLInputElement>) => setChemicalFormula(e.target.value)}
+						error={submitAttempted && chemicalFormula === ""}
+						helperText={submitAttempted && chemicalFormula === "" ? "Chemical formula is required" : ""}
 						required
 					/>
 					<MolmakerTextField

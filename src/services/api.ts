@@ -153,7 +153,7 @@ function dataURLToBlob(dataURL) {
 	const binary = atob(parts[1]);
 	let array = new Uint8Array(binary.length);
 	for (let i = 0; i < binary.length; i++) {
-			array[i] = binary.charCodeAt(i);
+		array[i] = binary.charCodeAt(i);
 	}
 	return new Blob([array], { type: mime });
 }
@@ -161,23 +161,28 @@ function dataURLToBlob(dataURL) {
 export const AddAndUploadStructureToS3 = async (
 	file: File | Blob,
 	name: string,
+	formula: string,
 	notes: string,
 	image: string,
 	token: any,
 	tags: string[] = [],
 ): Promise<Response> => {
+	console.log('Adding and uploading structure to S3:', { name, formula, notes, tags });
 	const imageBlob = dataURLToBlob(image);
 	const formData = new FormData();
 	formData.append("file", file);
 	formData.append("name", name);
+	formData.append("formula", formula);
 	formData.append("notes", notes);
 	if (tags && tags.length > 0) {
 		tags.forEach(tag => formData.append("tags", tag));
 	}
 	formData.append("image", imageBlob, `image.png`);
-
+	console.log('Form data prepared for structure upload:', formData);
+	console.log('Token for API:', token);
 	try {
 		const API = createBackendAPI(token);
+		console.log('Uploading structure to S3 here');
 		const response = await API.post("/structures/", formData);
 		return {
 			status: response.status,
@@ -260,12 +265,14 @@ export const getStructureById = async (
 export const updateStructure = async (
 	structureId: string,
 	name: string,
+	formula: string,
 	notes: string,
 	token: any,
 	tags: string[] = [],
 ): Promise<Response> => {
 	const formData = new FormData();
 	formData.append("name", name);
+	formData.append("formula", formula);
 	formData.append("notes", notes);
 	if (tags && tags.length > 0) {
 		tags.forEach(tag => formData.append("tags", tag));
@@ -601,6 +608,26 @@ export const getStructuresTags = async (token: string): Promise<Response> => {
 	}
 	catch (error: any) {
 		console.error('Failed to fetch structures tags', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+export const getChemicalFormula = async (
+	file: File | Blob,
+	token: string
+): Promise<Response> => {
+	const formData = new FormData();
+	formData.append('file', file);
+
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.post('/structures/formula/', formData);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to fetch chemical formula', error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,

@@ -12,6 +12,7 @@ const MoleculeInfo = ({ open, setOpen, selectedStructureId }) => {
 	})
 	const [structureData, setStructureData] = useState<string>('')
 	const [structureName, setStructureName] = useState<string>('')
+	const [chemicalFormula, setChemicalFormula] = useState<string>('')
 	const [structureNotes, setStructureNotes] = useState<string>('')
 	const [tags, setTags] = useState<string[]>([])
 	const [loading, setLoading] = useState<boolean>(false)
@@ -51,6 +52,7 @@ const MoleculeInfo = ({ open, setOpen, selectedStructureId }) => {
 				setStructureName(response.data.name || '')
 				setStructureNotes(response.data.notes || '')
 				setTags(response.data.tags || [])
+				setChemicalFormula(response.data.formula || '')
 			} catch (err) {
 				setError('Failed to load structure info. Please try again.')
 				console.error("Failed to load structure info:", err)
@@ -93,7 +95,7 @@ const MoleculeInfo = ({ open, setOpen, selectedStructureId }) => {
 		
 		try {
 			const token = await getAccessTokenSilently()
-			const response = await updateStructure(selectedStructureId, structureName, structureNotes, token, tags)
+			const response = await updateStructure(selectedStructureId, structureName, chemicalFormula, structureNotes, token, tags)
 			if (response.error) {
 				setError('Failed to save changes. Please try again.')
 				return
@@ -163,6 +165,13 @@ const MoleculeInfo = ({ open, setOpen, selectedStructureId }) => {
 							label="Name"
 							value={structureName}
 							onChange={(e) => setStructureName(e.target.value)}
+							fullWidth
+							disabled={!isEditing}
+						/>
+						<MolmakerTextField
+							label="Chemical Formula"
+							value={chemicalFormula}
+							onChange={(e) => setChemicalFormula(e.target.value)}
 							fullWidth
 							disabled={!isEditing}
 						/>
