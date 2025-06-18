@@ -123,15 +123,35 @@ export default function Home() {
 			// Apply each filter
 			for (const filter of filters) {
 				filtered = filtered.filter(job => {
-					const jobValue = String(job[filter.column] ?? '').toLowerCase();
+					let jobValue = '';
+					if (filter.column === 'structures') {
+						jobValue = job.structures.map(s => s.name).join(', ').toLowerCase();
+					} else {
+						jobValue = String(job[filter.column] ?? '').toLowerCase();
+					}
 					const filterValue = filter.value.toLowerCase();
 
 					switch (filter.extent) {
 						case 'contains':
+							if (filter.column === 'tags' || filter.column === 'structures') {
+								console.log(job[filter.column], filterValue);
+								// Special handling for tags and structures
+								console.log("Filtering by tags or structures:", jobValue, filterValue);
+								return jobValue.split(',').some(tag => tag.trim().toLowerCase().includes(filterValue));
+							}
+							// Default contains behavior
 							return jobValue.includes(filterValue);
 						case 'equals':
+							if (filter.column === 'tags' || filter.column === 'structures') {
+								// Special handling for tags and structures
+								return jobValue.split(',').some(tag => tag.trim().toLowerCase() === filterValue);
+							}
 							return jobValue === filterValue;
 						case 'startsWith':
+							if (filter.column === 'tags' || filter.column === 'structures') {
+								// Special handling for tags and structures
+								return jobValue.split(',').some(tag => tag.trim().toLowerCase().startsWith(filterValue));
+							}
 							return jobValue.startsWith(filterValue);
 						default:
 							return true; // no filter applied

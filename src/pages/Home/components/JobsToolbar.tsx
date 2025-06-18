@@ -135,12 +135,27 @@ export default function JobsToolbar({
 						<Refresh />
 					</IconButton>
 				</Tooltip>
-				<FormControl sx={{ minWidth: 160, ml: 2 }}>
+				<Select
+					labelId="structure-select-label"
+					value={selectedStructure}
+					// label="Structure"
+					size='small'
+					onChange={(e) => onStructureChange(e.target.value as string)}
+					sx={{ minWidth: 160, ml: 2 }}
+				>
+					{structures.map(({ structure_id, name }) => (
+						<MenuItem key={structure_id} value={structure_id}>
+							{name}
+						</MenuItem>
+					))}
+				</Select>
+				{/* <FormControl sx={{ minWidth: 160, ml: 2 }}>
 					<InputLabel id="structure-select-label">Structure</InputLabel>
 					<Select
 						labelId="structure-select-label"
 						value={selectedStructure}
 						label="Structure"
+						size='small'
 						onChange={(e) => onStructureChange(e.target.value as string)}
 					>
 						{structures.map(({ structure_id, name }) => (
@@ -149,7 +164,7 @@ export default function JobsToolbar({
 							</MenuItem>
 						))}
 					</Select>
-				</FormControl>
+				</FormControl> */}
 			</Box>
 		</Toolbar>
 	);
