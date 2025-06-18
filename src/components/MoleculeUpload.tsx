@@ -101,10 +101,11 @@ const MoleculeUpload: React.FC<MoleculeUploadProps> = ({
         
         setLoading(true);
 		try {
-      const token = await getAccessTokenSilently();
+      			const token = await getAccessTokenSilently();
 			await AddAndUploadStructureToS3(
 				uploadedFile,
 				structureName,
+				chemicalFormula,
 				structureNotes,
 				structureImageData,
 				token,
