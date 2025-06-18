@@ -1,4 +1,4 @@
-import React, {useEffect, useRef} from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Paper, Typography, Divider, Box, Skeleton, SxProps, Theme } from '@mui/material';
 import { blueGrey } from '@mui/material/colors';
 
@@ -36,9 +36,11 @@ const MolmakerMoleculePreview: React.FC<MolmakerMoleculePreviewProp> = ({
 	useEffect(() => {
 		if (submitConfirmed) {
 			const element = viewerRef.current;
-			const canvas = element.querySelector('canvas');
-			const structureImageData = canvas.toDataURL("image/png");
-			setStructureImageData(structureImageData);
+			const canvas = element?.querySelector('canvas');
+			const structureImageData = canvas?.toDataURL("image/png");
+			if (setStructureImageData && structureImageData) {
+				setStructureImageData(structureImageData);
+			}
 		}
 	}, [submitConfirmed]);
 
