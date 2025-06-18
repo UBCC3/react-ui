@@ -26,6 +26,16 @@ interface JobsTableProps {
 	selectedJobId: string | null;
 	onSort: (column: keyof Job) => void;
 	onRowClick: (jobId: string) => void;
+	displayColumns: {
+		job_name: boolean;
+		job_notes: boolean;
+		status: boolean;
+		structures: boolean;
+		tags: boolean;
+		runtime: boolean;
+		submitted_at: boolean;
+		completed_at: boolean;
+	};
 }
 
 export default function JobsTable({
@@ -36,7 +46,8 @@ export default function JobsTable({
 	orderBy,
 	selectedJobId,
 	onSort,
-	onRowClick
+	onRowClick,
+	displayColumns
 }: JobsTableProps) {
 	// Comparator that handles strings, dates, and structures-length
 	const comparator = React.useCallback((a: Job, b: Job): number => {
@@ -96,14 +107,14 @@ export default function JobsTable({
 			<Table>
 				<TableHead sx={{ bgcolor: blueGrey[50] }}>
 					<TableRow>
-						{renderHeader('Job Name', 'job_name')}
-						{renderHeader('Job Notes', 'job_notes')}
-						{renderHeader('Status', 'status')}
-						{renderHeader('Structures', 'structures')}
-						{renderHeader('Tags', 'tags')}
-						{renderHeader('Runtime', 'runtime')}
-						{renderHeader('Submitted At', 'submitted_at')}
-						{renderHeader('Completed At', 'completed_at')}
+						{displayColumns.job_name && renderHeader('Job Name', 'job_name')}
+						{displayColumns.job_notes && renderHeader('Notes', 'job_notes')}
+						{displayColumns.status && renderHeader('Status', 'status')}
+						{displayColumns.structures && renderHeader('Structures', 'structures')}
+						{displayColumns.tags && renderHeader('Tags', 'tags')}
+						{displayColumns.runtime && renderHeader('Runtime', 'runtime')}
+						{displayColumns.submitted_at && renderHeader('Submitted At', 'submitted_at')}
+						{displayColumns.completed_at && renderHeader('Completed At', 'completed_at')}
 					</TableRow>
 				</TableHead>
 				<TableBody>
@@ -149,47 +160,65 @@ export default function JobsTable({
 								cursor: 'pointer'
 								}}
 							>
-								<TableCell>{job.job_name}</TableCell>
-								<TableCell>{job.job_notes || 'N/A'}</TableCell>
-								<TableCell>
-									<Chip
-										label={job.status}
-										size="small"
-										sx={{
-										bgcolor: statusColors[job.status] ?? 'grey.300',
-										color: 'white',
-										textTransform: 'capitalize'
-										}}
-									/>
-								</TableCell>
-								<TableCell>
-									{job.structures.length ? job.structures
-										.map((s) => (
-											<Chip
-											key={s.structure_id}
-											label={s.name}
-											variant="outlined"
+								{displayColumns.job_name && (
+									<TableCell>
+										{job.job_name}
+									</TableCell>
+								)}
+								{displayColumns.job_notes && (
+									<TableCell>{job.job_notes || 'N/A'}</TableCell>
+								)}
+								{displayColumns.status && (
+									<TableCell>
+										<Chip
+											label={job.status}
 											size="small"
-											sx={{ mr: 0.5, mb: 0.5 }}
-											/>
-										)) : 'N/A'}
-								</TableCell>
-								<TableCell>
-									{job.tags.length > 0 ? (
-										job.tags.join(', ')
-									) : (
-										<Typography variant="body2" color="text.secondary">No tags</Typography>
-									)}
-								</TableCell>
-								<TableCell>
-									{job.runtime ? job.runtime : 'unavailable'}
-								</TableCell>
-								<TableCell>
-									{new Date(job.submitted_at).toLocaleString()}
-								</TableCell>
-								<TableCell>
-									{job.completed_at ? new Date(job.completed_at).toLocaleString() : 'N/A'}
-								</TableCell>
+											sx={{
+											bgcolor: statusColors[job.status] ?? 'grey.300',
+											color: 'white',
+											textTransform: 'capitalize'
+											}}
+										/>
+									</TableCell>
+								)}
+								{displayColumns.structures && (
+									<TableCell>
+										{job.structures.length ? job.structures
+											.map((s) => (
+												<Chip
+												key={s.structure_id}
+												label={s.name}
+												variant="outlined"
+												size="small"
+												sx={{ mr: 0.5, mb: 0.5 }}
+												/>
+											)) : 'N/A'}
+									</TableCell>
+								)}
+								{displayColumns.tags && (
+									<TableCell>
+										{job.tags.length > 0 ? (
+											job.tags.join(', ')
+										) : (
+											<Typography variant="body2" color="text.secondary">No tags</Typography>
+										)}
+									</TableCell>
+								)}
+								{displayColumns.runtime && (
+									<TableCell>
+										{job.runtime ? job.runtime : 'unavailable'}
+									</TableCell>
+								)}
+								{displayColumns.submitted_at && (
+									<TableCell>
+										{new Date(job.submitted_at).toLocaleString()}
+									</TableCell>
+								)}
+								{displayColumns.completed_at && (
+									<TableCell>
+										{job.completed_at ? new Date(job.completed_at).toLocaleString() : 'N/A'}
+									</TableCell>
+								)}
 							</TableRow>
 						))
 					)}

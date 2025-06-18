@@ -7,7 +7,19 @@ import {
 	Divider,
 	TablePagination,
 	Dialog,
-	Snackbar, Button,
+	Snackbar,
+	Button,
+	Typography,
+	Grid,
+	FormGroup,
+	Checkbox,
+	FormControlLabel,
+	Select,
+	MenuItem,
+	TextField,
+	IconButton,
+	Card,
+	CircularProgress
 } from '@mui/material';
 import { blueGrey } from '@mui/material/colors';
 import { 
@@ -31,6 +43,7 @@ import {
 	MolmakerConfirm
 } from '../../components/custom';
 import type { Job, Structure } from '../../types';
+import { DeleteOutlineOutlined, Add } from '@mui/icons-material';
 
 export default function Home() {
 	const navigate = useNavigate();
@@ -50,6 +63,7 @@ export default function Home() {
 	const [page, setPage] = useState<number>(0);
 	const [rowsPerPage, setRowsPerPage] = useState<number>(5);
 	const [loading, setLoading] = useState<boolean>(true);
+	const [structureLoading, setStructureLoading] = useState<boolean>(false);
 
 	// selection
 	const [selectedJobId, setSelectedJobId] = useState<string>('');
@@ -68,9 +82,72 @@ export default function Home() {
 	const [alertMsg, setAlertMsg] = useState<string>('');
 	const [alertSeverity, setAlertSeverity] = useState<'success' | 'error' | 'info' | 'warning'>('info');
 
+	const [filters, setFilters] = useState<Array<{
+		column: keyof Job;
+		value: string;
+		extent: 'contains' | 'equals' | 'startsWith';
+	}>>([{ column: 'job_name', value: '', extent: 'contains' }]);
+
+	// map column name to display name
+	const columnDisplayNames: Record<keyof Job, string> = {
+		job_name: 'Job Name',
+		job_notes: 'Job Notes',
+		status: 'Status',
+		structures: 'Structures',
+		tags: 'Tags',
+		runtime: 'Runtime',
+		submitted_at: 'Submitted At',
+		completed_at: 'Completed At',
+	}
+
+	const [displayColumns, setDisplayColumns] = useState({
+		job_name: true,
+		job_notes: true,
+		status: true,
+		structures: true,
+		tags: true,
+		runtime: true,
+		submitted_at: true,
+		completed_at: true
+	});
+
 	// track jobs for polling
 	const jobsRef = useRef<Job[]>([]);
 	useEffect(() => { jobsRef.current = jobs; }, [jobs]);
+
+	const handleFilterSubmit = () => {
+		setLoading(true);
+		try {
+			let filtered = jobsRef.current;
+
+			// Apply each filter
+			for (const filter of filters) {
+				filtered = filtered.filter(job => {
+					const jobValue = String(job[filter.column] ?? '').toLowerCase();
+					const filterValue = filter.value.toLowerCase();
+
+					switch (filter.extent) {
+						case 'contains':
+							return jobValue.includes(filterValue);
+						case 'equals':
+							return jobValue === filterValue;
+						case 'startsWith':
+							return jobValue.startsWith(filterValue);
+						default:
+							return true; // no filter applied
+					}
+				});
+			}
+
+			setFilteredJobs(filtered);
+			setPage(0); // reset to first page
+		} catch (err) {
+			setError('Failed to apply filters');
+			console.error('Failed to apply filters:', err);
+		} finally {
+			setLoading(false);
+		}
+	}
 
 	// poll statuses every 5s
 	useEffect(() => {
@@ -206,7 +283,8 @@ export default function Home() {
 	}, [filterStructureId, jobs]);
 
 	const openMoleculeViewer = async (structureId: string) => {
-		setLoading(true);
+		console.log("Opening molecule viewer for structure ID:", structureId);
+		setStructureLoading(true);
 		setError(null);
 
 		try {
@@ -218,12 +296,12 @@ export default function Home() {
 			}
 			setPreviewData(response.data);
 			setError(null);
-			setOpen(true);
+			// setOpen(true);
 		} catch (err) {
 			setError('Failed to load molecule structure. Please try again.');
 			console.error("Failed to load molecule structure:", err);
 		} finally {
-			setLoading(false);
+			setStructureLoading(false);
 		}
 	};
 
@@ -371,7 +449,7 @@ export default function Home() {
 					"Are you sure you want to delete this row? This action cannot be undone."
 				}
 				onConfirm={() => {
-					// handleDelete();
+					handleDelete();
 					setOpenConfirmDelete(false);
 				}}
 			/>
@@ -403,7 +481,167 @@ export default function Home() {
 					</>
 				}
 			/>
-			<JobsStatus jobs={jobs} />
+			{/* Filters */}
+			<Grid container spacing={2} sx={{ mb: 4 }} size={12}>
+				<Grid size={{ xs: 12, sm: 7 }}>
+					<Paper>
+						<Typography variant="h6" sx={{ p: 2 }} color="text.secondary" bgcolor={blueGrey[200]}>
+							Filters
+						</Typography>
+						<Divider />
+						<Box sx={{ p: 2 }}>
+							<Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+								Show columns
+							</Typography>
+							<FormGroup
+								sx={{
+									display: 'grid',
+									gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+									gap: 1,
+									mt: 1,
+								}}
+								>
+								{Object.keys(columnDisplayNames).map((col) => (
+									<FormControlLabel
+									key={col}
+									control={
+										<Checkbox
+											checked={displayColumns[col as keyof Job]}
+											onChange={(e) => {
+												setDisplayColumns(prev => ({
+													...prev,
+													[col as keyof Job]: e.target.checked
+												}));
+											}}
+											color="primary"
+										/>
+									}
+									label={columnDisplayNames[col as keyof Job]}
+									/>
+								))}
+							</FormGroup>
+						</Box>
+						<Box sx={{ px: 2, pb: 2 }}>
+							<Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+								Filter
+							</Typography>
+							{/* Each filter row on its own line */}
+							<Box sx={{ bgcolor: blueGrey[50], p: 3, borderRadius: 1 }}>
+								{filters.map((filter, index) => (
+									<Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+										<Select
+											value={filter.column}
+											size='small'
+											onChange={(e) => {
+												const newFilters = [...filters];
+												newFilters[index] = {
+													...newFilters[index],
+													column: e.target.value as keyof Job
+												};
+												setFilters(newFilters);
+											}}
+											sx={{ minWidth: 120, mr: 1 }}
+										>
+											{Object.keys(columnDisplayNames).map(col => (
+												<MenuItem key={col} value={col}>{columnDisplayNames[col as keyof Job]}</MenuItem>
+											))}
+										</Select>
+										<TextField
+											variant="outlined"
+											size="small"
+											value={filter.value}
+											onChange={(e) => {
+												const newFilters = [...filters];
+												newFilters[index] = {
+													...newFilters[index],
+													value: e.target.value
+												};
+												setFilters(newFilters);
+											}}
+											sx={{ flexGrow: 1, mr: 1 }}
+										/>
+										<Select
+											value={filter.extent}
+											size='small'
+											onChange={(e) => {
+												const newFilters = [...filters];
+												newFilters[index] = {
+													...newFilters[index],
+													extent: e.target.value as 'contains' | 'equals' | 'startsWith'
+												};
+												setFilters(newFilters);
+											}}
+											sx={{ minWidth: 120, mr: 1 }}
+										>
+											<MenuItem value="contains">Contains</MenuItem>
+											<MenuItem value="equals">Equals</MenuItem>
+											<MenuItem value="startsWith">Starts With</MenuItem>
+										</Select>
+										<IconButton
+											color="error"
+											onClick={() => {
+												const newFilters = [...filters];
+												newFilters.splice(index, 1);
+												setFilters(newFilters);
+											}}
+											sx={{ ml: 1 }}
+										>
+											<DeleteOutlineOutlined />
+										</IconButton>
+									</Box>
+								))}
+								{/* Add Filter button always directly below all filters */}
+								<Button
+									variant="outlined"
+									color="primary"
+									size="small"
+									startIcon={<Add />}
+									sx={{ mt: 1, textTransform: 'none' }}
+									onClick={() => {
+										setFilters([...filters, { column: 'job_name', value: '', extent: 'contains' }]);
+									}}
+								>
+									Add Filter
+								</Button>
+								
+								<Button
+									variant="contained"
+									color="primary"
+									size="small"
+									onClick={handleFilterSubmit}
+									sx={{ mt: 2, textTransform: 'none', display: 'block' }}
+									fullWidth
+								>
+									Apply Filters
+								</Button>
+							</Box>
+						</Box>
+					</Paper>
+				</Grid>
+				<Grid size={{ xs: 12, sm: 5 }}>
+					{structureLoading ? (
+						<Card
+							sx={{
+								display: 'flex',
+								justifyContent: 'center',
+								alignItems: 'center',
+								backgroundColor: blueGrey[50],
+								height: '100%',
+							}}
+						>
+							<CircularProgress />
+						</Card>
+					) : (
+						<MolmakerMoleculePreview
+							data={previewData}
+							format='xyz'
+							source={'upload'}
+							sx={{ maxHeight: 437 }}
+						/>
+					)}
+				</Grid>
+			</Grid>
+			{/* <JobsStatus jobs={jobs} /> */}
 			<Paper>
 				<JobsToolbar
 					selectedJobId={selectedJobId}
@@ -454,6 +692,7 @@ export default function Home() {
 						setFilteredJobs(sorted);
 					}}
 					onRowClick={setSelectedJobId}
+					displayColumns={displayColumns}
 				/>
 				<TablePagination
 					component="div"
