@@ -28,6 +28,7 @@ interface JobsToolbarProps {
 	onViewDetails: () => void;
 	onViewStructure: () => void;
 	onFilterByStructure: () => void;
+	viewStructureDisabled: boolean;
 	cancelDisabled: (selectedJobId: string | null) => boolean;
 	deleteDisabled: (selectedJobId: string | null) => boolean;
 	onCancelJob: () => void;
@@ -43,6 +44,7 @@ export default function JobsToolbar({
 	onViewDetails,
 	onViewStructure,
 	onFilterByStructure,
+	viewStructureDisabled,
 	cancelDisabled,
 	deleteDisabled,
 	onCancelJob,
@@ -89,7 +91,7 @@ export default function JobsToolbar({
 					<Tooltip title="View structures">
 						<span>
 							<IconButton
-								disabled={!selectedJobId}
+								disabled={viewStructureDisabled}
 								onClick={onViewStructure}
 							>
 								<PhotoOutlined />

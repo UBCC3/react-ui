@@ -43,7 +43,7 @@ import {
 	MolmakerConfirm
 } from '../../components/custom';
 import type { Job, Structure } from '../../types';
-import { DeleteOutlineOutlined, Add } from '@mui/icons-material';
+import { DeleteOutlineOutlined, Add, FilterAltOutlined } from '@mui/icons-material';
 
 export default function Home() {
 	const navigate = useNavigate();
@@ -485,7 +485,8 @@ export default function Home() {
 			<Grid container spacing={2} sx={{ mb: 4 }} size={12}>
 				<Grid size={{ xs: 12, sm: 7 }}>
 					<Paper>
-						<Typography variant="h6" sx={{ p: 2 }} color="text.secondary" bgcolor={blueGrey[200]}>
+						<Typography variant="h6" color="text.secondary" bgcolor={blueGrey[200]} sx={{ p: 2, display: 'flex', alignItems: 'center' }}>
+							<FilterAltOutlined sx={{ mr: 1 }} />
 							Filters
 						</Typography>
 						<Divider />
@@ -546,20 +547,6 @@ export default function Home() {
 												<MenuItem key={col} value={col}>{columnDisplayNames[col as keyof Job]}</MenuItem>
 											))}
 										</Select>
-										<TextField
-											variant="outlined"
-											size="small"
-											value={filter.value}
-											onChange={(e) => {
-												const newFilters = [...filters];
-												newFilters[index] = {
-													...newFilters[index],
-													value: e.target.value
-												};
-												setFilters(newFilters);
-											}}
-											sx={{ flexGrow: 1, mr: 1 }}
-										/>
 										<Select
 											value={filter.extent}
 											size='small'
@@ -577,6 +564,20 @@ export default function Home() {
 											<MenuItem value="equals">Equals</MenuItem>
 											<MenuItem value="startsWith">Starts With</MenuItem>
 										</Select>
+										<TextField
+											variant="outlined"
+											size="small"
+											value={filter.value}
+											onChange={(e) => {
+												const newFilters = [...filters];
+												newFilters[index] = {
+													...newFilters[index],
+													value: e.target.value
+												};
+												setFilters(newFilters);
+											}}
+											sx={{ flexGrow: 1, mr: 1 }}
+										/>
 										<IconButton
 											color="error"
 											onClick={() => {
@@ -635,7 +636,7 @@ export default function Home() {
 						<MolmakerMoleculePreview
 							data={previewData}
 							format='xyz'
-							source={'upload'}
+							source={'library'}
 							sx={{ maxHeight: 437 }}
 						/>
 					)}
@@ -658,6 +659,7 @@ export default function Home() {
 							setFilterStructureId(job.structures[0].structure_id);
 						}
 					}}
+					viewStructureDisabled={!selectedJobId || !filteredJobs.find(j => j.job_id === selectedJobId)?.structures.length}
 					cancelDisabled={cancelDisabled}
 					deleteDisabled={deleteDisabled}
 					onCancelJob={handleCancel}
