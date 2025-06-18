@@ -105,6 +105,7 @@ const MoleculeUpload: React.FC<MoleculeUploadProps> = ({
 			await AddAndUploadStructureToS3(
 				uploadedFile,
 				structureName,
+				chemicalFormula,
 				structureNotes,
 				structureImageData,
 				token,
