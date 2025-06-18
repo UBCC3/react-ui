@@ -16,44 +16,30 @@ interface MolmakerMoleculePreviewProp {
 	title?: string;
 	maxHeight?: number;
 	sx?: SxProps<Theme>;
+	submitConfirmed?: boolean;
+	setStructureImageData?: (data: string) => void;
 }
 
-export interface MolmakerMoleculePreviewRef {
-	captureCurrentView: () => string;
-}
-
-export async function getStructureImageData(previewRef: React.RefObject<MolmakerMoleculePreviewRef>): Promise<string> {
-	for (let i = 0; i < 5; i++) {
-		if (previewRef.current) {
-			return previewRef.current.captureCurrentView();
-		}
-		await new Promise((res) => setTimeout(res, 100));
-	}
-	throw new Error('Failed to get structure image');
-}
-
-export const MolmakerMoleculePreview = forwardRef<MolmakerMoleculePreviewRef, MolmakerMoleculePreviewProp>(({
+const MolmakerMoleculePreview: React.FC<MolmakerMoleculePreviewProp> = ({
 	data = '',
 	format,
 	source = 'upload',
 	title = 'Structure Preview',
 	maxHeight,
 	sx = {},
-}, ref) => {
+	submitConfirmed,
+	setStructureImageData,
+}) => {
   	const viewerRef = useRef<HTMLDivElement>(null);
-	  
-	useImperativeHandle(ref, () => ({
-        captureCurrentView: () => {
-            const element = viewerRef.current;
-            if (!element) return null;
 
-            const canvas = element.querySelector('canvas');
-            if (canvas instanceof HTMLCanvasElement) {
-                return canvas.toDataURL("image/png");
-            }
-            return null;
-        }
-	}))
+	useEffect(() => {
+		if (submitConfirmed) {
+			const element = viewerRef.current;
+			const canvas = element.querySelector('canvas');
+			const structureImageData = canvas.toDataURL("image/png");
+			setStructureImageData(structureImageData);
+		}
+	}, [submitConfirmed]);
 
 	useEffect(() => {
 		if (!data || !window.$3Dmol) return;
@@ -110,4 +96,6 @@ export const MolmakerMoleculePreview = forwardRef<MolmakerMoleculePreviewRef, Mo
 			</Box>
 		</Paper>
 	);
-});
+};
+
+export default MolmakerMoleculePreview;

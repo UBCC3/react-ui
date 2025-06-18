@@ -22,8 +22,7 @@ import {
 	MolmakerMoleculePreview,
 	MolmakerLoading,
 	MolmakerAlert,
-	MolmakerPageTitle,
-	MolmakerMoleculePreviewRef, getStructureImageData, MolmakerConfirm,
+	MolmakerPageTitle, MolmakerConfirm,
 } from '../../components/custom'
 import { 
 	createJob, 
@@ -53,7 +52,6 @@ export default function StandardAnalysis() {
     const [source, setSource] = useState<'upload' | 'library'>('upload');  
     const [file, setFile] = useState<File | null>(null);
     const [uploadStructure, setUploadStructure] = useState<boolean>(false);
-    const previewRef = useRef<MolmakerMoleculePreviewRef>(null);
     const [structures, setStructures] = useState<Structure[]>([]);
     const [selectedStructure, setSelectedStructure] = useState<string>('');
     const [structureName, setStructureName] = useState<string>('');
@@ -65,8 +63,20 @@ export default function StandardAnalysis() {
 	// dropdown options for multiplicity
 	const [multiplicityOptions, setMultiplicityOptions] = useState<{ [key: string]: number }>({});
 
-	// structure preview snapshot confirm
 	const [openConfirmImage, setOpenConfirmImage] = useState<boolean>(false);
+	const [submitConfirmed, setSubmitConfirmed] = useState(false);
+	const [structureImageData, setStructureImageData] = useState<string>('');
+
+	useEffect(() => {
+		const getStructureImageSubmit = async () => {
+			if (!submitConfirmed || structureImageData === '') return
+
+			await performSubmitJob();
+			setSubmitConfirmed(false);
+		}
+
+		getStructureImageSubmit();
+	}, [structureImageData]);
 
 	// fetch library
 	useEffect(() => {
@@ -200,9 +210,9 @@ export default function StandardAnalysis() {
 		formData.append('charge', charge.toString());
 		formData.append('multiplicity', multiplicity.toString());
 
+		setLoading(true);
 		try {
-			const structureImageData = await getStructureImageData(previewRef);
-			setLoading(true);
+
 			const token = await getAccessTokenSilently();
 			let response = await submitStandardAnalysis(
 				jobName,
@@ -281,7 +291,7 @@ export default function StandardAnalysis() {
 					</>
 				}
 				onConfirm={async () => {
-					await performSubmitJob();
+					setSubmitConfirmed(true);
 					setOpenConfirmImage(false);
 				}}
 			/>
@@ -414,7 +424,8 @@ export default function StandardAnalysis() {
 						data={structureData}
 						format='xyz'
 						source={source}
-                        ref={previewRef}
+						submitConfirmed={submitConfirmed}
+						setStructureImageData={setStructureImageData}
 					/>
         		</Grid>
       		</Grid>

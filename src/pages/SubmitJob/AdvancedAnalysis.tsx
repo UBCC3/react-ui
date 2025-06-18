@@ -20,8 +20,6 @@ import {
     MolmakerSectionHeader,
     MolmakerRadioGroup,
     MolmakerMoleculePreview,
-    MolmakerMoleculePreviewRef,
-    getStructureImageData,
     MolmakerAlert,
     MolmakerLoading, MolmakerConfirm
 } from '../../components/custom'
@@ -69,7 +67,6 @@ const AdvancedAnalysis = () => {
     const [selectedStructure, setSelectedStructure] = useState<string>('');
     const [structureName, setStructureName] = useState<string>('');
     const [structureNotes, setStructureNotes] = useState<string>('');
-    const previewRef = useRef<MolmakerMoleculePreviewRef>(null);
     const [structureTags, setStructureTags] = useState<string[]>([]);
     const [charge, setCharge] = useState<number>(0);
     const [calculationType, setCalculationType] = useState<string>('energy');
@@ -88,6 +85,8 @@ const AdvancedAnalysis = () => {
 
     // structure preview snapshot confirm
     const [openConfirmImage, setOpenConfirmImage] = useState<boolean>(false);
+    const [submitConfirmed, setSubmitConfirmed] = useState<boolean>(false);
+    const [structureImageData, setStructureImageData] = useState<string>('');
 
     // keywords (optional)
     const [keywords, setKeywords] = useState<Keyword[]>([]);
@@ -95,6 +94,17 @@ const AdvancedAnalysis = () => {
     const handleKeywordsChange = (updatedKeywords: Keyword[]) => {
         setKeywords(updatedKeywords);
     }
+
+    useEffect(() => {
+        const getStructureImageSubmit = async () => {
+            if (!submitConfirmed || structureImageData === '') return
+
+            await performSubmitJob();
+            setSubmitConfirmed(false);
+        }
+
+        getStructureImageSubmit();
+    }, [structureImageData]);
 
     // Load library on mount
     useEffect(() => {
@@ -276,10 +286,8 @@ const AdvancedAnalysis = () => {
             });
             formData.append('keywords', keywordsJsonFile);
         }
+        setLoading(true);
         try {
-            // must capture MolmakerMoleculePreview canvas before loading page (otherwise it would be unmounted
-            const structureImageData = await getStructureImageData(previewRef);
-            setLoading(true);
             const token = await getAccessTokenSilently();
             let response = await submitAdvancedAnalysis(
                 uploadFile,
@@ -364,7 +372,7 @@ const AdvancedAnalysis = () => {
                     </>
                 }
                 onConfirm={async () => {
-                    await performSubmitJob();
+                    setSubmitConfirmed(true);
                     setOpenConfirmImage(false);
                 }}
             />
@@ -625,7 +633,8 @@ const AdvancedAnalysis = () => {
 						format='xyz'
 						source={source}
                         sx={{ maxHeight: 437 }}
-                        ref={previewRef}
+                        submitConfirmed={submitConfirmed}
+                        setStructureImageData={setStructureImageData}
 					/>
         		</Grid>
             </Grid>

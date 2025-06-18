@@ -4,8 +4,7 @@ import {
 	MolmakerMoleculePreview,
 	MolmakerTextField,
 	MolmakerSectionHeader,
-	getStructureImageData,
-	MolmakerMoleculePreviewRef,
+	MolmakerConfirm,
 } from '../components/custom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { CloudUploadOutlined, AddPhotoAlternateOutlined, Close } from '@mui/icons-material'
@@ -16,26 +15,19 @@ interface MoleculeUploadProps {
 	open: boolean,
 	setOpen: React.Dispatch<React.SetStateAction<boolean>>,
 	setLibraryStructures:  React.Dispatch<React.SetStateAction<Structure[]>>,
-	setOpenConfirmImage: React.Dispatch<React.SetStateAction<boolean>>,
 }
 
-export interface MoleculeUploadRef {
-	performUpload: () => Promise<void>
-}
-
-export const MoleculeUpload = forwardRef<MoleculeUploadRef, MoleculeUploadProps>(({
+const MoleculeUpload: React.FC<MoleculeUploadProps> = ({
 	open,
 	setOpen,
 	setLibraryStructures,
-    setOpenConfirmImage,
-}, ref) => {
+}) => {
 	const [state, setState] = useState({
 		right: false,
 	})
 	const [structureData, setStructureData] = useState<string>('')
 	const [structureName, setStructureName] = useState<string>('')
 	const [structureNotes, setStructureNotes] = useState<string>('')
-	const previewRef = useRef<MolmakerMoleculePreviewRef>(null)
 	const [loading, setLoading] = useState<boolean>(false)
 	const [error, setError] = useState<string | null>(null)
 	const [uploadedFile, setUploadedFile] = useState<File | null>(null)
@@ -43,18 +35,20 @@ export const MoleculeUpload = forwardRef<MoleculeUploadRef, MoleculeUploadProps>
 	const [tags, setTags] = useState<string[]>([])
 	const [options, setOptions] = useState<string[]>([])
 
-	useImperativeHandle(ref, ()=>({
-		performUpload: performUpload,
-	}), [
-        submitAttempted,
-        loading,
-        tags,
-        uploadedFile,
-        structureName,
-        error,
-        structureNotes,
-        options
-    ])
+	const [structureImageData, setStructureImageData] = useState<string>('')
+	const [openConfirmImage, setOpenConfirmImage] = useState<boolean>(false);
+	const [submitConfirmed, setSubmitConfirmed] = useState<boolean>(false);
+
+	useEffect(() => {
+		const getStructureImageSubmit = async () => {
+			if (!submitConfirmed || structureImageData === '') return
+
+			await performUpload();
+			setSubmitConfirmed(false);
+		}
+
+		getStructureImageSubmit();
+	}, [structureImageData]);
 
 	useEffect(() => {
 		const fetchTags = async () => {
@@ -106,11 +100,17 @@ export const MoleculeUpload = forwardRef<MoleculeUploadRef, MoleculeUploadProps>
 		setSubmitAttempted(true);
 		setError(null);
         
+        setLoading(true);
 		try {
             const token = await getAccessTokenSilently();
-			const structureImageData = await getStructureImageData(previewRef);
-            setLoading(true);
-			await AddAndUploadStructureToS3(uploadedFile, structureName, structureNotes, structureImageData, token, tags);
+			await AddAndUploadStructureToS3(
+				uploadedFile,
+				structureName,
+				structureNotes,
+				structureImageData,
+				token,
+				tags
+			);
 
 			// Refresh the library after successful submission
 			const response = await getLibraryStructures(token);
@@ -186,6 +186,21 @@ export const MoleculeUpload = forwardRef<MoleculeUploadRef, MoleculeUploadProps>
 					},
 				}}
 			>
+				<MolmakerConfirm
+					open={openConfirmImage}
+					onClose={() => setOpenConfirmImage(false)}
+					textToShow={
+						<>
+							Confirm the current zoom and orientation to capture the structure image.<br />
+							This view will be captured and saved as the snapshot for this structure.<br />
+							You can scroll to zoom and drag to rotate the molecule before confirming.
+						</>
+					}
+					onConfirm={async () => {
+						setSubmitConfirmed(true);
+						setOpenConfirmImage(false);
+					}}
+				/>
 				<MolmakerMoleculePreview
 					data={structureData}
 					format={'xyz'}
@@ -196,7 +211,8 @@ export const MoleculeUpload = forwardRef<MoleculeUploadRef, MoleculeUploadProps>
 						position: 'relative',
 					}}
 					title="Add Structure"
-					ref={previewRef}
+					submitConfirmed={submitConfirmed}
+					setStructureImageData={setStructureImageData}
 				/>
 				<Box sx={{ padding: 2, display: 'flex', flexDirection: 'column', gap: 2 }} component="form" onSubmit={handleSubmit}>
 					<MolmakerSectionHeader text="Structure Information" />
@@ -279,4 +295,6 @@ export const MoleculeUpload = forwardRef<MoleculeUploadRef, MoleculeUploadProps>
 			</Drawer>
 		</React.Fragment>
 	)
-});
+};
+
+export default MoleculeUpload;

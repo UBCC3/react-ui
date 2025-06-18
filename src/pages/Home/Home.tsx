@@ -7,7 +7,7 @@ import {
 	Divider,
 	TablePagination,
 	Dialog,
-	Snackbar,
+	Snackbar, Button,
 } from '@mui/material';
 import { blueGrey } from '@mui/material/colors';
 import { 
@@ -367,8 +367,11 @@ export default function Home() {
 			<MolmakerConfirm
 				open={openConfirmDelete}
 				onClose={() => setOpenConfirmDelete(false)}
+				textToShow={
+					"Are you sure you want to delete this row? This action cannot be undone."
+				}
 				onConfirm={() => {
-					handleDelete();
+					// handleDelete();
 					setOpenConfirmDelete(false);
 				}}
 			/>
