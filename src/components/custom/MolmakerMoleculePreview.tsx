@@ -20,6 +20,7 @@ interface MolmakerMoleculePreviewProp {
 	setStructureImageData?: (data: string) => void;
 }
 
+
 const MolmakerMoleculePreview: React.FC<MolmakerMoleculePreviewProp> = ({
 	data = '',
 	format,

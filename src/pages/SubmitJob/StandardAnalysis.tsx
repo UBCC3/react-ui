@@ -8,7 +8,9 @@ import {
 	Grid,
 	Button,
 	Tooltip,
-	IconButton
+	IconButton,
+	Autocomplete,
+	TextField,
 } from '@mui/material';
 import {
 	PlayCircleOutlineOutlined,
@@ -30,7 +32,9 @@ import {
 	getStructureDataFromS3, 
 	submitStandardAnalysis, 
 	AddAndUploadStructureToS3,
-	getMultiplicities
+	getMultiplicities,
+	getChemicalFormula,
+	getStructuresTags
 } from '../../services/api';
 import { Structure } from '../../types';
 
@@ -49,16 +53,19 @@ export default function StandardAnalysis() {
 	// state for form
     const [jobName, setJobName] = useState<string>('');
 	const [jobNotes, setJobNotes] = useState<string>('');
+	const [jobTags, setJobTags] = useState<string[]>([]);
     const [source, setSource] = useState<'upload' | 'library'>('upload');  
     const [file, setFile] = useState<File | null>(null);
     const [uploadStructure, setUploadStructure] = useState<boolean>(false);
     const [structures, setStructures] = useState<Structure[]>([]);
     const [selectedStructure, setSelectedStructure] = useState<string>('');
     const [structureName, setStructureName] = useState<string>('');
+	const [chemicalFormula, setChemicalFormula] = useState<string>('');
 	const [structureNotes, setStructureNotes] = useState<string>('');
     const [charge, setCharge] = useState<number>(0);
     const [multiplicity, setMultiplicity] = useState<number>(1);
 	const [structureTags, setStructureTags] = useState<string[]>([]);
+	const [options, setOptions] = useState<string[]>([]);
 
 	// dropdown options for multiplicity
 	const [multiplicityOptions, setMultiplicityOptions] = useState<{ [key: string]: number }>({});
@@ -122,9 +129,23 @@ export default function StandardAnalysis() {
 			}
 		}
 
+		const fetchTags = async () => {
+			try {
+				const token = await getAccessTokenSilently()
+				const response = await getStructuresTags(token)
+				if (response.data) {
+					setOptions(response.data)
+				}
+			}
+			catch (err) {
+				console.error("Failed to fetch tags", err)
+			}
+		}
+		
 		setLoading(true);
 		loadMultiplicityOptions();
 		loadLibraryStructures();
+		fetchTags();
 	}, [getAccessTokenSilently]);
 
 	// Handle switching between upload / library
@@ -143,12 +164,12 @@ export default function StandardAnalysis() {
         setError(null);
     };
 
-	const handleFileChange = async (text, f) => {
-		setFile(f);
-		setSelectedStructure('');
-		setStructureData(text);
-		setError(null);
-	};
+	// const handleFileChange = async (text, f) => {
+	// 	setFile(f);
+	// 	setSelectedStructure('');
+	// 	setStructureData(text);
+	// 	setError(null);
+	// };
 
 	const handleLibrarySelect = async (structure_id: string) => {
 		setSelectedStructure(structure_id);
@@ -176,7 +197,26 @@ export default function StandardAnalysis() {
 		}
 	};
 
-	async function performSubmitJob() {
+	const handleFileChange = async (data, file) => {
+		setStructureData(data);
+		setFile(file);
+
+		if (file && file.name.endsWith('.xyz')) {
+			try {
+				const token = await getAccessTokenSilently();
+				const formula = await getChemicalFormula(file, token);
+				setChemicalFormula(formula.data['formula'] || '');
+			} catch (err) {
+				console.error("Failed to get chemical formula", err);
+				setError('Failed to get chemical formula. Please try again.');
+			}
+		} else {
+			setError('Please upload a valid .xyz file.');
+			setStructureData('');
+		}
+	};
+
+  	async function performSubmitJob() {
 		setSubmitAttempted(true);
 		setError(null);
 
@@ -231,9 +271,11 @@ export default function StandardAnalysis() {
 				response = await AddAndUploadStructureToS3(
 					uploadFile,
 					structureName,
+					chemicalFormula,
 					structureNotes,
 					structureImageData,
-					token
+					token,
+					structureTags
 				);
 				if (response.error) {
 					throw new Error(response.error);
@@ -332,7 +374,25 @@ export default function StandardAnalysis() {
 										onChange={(e: React.ChangeEvent<HTMLInputElement>) => setJobNotes(e.target.value)}
 										multiline
 										rows={3}
-										helperText="Optional notes about this job"
+										sx={{ mt: 2 }}
+									/>
+									<Autocomplete
+										multiple
+										freeSolo
+										id="tags-input"
+										options={options}
+										value={jobTags}
+										onChange={(e, newValue) => {
+											setJobTags(newValue.filter(tag => tag.trim() !== ''));
+										}}
+										renderInput={(params) => (
+											<TextField
+												{...params}
+												variant="outlined"
+												label="Tags"
+												placeholder="Press enter to add tags"
+											/>
+										)}
 										sx={{ mt: 2 }}
 									/>
 								</Grid>
@@ -350,6 +410,8 @@ export default function StandardAnalysis() {
 									onUploadStructureChange={setUploadStructure}
 									moleculeName={structureName}
 									onMoleculeNameChange={(e: React.ChangeEvent<HTMLInputElement>) => setStructureName(e.target.value)}
+									chemicalFormula={chemicalFormula}
+									onChemicalFormulaChange={(e: React.ChangeEvent<HTMLInputElement>) => setChemicalFormula(e.target.value)}
 									moleculeNotes={structureNotes}
 									onMoleculeNotesChange={(e: React.ChangeEvent<HTMLInputElement>) => setStructureNotes(e.target.value)}
 									submitAttempted={submitAttempted}
@@ -424,6 +486,7 @@ export default function StandardAnalysis() {
 						data={structureData}
 						format='xyz'
 						source={source}
+            sx={{ maxHeight: 450 }}
 						submitConfirmed={submitConfirmed}
 						setStructureImageData={setStructureImageData}
 					/>

@@ -36,7 +36,7 @@ import {
     getStructuresTags,
 } from '../../services/api'
 import { Structure } from '../../types'
-import { submitAdvancedAnalysis } from '../../services/api'
+import { submitAdvancedAnalysis, getChemicalFormula } from '../../services/api'
 import * as React from 'react'
 import {
     Keyword,
@@ -66,6 +66,7 @@ const AdvancedAnalysis = () => {
     const [structures, setStructures] = useState<Structure[]>([]);
     const [selectedStructure, setSelectedStructure] = useState<string>('');
     const [structureName, setStructureName] = useState<string>('');
+    const [chemicalFormula, setChemicalFormula] = useState<string>('');
     const [structureNotes, setStructureNotes] = useState<string>('');
     const [structureTags, setStructureTags] = useState<string[]>([]);
     const [charge, setCharge] = useState<number>(0);
@@ -232,6 +233,25 @@ const AdvancedAnalysis = () => {
         }
     };
 
+    const handleFileChange = async (data, file) => {
+        setStructureData(data);
+        setFile(file);
+
+        if (file && file.name.endsWith('.xyz')) {
+            try {
+                const token = await getAccessTokenSilently();
+                const formula = await getChemicalFormula(file, token);
+                setChemicalFormula(formula.data['formula'] || '');
+            } catch (err) {
+                console.error("Failed to get chemical formula", err);
+                setError('Failed to get chemical formula. Please try again.');
+            }
+        } else {
+            setError('Please upload a valid .xyz file.');
+            setStructureData('');
+        }
+    };
+
     async function performSubmitJob(): Promise<void> {
         setSubmitAttempted(true);
         setError(null);
@@ -302,20 +322,24 @@ const AdvancedAnalysis = () => {
             if (response.error) {
                 throw new Error(response.error);
             }
+          
             const {job_id, slurm_id} = response.data;
-
             if (uploadStructure && source === 'upload') {
+                console.log('Uploading structure to S3');
                 response = await AddAndUploadStructureToS3(
                     uploadFile,
                     structureName,
+                    chemicalFormula,
                     structureNotes,
                     structureImageData,
                     token,
                     structureTags
                 );
                 if (response.error) {
+                    console.error('Failed to upload structure', response.error);
                     throw new Error(response.error);
                 }
+                console.log('Structure uploaded successfully', response.data);
                 structureIdToUse = response.data.structure_id;
             }
 
@@ -335,6 +359,7 @@ const AdvancedAnalysis = () => {
                 jobTags
             );
             if (response.error) {
+                console.error('Failed to create job', response.error);
                 throw new Error(response.error);
             }
             // Job submitted successfully, redirect to job list
@@ -445,13 +470,14 @@ const AdvancedAnalysis = () => {
                                     onLibrarySelect={handleLibrarySelect}
                                     file={file}
                                     onFileChange={(data: string, file: File) => {
-                                        setStructureData(data);
-                                        setFile(file);
+                                        handleFileChange(data, file);
                                     }}
                                     uploadStructure={uploadStructure}
                                     onUploadStructureChange={setUploadStructure}
                                     moleculeName={structureName}                                    
                                     onMoleculeNameChange={(e: React.ChangeEvent<HTMLInputElement>) => setStructureName(e.target.value)}
+                                    chemicalFormula={chemicalFormula}
+                                    onChemicalFormulaChange={(e: React.ChangeEvent<HTMLInputElement>) => setChemicalFormula(e.target.value)}
                                     moleculeNotes={structureNotes}
                                     onMoleculeNotesChange={(e: React.ChangeEvent<HTMLInputElement>) => setStructureNotes(e.target.value)}
                                     submitAttempted={submitAttempted}

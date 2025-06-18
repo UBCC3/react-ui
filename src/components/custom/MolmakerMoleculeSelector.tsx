@@ -50,6 +50,8 @@ const MolmakerMoleculeSelector = ({
 	onUploadStructureChange,
 	moleculeName,
 	onMoleculeNameChange,
+	chemicalFormula,
+	onChemicalFormulaChange,
 	moleculeNotes,
 	onMoleculeNotesChange,
 	submitAttempted,
@@ -166,6 +168,16 @@ const MolmakerMoleculeSelector = ({
 						error={submitAttempted && !moleculeName}
 						helperText={submitAttempted && !moleculeName ? 'Please enter a name' : ''}
 						sx={{ mt: 1 }}
+					/>
+					<MolmakerTextField
+						fullWidth
+						label="Chemical Formula"
+						value={chemicalFormula}
+						onChange={onChemicalFormulaChange}
+						required
+						error={submitAttempted && !chemicalFormula}
+						helperText={submitAttempted && !chemicalFormula ? 'Please enter a chemical formula' : ''}
+						sx={{ mt: 2 }}
 					/>
 					<MolmakerTextField
 						fullWidth
