@@ -7,7 +7,7 @@ import MolmakerMoleculePreview from './MolmakerMoleculePreview';
 import MolmakerAlert from './MolmakerAlert';
 import MolmakerPageTitle from './MolmakerPageTitle';
 import MolmakerLoading from './MolmakerLoading';
-import MolmakerConfirmDelete from './MolmakerConfirmDelete';
+import MolmakerConfirm from './MolmakerConfirm';
 
 export {
 	MolmakerAlert,
@@ -19,5 +19,5 @@ export {
 	MolmakerMoleculePreview,
 	MolmakerPageTitle,
 	MolmakerLoading,
-	MolmakerConfirmDelete
+	MolmakerConfirm
 }

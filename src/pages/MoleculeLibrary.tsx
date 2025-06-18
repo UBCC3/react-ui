@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, {useState, useEffect, useRef} from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
 	Paper,
@@ -31,7 +31,7 @@ import { blueGrey } from "@mui/material/colors";
 import {
 	MolmakerPageTitle,
 	MolmakerLoading,
-	MolmakerConfirmDelete
+	MolmakerConfirm
 } from "../components/custom";
 import {
 	getLibraryStructures,
@@ -167,15 +167,22 @@ const MoleculeLibrary = () => {
 
   	return (
 		<Box bgcolor={'rgb(247, 249, 252)'} p={4}>
-			<MolmakerConfirmDelete 
+			<MolmakerConfirm
 				open={openConfirmDelete}
 				onClose={() => setOpenConfirmDelete(false)}
+				textToShow={
+					"Are you sure you want to delete this row? This action cannot be undone."
+				}
 				onConfirm={() => {
 					handleDelete();
 					setOpenConfirmDelete(false);
 				}}
 			/>
-			<MoleculeUpload open={openAdd} setOpen={setOpenAdd} setLibraryStructures={setLibraryStructures} />
+			<MoleculeUpload
+				open={openAdd}
+				setOpen={setOpenAdd}
+				setLibraryStructures={setLibraryStructures}
+			/>
 			<MoleculeInfo open={open} setOpen={setOpen} selectedStructureId={selectedStructureId} />
 			<MolmakerPageTitle
 				title="My Structure Library" 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -21,7 +21,7 @@ import {
     MolmakerRadioGroup,
     MolmakerMoleculePreview,
     MolmakerAlert,
-    MolmakerLoading
+    MolmakerLoading, MolmakerConfirm
 } from '../../components/custom'
 import { 
     getCalculationTypes, 
@@ -84,12 +84,28 @@ const AdvancedAnalysis = () => {
     const [basisSets, setBasisSets] = useState<{ [key: string]: string }>({});
     const [multiplicityOptions, setMultiplicityOptions] = useState<{ [key: string]: number }>({});
 
+    // structure preview snapshot confirm
+    const [openConfirmImage, setOpenConfirmImage] = useState<boolean>(false);
+    const [submitConfirmed, setSubmitConfirmed] = useState<boolean>(false);
+    const [structureImageData, setStructureImageData] = useState<string>('');
+
     // keywords (optional)
     const [keywords, setKeywords] = useState<Keyword[]>([]);
 
     const handleKeywordsChange = (updatedKeywords: Keyword[]) => {
         setKeywords(updatedKeywords);
     }
+
+    useEffect(() => {
+        const getStructureImageSubmit = async () => {
+            if (!submitConfirmed || structureImageData === '') return
+
+            await performSubmitJob();
+            setSubmitConfirmed(false);
+        }
+
+        getStructureImageSubmit();
+    }, [structureImageData]);
 
     // Load library on mount
     useEffect(() => {
@@ -236,8 +252,7 @@ const AdvancedAnalysis = () => {
         }
     };
 
-    const handleSubmitJob = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
+    async function performSubmitJob(): Promise<void> {
         setSubmitAttempted(true);
         setError(null);
 
@@ -258,17 +273,17 @@ const AdvancedAnalysis = () => {
         }
 
         if (source === 'library') {
-			const blob = new Blob([structureData], { type: 'text/plain' });
-			uploadFile = new File([blob], `${structureIdToUse}.xyz`, {
-				type: 'text/plain'
-			});
-		}
+            const blob = new Blob([structureData], {type: 'text/plain'});
+            uploadFile = new File([blob], `${structureIdToUse}.xyz`, {
+                type: 'text/plain'
+            });
+        }
 
-		if (!uploadFile) {
-			setError('No file to upload.');
-			setLoading(false);
-			return;
-		}
+        if (!uploadFile) {
+            setError('No file to upload.');
+            setLoading(false);
+            return;
+        }
 
         const formData = new FormData();
         formData.append('file', uploadFile);
@@ -280,18 +295,17 @@ const AdvancedAnalysis = () => {
 
         let keywordsJsonFile: File | undefined = undefined;
         if (keywords.length > 0) {
-            const payload: Record<string, any> = keywords.reduce((obj, { key, value }) => {
+            const payload: Record<string, any> = keywords.reduce((obj, {key, value}) => {
                 obj[key] = value;
                 return obj;
             }, {});
             const keywordsJsonStr = JSON.stringify(payload);
-            const keywordsBlob = new Blob([keywordsJsonStr], { type: "application/json" });
+            const keywordsBlob = new Blob([keywordsJsonStr], {type: "application/json"});
             keywordsJsonFile = new File([keywordsBlob], `keywords.json`, {
                 type: 'text/plain'
             });
             formData.append('keywords', keywordsJsonFile);
         }
-
         setLoading(true);
         try {
             const token = await getAccessTokenSilently();
@@ -308,16 +322,8 @@ const AdvancedAnalysis = () => {
             if (response.error) {
                 throw new Error(response.error);
             }
-            const { job_id, slurm_id } = response.data;
-            console.log({
-                job_id,
-                slurm_id,
-                uploadFile,
-                structureName,
-                chemicalFormula,
-                structureNotes,
-                structureTags,
-            })
+          
+            const {job_id, slurm_id} = response.data;
             if (uploadStructure && source === 'upload') {
                 console.log('Uploading structure to S3');
                 response = await AddAndUploadStructureToS3(
@@ -325,6 +331,7 @@ const AdvancedAnalysis = () => {
                     structureName,
                     chemicalFormula,
                     structureNotes,
+                    structureImageData,
                     token,
                     structureTags
                 );
@@ -366,6 +373,11 @@ const AdvancedAnalysis = () => {
         }
     }
 
+    const handleSubmitJob = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setOpenConfirmImage(true);
+    }
+
     if (loading) {
 		return (
 			<MolmakerLoading />
@@ -374,6 +386,21 @@ const AdvancedAnalysis = () => {
 
     return (
         <Box bgcolor="rgb(247, 249, 252)" p={4}>
+            <MolmakerConfirm
+                open={openConfirmImage}
+                onClose={() => setOpenConfirmImage(false)}
+                textToShow={
+                    <>
+                        Confirm the current zoom and orientation to capture the structure image.<br />
+                        This view will be captured and saved as the snapshot for this structure.<br />
+                        You can scroll to zoom and drag to rotate the molecule before confirming.
+                    </>
+                }
+                onConfirm={async () => {
+                    setSubmitConfirmed(true);
+                    setOpenConfirmImage(false);
+                }}
+            />
             <MolmakerPageTitle
                 title="Advanced Analysis"
                 subtitle="Submit a molecule for advanced analysis"
@@ -631,7 +658,9 @@ const AdvancedAnalysis = () => {
 						data={structureData}
 						format='xyz'
 						source={source}
-                        sx={{ maxHeight: 450 }}
+                        sx={{ maxHeight: 437 }}
+                        submitConfirmed={submitConfirmed}
+                        setStructureImageData={setStructureImageData}
 					/>
         		</Grid>
             </Grid>

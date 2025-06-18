@@ -1,19 +1,33 @@
-import React, {useState, useEffect} from 'react'
+import React, {useState, useEffect, useRef, forwardRef, useImperativeHandle} from 'react'
 import { Box, Button, Drawer, Grid, Autocomplete, Chip, TextField } from '@mui/material'
-import { MolmakerMoleculePreview, MolmakerTextField, MolmakerSectionHeader,  } from '../components/custom'
+import {
+	MolmakerMoleculePreview,
+	MolmakerTextField,
+	MolmakerSectionHeader,
+	MolmakerConfirm,
+} from '../components/custom'
 import { useAuth0 } from '@auth0/auth0-react'
 import { CloudUploadOutlined, AddPhotoAlternateOutlined, Close } from '@mui/icons-material'
 import { AddAndUploadStructureToS3, getLibraryStructures, getStructuresTags, getChemicalFormula } from '../services/api' 
+import {Structure} from "../types";
 
+interface MoleculeUploadProps {
+	open: boolean,
+	setOpen: React.Dispatch<React.SetStateAction<boolean>>,
+	setLibraryStructures:  React.Dispatch<React.SetStateAction<Structure[]>>,
+}
 
-const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
+const MoleculeUpload: React.FC<MoleculeUploadProps> = ({
+	open,
+	setOpen,
+	setLibraryStructures,
+}) => {
 	const [state, setState] = useState({
 		right: false,
 	})
 	const [structureData, setStructureData] = useState<string>('')
 	const [structureName, setStructureName] = useState<string>('')
 	const [structureNotes, setStructureNotes] = useState<string>('')
-	const [strucutreImageURL, setStructureImageURL] = useState<string>('')
 	const [loading, setLoading] = useState<boolean>(false)
 	const [error, setError] = useState<string | null>(null)
 	const [uploadedFile, setUploadedFile] = useState<File | null>(null)
@@ -21,6 +35,21 @@ const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
 	const [tags, setTags] = useState<string[]>([])
 	const [options, setOptions] = useState<string[]>([])
 	const [chemicalFormula, setChemicalFormula] = useState<string>('')
+
+	const [structureImageData, setStructureImageData] = useState<string>('')
+	const [openConfirmImage, setOpenConfirmImage] = useState<boolean>(false);
+	const [submitConfirmed, setSubmitConfirmed] = useState<boolean>(false);
+
+	useEffect(() => {
+		const getStructureImageSubmit = async () => {
+			if (!submitConfirmed || structureImageData === '') return
+
+			await performUpload();
+			setSubmitConfirmed(false);
+		}
+
+		getStructureImageSubmit();
+	}, [structureImageData]);
 
 	useEffect(() => {
 		const fetchTags = async () => {
@@ -49,9 +78,7 @@ const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
 		}
 	}, [open])
 
-	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-		event.preventDefault();
-
+	async function performUpload() {
 		// prevent multiple submissions and submission while loading
 		if (submitAttempted) return;
 		if (loading) return;
@@ -71,11 +98,18 @@ const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
 		
 		setSubmitAttempted(true);
 		setError(null);
-		setLoading(true);
-
+        
+        setLoading(true);
 		try {
-			const token = await getAccessTokenSilently();
-			await AddAndUploadStructureToS3(uploadedFile, structureName, chemicalFormula, structureNotes, strucutreImageURL, token, tags);
+      const token = await getAccessTokenSilently();
+			await AddAndUploadStructureToS3(
+				uploadedFile,
+				structureName,
+				structureNotes,
+				structureImageData,
+				token,
+				tags
+			);
 
 			// Refresh the library after successful submission
 			const response = await getLibraryStructures(token);
@@ -95,6 +129,11 @@ const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
 		} finally {
 			setLoading(false);
 		}
+	}
+
+	const handleSubmit = (event: React.FormEvent<HTMLFormElement>):void => {
+		event.preventDefault();
+		setOpenConfirmImage(true);
 	}
 	
 	const { getAccessTokenSilently } = useAuth0()
@@ -160,6 +199,21 @@ const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
 					},
 				}}
 			>
+				<MolmakerConfirm
+					open={openConfirmImage}
+					onClose={() => setOpenConfirmImage(false)}
+					textToShow={
+						<>
+							Confirm the current zoom and orientation to capture the structure image.<br />
+							This view will be captured and saved as the snapshot for this structure.<br />
+							You can scroll to zoom and drag to rotate the molecule before confirming.
+						</>
+					}
+					onConfirm={async () => {
+						setSubmitConfirmed(true);
+						setOpenConfirmImage(false);
+					}}
+				/>
 				<MolmakerMoleculePreview
 					data={structureData}
 					format={'xyz'}
@@ -170,7 +224,8 @@ const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
 						position: 'relative',
 					}}
 					title="Add Structure"
-					onSnapshot={setStructureImageURL}
+					submitConfirmed={submitConfirmed}
+					setStructureImageData={setStructureImageData}
 				/>
 				<Box sx={{ padding: 2, display: 'flex', flexDirection: 'column', gap: 2 }} component="form" onSubmit={handleSubmit}>
 					<MolmakerSectionHeader text="Structure Information" />
@@ -262,6 +317,6 @@ const MoleculeUpload = ({ open, setOpen, setLibraryStructures }) => {
 			</Drawer>
 		</React.Fragment>
 	)
-}
+};
 
-export default MoleculeUpload
+export default MoleculeUpload;

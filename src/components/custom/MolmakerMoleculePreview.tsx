@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, {forwardRef, useEffect, useImperativeHandle, useRef} from 'react';
 import { Paper, Typography, Divider, Box, Skeleton, SxProps, Theme } from '@mui/material';
 import { blueGrey } from '@mui/material/colors';
 
@@ -9,35 +9,38 @@ declare global {
 	}
 }
 
-interface MolmakerMoleculePreview {
+interface MolmakerMoleculePreviewProp {
 	data?: string;
 	format: string;
 	source?: 'upload' | 'library';
 	title?: string;
 	maxHeight?: number;
 	sx?: SxProps<Theme>;
-	onSnapshot?: (dataURL: string) => void;
+	submitConfirmed?: boolean;
+	setStructureImageData?: (data: string) => void;
 }
 
-// TODO: replace logic to take ss only when add structure is being added
-const captureSnapshot = (element: HTMLDivElement, callback: (dataUrl: string) => void) => {
-	setTimeout(() => {
-		const canvas = element.querySelector("canvas");
-		const dataURL = canvas!.toDataURL('image/png');
-		callback(dataURL!);
-	}, 500);
-};
 
-const MolmakerMoleculePreview: React.FC<MolmakerMoleculePreview> = ({
+const MolmakerMoleculePreview: React.FC<MolmakerMoleculePreviewProp> = ({
 	data = '',
 	format,
 	source = 'upload',
 	title = 'Structure Preview',
 	maxHeight,
 	sx = {},
-	onSnapshot,
+	submitConfirmed,
+	setStructureImageData,
 }) => {
   	const viewerRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (submitConfirmed) {
+			const element = viewerRef.current;
+			const canvas = element.querySelector('canvas');
+			const structureImageData = canvas.toDataURL("image/png");
+			setStructureImageData(structureImageData);
+		}
+	}, [submitConfirmed]);
 
 	useEffect(() => {
 		if (!data || !window.$3Dmol) return;
@@ -52,9 +55,6 @@ const MolmakerMoleculePreview: React.FC<MolmakerMoleculePreview> = ({
 		viewer.zoomTo();
 		viewer.render();
 
-		if (onSnapshot) {
-			captureSnapshot(element, onSnapshot);
-		}
 	}, [data, format]);
 
 	return (
