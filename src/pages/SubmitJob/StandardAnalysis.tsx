@@ -311,7 +311,12 @@ export default function StandardAnalysis() {
 
 	const handleSubmitJob = (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
-		setOpenConfirmImage(true);
+		if (uploadStructure && source === 'upload') {
+            setOpenConfirmImage(true);
+            return;
+        }
+        
+        performSubmitJob();
 	};
 
 	if (loading) {
