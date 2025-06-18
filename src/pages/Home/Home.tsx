@@ -21,7 +21,7 @@ import {
 	Card,
 	CircularProgress
 } from '@mui/material';
-import { blueGrey } from '@mui/material/colors';
+import { blueGrey, grey } from '@mui/material/colors';
 import { 
 	cancelJobBySlurmID,
 	getAllJobs, 
@@ -89,7 +89,7 @@ export default function Home() {
 	}>>([{ column: 'job_name', value: '', extent: 'contains' }]);
 
 	// map column name to display name
-	const columnDisplayNames: Record<keyof Job, string> = {
+	const columnDisplayNames: Record<any, string> = {
 		job_name: 'Job Name',
 		job_notes: 'Job Notes',
 		status: 'Status',
@@ -547,7 +547,7 @@ export default function Home() {
 								Filter
 							</Typography>
 							{/* Each filter row on its own line */}
-							<Box sx={{ bgcolor: blueGrey[50], p: 3, borderRadius: 1 }}>
+							<Box sx={{ bgcolor: grey[100], p: 3, borderRadius: 1 }}>
 								{filters.map((filter, index) => (
 									<Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
 										<Select
