@@ -12,6 +12,7 @@ import AdvancedAnalysis from './pages/SubmitJob/AdvancedAnalysis';
 import MainContent from './components/MainContent';
 import { DrawerProvider } from './components/DrawerContext';
 import { Box, CssBaseline } from '@mui/material';
+import ResultPage from "./components/JSmol/resultPage";
 
 function App() {
 	return (
@@ -25,7 +26,8 @@ function App() {
 						<Routes>
 							<Route
 								path="/"
-								element={<RequireAuth><Home /></RequireAuth>}
+								// element={<RequireAuth><Home /></RequireAuth>}
+								element={<RequireAuth><ResultPage /></RequireAuth>}
 							/>
 							<Route
 								path="/submit"
