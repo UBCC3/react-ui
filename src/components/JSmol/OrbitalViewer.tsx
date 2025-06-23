@@ -49,7 +49,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	const [orbitals, setOrbitals] = useState<Orbital[]>([]);
 	const rowsPerPage: number = 25;
 	const [page, setPage] = useState(0);
-	const [selectedOrbital, setSelectedOrbital] = useState<Orbital>(null);
+	const [selectedOrbital, setSelectedOrbital] = useState<Orbital | null>(null);
 
 	useEffect(() => {
 		if (orbitals.length === 0) return;
