@@ -5,6 +5,8 @@ import {
 	AccordionSummary,
 	Box,
 	Grid,
+	MenuItem,
+	MenuList,
 	Paper,
 	Table,
 	TableBody,
@@ -13,10 +15,12 @@ import {
 	TableHead,
 	TablePagination,
 	TableRow,
-	Typography
+	Typography,
+	ListItemText,
+	Tab
 } from "@mui/material";
-import {Orbital} from "../../types";
-import {blueGrey} from "@mui/material/colors";
+import { Orbital } from "../../types";
+import { blueGrey, grey } from "@mui/material/colors";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import OrbitalProperty from "./OrbitalProperty";
 
@@ -27,13 +31,17 @@ declare global {
 }
 
 interface OrbitalViewerProp {
-	moldenFile: string,
-	viewerObjId: string,
+	moldenFile: string;
+	viewerObjId: string;
 }
 
-enum expandableMenu {
-	'orbital',
-	'density',
+// Define each property option
+enum PropertyMenu {
+  ELECTRON_DENSITY = 'electronDensity',
+  ELECTROSTATIC_POTENTIAL = 'electrostaticPotential',
+  ELECTROPHILIC_HOMO = 'electrophilicHOMO',
+  ELECTROPHILIC_LUMO = 'electrophilicLUMO',
+  RADIAL_FRONTIER_DENSITY = 'radialFrontierDensity',
 }
 
 const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
@@ -43,63 +51,50 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	const viewerRef = useRef<HTMLDivElement>(null);
 
 	const [viewerObj, setViewerObj] = useState<any>(null);
-	const [expanded, setExpanded] = useState<false | expandableMenu>(expandableMenu.density);
 
-	// orbital table
+	// orbital table state
 	const [orbitals, setOrbitals] = useState<Orbital[]>([]);
-	const rowsPerPage: number = 25;
+	const rowsPerPage = 5;
 	const [page, setPage] = useState(0);
 	const [selectedOrbital, setSelectedOrbital] = useState<Orbital | null>(null);
 
+	// selected property from menu
+	const [selectedProperty, setSelectedProperty] = useState<PropertyMenu>(
+		PropertyMenu.ELECTRON_DENSITY
+	);
+
 	useEffect(() => {
-		if (orbitals.length === 0) return;
+		if (!viewerObj || orbitals.length === 0 || selectedOrbital === null) return;
 
-		if (selectedOrbital === null) return;
-
-		const showOrbital = () => {
-			const script= `
-				mo ${selectedOrbital.index};
-			`;
-			window.Jmol.script(viewerObj, script);
-			return;
-		}
-
-		showOrbital();
-	}, [orbitals, selectedOrbital]);
+		// show selected orbital
+		const script = `mo ${selectedOrbital.index}`;
+		window.Jmol.script(viewerObj, script);
+	}, [orbitals, selectedOrbital, viewerObj]);
 
 	useEffect(() => {
 		if (!viewerObj) return;
 
-		function fetchOrbitals() {
-			const mos = window.Jmol.getPropertyAsArray(
-				viewerObj,
-				"auxiliaryInfo.models[0].moData.mos",
-			);
-
-			const orbitalsArray: Orbital[] = mos.map((mo: any, idx: number):Orbital => ({
-				index: mo.index,
-				energy: mo.energy,
-				occupancy: mo.occupancy,
-				spin: mo.spin,
-				symmetry: mo.symmetry,
-				type: mo.type,
-			}));
-
-			setOrbitals(orbitalsArray);
-		}
-
-		fetchOrbitals();
+		// fetch MO properties
+		const mos = window.Jmol.getPropertyAsArray(
+			viewerObj,
+			"auxiliaryInfo.models[0].moData.mos"
+		);
+		const orbitalsArray: Orbital[] = mos.map((mo: any): Orbital => ({
+			index: mo.index,
+			energy: mo.energy,
+			occupancy: mo.occupancy,
+			spin: mo.spin,
+			symmetry: mo.symmetry,
+			type: mo.type,
+		}));
+		setOrbitals(orbitalsArray);
 	}, [viewerObj]);
 
 	useEffect(() => {
-		const jsmolIsReady = (viewerObj: any) => {
-			window.Jmol.script(viewerObj, `
-			    reset;
-			    zoom 50;
-			`);
-
-			setViewerObj(viewerObj);
-		}
+		const jsmolIsReady = (obj: any) => {
+			window.Jmol.script(obj, `reset; zoom 50;`);
+			setViewerObj(obj);
+		};
 
 		const Info = {
 			color: "#FFFFFF",
@@ -108,9 +103,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 			use: "HTML5",
 			j2sPath: "/jsmol/j2s",
 			src: moldenFile,
-			script: `
-				load "${moldenFile}";
-			`,
+			script: `load \"${moldenFile}\";`,
 			disableInitialConsole: true,
 			addSelectionOptions: false,
 			debug: false,
@@ -127,171 +120,150 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 		setPage(newPage);
 	};
 
-	const handleExpandMenuChange = (panel: expandableMenu) => (e: React.SyntheticEvent, newExpanded: boolean) => {
-			setExpanded(newExpanded ? panel : false);
-	};
-
 	return (
 		<Grid container spacing={2}>
-			<Grid size={12} sx={{ height: '800px'}}>
-				<Paper elevation={3} sx={{padding: 0, height: '100%', }}>
-					<Grid container spacing={2} alignItems="stretch" sx={{ height: '100%'}} >
-						<Grid
-							sx={{
-								xs: 12,
-								md: 3,
-								display: 'flex',
-								flexDirection: 'column',
-								width: '23%',
-								maxHeight: '100%',
-								border: '2px solid gray' // TODO: temperate distinguish boundary
-							}}
-						>
-							<Accordion
-								expanded={expanded === expandableMenu.orbital}
-								onChange={handleExpandMenuChange(expandableMenu.orbital)}
-								sx={{
-									justifyContent: 'space-between',
-									flex: expanded === expandableMenu.orbital ? '1 1 0%' : '0 0 auto',
-									minHeight: 0,
-									display: 'flex',
-									flexDirection: 'column'
-								}}
-								disableGutters
-							>
-								<AccordionSummary
-									expandIcon={ <ExpandMoreIcon /> }
-									aria-controls="orbitals-content"
-									id="orbitals-header"
-									sx={{
-										bgcolor: blueGrey[200],
-									}}
-								>
-									<Typography component={'span'} variant="h6" color="text.secondary">
-										Orbitals
-									</Typography>
-								</AccordionSummary>
-								<AccordionDetails
-									sx={{
-										p: 0,
-										flex: 1,
-										minHeight: 0,
-										display: 'flex',
-										flexDirection: 'column',
-									}}
-								>
-									<TableContainer
+			<Grid size={{ xs: 12, md: 4 }}>
+				<Paper elevation={3} sx={{ height: '100%' }}>
+					<Typography variant="h6" sx={{ pl: 2, py: 1, color: 'text.secondary', bgcolor: blueGrey[200] }}>
+						Orbitals
+					</Typography>
+					<TableContainer>
+						<Table size="small">
+							<TableHead>
+								<TableRow sx={{ bgcolor: blueGrey[50] }}>
+									<TableCell>Sym</TableCell>
+									<TableCell>Eigenvalue (a.u.)</TableCell>
+									<TableCell>Occ</TableCell>
+									<TableCell>Spin</TableCell>
+								</TableRow>
+							</TableHead>
+							<TableBody>
+								{orbitals.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map(orbital => (
+									<TableRow
+										key={orbital.index}
+										onClick={() => setSelectedOrbital(orbital)}
 										sx={{
-											height: '630px',
+											backgroundColor: selectedOrbital?.index === orbital.index ? 'rgba(0,0,0,0.1)' : 'transparent',
+											cursor: 'pointer'
 										}}
 									>
-										<Table stickyHeader size="small" >
-											<TableHead>
-												<TableRow sx={{ bgcolor: blueGrey[50] }}>
-													<TableCell>#</TableCell>
-													<TableCell>Sym</TableCell>
-													<TableCell>Eigenvalue (a.u.)</TableCell>
-													<TableCell>Occ</TableCell>
-													<TableCell>Spin</TableCell>
-												</TableRow>
-											</TableHead>
-											<TableBody >
-												{orbitals
-													.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-													.map(orbital => (
-														<TableRow
-															key={orbital.index}
-															onClick={() => {
-																setSelectedOrbital(orbital);
-															}}
-															sx={{
-																backgroundColor: (
-																	selectedOrbital !== null &&
-																	orbital.index === selectedOrbital.index
-																) ? 'rgba(0, 0, 0, 0.1)' : 'transparent',
-																cursor: 'pointer'
-															}}
-														>
-															<TableCell>{orbital.index}</TableCell>
-															<TableCell>{orbital.symmetry}</TableCell>
-															<TableCell>{orbital.energy.toFixed(6)}</TableCell>
-															<TableCell>{orbital.occupancy}</TableCell>
-															<TableCell>{orbital.spin}</TableCell>
-														</TableRow>
-												))}
-											</TableBody>
-										</Table>
-									</TableContainer>
-									<TablePagination
-										component="div"
-										count={orbitals.length}
-										page={page}
-										onPageChange={handleChangePage}
-										rowsPerPage={rowsPerPage}
-										rowsPerPageOptions={[]}
-										sx={{
-											bgcolor: blueGrey[200],
-											position: "sticky",
-											bottom: 0,
-										}}
-										showFirstButton
-										showLastButton
-									/>
-								</AccordionDetails>
-							</Accordion>
-							<Accordion
-								expanded={expanded === expandableMenu.density}
-								onChange={handleExpandMenuChange(expandableMenu.density)}
-								disableGutters
-								sx={{
-									flex: expanded === expandableMenu.density ? '1 1 0%' : '0 0 auto',
-									minHeight: 0,
-									display: 'flex',
-									flexDirection: 'column'
-								}}
-							>
-								<AccordionSummary
-									expandIcon={ <ExpandMoreIcon /> }
-									aria-controls="orbitals-content"
-									id="orbitals-header"
-									sx={{
-										bgcolor: blueGrey[200],
-									}}
-								>
-									<Typography component={'span'} variant="h6" color="text.secondary">
-										Properties
-									</Typography>
-								</AccordionSummary>
-								<AccordionDetails
-									sx={{
-										p: 0,
-										flex: 1,
-										minHeight: 0,
-										display: 'flex',
-										flexDirection: 'column',
-									}}
-								>
-									<OrbitalProperty viewerObj={viewerObj} />
-								</AccordionDetails>
-							</Accordion>
-						</Grid>
-						<Grid
-							sx={{
-								xs: 12,
-								md: 8,
-								display: 'flex',
-								flexDirection: 'column',
-								flex: '1 0 auto',
-								position: 'relative'
-							}}
-						>
-							<Box
-								ref={viewerRef}
-								sx={{ width: '100%', height: '100%', boxSizing: 'border-box' }}
-							/>
-						</Grid>
+										<TableCell>{orbital.symmetry}</TableCell>
+										<TableCell>{orbital.energy.toFixed(6)}</TableCell>
+										<TableCell>{orbital.occupancy}</TableCell>
+										<TableCell>{orbital.spin}</TableCell>
+									</TableRow>
+								))}
+							</TableBody>
+						</Table>
+					</TableContainer>
+					<TablePagination
+						component="div"
+						count={orbitals.length}
+						page={page}
+						onPageChange={handleChangePage}
+						rowsPerPage={rowsPerPage}
+						rowsPerPageOptions={[]}
+						showFirstButton
+						showLastButton
+					/>
+				</Paper>
+			</Grid>
+			<Grid size={{ xs: 12, md: 8}}>
+				<Paper elevation={3} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+					<Typography variant="h6" sx={{ pl: 2, py: 1, color: 'text.secondary', bgcolor: blueGrey[200] }}>
+						Properties
+					</Typography>
+					<Grid container spacing={2} sx={{ flex: 1 }}>
+						<OrbitalProperty viewerObj={viewerObj}/>
 					</Grid>
 				</Paper>
+			</Grid>
+			<Grid container size={{ xs: 12 }} spacing={2} alignItems="stretch">
+				<Grid size={{ xs: 12, md: 4 }}>
+					<Paper elevation={3} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+						<Typography variant="h6" sx={{ pl: 2, py: 1, color: 'text.secondary', bgcolor: blueGrey[200] }}>
+							Calculated Quantities
+						</Typography>
+						<Grid container spacing={2} sx={{ flex: 1 }}>
+							<TableContainer sx={{ flex: 1 }}>
+								<Table size="small">
+									<TableHead>
+										<TableRow sx={{ bgcolor: blueGrey[50] }}>
+											<TableCell>Quantity</TableCell>
+											<TableCell>Value</TableCell>
+										</TableRow>
+									</TableHead>
+									<TableBody>
+										<TableRow>
+											<TableCell>Symmetry</TableCell>
+											<TableCell>cs</TableCell>
+										</TableRow>
+										<TableRow>
+											<TableCell>Basis</TableCell>
+											<TableCell>
+												6-31G(D)
+											</TableCell>
+										</TableRow>
+										<TableRow>
+											<TableCell>SCF Energy</TableCell>
+											<TableCell>
+												-76.010720255688 Hartree
+											</TableCell>
+										</TableRow>
+										<TableRow>
+											<TableCell>Dipole Moment</TableCell>
+											<TableCell>
+												2.19764298641837 Debye
+											</TableCell>
+										</TableRow>
+										<TableRow>
+											<TableCell>CPU time</TableCell>
+											<TableCell>
+												3 sec
+											</TableCell>
+										</TableRow>
+									</TableBody>
+								</Table>
+							</TableContainer>
+						</Grid>
+					</Paper>
+				</Grid>
+				<Grid size={{ xs: 12, md: 4 }}>
+					<Paper elevation={3} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+						<Typography variant="h6" sx={{ pl: 2, py: 1, color: 'text.secondary', bgcolor: blueGrey[200] }}>
+							Partial Charges
+						</Typography>
+						<Grid container spacing={2} sx={{ flex: 1 }}>
+							<TableContainer sx={{ flex: 1 }}>
+								<Table size="small">
+									<TableHead>
+										<TableRow sx={{ bgcolor: blueGrey[50] }}>
+											<TableCell>Atom</TableCell>
+											<TableCell>Charge</TableCell>
+										</TableRow>
+									</TableHead>
+									<TableBody>
+										<TableRow>
+											<TableCell>O</TableCell>
+											<TableCell>-0.86889</TableCell>
+										</TableRow>
+										<TableRow>
+											<TableCell>H</TableCell>
+											<TableCell>0.43445</TableCell>
+										</TableRow>
+										<TableRow>
+											<TableCell>H</TableCell>
+											<TableCell>0.43445</TableCell>
+										</TableRow>
+									</TableBody>
+								</Table>
+							</TableContainer>
+						</Grid>
+					</Paper>
+				</Grid>
+				<Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', flexDirection: 'column', flex: '1 0 auto', position: 'relative' }}>
+					<Box ref={viewerRef} sx={{ width: '100%', height: '100%', boxSizing: 'border-box' }} />
+				</Grid>
 			</Grid>
 		</Grid>
 	);

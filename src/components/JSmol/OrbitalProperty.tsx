@@ -1,202 +1,154 @@
 import {
 	Box,
 	Grid,
-	List,
-	ListItem,
-	ListItemButton,
+	MenuList,
+	MenuItem,
 	ListItemText,
 	Slider,
-	Typography
+	Typography,
+	FormGroup,
+	FormControlLabel,
+	Checkbox,
+	TextField
 } from "@mui/material";
-import {grey} from "@mui/material/colors";
-import React, {useEffect, useState} from "react";
+import { grey } from "@mui/material/colors";
+import React, { useEffect, useState } from "react";
 
 enum propertiesOptions {
-	'density',
-	'potential', // TODO ESP, HOMO, LUMO, Radical
-	'homo',
-	'lumo',
-	'radicial'
+	density,
+	potential, // TODO ESP, HOMO, LUMO, Radical
+	homo,
+	lumo,
+	radical
 }
 
 interface OrbitalPropertyProps {
-	viewerObj: any,
-
+	viewerObj: any;
 }
 
-const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({
-	viewerObj,
-}) => {
-
-	// electron density
-	const [propertyOption, setPropertyOption] = useState<false | propertiesOptions >(false);
+const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({ viewerObj }) => {
+	const [propertyOption, setPropertyOption] = useState<false | propertiesOptions>(false);
 	const [cutoff, setCutoff] = useState<number>(0.02);
 	const [translucent, setTranslucent] = useState<number>(0.5);
 
 	useEffect(() => {
-		if (propertyOption === false) return;
-		if (!viewerObj) return;
+		if (propertyOption === false || !viewerObj) return;
 
-		const showElectronDensity = () => {
-			// console.log(`cutoff: ${cutoff}`);
-			// console.log(`translucent: ${translucent}`);
-			const script = `mo density cutoff ${cutoff} translucent ${translucent} fill;`
-			window.Jmol.script(viewerObj, script);
-			return;
-		}
+		const script = () => {
+			switch (propertyOption) {
+				case propertiesOptions.density:
+					return `mo density cutoff ${cutoff} translucent ${translucent} fill;`;
+				// TODO: other cases
+				default:
+					return '';
+			}
+		};
 
-		switch (+propertyOption) {
-			case propertiesOptions.density:
-				// console.log("run!");
-				showElectronDensity();
-				return;
-
-			default:
-				console.log("default");
-				return;
+		const cmd = script();
+		if (cmd) {
+			window.Jmol.script(viewerObj, cmd);
 		}
 	}, [propertyOption, viewerObj, cutoff, translucent]);
 
 	return (
-		<Box
-			sx={{
-				// p: 2,
-				width: "100%",
-			}}
-		>
-			<List>
-				<ListItem>
-					<ListItemButton
-						onClick={() => {
-							setPropertyOption(propertiesOptions.density);
-						}}
-						sx={{
-							borderRadius: 2,
-							width: "100%",
-							bgcolor: grey[100],
-						}}
-					>
-						<ListItemText primary="Electron Density" />
-					</ListItemButton>
-				</ListItem>
-				<ListItem>
-					<ListItemButton
-						onClick={() => {
-							setPropertyOption(propertiesOptions.potential);
-						}}
-						sx={{
-							borderRadius: 2,
-							width: "100%",
-							bgcolor: grey[100],
-						}}
-					>
-						<ListItemText primary="Electrostatic potential" />
-					</ListItemButton>
-				</ListItem>
-				<ListItem>
-					<ListItemButton
-						onClick={() => {
-							setPropertyOption(propertiesOptions.homo);
-						}}
-						sx={{
-							borderRadius: 2,
-							width: "100%",
-							bgcolor: grey[100],
-						}}
-					>
-						<ListItemText primary="Electrophilic (HOMO) frontier density" />
-					</ListItemButton>
-				</ListItem>
-				<ListItem>
-					<ListItemButton
-						onClick={() => {
-							setPropertyOption(propertiesOptions.lumo);
-						}}
-						sx={{
-							borderRadius: 2,
-							width: "100%",
-							bgcolor: grey[100],
-						}}
-					>
-						<ListItemText primary="Electrophilic (LUMO) frontier density" />
-					</ListItemButton>
-				</ListItem>
-				<ListItem>
-					<ListItemButton
-						onClick={() => {
-							setPropertyOption(propertiesOptions.radicial);
-						}}
-						sx={{
-							borderRadius: 2,
-							width: "100%",
-							bgcolor: grey[100],
-						}}
-					>
-						<ListItemText primary="Radicial frontier density" />
-					</ListItemButton>
-				</ListItem>
-			</List>
-			<Box component="fieldset" sx={{ border: '1px solid gray', borderRadius: 2, p: 2, mt: 2 }}>
-				<Box component="legend" sx={{ px: 1, fontSize: '0.875rem', color: 'text.secondary' }}>
+		<Grid container spacing={2} sx={{ width: '100%', height: '100%' }}>
+
+			{/* Left menu: fixed width */}
+			<Grid size={{ xs: 12, md: 5 }} sx={{ width: '300px', flexShrink: 0 }}>
+				<MenuList>
+					{Object.entries({
+						density: 'Electron Density',
+						potential: 'Electrostatic potential',
+						homo: 'Electrophilic (HOMO) frontier density',
+						lumo: 'Electrophilic (LUMO) frontier density',
+						radical: 'Radical frontier density'
+					}).map(([key, label]) => (
+						<MenuItem
+							onClick={() => setPropertyOption(propertiesOptions[key as keyof typeof propertiesOptions])}
+							selected={propertyOption === propertiesOptions[key as keyof typeof propertiesOptions]}
+							sx={{
+								mb: 1,
+								mx: 1,
+								py: 1,
+								borderRadius: 2,
+								width: "100%",
+								bgcolor: grey[100],
+							}}
+						>
+							<ListItemText primary={label} />
+						</MenuItem>
+					))}
+				</MenuList>
+			</Grid>
+			<Grid size={{ xs: 12, md: 7 }} sx={{ display: 'flex', flexDirection: 'column', p: 2, flexGrow: 1 }}>
+				{/* <Box component="legend" sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
 					Options
 				</Box>
-				<Typography >Cutoff</Typography>
-				<Grid
-					p={2}
-					container
-					spacing={0}
-					direction="column"
-					alignItems="center"
-					justifyContent="center"
-				>
-					<Slider
-						defaultValue={0.02}
-						value={cutoff}
-						min={0.005}
-						max={0.05}
-						step={0.005}
-						onChange={(event: Event, newValue: number) => {
-							setCutoff(newValue);
-						}}
-						marks={[
-							{value: 0.005, label: "0.005"},
-							{value: 0.02, label: "0.02"},
-							{value: 0.05, label: "0.05"},
-						]}
-						valueLabelDisplay="auto"
-						sx={{
-							width: '80%',
-						}}
-					/>
-				</Grid>
+				<Typography gutterBottom>Cutoff</Typography>
+				<Slider
+					value={cutoff}
+					min={0.005}
+					max={0.05}
+					step={0.005}
+					marks={[{ value: 0.005, label: '0.005' }, { value: 0.02, label: '0.02' }, { value: 0.05, label: '0.05' }]}
+					valueLabelDisplay="auto"
+					onChange={(_, newValue) => setCutoff(newValue as number)}
+					sx={{ width: '80%', alignSelf: 'center', my: 2 }}
+				/>
 				<Typography gutterBottom>Opacity</Typography>
-				<Grid
-					p={2}
-					container
-					spacing={0}
-					direction="column"
-					alignItems="center"
-					justifyContent="center"
-				>
-					<Slider
-						value={translucent}
-						onChange={(event: Event, newValue: number) => {
-							setTranslucent(newValue);
-						}}
-						step={0.1}
-						min={0}
-						max={1}
-						marks={[
-							{ value: 0, label: '0%' },
-							{ value: 0.5, label: '50%' },
-							{ value: 1, label: '100%' },
-						]}
-						valueLabelDisplay="auto"
-						sx={{width: '80%'}}
-					/>
-				</Grid>
-			</Box>
-		</Box>
+				<Slider
+					value={translucent}
+					min={0}
+					max={1}
+					step={0.1}
+					marks={[{ value: 0, label: '0%' }, { value: 0.5, label: '50%' }, { value: 1, label: '100%' }]}
+					valueLabelDisplay="auto"
+					onChange={(_, newValue) => setTranslucent(newValue as number)}
+					sx={{ width: '80%', alignSelf: 'center', my: 2 }}
+				/> */}
+				<Box sx={{ border: '1px solid', borderRadius: 2, px: 1, borderColor: 'divider' }}>
+					<Typography variant="caption" sx={{ mb: 1, color: 'text.secondary' }}>
+						Display
+					</Typography>
+					<FormGroup sx={{ display: 'flex', flexDirection: 'row', gap: 1 }}>
+						<FormControlLabel control={<Checkbox defaultChecked />} label="Show molecule" />
+						<FormControlLabel control={<Checkbox defaultChecked />} label="Show isosurface" />
+					</FormGroup>
+				</Box>
+				<Box sx={{ border: '1px solid', borderRadius: 2, px: 1, mt: 1, borderColor: 'divider' }}>
+					<Typography variant="caption" sx={{ mb: 1, color: 'text.secondary' }}>
+						Mapped properties
+					</Typography>
+					<FormGroup sx={{ display: 'flex', flexDirection: 'row', gap: 1 }}>
+						<FormControlLabel control={<Checkbox defaultChecked />} label="Auto scale range" />
+						{/* min and max input fields for manual range setting */}
+						<TextField
+							label="Min"
+							variant="outlined"
+							size="small"
+							sx={{ width: '80px' }}
+							defaultValue="-0.05"
+						/>
+						<TextField
+							label="Max"
+							variant="outlined"
+							size="small"
+							sx={{ width: '80px' }}
+							defaultValue="0.05"
+						/>
+					</FormGroup>
+				</Box>
+				<Box sx={{ border: '1px solid', borderRadius: 2, px: 1, mt: 1, borderColor: 'divider' }}>
+					<Typography variant="caption" sx={{ mb: 1, color: 'text.secondary' }}>
+						Slice plane
+					</Typography>
+					<FormGroup sx={{ display: 'flex', flexDirection: 'row', gap: 1 }}>
+						<FormControlLabel control={<Checkbox defaultChecked />} label="Show slice plane" />
+					</FormGroup>
+				</Box>
+			</Grid>
+
+		</Grid>
 	);
 };
 
