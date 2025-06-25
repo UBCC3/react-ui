@@ -262,7 +262,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 					</Paper>
 				</Grid>
 				<Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', flexDirection: 'column', flex: '1 0 auto', position: 'relative' }}>
-					<Box ref={viewerRef} sx={{ width: '100%', height: '100%', boxSizing: 'border-box' }} />
+					<Paper ref={viewerRef} sx={{ width: '100%', height: '100%', boxSizing: 'border-box' }} elevation={3} />
 				</Grid>
 			</Grid>
 		</Grid>
