@@ -21,8 +21,8 @@ import {
 } from "@mui/material";
 import { Orbital } from "../../types";
 import { blueGrey, grey } from "@mui/material/colors";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import OrbitalProperty from "./OrbitalProperty";
+import { CalculateOutlined, DataObjectOutlined, AdjustOutlined, ContrastOutlined } from "@mui/icons-material";
 
 declare global {
 	interface Window {
@@ -121,14 +121,15 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	};
 
 	return (
-		<Grid container spacing={2}>
+		<Grid container spacing={2} sx={{ bgcolor: grey[100] }}>
 			<Grid size={{ xs: 12, md: 4 }}>
-				<Paper elevation={3} sx={{ height: '100%' }}>
-					<Typography variant="h6" sx={{ pl: 2, py: 1, color: 'text.secondary', bgcolor: blueGrey[200] }}>
+				<Paper elevation={3} sx={{ height: '100%', borderRadius: 2 }}>
+					<Typography variant="h6" sx={{ pl: 2, py: 1, color: 'text.secondary', bgcolor: blueGrey[200], borderRadius: '7px 7px 0 0', display: 'flex', alignItems: 'center' }}>
+						<AdjustOutlined sx={{ mr: 1 }} />
 						Orbitals
 					</Typography>
-					<TableContainer>
-						<Table size="small">
+					<TableContainer sx={{ flex: 1 }}>
+						<Table>
 							<TableHead>
 								<TableRow sx={{ bgcolor: blueGrey[50] }}>
 									<TableCell>Sym</TableCell>
@@ -168,9 +169,10 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 					/>
 				</Paper>
 			</Grid>
-			<Grid size={{ xs: 12, md: 8}}>
-				<Paper elevation={3} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-					<Typography variant="h6" sx={{ pl: 2, py: 1, color: 'text.secondary', bgcolor: blueGrey[200] }}>
+			<Grid size={{ xs: 12, md: 8 }}>
+				<Paper elevation={3} sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 2 }}>
+					<Typography variant="h6" sx={{ pl: 2, py: 1, color: 'text.secondary', bgcolor: blueGrey[200], borderRadius: '7px 7px 0 0', display: 'flex', alignItems: 'center' }}>
+						<DataObjectOutlined sx={{ mr: 1 }} />
 						Properties
 					</Typography>
 					<Grid container spacing={2} sx={{ flex: 1 }}>
@@ -180,89 +182,107 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 			</Grid>
 			<Grid container size={{ xs: 12 }} spacing={2} alignItems="stretch">
 				<Grid size={{ xs: 12, md: 4 }}>
-					<Paper elevation={3} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-						<Typography variant="h6" sx={{ pl: 2, py: 1, color: 'text.secondary', bgcolor: blueGrey[200] }}>
+					<Paper elevation={3} sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 2 }}>
+						<Typography variant="h6" sx={{ pl: 2, py: 1, color: 'text.secondary', bgcolor: blueGrey[200], borderRadius: '7px 7px 0 0', display: 'flex', alignItems: 'center' }}>
+							<CalculateOutlined sx={{ mr: 1 }} />
 							Calculated Quantities
 						</Typography>
-						<Grid container spacing={2} sx={{ flex: 1 }}>
-							<TableContainer sx={{ flex: 1 }}>
-								<Table size="small">
-									<TableHead>
-										<TableRow sx={{ bgcolor: blueGrey[50] }}>
-											<TableCell>Quantity</TableCell>
-											<TableCell>Value</TableCell>
-										</TableRow>
-									</TableHead>
-									<TableBody>
-										<TableRow>
-											<TableCell>Symmetry</TableCell>
-											<TableCell>cs</TableCell>
-										</TableRow>
-										<TableRow>
-											<TableCell>Basis</TableCell>
-											<TableCell>
-												6-31G(D)
-											</TableCell>
-										</TableRow>
-										<TableRow>
-											<TableCell>SCF Energy</TableCell>
-											<TableCell>
-												-76.010720255688 Hartree
-											</TableCell>
-										</TableRow>
-										<TableRow>
-											<TableCell>Dipole Moment</TableCell>
-											<TableCell>
-												2.19764298641837 Debye
-											</TableCell>
-										</TableRow>
-										<TableRow>
-											<TableCell>CPU time</TableCell>
-											<TableCell>
-												3 sec
-											</TableCell>
-										</TableRow>
-									</TableBody>
-								</Table>
-							</TableContainer>
-						</Grid>
+						<TableContainer sx={{ flex: 1 }}>
+							<Table>
+								<TableHead>
+									<TableRow sx={{ bgcolor: blueGrey[50] }}>
+										<TableCell>Quantity</TableCell>
+										<TableCell>Value</TableCell>
+									</TableRow>
+								</TableHead>
+								<TableBody>
+									<TableRow>
+										<TableCell>Symmetry</TableCell>
+										<TableCell>cs</TableCell>
+									</TableRow>
+									<TableRow>
+										<TableCell>Basis</TableCell>
+										<TableCell>
+											6-31G(D)
+										</TableCell>
+									</TableRow>
+									<TableRow>
+										<TableCell>SCF Energy</TableCell>
+										<TableCell>
+											-76.010720255688 Hartree
+										</TableCell>
+									</TableRow>
+									<TableRow>
+										<TableCell>Dipole Moment</TableCell>
+										<TableCell>
+											2.19764298641837 Debye
+										</TableCell>
+									</TableRow>
+									<TableRow>
+										<TableCell>CPU time</TableCell>
+										<TableCell>
+											3 sec
+										</TableCell>
+									</TableRow>
+								</TableBody>
+							</Table>
+						</TableContainer>
+						<TablePagination
+							component="div"
+							count={orbitals.length}
+							page={page}
+							onPageChange={handleChangePage}
+							rowsPerPage={rowsPerPage}
+							rowsPerPageOptions={[]}
+							showFirstButton
+							showLastButton
+						/>
 					</Paper>
 				</Grid>
 				<Grid size={{ xs: 12, md: 4 }}>
-					<Paper elevation={3} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-						<Typography variant="h6" sx={{ pl: 2, py: 1, color: 'text.secondary', bgcolor: blueGrey[200] }}>
+					<Paper elevation={3} sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 2 }}>
+						<Typography variant="h6" sx={{ pl: 2, py: 1, color: 'text.secondary', bgcolor: blueGrey[200], borderRadius: '7px 7px 0 0', display: 'flex', alignItems: 'center' }}>
+							<ContrastOutlined sx={{ mr: 1 }} />
 							Partial Charges
 						</Typography>
-						<Grid container spacing={2} sx={{ flex: 1 }}>
-							<TableContainer sx={{ flex: 1 }}>
-								<Table size="small">
-									<TableHead>
-										<TableRow sx={{ bgcolor: blueGrey[50] }}>
-											<TableCell>Atom</TableCell>
-											<TableCell>Charge</TableCell>
-										</TableRow>
-									</TableHead>
-									<TableBody>
-										<TableRow>
-											<TableCell>O</TableCell>
-											<TableCell>-0.86889</TableCell>
-										</TableRow>
-										<TableRow>
-											<TableCell>H</TableCell>
-											<TableCell>0.43445</TableCell>
-										</TableRow>
-										<TableRow>
-											<TableCell>H</TableCell>
-											<TableCell>0.43445</TableCell>
-										</TableRow>
-									</TableBody>
-								</Table>
-							</TableContainer>
-						</Grid>
+						<TableContainer sx={{ flex: 1 }}>
+							<Table>
+								<TableHead>
+									<TableRow sx={{ bgcolor: blueGrey[50] }}>
+										<TableCell>Atom</TableCell>
+										<TableCell>Charge</TableCell>
+									</TableRow>
+								</TableHead>
+								<TableBody>
+									<TableRow>
+										<TableCell>O</TableCell>
+										<TableCell>-0.86889</TableCell>
+									</TableRow>
+									<TableRow>
+										<TableCell>H</TableCell>
+										<TableCell>0.43445</TableCell>
+									</TableRow>
+									<TableRow>
+										<TableCell>H</TableCell>
+										<TableCell>0.43445</TableCell>
+									</TableRow>
+								</TableBody>
+							</Table>
+						</TableContainer>
+						<TablePagination
+							component="div"
+							count={orbitals.length}
+							page={page}
+							onPageChange={handleChangePage}
+							rowsPerPage={rowsPerPage}
+							rowsPerPageOptions={[]}
+							showFirstButton
+							showLastButton
+						/>
 					</Paper>
 				</Grid>
 				<Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', flexDirection: 'column', flex: '1 0 auto', position: 'relative' }}>
-					<Paper ref={viewerRef} sx={{ width: '100%', height: '100%', boxSizing: 'border-box' }} elevation={3} />
+					<Paper ref={viewerRef} sx={{ width: '100%', height: '100%', boxSizing: 'border-box', borderRadius: 2 }} elevation={3} />
 				</Grid>
 			</Grid>
 		</Grid>

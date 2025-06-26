@@ -69,7 +69,7 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({ viewerObj }) => {
 							sx={{
 								mb: 1,
 								mx: 1,
-								py: 1,
+								py: 2,
 								borderRadius: 2,
 								width: "100%",
 								bgcolor: grey[100],
