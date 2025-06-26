@@ -7,4 +7,3 @@ export type Orbital = {
 	symmetry: string;
 	type: string;
 };
-

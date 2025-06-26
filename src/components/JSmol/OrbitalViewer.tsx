@@ -49,7 +49,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	const [orbitals, setOrbitals] = useState<Orbital[]>([]);
 	const rowsPerPage: number = 25;
 	const [page, setPage] = useState(0);
-	const [selectedOrbital, setSelectedOrbital] = useState<Orbital>(null);
+	const [selectedOrbital, setSelectedOrbital] = useState<Orbital | null>(null);
 
 	useEffect(() => {
 		if (orbitals.length === 0) return;
@@ -58,6 +58,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 
 		const showOrbital = () => {
 			const script= `
+				reset;
 				mo ${selectedOrbital.index};
 			`;
 			window.Jmol.script(viewerObj, script);
@@ -142,7 +143,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 								md: 3,
 								display: 'flex',
 								flexDirection: 'column',
-								width: '23%',
+								width: '25%',
 								maxHeight: '100%',
 								border: '2px solid gray' // TODO: temperate distinguish boundary
 							}}

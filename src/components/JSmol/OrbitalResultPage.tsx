@@ -1,7 +1,7 @@
-import {Box, Grid} from "@mui/material";
+import {Box} from "@mui/material";
 import {OrbitalViewer} from "./index";
 
-const resultPage = () => {
+const OrbitalResultPage = () => {
 
 	return (
 		<Box bgcolor="rgb(247, 249, 252)" p={4}>
@@ -10,4 +10,4 @@ const resultPage = () => {
 	)
 }
 
-export default resultPage;
+export default OrbitalResultPage;

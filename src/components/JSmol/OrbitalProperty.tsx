@@ -1,15 +1,17 @@
 import {
-	Box,
+	Box, Checkbox, FormControlLabel,
 	Grid,
 	List,
 	ListItem,
 	ListItemButton,
 	ListItemText,
-	Slider,
+	Slider, TextField,
 	Typography
 } from "@mui/material";
 import {grey} from "@mui/material/colors";
 import React, {useEffect, useState} from "react";
+import MolmakerTextField from "../custom/MolmakerTextField";
+import {parse} from "dotenv";
 
 enum propertiesOptions {
 	'density',
@@ -33,14 +35,57 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({
 	const [cutoff, setCutoff] = useState<number>(0.02);
 	const [translucent, setTranslucent] = useState<number>(0.5);
 
+	// slice plane
+	const [sliceShow, setSliceShow] = useState<boolean>(false);
+	const [sliceX, setSliceX] = useState<string>("0.000");
+	const [sliceY, setSliceY] = useState<string>("0.000");
+	const [sliceZ, setSliceZ] = useState<string>("0.000");
+	const [sliceD, setSliceD] = useState<string>("0.000");
+	const slicePlaneId = "slice1";
+
 	useEffect(() => {
-		if (propertyOption === false) return;
 		if (!viewerObj) return;
+
+		const script = sliceShow
+			? `isosurface ID ${slicePlaneId} on;`
+			: `isosurface ID ${slicePlaneId} off;`;
+		window.Jmol.script(viewerObj, script);
+	}, [sliceShow]);
+
+	useEffect(() => {
+		if (!viewerObj) return;
+		if (!sliceShow) return;
+
+		const placeSlicePlane = () => {
+			const x = parseFloat(sliceX);
+			const y = parseFloat(sliceY);
+			const z = parseFloat(sliceZ);
+			const d = parseFloat(sliceD);
+
+			// TODO molden file does not support slice plane
+			const script = `
+				isosurface ID ${slicePlaneId} slab plane {${x} ${y} ${z} ${-d}};
+				isosurface ID ${slicePlaneId} color red;
+				isosurface ID ${slicePlaneId} translucent 0.4;
+			`;
+
+			window.Jmol.script(viewerObj, script);
+		};
+
+		placeSlicePlane();
+	}, [sliceShow, sliceX, sliceY, sliceZ, sliceD]);
+
+	useEffect(() => {
+		if (!viewerObj) return;
+		if (propertyOption === false) return;
 
 		const showElectronDensity = () => {
 			// console.log(`cutoff: ${cutoff}`);
 			// console.log(`translucent: ${translucent}`);
-			const script = `mo density cutoff ${cutoff} translucent ${translucent} fill;`
+			const script = `
+				reset;
+				mo density cutoff ${cutoff} translucent ${translucent} fill;
+			`
 			window.Jmol.script(viewerObj, script);
 			return;
 		}
@@ -60,8 +105,9 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({
 	return (
 		<Box
 			sx={{
-				// p: 2,
 				width: "100%",
+				height: '680px',
+				overflow: "auto",
 			}}
 		>
 			<List>
@@ -195,6 +241,81 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({
 						sx={{width: '80%'}}
 					/>
 				</Grid>
+			</Box>
+			<Box component="fieldset" sx={{ border: '1px solid gray', borderRadius: 2, p: 2, mt: 2 }}>
+				<Box component="legend" sx={{ px: 1, fontSize: '0.875rem', color: 'text.secondary' }}>
+					Slice plane
+				</Box>
+				<FormControlLabel
+					control={
+						<Checkbox
+							checked={sliceShow}
+							onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+								setSliceShow(event.target.checked);
+							}}
+						/>
+					}
+					label="Show slice"
+				/>
+				<Box>
+					<Grid container spacing={2} sx={{alignItems: 'center', justifyContent: 'center'}}>
+						<Grid container spacing={0} sx={{alignItems: "center", flexDirection: "column"}}>
+							<Typography>ax +</Typography>
+							<MolmakerTextField
+								size="small"
+								variant="outlined"
+								value={sliceX}
+								label={''}
+								onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+									setSliceX(event.target.value);
+								}}
+								sx={{width: '4vw'}}
+							/>
+						</Grid>
+						<Grid container spacing={0} alignItems={'center'} flexDirection={"column"}>
+							<Typography>by +</Typography>
+							<TextField
+								size="small"
+								variant="outlined"
+								value={sliceY}
+								label={''}
+								onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+									setSliceY(event.target.value);
+								}}
+								sx={{ width: '4vw' }}
+							/>
+						</Grid>
+						<Grid container spacing={0} alignItems={'center'} flexDirection={"column"}>
+							<Typography>cz =</Typography>
+							<MolmakerTextField
+								size="small"
+								variant="outlined"
+								value={sliceZ}
+								label={''}
+								onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+									setSliceZ(event.target.value);
+								}}
+								sx={{ width: '4vw' }}
+							/>
+						</Grid>
+						<Grid container spacing={0} alignItems={'center'} flexDirection={"column"}>
+							<Typography>d</Typography>
+							<MolmakerTextField
+								size="small"
+								variant="outlined"
+								value={sliceD}
+								label={''}
+								onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+									setSliceD(event.target.value);
+								}}
+								sx={{ width: '4vw' }}
+							/>
+						</Grid>
+					</Grid>
+				</Box>
+
+				<Typography sx={{ mt: 2 }}>Position</Typography>
+				<Slider defaultValue={50} min={0} max={100} sx={{ mt: 1 }} />
 			</Box>
 		</Box>
 	);
