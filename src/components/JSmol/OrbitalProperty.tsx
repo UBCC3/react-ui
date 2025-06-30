@@ -11,7 +11,7 @@ import {
 	Checkbox,
 	TextField
 } from "@mui/material";
-import { grey } from "@mui/material/colors";
+import { blue, blueGrey, grey } from "@mui/material/colors";
 import React, { useEffect, useState } from "react";
 
 enum propertiesOptions {
@@ -51,10 +51,9 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({ viewerObj }) => {
 	}, [propertyOption, viewerObj, cutoff, translucent]);
 
 	return (
-		<Grid container spacing={2} sx={{ width: '100%', height: '100%' }}>
-
+		<Grid container sx={{ width: '100%', height: '100%', bgcolor: grey[50], display: 'flex', flexDirection: 'row' }}>
 			{/* Left menu: fixed width */}
-			<Grid size={{ xs: 12, md: 5 }} sx={{ width: '300px', flexShrink: 0 }}>
+			<Grid size={{ xs: 12 }} sx={{ flexShrink: 0 }}>
 				<MenuList>
 					{Object.entries({
 						density: 'Electron Density',
@@ -69,10 +68,12 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({ viewerObj }) => {
 							sx={{
 								mb: 1,
 								mx: 1,
-								py: 2,
+								p: 2,
 								borderRadius: 2,
-								width: "100%",
-								bgcolor: grey[100],
+								bgcolor: grey[200],
+								'&:hover': {
+									backgroundColor: blueGrey[50],
+								},
 							}}
 						>
 							<ListItemText primary={label} />
@@ -80,7 +81,7 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({ viewerObj }) => {
 					))}
 				</MenuList>
 			</Grid>
-			<Grid size={{ xs: 12, md: 7 }} sx={{ display: 'flex', flexDirection: 'column', p: 2, flexGrow: 1 }}>
+			<Grid size={{ xs: 12 }} sx={{ display: 'flex', flexDirection: 'column', px: 2, pb: 2, flexGrow: 1, mt: 0, pt: 0 }}>
 				{/* <Box component="legend" sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
 					Options
 				</Box>
@@ -106,7 +107,7 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({ viewerObj }) => {
 					onChange={(_, newValue) => setTranslucent(newValue as number)}
 					sx={{ width: '80%', alignSelf: 'center', my: 2 }}
 				/> */}
-				<Box sx={{ border: '1px solid', borderRadius: 2, px: 1, borderColor: 'divider' }}>
+				<Box sx={{ border: '1px solid', borderRadius: 2, p: 1, borderColor: 'divider' }}>
 					<Typography variant="caption" sx={{ mb: 1, color: 'text.secondary' }}>
 						Display
 					</Typography>
@@ -115,30 +116,32 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({ viewerObj }) => {
 						<FormControlLabel control={<Checkbox defaultChecked />} label="Show isosurface" />
 					</FormGroup>
 				</Box>
-				<Box sx={{ border: '1px solid', borderRadius: 2, px: 1, mt: 1, borderColor: 'divider' }}>
+				<Box sx={{ border: '1px solid', borderRadius: 2, p: 1, mt: 1, borderColor: 'divider' }}>
 					<Typography variant="caption" sx={{ mb: 1, color: 'text.secondary' }}>
 						Mapped properties
 					</Typography>
 					<FormGroup sx={{ display: 'flex', flexDirection: 'row', gap: 1 }}>
 						<FormControlLabel control={<Checkbox defaultChecked />} label="Auto scale range" />
 						{/* min and max input fields for manual range setting */}
-						<TextField
-							label="Min"
-							variant="outlined"
-							size="small"
-							sx={{ width: '80px' }}
-							defaultValue="-0.05"
-						/>
-						<TextField
-							label="Max"
-							variant="outlined"
-							size="small"
-							sx={{ width: '80px' }}
-							defaultValue="0.05"
-						/>
+						<Box sx={{ display: 'flex', gap: 1 }}>
+							<TextField
+								label="Min"
+								variant="outlined"
+								size="small"
+								sx={{ width: '80px' }}
+								defaultValue="-0.05"
+							/>
+							<TextField
+								label="Max"
+								variant="outlined"
+								size="small"
+								sx={{ width: '80px' }}
+								defaultValue="0.05"
+							/>
+						</Box>
 					</FormGroup>
 				</Box>
-				<Box sx={{ border: '1px solid', borderRadius: 2, px: 1, mt: 1, borderColor: 'divider' }}>
+				<Box sx={{ border: '1px solid', borderRadius: 2, p: 1, mt: 1, borderColor: 'divider' }}>
 					<Typography variant="caption" sx={{ mb: 1, color: 'text.secondary' }}>
 						Slice plane
 					</Typography>

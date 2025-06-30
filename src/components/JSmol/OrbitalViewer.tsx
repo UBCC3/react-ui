@@ -17,12 +17,15 @@ import {
 	TableRow,
 	Typography,
 	ListItemText,
-	Tab
+	Tab,
+	Drawer,
+	Toolbar,
+	IconButton
 } from "@mui/material";
 import { Orbital } from "../../types";
-import { blueGrey, grey } from "@mui/material/colors";
+import { grey, blueGrey, blue } from "@mui/material/colors";
 import OrbitalProperty from "./OrbitalProperty";
-import { CalculateOutlined, DataObjectOutlined, AdjustOutlined, ContrastOutlined } from "@mui/icons-material";
+import { ExpandMore, DataObjectOutlined, AdjustOutlined, ContrastOutlined, ChevronRight, CalculateOutlined, Fullscreen, FullscreenExit } from "@mui/icons-material";
 
 declare global {
 	interface Window {
@@ -44,6 +47,9 @@ enum PropertyMenu {
   RADIAL_FRONTIER_DENSITY = 'radialFrontierDensity',
 }
 
+const fullWidth = 400;
+const miniWidth = 80;
+
 const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	moldenFile,
 	viewerObjId,
@@ -57,11 +63,21 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	const rowsPerPage = 5;
 	const [page, setPage] = useState(0);
 	const [selectedOrbital, setSelectedOrbital] = useState<Orbital | null>(null);
+	const [open, setOpen] = useState(true);
+	const [selected, setSelected] = useState<Orbital | null>(null);
 
 	// selected property from menu
 	const [selectedProperty, setSelectedProperty] = useState<PropertyMenu>(
 		PropertyMenu.ELECTRON_DENSITY
 	);
+
+	// Replace single open state with an object for each accordion
+	const [accordionOpen, setAccordionOpen] = useState({
+		orbitals: true,
+		properties: false,
+		quantities: false,
+		charges: false,
+	});
 
 	useEffect(() => {
 		if (!viewerObj || orbitals.length === 0 || selectedOrbital === null) return;
@@ -120,171 +136,276 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 		setPage(newPage);
 	};
 
+	const toggle = () => {
+		if (open) {
+			setOpen(false);
+			setAccordionOpen({
+				orbitals: false,
+				properties: false,
+				quantities: false,
+				charges: false,
+			});
+		}
+		else {
+			setOpen(true);
+		}
+	}
+
+	// Accordion handlers
+	const handleAccordionChange = (panel: keyof typeof accordionOpen) => (_event: React.SyntheticEvent, isExpanded: boolean) => {
+		setAccordionOpen(prev => ({ ...prev, [panel]: isExpanded }));
+		if (isExpanded && !open) setOpen(true); // Open drawer if opening an accordion
+	};
+
 	return (
-		<Grid container spacing={2} sx={{ bgcolor: grey[100] }}>
-			<Grid size={{ xs: 12, md: 4 }}>
-				<Paper elevation={3} sx={{ height: '100%', borderRadius: 2 }}>
-					<Typography variant="h6" sx={{ pl: 2, py: 1, color: 'text.secondary', bgcolor: blueGrey[200], borderRadius: '7px 7px 0 0', display: 'flex', alignItems: 'center' }}>
-						<AdjustOutlined sx={{ mr: 1 }} />
-						Orbitals
-					</Typography>
-					<TableContainer sx={{ flex: 1 }}>
-						<Table>
-							<TableHead>
-								<TableRow sx={{ bgcolor: blueGrey[50] }}>
-									<TableCell>Sym</TableCell>
-									<TableCell>Eigenvalue (a.u.)</TableCell>
-									<TableCell>Occ</TableCell>
-									<TableCell>Spin</TableCell>
-								</TableRow>
-							</TableHead>
-							<TableBody>
-								{orbitals.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map(orbital => (
-									<TableRow
-										key={orbital.index}
-										onClick={() => setSelectedOrbital(orbital)}
-										sx={{
-											backgroundColor: selectedOrbital?.index === orbital.index ? 'rgba(0,0,0,0.1)' : 'transparent',
-											cursor: 'pointer'
-										}}
-									>
-										<TableCell>{orbital.symmetry}</TableCell>
-										<TableCell>{orbital.energy.toFixed(6)}</TableCell>
-										<TableCell>{orbital.occupancy}</TableCell>
-										<TableCell>{orbital.spin}</TableCell>
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
-					</TableContainer>
-					<TablePagination
-						component="div"
-						count={orbitals.length}
-						page={page}
-						onPageChange={handleChangePage}
-						rowsPerPage={rowsPerPage}
-						rowsPerPageOptions={[]}
-						showFirstButton
-						showLastButton
-					/>
-				</Paper>
+		<Grid container spacing={2} sx={{ width: '100%' }}>
+			<Typography variant="h5" sx={{ width: '100%' }}>
+				View Results
+			</Typography>
+			<Grid sx={{ display: 'flex', flexDirection: 'column', flex: '1 0 auto', position: 'relative' }}>
+				<Paper 
+					ref={viewerRef} 
+					sx={{ 
+						width: '100%', 
+						height: '80vh', 
+						boxSizing: 'border-box', 
+						borderRadius: 2 
+					}} 
+					elevation={3} 
+				/>
 			</Grid>
-			<Grid size={{ xs: 12, md: 8 }}>
-				<Paper elevation={3} sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 2 }}>
-					<Typography variant="h6" sx={{ pl: 2, py: 1, color: 'text.secondary', bgcolor: blueGrey[200], borderRadius: '7px 7px 0 0', display: 'flex', alignItems: 'center' }}>
-						<DataObjectOutlined sx={{ mr: 1 }} />
-						Properties
-					</Typography>
-					<Grid container spacing={2} sx={{ flex: 1 }}>
-						<OrbitalProperty viewerObj={viewerObj}/>
-					</Grid>
-				</Paper>
-			</Grid>
-			<Grid container size={{ xs: 12 }} spacing={2} alignItems="stretch">
-				<Grid size={{ xs: 12, md: 4 }}>
-					<Paper elevation={3} sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 2 }}>
-						<Typography variant="h6" sx={{ pl: 2, py: 1, color: 'text.secondary', bgcolor: blueGrey[200], borderRadius: '7px 7px 0 0', display: 'flex', alignItems: 'center' }}>
-							<CalculateOutlined sx={{ mr: 1 }} />
-							Calculated Quantities
+			<Drawer 
+				variant="persistent" 
+				anchor="right" 
+				sx={{ 
+					width: open? 
+					fullWidth:miniWidth, 
+					flexShrink: 0,
+					'& .MuiDrawer-paper': {
+						width: open ? fullWidth : miniWidth,
+						boxSizing: 'border-box',
+						overflowX: 'hidden',
+						backgroundColor: grey['A100'],
+					},
+				}}
+				open
+			>
+				<Toolbar sx={{ justifyContent:'flex-start', bgcolor: grey[300], display: 'flex', alignItems: 'center' }}>
+					<IconButton onClick={toggle} size="small" sx={{ color: 'grey.900', mr: 2 }}>
+						{open ? <FullscreenExit /> : <Fullscreen/>}
+					</IconButton>
+				</Toolbar>
+				<Accordion
+					expanded={accordionOpen.orbitals}
+					onChange={handleAccordionChange('orbitals')}
+					sx={{ 
+						backgroundColor: accordionOpen.orbitals ? grey[300] : grey[100],
+						borderRadius: 0, 
+						boxShadow: 'none', 
+						mb: 0, 
+						transition: 'background-color 0.3s ease' 
+					}}
+				>
+					<AccordionSummary 
+						expandIcon={accordionOpen.orbitals && <ExpandMore />} 
+						aria-controls="panel1-content"
+						id="panel1-header"
+						sx={{ color: 'text.secondary', px: accordionOpen.orbitals ? 2 : 1 }}
+					>
+						<Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center' }}>
+							<AdjustOutlined sx={open ? { mr: 1 } : { ml: 2 }} />
+							{open && (<span>Orbitals</span>)}
 						</Typography>
+					</AccordionSummary>
+					<AccordionDetails sx={{ display: 'flex', flexDirection: 'column', p: 0 }}>
 						<TableContainer sx={{ flex: 1 }}>
 							<Table>
 								<TableHead>
-									<TableRow sx={{ bgcolor: blueGrey[50] }}>
+									<TableRow sx={{ bgcolor:grey[200] }}>
+										<TableCell>Sym</TableCell>
+										<TableCell>Energy</TableCell>
+										<TableCell>Occ</TableCell>
+										<TableCell>Spin</TableCell>
+									</TableRow>
+								</TableHead>
+								<TableBody>
+									{orbitals.slice(page*5,page*5+5).map(orbital => (
+										<TableRow
+											key={orbital.index}
+											onClick={() => setSelectedOrbital(orbital)}
+											sx={{
+												cursor: 'pointer',
+												bgcolor: grey[50],
+												'&:hover': {
+													backgroundColor: blueGrey[50],
+												},
+											}}
+										>
+											<TableCell>{orbital.symmetry}</TableCell>
+											<TableCell>{orbital.energy.toFixed(6)}</TableCell>
+											<TableCell>{orbital.occupancy}</TableCell>
+											<TableCell>{orbital.spin}</TableCell>
+										</TableRow>
+									))}
+								</TableBody>
+							</Table>
+						</TableContainer>
+						<TablePagination
+							component="div"
+							count={orbitals.length}
+							page={page}
+							onPageChange={handleChangePage}
+							rowsPerPage={rowsPerPage}
+							rowsPerPageOptions={[]}
+							showFirstButton
+							showLastButton
+						/>
+					</AccordionDetails>
+				</Accordion>
+				<Accordion
+					expanded={accordionOpen.properties}
+					onChange={handleAccordionChange('properties')}
+					sx={{ 
+						backgroundColor: accordionOpen.properties ? grey[300] : grey[100],
+						borderRadius: 0, 
+						boxShadow: 'none', 
+						mb: 0, 
+						transition: 'background-color 0.3s ease' 
+					}}
+				>
+					<AccordionSummary 
+						expandIcon={accordionOpen.properties && <ExpandMore />}
+						aria-controls="panel2-content"
+						id="panel2-header"
+						sx={{ color: 'text.secondary', px: accordionOpen.properties ? 2 : 1 }}
+					>
+						<Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center' }}>
+							<DataObjectOutlined sx={open ? { mr: 1 } : { ml: 2 }}  />
+							{open && <span>Orbital Properties</span>}
+						</Typography>
+					</AccordionSummary>
+					<AccordionDetails sx={{ display: 'flex', flexDirection: 'column', p: 0, borderBottom: '1px solid', borderColor: grey[300] }}>
+						<OrbitalProperty viewerObj={viewerObj} />
+					</AccordionDetails>
+				</Accordion>
+				<Accordion
+					expanded={accordionOpen.quantities}
+					onChange={handleAccordionChange('quantities')}
+					sx={{ 
+						backgroundColor: accordionOpen.quantities ? grey[300] : grey[100],
+						borderRadius: 0, 
+						boxShadow: 'none', 
+						mb: 0, 
+						transition: 'background-color 0.3s ease' 
+					}}
+				>
+					<AccordionSummary
+						expandIcon={accordionOpen.quantities && <ExpandMore />}
+						aria-controls="panel3-content"
+						id="panel3-header"
+						sx={{ 
+							color: 'text.secondary', 
+							px: accordionOpen.quantities ? 2 : 1 
+						}}
+					>
+						<Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center' }}>
+							<CalculateOutlined sx={open ? { mr: 1 } : { ml: 2 }}  />
+							{open && <span>Calculated Quantities</span>}
+						</Typography>
+					</AccordionSummary>
+					<AccordionDetails sx={{ display: 'flex', flexDirection: 'column', p: 0 }}>
+						<TableContainer sx={{ flex: 1 }}>
+							<Table>
+								<TableHead>
+									<TableRow sx={{ bgcolor: grey[200] }}>
 										<TableCell>Quantity</TableCell>
 										<TableCell>Value</TableCell>
 									</TableRow>
 								</TableHead>
 								<TableBody>
-									<TableRow>
-										<TableCell>Symmetry</TableCell>
-										<TableCell>cs</TableCell>
-									</TableRow>
-									<TableRow>
-										<TableCell>Basis</TableCell>
-										<TableCell>
-											6-31G(D)
-										</TableCell>
-									</TableRow>
-									<TableRow>
-										<TableCell>SCF Energy</TableCell>
-										<TableCell>
-											-76.010720255688 Hartree
-										</TableCell>
-									</TableRow>
-									<TableRow>
-										<TableCell>Dipole Moment</TableCell>
-										<TableCell>
-											2.19764298641837 Debye
-										</TableCell>
-									</TableRow>
-									<TableRow>
-										<TableCell>CPU time</TableCell>
-										<TableCell>
-											3 sec
-										</TableCell>
-									</TableRow>
+									{[
+										{ label: 'Symmetry', value: 'cs' },
+										{ label: 'Basis', value: '6-31G(D)' },
+										{ label: 'SCF Energy', value: '-76.010720255688 Hartree' },
+										{ label: 'Dipole Moment', value: '2.19764298641837 Debye' },
+										{ label: 'CPU time', value: '3 sec' },
+									].map((item, index) => (
+										<TableRow 
+											key={index}
+											sx={{
+												cursor: 'pointer',
+												bgcolor: grey[50],
+												'&:hover': {
+													backgroundColor: blueGrey[50],
+												},
+											}}
+										>
+											<TableCell>{item.label}</TableCell>
+											<TableCell>{item.value}</TableCell>
+										</TableRow>
+									))}
 								</TableBody>
 							</Table>
 						</TableContainer>
-						<TablePagination
-							component="div"
-							count={orbitals.length}
-							page={page}
-							onPageChange={handleChangePage}
-							rowsPerPage={rowsPerPage}
-							rowsPerPageOptions={[]}
-							showFirstButton
-							showLastButton
-						/>
-					</Paper>
-				</Grid>
-				<Grid size={{ xs: 12, md: 4 }}>
-					<Paper elevation={3} sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 2 }}>
-						<Typography variant="h6" sx={{ pl: 2, py: 1, color: 'text.secondary', bgcolor: blueGrey[200], borderRadius: '7px 7px 0 0', display: 'flex', alignItems: 'center' }}>
-							<ContrastOutlined sx={{ mr: 1 }} />
-							Partial Charges
+					</AccordionDetails>
+				</Accordion>
+				<Accordion
+					expanded={accordionOpen.charges}
+					onChange={handleAccordionChange('charges')}
+					sx={{ 
+						backgroundColor: accordionOpen.charges ? grey[300] : grey[100],
+						borderRadius: 0, 
+						boxShadow: 'none', 
+						mb: 0, 
+						transition: 'background-color 0.3s ease' 
+					}}
+				>
+					<AccordionSummary 
+						expandIcon={accordionOpen.charges && <ExpandMore />} 
+						aria-controls="panel4-content"
+						id="panel4-header"
+						sx={{ color: 'text.secondary', px: accordionOpen.charges ? 2 : 1 }}
+					>
+						<Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center' }}>
+							<ContrastOutlined sx={open ? { mr: 1 } : { ml: 2 }} />
+							{open && <span>Partial Charges</span>}
 						</Typography>
+					</AccordionSummary>
+					<AccordionDetails sx={{ display: 'flex', flexDirection: 'column', p: 0 }}>
 						<TableContainer sx={{ flex: 1 }}>
 							<Table>
 								<TableHead>
-									<TableRow sx={{ bgcolor: blueGrey[50] }}>
+									<TableRow sx={{ bgcolor: grey[200] }}>
 										<TableCell>Atom</TableCell>
 										<TableCell>Charge</TableCell>
 									</TableRow>
 								</TableHead>
 								<TableBody>
-									<TableRow>
-										<TableCell>O</TableCell>
-										<TableCell>-0.86889</TableCell>
-									</TableRow>
-									<TableRow>
-										<TableCell>H</TableCell>
-										<TableCell>0.43445</TableCell>
-									</TableRow>
-									<TableRow>
-										<TableCell>H</TableCell>
-										<TableCell>0.43445</TableCell>
-									</TableRow>
+									{[
+										{ atom: 'O', charge: -0.86889 },
+										{ atom: 'H', charge: 0.43445 },
+										{ atom: 'H', charge: 0.43445 },
+									].map((item, index) => (
+										<TableRow 
+											key={index}
+											sx={{
+												cursor: 'pointer',
+												bgcolor: grey[50],
+												'&:hover': {
+													backgroundColor: blueGrey[50],
+												},
+											}}
+										>
+											<TableCell>{item.atom}</TableCell>
+											<TableCell>{item.charge}</TableCell>
+										</TableRow>
+									))}
 								</TableBody>
 							</Table>
 						</TableContainer>
-						<TablePagination
-							component="div"
-							count={orbitals.length}
-							page={page}
-							onPageChange={handleChangePage}
-							rowsPerPage={rowsPerPage}
-							rowsPerPageOptions={[]}
-							showFirstButton
-							showLastButton
-						/>
-					</Paper>
-				</Grid>
-				<Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex', flexDirection: 'column', flex: '1 0 auto', position: 'relative' }}>
-					<Paper ref={viewerRef} sx={{ width: '100%', height: '100%', boxSizing: 'border-box', borderRadius: 2 }} elevation={3} />
-				</Grid>
-			</Grid>
+					</AccordionDetails>
+				</Accordion>
+			</Drawer>
 		</Grid>
 	);
 };
