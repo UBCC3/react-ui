@@ -20,7 +20,9 @@ import {
 	Tab,
 	Drawer,
 	Toolbar,
-	IconButton
+	IconButton,
+	Divider,
+	Button
 } from "@mui/material";
 import { Orbital } from "../../types";
 import { grey, blueGrey, blue } from "@mui/material/colors";
@@ -159,15 +161,18 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 
 	return (
 		<Grid container spacing={2} sx={{ width: '100%' }}>
-			<Typography variant="h5" sx={{ width: '100%' }}>
-				View Results
-			</Typography>
+			<Grid size={12} sx={{ display: 'flex', flexDirection: 'column', flex: '1 0 auto' }}>
+				<Typography variant="h5">
+					View Results
+				</Typography>
+				<Divider sx={{ mt: 3, width: '100%' }} />
+			</Grid>
 			<Grid sx={{ display: 'flex', flexDirection: 'column', flex: '1 0 auto', position: 'relative' }}>
 				<Paper 
 					ref={viewerRef} 
 					sx={{ 
 						width: '100%', 
-						height: '80vh', 
+						height: '70vh', 
 						boxSizing: 'border-box', 
 						borderRadius: 2 
 					}} 
@@ -191,7 +196,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 				open
 			>
 				<Toolbar sx={{ justifyContent:'flex-start', display: 'flex', alignItems: 'center' }}>
-					<IconButton onClick={toggle} size="small" sx={{ color: "black", mr: 2 }}>
+					<IconButton onClick={toggle} size="small" sx={{ color: grey[500], mr: 2 }}>
 						{open ? <FullscreenExit /> : <Fullscreen/>}
 					</IconButton>
 				</Toolbar>
@@ -210,7 +215,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 						expandIcon={accordionOpen.orbitals && <ExpandMore />} 
 						aria-controls="panel1-content"
 						id="panel1-header"
-						sx={{ color: grey[500], px: accordionOpen.orbitals ? 2 : 1 }}
+						sx={{ color: grey[900], px: accordionOpen.orbitals ? 2 : 1 }}
 					>
 						<Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center' }}>
 							<AdjustOutlined sx={open ? { mr: 1 } : { ml: 2 }} />
@@ -277,7 +282,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 						expandIcon={accordionOpen.properties && <ExpandMore />}
 						aria-controls="panel2-content"
 						id="panel2-header"
-						sx={{ color: grey[500], px: accordionOpen.properties ? 2 : 1 }}
+						sx={{ color: grey[900], px: accordionOpen.properties ? 2 : 1 }}
 					>
 						<Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center' }}>
 							<DataObjectOutlined sx={open ? { mr: 1 } : { ml: 2 }}  />
@@ -304,7 +309,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 						aria-controls="panel3-content"
 						id="panel3-header"
 						sx={{ 
-							color: grey[500],
+							color: grey[900],
 							px: accordionOpen.quantities ? 2 : 1 
 						}}
 					>
@@ -364,7 +369,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 						expandIcon={accordionOpen.charges && <ExpandMore />} 
 						aria-controls="panel4-content"
 						id="panel4-header"
-						sx={{ color: grey[500], px: accordionOpen.charges ? 2 : 1 }}
+						sx={{ color: grey[900], px: accordionOpen.charges ? 2 : 1 }}
 					>
 						<Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center' }}>
 							<ContrastOutlined sx={open ? { mr: 1 } : { ml: 2 }} />

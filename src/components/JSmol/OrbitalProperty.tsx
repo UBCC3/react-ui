@@ -30,6 +30,8 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({ viewerObj }) => {
 	const [propertyOption, setPropertyOption] = useState<false | propertiesOptions>(false);
 	const [cutoff, setCutoff] = useState<number>(0.02);
 	const [translucent, setTranslucent] = useState<number>(0.5);
+	const [showMolecule, setShowMolecule] = useState(true);
+	const [showIsosurface, setShowIsosurface] = useState(true);
 
 	useEffect(() => {
 		if (propertyOption === false || !viewerObj) return;
@@ -49,6 +51,19 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({ viewerObj }) => {
 			window.Jmol.script(viewerObj, cmd);
 		}
 	}, [propertyOption, viewerObj, cutoff, translucent]);
+
+	useEffect(() => {
+		if (!viewerObj) return;
+		window.Jmol.script(viewerObj, showMolecule ? "display all" : "hide all");
+	}, [showMolecule, viewerObj]);
+
+	useEffect(() => {
+		if (!viewerObj) return;
+		window.Jmol.script(
+			viewerObj,
+			showIsosurface ? "mo on" : "mo off"
+		);
+	}, [viewerObj, showIsosurface]);
 
 	return (
 		<Grid container sx={{ width: '100%', height: '100%', bgcolor: grey[50], display: 'flex', flexDirection: 'row' }}>
@@ -112,8 +127,14 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({ viewerObj }) => {
 						Display
 					</Typography>
 					<FormGroup sx={{ display: 'flex', flexDirection: 'row', gap: 1 }}>
-						<FormControlLabel control={<Checkbox defaultChecked />} label="Show molecule" />
-						<FormControlLabel control={<Checkbox defaultChecked />} label="Show isosurface" />
+						<FormControlLabel
+							control={<Checkbox checked={showMolecule} onChange={(_, checked) => setShowMolecule(checked)} />}
+							label="Show molecule"
+						/>
+						<FormControlLabel
+							control={<Checkbox checked={showIsosurface} onChange={(_, checked) => setShowIsosurface(checked)} />}
+							label="Show isosurface"
+						/>
 					</FormGroup>
 				</Box>
 				<Box sx={{ border: '1px solid', borderRadius: 2, p: 1, mt: 1, borderColor: 'divider' }}>
