@@ -27,7 +27,12 @@ import {
 import { Orbital } from "../../types";
 import { grey, blueGrey, blue } from "@mui/material/colors";
 import OrbitalProperty from "./OrbitalProperty";
-import { ExpandMore, DataObjectOutlined, AdjustOutlined, ContrastOutlined, ChevronRight, CalculateOutlined, Fullscreen, FullscreenExit } from "@mui/icons-material";
+import { ExpandMore, DataObjectOutlined, AdjustOutlined, ContrastOutlined, ChevronRight, CalculateOutlined, Fullscreen, FullscreenExit, Add } from "@mui/icons-material";
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import TextField from '@mui/material/TextField';
 
 declare global {
 	interface Window {
@@ -80,6 +85,10 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 		quantities: false,
 		charges: false,
 	});
+
+	const [addDialogOpen, setAddDialogOpen] = useState(false);
+	const [molName, setMolName] = useState('');
+	const [molNotes, setMolNotes] = useState('');
 
 	useEffect(() => {
 		if (!viewerObj || orbitals.length === 0 || selectedOrbital === null) return;
@@ -163,7 +172,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 		<Grid container spacing={2} sx={{ width: '100%' }}>
 			<Grid size={12} sx={{ display: 'flex', flexDirection: 'column', flex: '1 0 auto' }}>
 				<Typography variant="h5">
-					View Results
+					Molecular Orbital Result
 				</Typography>
 				<Divider sx={{ mt: 3, width: '100%' }} />
 			</Grid>
@@ -174,7 +183,8 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 						width: '100%', 
 						height: '70vh', 
 						boxSizing: 'border-box', 
-						borderRadius: 2 
+						borderRadius: 2,
+                        zIndex: 1 // Ensure viewer is below Dialog
 					}} 
 					elevation={3} 
 				/>
@@ -410,6 +420,50 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 						</TableContainer>
 					</AccordionDetails>
 				</Accordion>
+				<Button
+					variant="contained"
+					color="primary"
+					sx={{
+						m: 2,
+						width: 'calc(100% - 32px)',
+						alignSelf: 'center',
+						display: open ? 'flex' : 'none',
+						textTransform: 'none',
+					}}
+					startIcon={<Add />}
+					onClick={() => setAddDialogOpen(true)}
+				>
+					Add Structure to My Library
+				</Button>
+				<Dialog 
+					open={addDialogOpen} 
+					onClose={() => setAddDialogOpen(false)}
+					container={typeof window !== 'undefined' ? document.body : undefined}
+					PaperProps={{ sx: { zIndex: 2000 } }}
+				>
+					<DialogTitle>Add Structure to My Library</DialogTitle>
+					<DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 3, minWidth: 500 }}>
+						<TextField
+							label="Molecule Name"
+							value={molName}
+							onChange={e => setMolName(e.target.value)}
+							fullWidth
+							autoFocus
+						/>
+						<TextField
+							label="Notes"
+							value={molNotes}
+							onChange={e => setMolNotes(e.target.value)}
+							fullWidth
+							multiline
+							minRows={2}
+						/>
+					</DialogContent>
+					<DialogActions>
+						<Button onClick={() => setAddDialogOpen(false)} variant="outlined" color="primary">Cancel</Button>
+						<Button onClick={() => {/* submit logic here */}} variant="contained" color="primary">Submit</Button>
+					</DialogActions>
+				</Dialog>
 			</Drawer>
 		</Grid>
 	);

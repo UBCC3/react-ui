@@ -13,6 +13,7 @@ import MainContent from './components/MainContent';
 import { DrawerProvider } from './components/DrawerContext';
 import { Box, CssBaseline } from '@mui/material';
 import ResultPage from "./components/JSmol/resultPage";
+import VibrationResult from "./components/JSmol/vibrationResult";
 
 function App() {
 	return (
@@ -26,8 +27,15 @@ function App() {
 						<Routes>
 							<Route
 								path="/"
-								// element={<RequireAuth><Home /></RequireAuth>}
+								element={<RequireAuth><Home /></RequireAuth>}
+							/>
+							<Route
+								path="/result"
 								element={<RequireAuth><ResultPage /></RequireAuth>}
+							/>
+							<Route
+								path="/vibration"
+								element={<RequireAuth><VibrationResult /></RequireAuth>}
 							/>
 							<Route
 								path="/submit"
