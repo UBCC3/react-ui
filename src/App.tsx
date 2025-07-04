@@ -12,7 +12,8 @@ import AdvancedAnalysis from './pages/SubmitJob/AdvancedAnalysis';
 import MainContent from './components/MainContent';
 import { DrawerProvider } from './components/DrawerContext';
 import { Box, CssBaseline } from '@mui/material';
-import DevelopingPage from "./pages/DevelopingPage";
+import ResultPage from "./components/JSmol/resultPage";
+import VibrationResult from "./components/JSmol/vibrationResult";
 
 function App() {
 	return (
@@ -26,9 +27,15 @@ function App() {
 						<Routes>
 							<Route
 								path="/"
-								// element={<RequireAuth><Home /></RequireAuth>}
-								// element={<RequireAuth><ResultPage /></RequireAuth>}
-								element={<RequireAuth><DevelopingPage /></RequireAuth>}
+								element={<RequireAuth><Home /></RequireAuth>}
+							/>
+							<Route
+								path="/result"
+								element={<RequireAuth><ResultPage /></RequireAuth>}
+							/>
+							<Route
+								path="/vibration"
+								element={<RequireAuth><VibrationResult /></RequireAuth>}
 							/>
 							<Route
 								path="/submit"
