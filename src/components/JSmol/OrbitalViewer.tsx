@@ -5,8 +5,6 @@ import {
 	AccordionSummary,
 	Box,
 	Grid,
-	MenuItem,
-	MenuList,
 	Paper,
 	Table,
 	TableBody,
@@ -36,6 +34,8 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
 import { LineChart } from '@mui/x-charts/LineChart';
+import { useAuth0 } from "@auth0/auth0-react";
+import { AddAndUploadStructureToS3 } from "../../services/api";
 
 declare global {
 	interface Window {
@@ -94,6 +94,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	moldenFile,
 	viewerObjId,
 }) => {
+	const { getAccessTokenSilently } = useAuth0();
 	const viewerRef = useRef<HTMLDivElement>(null);
 
 	const [viewerObj, setViewerObj] = useState<any>(null);
@@ -105,6 +106,33 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	const [selectedOrbital, setSelectedOrbital] = useState<Orbital | null>(null);
 	const [open, setOpen] = useState(true);
 	const [selected, setSelected] = useState<Orbital | null>(null);
+	const [structureImageData, setStructureImageData] = useState<string | null>(null);
+
+	const handleSubmit = async () => {
+		const canvas = viewerRef.current?.querySelector('canvas');
+		const imageDataUrl = canvas?.toDataURL('image/png') || '';
+
+		const xyzString = window.Jmol.evaluate(viewerObj, 'write("xyz")');
+		console.log("Generated XYZ:\n", xyzString);
+		const xyzBlob = new Blob([xyzString], { type: 'chemical/x-xyz' });
+		const xyzFile = new File([xyzBlob], `${molName || 'structure'}.xyz`, {
+			type: 'chemical/x-xyz',
+		});
+
+		const token = await getAccessTokenSilently();
+
+		await AddAndUploadStructureToS3(
+			xyzFile,
+			molName,
+			'Unknown formula',
+			molNotes,
+			imageDataUrl,
+			token,
+			['generated']
+		);
+
+		setAddDialogOpen(false);
+	}
 
 	// selected property from menu
 	const [selectedProperty, setSelectedProperty] = useState<PropertyMenu>(
@@ -227,19 +255,17 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 							<Tab label="Graph Viewer" {...a11yProps(1)} />
 						</Tabs>
 					</Box>
-					{value === 0 && (
-						<Paper
-							ref={viewerRef}
-							sx={{
-								width: '100%',
-								height: '70vh',
-								boxSizing: 'border-box',
-								borderRadius: 2
-								// zIndex removed
-							}}
-							elevation={3}
-						/>
-					)}
+					<Paper
+						ref={viewerRef}
+						sx={{
+							width: '100%',
+							height: '70vh',
+							boxSizing: 'border-box',
+							borderRadius: 2,
+							display: value === 0 ? 'block' : 'none',
+						}}
+						elevation={3}
+					/>
 					{value === 1 && (
 						<Paper
 							sx={{
@@ -538,7 +564,13 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 				</DialogContent>
 				<DialogActions>
 					<Button onClick={() => setAddDialogOpen(false)} variant="outlined" color="primary">Cancel</Button>
-					<Button onClick={() => {/* submit logic here */}} variant="contained" color="primary">Submit</Button>
+					<Button
+						onClick={handleSubmit}
+						variant="contained"
+						color="primary"
+					>
+						Submit
+					</Button>
 				</DialogActions>
 			</Dialog>
 		</>
