@@ -3,6 +3,7 @@ import {
 	Accordion,
 	AccordionDetails,
 	AccordionSummary,
+	Autocomplete,
 	Box,
 	Grid,
 	Paper,
@@ -14,7 +15,6 @@ import {
 	TablePagination,
 	TableRow,
 	Typography,
-	ListItemText,
 	Tab,
 	Drawer,
 	Toolbar,
@@ -35,7 +35,8 @@ import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { useAuth0 } from "@auth0/auth0-react";
-import { AddAndUploadStructureToS3 } from "../../services/api";
+import { AddAndUploadStructureToS3, getStructuresTags } from "../../services/api";
+import MolmakerTextField from "../custom/MolmakerTextField";
 
 declare global {
 	interface Window {
@@ -105,17 +106,24 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	const [page, setPage] = useState(0);
 	const [selectedOrbital, setSelectedOrbital] = useState<Orbital | null>(null);
 	const [open, setOpen] = useState(true);
-	const [selected, setSelected] = useState<Orbital | null>(null);
-	const [structureImageData, setStructureImageData] = useState<string | null>(null);
 
+	// dialog state
+	const [options, setOptions] = useState<string[]>([]);
+	const [moleculeName, setMoleculeName] = useState('');
+	const [chemicalFormula, setChemicalFormula] = useState('');
+	const [moleculeNotes, setMoleculeNotes] = useState('');
+	const [structureTags, setStructureTags] = useState<string[]>([]);
+	const [submitAttempted, setSubmitAttempted] = useState(false);
+	
 	const handleSubmit = async () => {
+		setSubmitAttempted(true);
 		const canvas = viewerRef.current?.querySelector('canvas');
 		const imageDataUrl = canvas?.toDataURL('image/png') || '';
 
 		const xyzString = window.Jmol.evaluate(viewerObj, 'write("xyz")');
 		console.log("Generated XYZ:\n", xyzString);
 		const xyzBlob = new Blob([xyzString], { type: 'chemical/x-xyz' });
-		const xyzFile = new File([xyzBlob], `${molName || 'structure'}.xyz`, {
+		const xyzFile = new File([xyzBlob], `${moleculeName || 'structure'}.xyz`, {
 			type: 'chemical/x-xyz',
 		});
 
@@ -123,15 +131,20 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 
 		await AddAndUploadStructureToS3(
 			xyzFile,
-			molName,
-			'Unknown formula',
-			molNotes,
+			moleculeName,
+			chemicalFormula,
+			moleculeNotes,
 			imageDataUrl,
 			token,
-			['generated']
+			structureTags
 		);
 
 		setAddDialogOpen(false);
+		setMoleculeName('');
+		setChemicalFormula('');
+		setMoleculeNotes('');
+		setStructureTags([]);
+		setSubmitAttempted(false);
 	}
 
 	// selected property from menu
@@ -148,12 +161,26 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	});
 
 	const [addDialogOpen, setAddDialogOpen] = useState(false);
-	const [molName, setMolName] = useState('');
-	const [molNotes, setMolNotes] = useState('');
 	const [value, setValue] = React.useState(0);
 
 	const handleChange = (event: React.SyntheticEvent, newValue: number) => {
 		setValue(newValue);
+	};
+
+	const onMoleculeNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		setMoleculeName(event.target.value);
+	};
+
+	const onChemicalFormulaChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		setChemicalFormula(event.target.value);
+	};
+
+	const onMoleculeNotesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		setMoleculeNotes(event.target.value);
+	};
+
+	const onStructureTagsChange = (event: React.ChangeEvent<{}>, value: string[]) => {
+		setStructureTags(value);
 	};
 
 	useEffect(() => {
@@ -207,6 +234,21 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 		if (viewerRef.current) {
 			viewerRef.current.innerHTML = window.Jmol.getAppletHtml(viewerObjId, Info);
 		}
+
+		const fetchTags = async () => {
+			try {
+				const token = await getAccessTokenSilently()
+				const response = await getStructuresTags(token)
+				console.log("Fetched tags:", response.data);
+				if (response.data) {
+					setOptions(response.data)
+				}
+			}
+			catch (err) {
+				console.error("Failed to fetch tags", err)
+			}
+		}
+		fetchTags()
 	}, []);
 
 	const handleChangePage = (_: any, newPage: number) => {
@@ -546,20 +588,51 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 			>
 				<DialogTitle>Add Structure to My Library</DialogTitle>
 				<DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 3, minWidth: 500 }}>
-					<TextField
-						label="Molecule Name"
-						value={molName}
-						onChange={e => setMolName(e.target.value)}
+					<MolmakerTextField
 						fullWidth
-						autoFocus
+						label="Structure Name"
+						value={moleculeName}
+						onChange={onMoleculeNameChange}
+						required
+						error={submitAttempted && !moleculeName}
+						helperText={submitAttempted && !moleculeName ? 'Please enter a name' : ''}
+						sx={{ mt: 1 }}
 					/>
-					<TextField
-						label="Notes"
-						value={molNotes}
-						onChange={e => setMolNotes(e.target.value)}
+					<MolmakerTextField
 						fullWidth
+						label="Chemical Formula"
+						value={chemicalFormula}
+						onChange={onChemicalFormulaChange}
+						required
+						error={submitAttempted && !chemicalFormula}
+						helperText={submitAttempted && !chemicalFormula ? 'Please enter a chemical formula' : ''}
+						sx={{ mt: 2 }}
+					/>
+					<MolmakerTextField
+						fullWidth
+						label="Structure Notes"
+						value={moleculeNotes}
+						onChange={onMoleculeNotesChange}
 						multiline
-						minRows={2}
+						rows={3}
+						sx={{ mt: 2 }}
+					/>
+					<Autocomplete
+						multiple
+						freeSolo
+						disablePortal
+						options={options}
+						value={structureTags}
+						onChange={(_, newValue) => setStructureTags(newValue)}
+						renderInput={(params) => (
+							<TextField
+								{...params}
+								variant="outlined"
+								label="Structure Tags"
+								placeholder="Press enter to add tags"
+							/>
+						)}
+						sx={{ mt: 2 }}
 					/>
 				</DialogContent>
 				<DialogActions>
