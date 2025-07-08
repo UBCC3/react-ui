@@ -27,7 +27,7 @@ import {
 import { Orbital } from "../../types";
 import { grey, blueGrey, blue } from "@mui/material/colors";
 import OrbitalProperty from "./OrbitalProperty";
-import { ExpandMore, DataObjectOutlined, AdjustOutlined, ContrastOutlined, ChevronRight, CalculateOutlined, Fullscreen, FullscreenExit, Add } from "@mui/icons-material";
+import { ExpandMore, DataObjectOutlined, AdjustOutlined, ContrastOutlined, AddPhotoAlternateOutlined, CalculateOutlined, Fullscreen, FullscreenExit, Add } from "@mui/icons-material";
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -572,7 +572,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 							display: open ? 'flex' : 'none',
 							textTransform: 'none',
 						}}
-						startIcon={<Add />}
+						startIcon={<AddPhotoAlternateOutlined />}
 						onClick={() => setAddDialogOpen(true)}
 					>
 						Add Structure to My Library
@@ -586,8 +586,12 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 				sx={{ zIndex: 9999 }}
 				disableEnforceFocus
 			>
-				<DialogTitle>Add Structure to My Library</DialogTitle>
-				<DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 3, minWidth: 500 }}>
+				<DialogTitle sx={{ bgcolor: blueGrey[300], color: grey[800], display: 'flex', alignItems: 'center' }}>
+					<AddPhotoAlternateOutlined sx={{ mr: 1 }} />
+					Add Structure to My Library
+				</DialogTitle>
+				<Divider />
+				<DialogContent sx={{ display: 'flex', flexDirection: 'column', p: 2, minWidth: 500 }}>
 					<MolmakerTextField
 						fullWidth
 						label="Structure Name"
@@ -635,12 +639,20 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 						sx={{ mt: 2 }}
 					/>
 				</DialogContent>
-				<DialogActions>
-					<Button onClick={() => setAddDialogOpen(false)} variant="outlined" color="primary">Cancel</Button>
+				<DialogActions sx={{ pr: 2, pb: 2 }}>
+					<Button 
+						onClick={() => setAddDialogOpen(false)} 
+						variant="outlined" 
+						color="primary"
+						sx={{ textTransform: 'none' }}
+					>
+						Cancel
+					</Button>
 					<Button
 						onClick={handleSubmit}
 						variant="contained"
 						color="primary"
+						sx={{ textTransform: 'none' }}
 					>
 						Submit
 					</Button>
