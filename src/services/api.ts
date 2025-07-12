@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { Response } from '../types'
+import job from "../types/Job";
 
 export const createBackendAPI = (
 	token: any
@@ -362,6 +363,25 @@ export const fetchJobResults = async (
 		};
 	}
 };
+
+export const fetchJobResultFiles = async (
+	token: string,
+	jobId: string,
+	calculation: string,
+	status: string
+):Promise<Response> => {
+	try {
+		const API = createClusterAPI(token);
+		const res = await API.get(`/files/${jobId}/${calculation}/${status}`);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to fetch presigned job file urls', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+}
 
 export const fetchJobError = async (
 	jobId: string,

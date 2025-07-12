@@ -666,7 +666,10 @@ export default function Home() {
 			<Paper>
 				<JobsToolbar
 					selectedJobId={selectedJobId}
-					onViewDetails={() => navigate(`/jobs/${selectedJobId}`)}
+					onViewDetails={() => {
+						// navigate(`/jobs/${selectedJobId}`);
+						navigate(`/vibration/${selectedJobId}`);
+					}}
 					onViewStructure={() => {
 						const job = filteredJobs.find(j => j.job_id === selectedJobId);
 						if (job?.structures.length) {

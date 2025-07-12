@@ -7,3 +7,19 @@ export type Orbital = {
 	symmetry: string;
 	type: string;
 };
+
+export interface JobResult {
+	jobId: string
+	calculation: string
+	status: string
+	urls: { [key: string]: string }
+}
+
+export type VibrationMode = {
+	index: number;
+	frequencyCM: number;
+	irIntensity: number;
+	symmetry: string;
+	forceConstant: number;
+	charTemp: number;
+};

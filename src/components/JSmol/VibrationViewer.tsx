@@ -1,12 +1,14 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, {useEffect, useRef, useState} from "react";
 import {
 	Accordion,
 	AccordionDetails,
 	AccordionSummary,
-	Box,
 	Checkbox,
+	Divider,
+	Drawer,
 	FormControlLabel,
 	Grid,
+	IconButton,
 	Paper,
 	Table,
 	TableBody,
@@ -15,21 +17,21 @@ import {
 	TableHead,
 	TablePagination,
 	TableRow,
-	Typography,
-	Drawer,
 	Toolbar,
-	IconButton,
-	Divider
+	Typography
 } from "@mui/material";
-import { grey, blueGrey } from "@mui/material/colors";
+import {blueGrey, grey} from "@mui/material/colors";
 import {
 	AdjustOutlined,
+	CalculateOutlined,
 	DataObjectOutlined,
 	ExpandMore,
 	Fullscreen,
-	FullscreenExit,
-	CalculateOutlined
+	FullscreenExit
 } from "@mui/icons-material";
+import {Job, JobResult, VibrationMode} from "../../types";
+import {fetchRawFileFromS3Url} from "./util"
+import MolmakerLoading from "../custom/MolmakerLoading";
 
 declare global {
 	interface Window {
@@ -37,23 +39,29 @@ declare global {
 	}
 }
 
-interface VibrationViewerProps {
-	xyzFile: string;
-	viewerObjId: string;
-}
-
-type VibrationMode = {
-	index: number;
-	frequencyCM: number;
-	pbc: string;
-};
-
 const fullWidth = 400;
 const miniWidth = 80;
 
-const VibrationViewer: React.FC<VibrationViewerProps> = ({ xyzFile, viewerObjId }) => {
+interface VibrationViewerProps {
+	job: Job,
+	jobResultFiles: JobResult;
+	viewerObjId: string;
+	setError:   React.Dispatch<React.SetStateAction<string | null>>,
+}
+
+const VibrationViewer: React.FC<VibrationViewerProps> = ({
+	job,
+	jobResultFiles,
+	viewerObjId,
+	setError
+}) => {
 	const viewerRef = useRef<HTMLDivElement>(null);
 	const [viewerObj, setViewerObj] = useState<any>(null);
+	const [loading, setLoading] = useState<boolean>(true);
+	const xyzFileUrl = jobResultFiles.urls["vib"];
+	const resultURL = jobResultFiles.urls["result"];
+	const [result, setResult] = useState<any | null>(null);
+
 	const [modes, setModes] = useState<VibrationMode[]>([]);
 	const rowsPerPage = 25;
 	const [page, setPage] = useState(0);
@@ -67,8 +75,23 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({ xyzFile, viewerObjId 
 		quantities: false
 	});
 
+	useEffect(() => {
+		fetchRawFileFromS3Url(resultURL, 'json').then((res) => {
+			console.log(res);
+			setResult(res);
+		}).catch((err) => {
+			setError("Failed to fetch job details or results");
+			console.error("Failed to fetch job details or results", err);
+		}).finally(() => {
+			setLoading(false);
+		})
+
+	}, [resultURL]);
+
 	// Initialize Jmol viewer
 	useEffect(() => {
+		if (loading) return;
+
 		const jsmolIsReady = (obj: any) => {
 			window.Jmol.script(obj, `reset; zoom 50;`);
 			setViewerObj(obj);
@@ -80,8 +103,9 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({ xyzFile, viewerObjId 
 			height: "100%",
 			use: "HTML5",
 			j2sPath: "/jsmol/j2s",
-			src: xyzFile,
-			script: `load \"XYZ::${xyzFile}\";`,
+			src: xyzFileUrl,
+			serverURL: "https://chemapps.stolaf.edu/jmol/jsmol/php/jsmol.php", // TODO backend to proxy
+			script: `load async "${xyzFileUrl}";`,
 			disableInitialConsole: true,
 			addSelectionOptions: false,
 			debug: false,
@@ -92,30 +116,31 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({ xyzFile, viewerObjId 
 		if (viewerRef.current) {
 			viewerRef.current.innerHTML = window.Jmol.getAppletHtml(viewerObjId, Info);
 		}
-	}, [xyzFile, viewerObjId]);
+	}, [xyzFileUrl, viewerObjId, loading]);
 
 	// Fetch vibration modes
 	useEffect(() => {
 		if (!viewerObj) return;
+		if (!result) return;
 
-		const models = window.Jmol.getPropertyAsArray(viewerObj, "auxiliaryInfo.models");
-		const frequencyRegExp = /frequency_cm-1=([+-]?\d+(?:\.\d+)?)/;
-		const pbcRegExp = /pbc=\"([^\"]*)\"/;
+		const charTemp: number[] = result.extras.Psi4.char_temp;
+		const forceConstant: number[] = result.extras.Psi4.force_constant;
+		const frequency: number[] = result.extras.Psi4.frequency;
+		const irIntensity: number[] = result.extras.Psi4.ir_intensity;
+		const symmetry: string[] = result.extras.Psi4.symmetry;
 
-		const parsed = models.map((m: any) => {
-			const name: string = m.modelName;
-			const fMatch = name.match(frequencyRegExp) || [];
-			const pMatch = name.match(pbcRegExp) || [];
+		const modes: VibrationMode[] = frequency.map((freq: number, idx: number) => {
 			return {
-				index: m.modelNumber,
-				frequencyCM: parseFloat(fMatch[1] || "0"),
-				pbc: pMatch[1] || "",
-			};
-		});
-
-		parsed.sort((a, b) => a.index - b.index);
-		setModes(parsed);
-	}, [viewerObj]);
+				index: idx + 1,
+				frequencyCM: freq,
+				irIntensity: irIntensity[idx],
+				symmetry: symmetry[idx],
+				forceConstant: forceConstant[idx],
+				charTemp: charTemp[idx],
+			}
+		})
+		setModes(modes);
+	}, [viewerObj, result]);
 
 	// Update display on selection or toggles
 	useEffect(() => {
@@ -144,6 +169,8 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({ xyzFile, viewerObjId 
 		setAccordionOpen(prev => ({ ...prev, [panel]: isExpanded }));
 		if (isExpanded && !open) setOpen(true); // Open drawer if opening an accordion
 	};
+
+	if (loading) { return (<MolmakerLoading />); }
 
 	return (
 		<Grid container spacing={2} sx={{ width: '100%' }}>
@@ -213,8 +240,12 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({ xyzFile, viewerObjId 
 							<Table>
 								<TableHead>
 									<TableRow sx={{ bgcolor: grey[200] }}>
-										<TableCell>Frequency</TableCell>
-										<TableCell>PBC</TableCell>
+										<TableCell>Mode</TableCell>
+										<TableCell>Symmetry</TableCell>
+										<TableCell>Frequency (cm<sup>-1</sup>)</TableCell>
+										<TableCell>IR Intensity</TableCell>
+										<TableCell>Force Constant (mDyne/A)</TableCell>
+										<TableCell>Char Temp (K)</TableCell>
 									</TableRow>
 								</TableHead>
 								<TableBody>
@@ -230,8 +261,12 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({ xyzFile, viewerObjId 
 												},
 											}}
 										>
+											<TableCell>{mode.index}</TableCell>
+											<TableCell>{mode.symmetry}</TableCell>
 											<TableCell>{mode.frequencyCM.toFixed(2)}</TableCell>
-											<TableCell>{mode.pbc}</TableCell>
+											<TableCell>{mode.irIntensity.toFixed(2)}</TableCell>
+											<TableCell>{mode.forceConstant.toFixed(2)}</TableCell>
+											<TableCell>{mode.charTemp.toFixed(2)}</TableCell>
 										</TableRow>
 									))}
 								</TableBody>
@@ -322,11 +357,14 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({ xyzFile, viewerObjId 
 								</TableHead>
 								<TableBody>
 									{[
+										{ label: 'method', value: result.model.method },
+										// TODO what does this symmetry for?
 										{ label: 'Symmetry', value: 'cs' },
-										{ label: 'Basis', value: '6-31G(D)' },
-										{ label: 'SCF Energy', value: '-76.010720255688 Hartree' },
+										{ label: 'Basis', value: result.model.basis },
+										{ label: 'SCF Energy', value: `${result.extras.qcvars["SCF ITERATION ENERGY"]} Hartree` },
+										// TODO Which Dipole Moment?
 										{ label: 'Dipole Moment', value: '2.19764298641837 Debye' },
-										{ label: 'CPU time', value: '3 sec' },
+										{ label: 'CPU time', value: job.runtime },
 									].map((item, index) => (
 										<TableRow 
 											key={index}
