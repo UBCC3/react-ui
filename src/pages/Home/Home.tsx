@@ -667,8 +667,8 @@ export default function Home() {
 				<JobsToolbar
 					selectedJobId={selectedJobId}
 					onViewDetails={() => {
-						// navigate(`/jobs/${selectedJobId}`);
-						navigate(`/vibration/${selectedJobId}`);
+						navigate(`/jobs/${selectedJobId}`);
+						// navigate(`/vibration/${selectedJobId}`);
 					}}
 					onViewStructure={() => {
 						const job = filteredJobs.find(j => j.job_id === selectedJobId);

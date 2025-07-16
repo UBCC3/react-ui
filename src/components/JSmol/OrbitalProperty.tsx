@@ -1,5 +1,5 @@
 import {
-	Box, Checkbox, FormControlLabel,
+	Box,
 	Grid,
 	MenuList,
 	MenuItem,
@@ -13,20 +13,20 @@ import {
 } from "@mui/material";
 import { blue, blueGrey, grey } from "@mui/material/colors";
 import React, { useEffect, useState } from "react";
+import {JobResult} from "../../types";
 
 enum propertiesOptions {
 	density,
-	potential, // TODO ESP, HOMO, LUMO, Radical
-	homo,
-	lumo,
-	radical
+	potential,
 }
 
 interface OrbitalPropertyProps {
 	viewerObj: any;
 }
 
-const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({ viewerObj }) => {
+const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({
+	viewerObj,
+}) => {
 	const [propertyOption, setPropertyOption] = useState<false | propertiesOptions>(false);
 	const [cutoff, setCutoff] = useState<number>(0.02);
 	const [translucent, setTranslucent] = useState<number>(0.5);
@@ -47,8 +47,18 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({ viewerObj }) => {
 		const script = () => {
 			switch (propertyOption) {
 				case propertiesOptions.density:
-					return `mo density cutoff ${cutoff} translucent ${translucent} fill;`;
-				// TODO: other cases
+					return `
+						frame 1;
+						mo density cutoff ${cutoff} translucent ${translucent} fill;
+						zoom 50;
+					`;
+				case propertiesOptions.potential:
+					return `
+						frame 2;
+						isosurface resolution 6 molecular map mep;
+						isosurface translucent 0.5;
+						zoom 50;
+					`;
 				default:
 					return '';
 			}
@@ -69,7 +79,7 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({ viewerObj }) => {
 		if (!viewerObj) return;
 		window.Jmol.script(
 			viewerObj,
-			showIsosurface ? "mo on" : "mo off"
+			showIsosurface ? "mo on; isosurface on;" : "mo off; isosurface off;"
 		);
 	}, [viewerObj, showIsosurface]);
 
@@ -81,9 +91,6 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({ viewerObj }) => {
 					{Object.entries({
 						density: 'Electron Density',
 						potential: 'Electrostatic potential',
-						homo: 'Electrophilic (HOMO) frontier density',
-						lumo: 'Electrophilic (LUMO) frontier density',
-						radical: 'Radical frontier density'
 					}).map(([key, label]) => (
 						<MenuItem
 							onClick={() => setPropertyOption(propertiesOptions[key as keyof typeof propertiesOptions])}

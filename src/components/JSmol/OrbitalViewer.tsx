@@ -26,7 +26,7 @@ import {
 	Tabs,
 	GlobalStyles
 } from "@mui/material";
-import { Orbital } from "../../types";
+import {Job, JobResult, Orbital} from "../../types";
 import { grey, blueGrey, blue } from "@mui/material/colors";
 import OrbitalProperty from "./OrbitalProperty";
 import { ExpandMore, DataObjectOutlined, AdjustOutlined, ContrastOutlined, ChevronRight, CalculateOutlined, Fullscreen, FullscreenExit, Add } from "@mui/icons-material";
@@ -36,6 +36,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
 import { LineChart } from '@mui/x-charts/LineChart';
+import {Atom} from "../../types/JSmol";
 
 declare global {
 	interface Window {
@@ -44,17 +45,9 @@ declare global {
 }
 
 interface OrbitalViewerProp {
-	moldenFile: string;
+	job: Job;
+	jobResultFiles: JobResult;
 	viewerObjId: string;
-}
-
-// Define each property option
-enum PropertyMenu {
-  ELECTRON_DENSITY = 'electronDensity',
-  ELECTROSTATIC_POTENTIAL = 'electrostaticPotential',
-  ELECTROPHILIC_HOMO = 'electrophilicHOMO',
-  ELECTROPHILIC_LUMO = 'electrophilicLUMO',
-  RADIAL_FRONTIER_DENSITY = 'radialFrontierDensity',
 }
 
 interface TabPanelProps {
@@ -91,7 +84,8 @@ const fullWidth = 400;
 const miniWidth = 80;
 
 const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
-	moldenFile,
+	job,
+	jobResultFiles,
 	viewerObjId,
 }) => {
 	const viewerRef = useRef<HTMLDivElement>(null);
@@ -104,12 +98,10 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	const [page, setPage] = useState(0);
 	const [selectedOrbital, setSelectedOrbital] = useState<Orbital | null>(null);
 	const [open, setOpen] = useState(true);
-	const [selected, setSelected] = useState<Orbital | null>(null);
 
-	// selected property from menu
-	const [selectedProperty, setSelectedProperty] = useState<PropertyMenu>(
-		PropertyMenu.ELECTRON_DENSITY
-	);
+	// partial charge table
+	const [atoms, setAtoms] = useState<Atom[]>([]);
+	const [selectAtom, setSelectAtom] = useState<Atom | null>(null);
 
 	// Replace single open state with an object for each accordion
 	const [accordionOpen, setAccordionOpen] = useState({
@@ -129,20 +121,37 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	};
 
 	useEffect(() => {
+		if (!selectAtom) return;
+
+		const script: string = `
+			frame 2;
+			label OFF;
+			isosurface delete;
+			mo delete all;
+			select atomno=${selectAtom.atomNo};
+			label %a %P;
+		`;
+		window.Jmol.script(viewerObj, script);
+	}, [selectAtom]);
+
+	useEffect(() => {
 		if (!viewerObj || orbitals.length === 0 || selectedOrbital === null) return;
 
 		// show selected orbital
-		const script = `mo ${selectedOrbital.index}`;
+		const script = `
+			frame 1;
+			mo ${selectedOrbital.index};
+		`;
 		window.Jmol.script(viewerObj, script);
 	}, [orbitals, selectedOrbital, viewerObj]);
 
 	useEffect(() => {
 		if (!viewerObj) return;
 
-		// fetch MO properties
+		// fetch molecular orbitals info for table
 		const mos = window.Jmol.getPropertyAsArray(
 			viewerObj,
-			"auxiliaryInfo.models[0].moData.mos"
+			"auxiliaryInfo.models[1].moData.mos" // models[1] map to loaded file 1
 		);
 		const orbitalsArray: Orbital[] = mos.map((mo: any): Orbital => ({
 			index: mo.index,
@@ -153,9 +162,37 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 			type: mo.type,
 		}));
 		setOrbitals(orbitalsArray);
+
+		// fetch partial charges
+		window.Jmol.script(
+			viewerObj,
+			`calculate PARTIALCHARGE;`
+		);
+		setTimeout(() => {
+			const atomsArray = window.Jmol.getPropertyAsArray(
+				viewerObj,
+				"atomInfo"
+			)
+			console.log("atomsArray", atomsArray);
+			const atoms: Atom[] = atomsArray.map((a: any): Atom => ({
+				atomIndex: a.atomIndex,
+				atomNo: a.atomno,
+				bondCount: a.bondCount,
+				element: a.element,
+				model: a.model,
+				partialCharge: a.partialCharge,
+				sym: a.sym,
+				x: a.x,
+				y: a.y,
+				z: a.z,
+			}))
+			setAtoms(atoms);
+		}, 500)
 	}, [viewerObj]);
 
 	useEffect(() => {
+		const moldenFile = jobResultFiles.urls["molden"];
+		const espFile = jobResultFiles.urls["esp"];
 		const jsmolIsReady = (obj: any) => {
 			window.Jmol.script(obj, `reset; zoom 50;`);
 			setViewerObj(obj);
@@ -168,7 +205,10 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 			use: "HTML5",
 			j2sPath: "/jsmol/j2s",
 			src: moldenFile,
-			script: `load \"${moldenFile}\";`,
+			serverURL: "https://chemapps.stolaf.edu/jmol/jsmol/php/jsmol.php", // TODO backend to proxy
+			script: `
+				load FILES \"${moldenFile}\" \"${espFile}\";
+			`,
 			disableInitialConsole: true,
 			addSelectionOptions: false,
 			debug: false,
@@ -324,7 +364,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 												onClick={() => setSelectedOrbital(orbital)}
 												sx={{
 													cursor: 'pointer',
-													bgcolor: grey[50],
+													bgcolor: (selectedOrbital && orbital === selectedOrbital) ? blueGrey[100]:grey[50],
 													'&:hover': {
 														backgroundColor: blueGrey[50],
 													},
@@ -374,7 +414,9 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 							</Typography>
 						</AccordionSummary>
 						<AccordionDetails sx={{ display: 'flex', flexDirection: 'column', p: 0, borderBottom: '1px solid', borderColor: grey[300] }}>
-							<OrbitalProperty viewerObj={viewerObj} />
+							<OrbitalProperty
+								viewerObj={viewerObj}
+							/>
 						</AccordionDetails>
 					</Accordion>
 					<Accordion
@@ -441,7 +483,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 					<Accordion
 						expanded={accordionOpen.charges}
 						onChange={handleAccordionChange('charges')}
-						sx={{ 
+						sx={{
 							backgroundColor: accordionOpen.charges ? grey[300] : grey[100],
 							borderRadius: 0, 
 							boxShadow: 'none', 
@@ -460,33 +502,64 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 								{open && <span>Partial Charges</span>}
 							</Typography>
 						</AccordionSummary>
-						<AccordionDetails sx={{ display: 'flex', flexDirection: 'column', p: 0 }}>
+						<AccordionDetails sx={{ display: 'flex', flexDirection: 'column', p: 0, bgcolor: grey[50]}}>
+							<MenuList>
+								<MenuItem
+									onClick={() => {
+										setSelectAtom(null);
+
+										const script = `
+											frame 2;
+											label OFF;
+											isosurface delete;
+											mo delete all;
+											select *;
+											label %P;
+											set labelfront;
+											color label black;
+											background LABELS white;
+										`;
+										window.Jmol.script(viewerObj, script);
+									}}
+									sx={{
+										mb: 1,
+										mx: 1,
+										p: 2,
+										borderRadius: 2,
+										bgcolor: grey[200],
+										'&:hover': {
+											backgroundColor: blueGrey[50],
+										},
+									}}
+								>
+									<ListItemText primary={"Display All Partial Charges"} />
+								</MenuItem>
+							</MenuList>
 							<TableContainer sx={{ flex: 1 }}>
 								<Table>
 									<TableHead>
 										<TableRow sx={{ bgcolor: grey[200] }}>
 											<TableCell>Atom</TableCell>
+											<TableCell>Symbol</TableCell>
 											<TableCell>Charge</TableCell>
 										</TableRow>
 									</TableHead>
 									<TableBody>
-										{[
-											{ atom: 'O', charge: -0.86889 },
-											{ atom: 'H', charge: 0.43445 },
-											{ atom: 'H', charge: 0.43445 },
-										].map((item, index) => (
+										{atoms && atoms.map((a:Atom, idx: number) => (
 											<TableRow 
-												key={index}
+												key={idx}
+												onClick={() => setSelectAtom(a)}
 												sx={{
 													cursor: 'pointer',
-													bgcolor: grey[50],
+													bgcolor: (selectAtom && a === selectAtom) ? blueGrey[100]:grey[50],
 													'&:hover': {
 														backgroundColor: blueGrey[50],
 													},
 												}}
 											>
-												<TableCell>{item.atom}</TableCell>
-												<TableCell>{item.charge}</TableCell>
+												<TableCell>{a.atomNo}</TableCell>
+												<TableCell>{a.sym}</TableCell>
+												<TableCell>{a.partialCharge}</TableCell>
 											</TableRow>
 										))}
 									</TableBody>

@@ -147,7 +147,7 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 		if (!viewerObj || selectedMode === null) return;
 
 		let script = `model ${selectedMode.index}; vibration ${vibrationOn ? 'ON' : 'OFF'}; vector ${vectorOn ? 'ON' : 'OFF'};`;
-		if (vectorOn) script += ` color vectors yellow; vector 10;`;
+		if (vectorOn) script += ` color vectors yellow; vector 19;`;
 		window.Jmol.script(viewerObj, script);
 	}, [viewerObj, selectedMode, vibrationOn, vectorOn]);
 

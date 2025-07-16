@@ -23,3 +23,16 @@ export type VibrationMode = {
 	forceConstant: number;
 	charTemp: number;
 };
+
+export type Atom = {
+	atomIndex: number;
+	atomNo: number,
+	bondCount: number;
+	element: string;
+	model: string;
+	partialCharge: number;
+	sym: string;
+	x: number;
+	y: number;
+	z: number;
+}
