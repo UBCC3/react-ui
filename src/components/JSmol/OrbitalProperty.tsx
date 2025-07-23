@@ -49,12 +49,18 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({
 				case propertiesOptions.density:
 					return `
 						frame 1;
+						label OFF;
+						isosurface delete;
+						mo delete all;
 						mo density cutoff ${cutoff} translucent ${translucent} fill;
 						zoom 50;
 					`;
 				case propertiesOptions.potential:
 					return `
 						frame 2;
+						label OFF;
+						isosurface delete;
+						mo delete all;
 						isosurface resolution 6 molecular map mep;
 						isosurface translucent 0.5;
 						zoom 50;

@@ -12,7 +12,7 @@ import AdvancedAnalysis from './pages/SubmitJob/AdvancedAnalysis';
 import MainContent from './components/MainContent';
 import { DrawerProvider } from './components/DrawerContext';
 import { Box, CssBaseline } from '@mui/material';
-import VibrationResult from "./components/JSmol/resultPage";
+import VibrationResult from "./pages/resultPage";
 
 function App() {
 	return (

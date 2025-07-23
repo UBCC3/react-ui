@@ -1,14 +1,16 @@
 import {Box} from "@mui/material";
-import VibrationViewer from "./VibrationViewer";
+import VibrationViewer from "../components/JSmol/VibrationViewer";
 import {useParams} from "react-router-dom";
 import {useAuth0} from "@auth0/auth0-react";
 import {useEffect, useState} from "react";
-import type {Job, JobResult} from "../../types";
-import {fetchJobResultFiles, getJobByJobID} from "../../services/api";
-import MolmakerLoading from "../custom/MolmakerLoading";
-import NotFound from "../../pages/NotFound";
-import {MolmakerAlert} from "../custom";
-import {OrbitalViewer} from "./index";
+import type {Job, JobResult} from "../types";
+import {fetchJobResultFiles, getJobByJobID} from "../services/api";
+import MolmakerLoading from "../components/custom/MolmakerLoading";
+import NotFound from "./NotFound";
+import {MolmakerAlert} from "../components/custom";
+import {OrbitalViewer} from "../components/JSmol";
+import OptimizationViewer from "../components/JSmol/OptimizationViewer";
+import StandardAnalysisViewer from "../components/JSmol/StandardAnalysisViewer";
 
 const ResultPage = () => {
 	const { jobId } = useParams<{ jobId: string }>();
@@ -104,6 +106,23 @@ const ResultPage = () => {
 					job={job}
 					jobResultFiles={jobResultFiles!}
 					viewerObjId={"JSmolOrbitalViewer"}
+					setError={setError}
+				/>
+			)}
+			{(job && job.calculation_type === "optimization") && (
+				<OptimizationViewer
+					job={job}
+					jobResultFiles={jobResultFiles!}
+					viewerObjId={"JSmolOptimizationViewer"}
+					setError={setError}
+				/>
+			)}
+			{(job && job.calculation_type === "standard") && (
+				<StandardAnalysisViewer
+					job={job}
+					jobResultFiles={jobResultFiles!}
+					viewerObjId={"JSmolStandardAnalysisViewer"}
+					setError={setError}
 				/>
 			)}
 		</Box>

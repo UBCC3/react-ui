@@ -52,6 +52,10 @@ function ViewJob() {
 						navigate(`/result/${jobData.job_id}`);
 					} else if (jobData.calculation_type === "orbitals") {
 						navigate(`/result/${jobData.job_id}`);
+					} else if (jobData.calculation_type === "optimization") {
+						navigate(`/result/${jobData.job_id}`);
+					} else if (jobData.calculation_type === "standard") {
+						navigate(`/result/${jobData.job_id}`);
 					}
 				} else if (jobData.status === 'error' || jobData.status === 'failed') {
 					resultResponse = await fetchJobError(jobId as string, token);

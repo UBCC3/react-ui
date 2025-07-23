@@ -32,6 +32,7 @@ import {
 import {Job, JobResult, VibrationMode} from "../../types";
 import {fetchRawFileFromS3Url} from "./util"
 import MolmakerLoading from "../custom/MolmakerLoading";
+import CalculatedQuantities from "./CalculatedQuantities";
 
 declare global {
 	interface Window {
@@ -77,8 +78,14 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 
 	useEffect(() => {
 		fetchRawFileFromS3Url(resultURL, 'json').then((res) => {
-			console.log(res);
-			setResult(res);
+			// console.log(res);
+			const workflowKeys = ['geometric optimization', 'molecular orbitals', 'vibrational frequencies'];
+			const isWorkflowSchema = Object.keys(res).some(k => workflowKeys.includes(k));
+			if (isWorkflowSchema) {
+				setResult((res as any)["vibrational frequencies"])
+			} else {
+				setResult(res);
+			}
 		}).catch((err) => {
 			setError("Failed to fetch job details or results");
 			console.error("Failed to fetch job details or results", err);
@@ -347,42 +354,7 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 						</Typography>
 					</AccordionSummary>
 					<AccordionDetails sx={{ display: 'flex', flexDirection: 'column', p: 0 }}>
-						<TableContainer sx={{ flex: 1 }}>
-							<Table>
-								<TableHead>
-									<TableRow sx={{ bgcolor: grey[200] }}>
-										<TableCell>Quantity</TableCell>
-										<TableCell>Value</TableCell>
-									</TableRow>
-								</TableHead>
-								<TableBody>
-									{[
-										{ label: 'method', value: result.model.method },
-										// TODO what does this symmetry for?
-										{ label: 'Symmetry', value: 'cs' },
-										{ label: 'Basis', value: result.model.basis },
-										{ label: 'SCF Energy', value: `${result.extras.qcvars["SCF ITERATION ENERGY"]} Hartree` },
-										// TODO Which Dipole Moment?
-										{ label: 'Dipole Moment', value: '2.19764298641837 Debye' },
-										{ label: 'CPU time', value: job.runtime },
-									].map((item, index) => (
-										<TableRow 
-											key={index}
-											sx={{
-												cursor: 'pointer',
-												bgcolor: grey[50],
-												'&:hover': {
-													backgroundColor: blueGrey[50],
-												},
-											}}
-										>
-											<TableCell>{item.label}</TableCell>
-											<TableCell>{item.value}</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</TableContainer>
+						<CalculatedQuantities job={job} result={result} />
 					</AccordionDetails>
 				</Accordion>
 			</Drawer>

@@ -37,6 +37,9 @@ import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
 import { LineChart } from '@mui/x-charts/LineChart';
 import {Atom} from "../../types/JSmol";
+import {fetchRawFileFromS3Url} from "./util";
+import MolmakerLoading from "../custom/MolmakerLoading";
+import CalculatedQuantities from "./CalculatedQuantities";
 
 declare global {
 	interface Window {
@@ -48,28 +51,13 @@ interface OrbitalViewerProp {
 	job: Job;
 	jobResultFiles: JobResult;
 	viewerObjId: string;
+	setError: React.Dispatch<React.SetStateAction<string | null>>,
 }
 
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
-}
-
-function CustomTabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`simple-tabpanel-${index}`}
-      aria-labelledby={`simple-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-    </div>
-  );
 }
 
 function a11yProps(index: number) {
@@ -87,6 +75,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	job,
 	jobResultFiles,
 	viewerObjId,
+	setError,
 }) => {
 	const viewerRef = useRef<HTMLDivElement>(null);
 
@@ -120,6 +109,30 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 		setValue(newValue);
 	};
 
+	// calculated quantities
+	const resultURL = jobResultFiles.urls["result"];
+	const [result, setResult] = useState<any | null>(null);
+	const [loading, setLoading] = useState(true);
+
+	useEffect(() => {
+		fetchRawFileFromS3Url(resultURL, 'json').then((res) => {
+			// console.log(res);
+			const workflowKeys = ['geometric optimization', 'molecular orbitals', 'vibrational frequencies'];
+			const isWorkflowSchema = Object.keys(res).some(k => workflowKeys.includes(k));
+			if (isWorkflowSchema) {
+				setResult((res as any)["molecular orbitals"])
+			} else {
+				setResult(res);
+			}
+		}).catch((err) => {
+			setError("Failed to fetch job details or results");
+			console.error("Failed to fetch job details or results", err);
+		}).finally(() => {
+			setLoading(false);
+		})
+
+	}, [resultURL]);
+
 	useEffect(() => {
 		if (!selectAtom) return;
 
@@ -140,6 +153,8 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 		// show selected orbital
 		const script = `
 			frame 1;
+			label OFF;
+			isosurface delete;
 			mo ${selectedOrbital.index};
 		`;
 		window.Jmol.script(viewerObj, script);
@@ -219,7 +234,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 		if (viewerRef.current) {
 			viewerRef.current.innerHTML = window.Jmol.getAppletHtml(viewerObjId, Info);
 		}
-	}, []);
+	}, [jobResultFiles, viewerObjId, loading]);
 
 	const handleChangePage = (_: any, newPage: number) => {
 		setPage(newPage);
@@ -245,6 +260,8 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 		setAccordionOpen(prev => ({ ...prev, [panel]: isExpanded }));
 		if (isExpanded && !open) setOpen(true); // Open drawer if opening an accordion
 	};
+
+	if (loading) { return (<MolmakerLoading />); }
 
 	return (
 		<>
@@ -445,39 +462,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 							</Typography>
 						</AccordionSummary>
 						<AccordionDetails sx={{ display: 'flex', flexDirection: 'column', p: 0 }}>
-							<TableContainer sx={{ flex: 1 }}>
-								<Table>
-									<TableHead>
-										<TableRow sx={{ bgcolor: grey[200] }}>
-											<TableCell>Quantity</TableCell>
-											<TableCell>Value</TableCell>
-										</TableRow>
-									</TableHead>
-									<TableBody>
-										{[
-											{ label: 'Symmetry', value: 'cs' },
-											{ label: 'Basis', value: '6-31G(D)' },
-											{ label: 'SCF Energy', value: '-76.010720255688 Hartree' },
-											{ label: 'Dipole Moment', value: '2.19764298641837 Debye' },
-											{ label: 'CPU time', value: '3 sec' },
-										].map((item, index) => (
-											<TableRow 
-												key={index}
-												sx={{
-													cursor: 'pointer',
-													bgcolor: grey[50],
-													'&:hover': {
-														backgroundColor: blueGrey[50],
-													},
-												}}
-											>
-												<TableCell>{item.label}</TableCell>
-												<TableCell>{item.value}</TableCell>
-											</TableRow>
-										))}
-									</TableBody>
-								</Table>
-							</TableContainer>
+							<CalculatedQuantities job={job} result={result} />
 						</AccordionDetails>
 					</Accordion>
 					<Accordion

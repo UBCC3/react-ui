@@ -128,13 +128,13 @@ export const submitStandardAnalysis = async (
 ): Promise<Response> => {
 	const formData = new FormData();
 	formData.append("file", file);
-	formData.append("job_name", jobName);
+	// formData.append("job_name", jobName);
 	formData.append("charge", charge.toString());
 	formData.append("multiplicity", multiplicity.toString());
-	formData.append("structure_id", structure_id);
+	// formData.append("structure_id", structure_id);
 	try {
 		const API = createClusterAPI(token);
-		const response = await API.post("/upload_submit/", formData);
+		const response = await API.post("/run_standard_analysis/", formData);
 		return {
 			status: response.status,
 			data: response.data,

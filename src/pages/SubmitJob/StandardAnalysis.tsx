@@ -290,12 +290,13 @@ export default function StandardAnalysis() {
 				jobNotes,
 				"mp2",
 				"6-311+G(2d,p)",
-				"energy",
+				"standard",
 				charge,
 				multiplicity,
 				structureIdToUse,
 				slurm_id,
 				token,
+				jobTags
 			);
 			if (response.error) {
 				throw new Error(response.error);
