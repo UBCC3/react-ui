@@ -3,7 +3,6 @@ import {
 	Accordion,
 	AccordionDetails,
 	AccordionSummary,
-	Box,
 	Grid,
 	MenuItem,
 	MenuList,
@@ -17,25 +16,22 @@ import {
 	TableRow,
 	Typography,
 	ListItemText,
-	Tab,
 	Drawer,
 	Toolbar,
 	IconButton,
 	Divider,
 	Button,
-	Tabs,
-	GlobalStyles
+	GlobalStyles,
 } from "@mui/material";
 import {Job, JobResult, Orbital} from "../../types";
-import { grey, blueGrey, blue } from "@mui/material/colors";
+import { grey, blueGrey } from "@mui/material/colors";
 import OrbitalProperty from "./OrbitalProperty";
-import { ExpandMore, DataObjectOutlined, AdjustOutlined, ContrastOutlined, ChevronRight, CalculateOutlined, Fullscreen, FullscreenExit, Add } from "@mui/icons-material";
+import { ExpandMore, DataObjectOutlined, AdjustOutlined, ContrastOutlined, CalculateOutlined, Fullscreen, FullscreenExit, Add } from "@mui/icons-material";
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
-import { LineChart } from '@mui/x-charts/LineChart';
 import {Atom} from "../../types/JSmol";
 import {fetchRawFileFromS3Url} from "./util";
 import MolmakerLoading from "../custom/MolmakerLoading";
@@ -53,20 +49,6 @@ interface OrbitalViewerProp {
 	viewerObjId: string;
 	setError: React.Dispatch<React.SetStateAction<string | null>>,
 }
-
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-function a11yProps(index: number) {
-  return {
-    id: `simple-tab-${index}`,
-    'aria-controls': `simple-tabpanel-${index}`,
-  };
-}
-
 
 const fullWidth = 400;
 const miniWidth = 80;
@@ -103,11 +85,6 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	const [addDialogOpen, setAddDialogOpen] = useState(false);
 	const [molName, setMolName] = useState('');
 	const [molNotes, setMolNotes] = useState('');
-	const [value, setValue] = React.useState(0);
-
-	const handleChange = (event: React.SyntheticEvent, newValue: number) => {
-		setValue(newValue);
-	};
 
 	// calculated quantities
 	const resultURL = jobResultFiles.urls["result"];
@@ -116,14 +93,11 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 
 	useEffect(() => {
 		fetchRawFileFromS3Url(resultURL, 'json').then((res) => {
-			// console.log(res);
 			const workflowKeys = ['geometric optimization', 'molecular orbitals', 'vibrational frequencies'];
 			const isWorkflowSchema = Object.keys(res).some(k => workflowKeys.includes(k));
-			if (isWorkflowSchema) {
-				setResult((res as any)["molecular orbitals"])
-			} else {
-				setResult(res);
-			}
+			const resultJson = isWorkflowSchema ? (res as any)["molecular orbitals"] : res;
+			setResult(resultJson);
+			// console.log(resultJson);
 		}).catch((err) => {
 			setError("Failed to fetch job details or results");
 			console.error("Failed to fetch job details or results", err);
@@ -278,47 +252,16 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 					<Divider sx={{ mt: 3, width: '100%' }} />
 				</Grid>
 				<Grid sx={{ display: 'flex', flexDirection: 'column', flex: '1 0 auto', position: 'relative' }}>
-					<Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-						<Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
-							<Tab label="Structure Viewer" {...a11yProps(0)} />
-							<Tab label="Graph Viewer" {...a11yProps(1)} />
-						</Tabs>
-					</Box>
-					{value === 0 && (
-						<Paper
-							ref={viewerRef}
-							sx={{
-								width: '100%',
-								height: '70vh',
-								boxSizing: 'border-box',
-								borderRadius: 2
-								// zIndex removed
-							}}
-							elevation={3}
-						/>
-					)}
-					{value === 1 && (
-						<Paper
-							sx={{
-								width: '100%',
-								height: '70vh',
-								boxSizing: 'border-box',
-								borderRadius: 2,
-								p: 4,
-							}}
-							elevation={3}
-						>
-							<LineChart
-								xAxis={[{ data: [1, 2, 3, 5, 8, 10] }]}
-								series={[
-									{
-										data: [2, 5.5, 2, 8.5, 1.5, 5],
-									},
-								]}
-								height={300}
-							/>
-						</Paper>
-					)}
+					<Paper
+						ref={viewerRef}
+						sx={{
+							width: '100%',
+							height: '70vh',
+							boxSizing: 'border-box',
+							borderRadius: 2
+						}}
+						elevation={3}
+					/>
 				</Grid>
 				<Drawer
 					variant="persistent"

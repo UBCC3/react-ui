@@ -3,20 +3,22 @@ import {
 	Accordion,
 	AccordionDetails,
 	AccordionSummary,
+	Box,
 	Checkbox,
 	Divider,
 	Drawer,
 	FormControlLabel,
+	FormGroup,
 	Grid,
 	IconButton,
-	Paper,
+	Paper, Slider, Tab,
 	Table,
 	TableBody,
 	TableCell,
 	TableContainer,
 	TableHead,
 	TablePagination,
-	TableRow,
+	TableRow, Tabs,
 	Toolbar,
 	Typography
 } from "@mui/material";
@@ -33,11 +35,24 @@ import {Job, JobResult, VibrationMode} from "../../types";
 import {fetchRawFileFromS3Url} from "./util"
 import MolmakerLoading from "../custom/MolmakerLoading";
 import CalculatedQuantities from "./CalculatedQuantities";
+import IRSpectrumPlot from "../IRSpectrumPlot";
 
 declare global {
 	interface Window {
 		Jmol: any;
 	}
+}
+
+function a11yProps(index: number) {
+	return {
+		id: `simple-tab-${index}`,
+		'aria-controls': `simple-tabpanel-${index}`,
+	};
+}
+
+enum viewerTab {
+	structure,
+	graph,
 }
 
 const fullWidth = 400;
@@ -47,7 +62,7 @@ interface VibrationViewerProps {
 	job: Job,
 	jobResultFiles: JobResult;
 	viewerObjId: string;
-	setError:   React.Dispatch<React.SetStateAction<string | null>>,
+	setError: React.Dispatch<React.SetStateAction<string | null>>,
 }
 
 const VibrationViewer: React.FC<VibrationViewerProps> = ({
@@ -73,19 +88,28 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 	const [accordionOpen, setAccordionOpen] = useState({ 
 		modes: true, 
 		options: false,
+		spectrum: false,
 		quantities: false
 	});
+
+	// structure viewer & graph viewer tab
+	const [value, setValue] = React.useState<viewerTab>(viewerTab.structure);
+	const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+		setValue(newValue);
+	};
+
+	// IR Spectra Graph
+	const [graphData, setGraphData] = useState<{freq: number, intensity: number}[]>([]);
+	const [width, setWidth] = useState(15);
+	const [shape, setShape] = useState<'gaussian' | 'lorentzian'>('gaussian');
 
 	useEffect(() => {
 		fetchRawFileFromS3Url(resultURL, 'json').then((res) => {
 			// console.log(res);
 			const workflowKeys = ['geometric optimization', 'molecular orbitals', 'vibrational frequencies'];
 			const isWorkflowSchema = Object.keys(res).some(k => workflowKeys.includes(k));
-			if (isWorkflowSchema) {
-				setResult((res as any)["vibrational frequencies"])
-			} else {
-				setResult(res);
-			}
+			const resultJson = isWorkflowSchema ? ((res as any)["vibrational frequencies"]) : res;
+			setResult(resultJson);
 		}).catch((err) => {
 			setError("Failed to fetch job details or results");
 			console.error("Failed to fetch job details or results", err);
@@ -123,7 +147,7 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 		if (viewerRef.current) {
 			viewerRef.current.innerHTML = window.Jmol.getAppletHtml(viewerObjId, Info);
 		}
-	}, [xyzFileUrl, viewerObjId, loading]);
+	}, [xyzFileUrl, viewerObjId, loading, value]);
 
 	// Fetch vibration modes
 	useEffect(() => {
@@ -147,6 +171,13 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 			}
 		})
 		setModes(modes);
+		const graphData: {freq: number, intensity: number}[] = frequency.map((freq: number, idx: number) => {
+			return {
+				freq: freq,
+				intensity: irIntensity[idx]
+			}
+		})
+		setGraphData(graphData);
 	}, [viewerObj, result]);
 
 	// Update display on selection or toggles
@@ -164,6 +195,7 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 			setAccordionOpen({
 				modes: false,
 				options: false,
+				spectrum: false,
 				quantities: false
 			});
 		}
@@ -188,16 +220,39 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 				<Divider sx={{ mt: 3, width: '100%' }} />
 			</Grid>
 			<Grid sx={{ display: 'flex', flexDirection: 'column', flex: '1 0 auto', position: 'relative' }}>
-				<Paper 
-					ref={viewerRef} 
-					sx={{ 
-						width: '100%', 
-						height: '70vh', 
-						boxSizing: 'border-box', 
-						borderRadius: 2 
-					}} 
-					elevation={3} 
-				/>
+				<Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+					<Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
+						<Tab label="Structure Viewer" {...a11yProps(0)} />
+						<Tab label="Graph Viewer" {...a11yProps(1)} />
+					</Tabs>
+				</Box>
+				{value === 0 && (
+					<Paper
+						ref={viewerRef}
+						sx={{
+							width: '100%',
+							height: '70vh',
+							boxSizing: 'border-box',
+							borderRadius: 2
+							// zIndex removed
+						}}
+						elevation={3}
+					/>
+				)}
+				{value === 1 && (
+					<Paper
+						sx={{
+							width: '100%',
+							height: '70vh',
+							boxSizing: 'border-box',
+							borderRadius: 2,
+							p: 4,
+						}}
+						elevation={3}
+					>
+						<IRSpectrumPlot data={graphData} width={width} shape={shape}/>
+					</Paper>
+				)}
 			</Grid>
 			<Drawer
 				variant="persistent"
@@ -259,7 +314,10 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 									{modes.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((mode) => (
 										<TableRow
 											key={mode.index}
-											onClick={() => setSelectedMode(mode)}
+											onClick={() => {
+												if (value !== viewerTab.structure) { setValue(viewerTab.structure); }
+												setSelectedMode(mode);
+											}}
 											sx={{ 
 												cursor: 'pointer',
 												bgcolor: grey[50],
@@ -324,6 +382,78 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 									control={<Checkbox checked={vectorOn} onChange={e => setVectorOn(e.target.checked)} />}
 									label="Vector ON"
 								/>
+							</Grid>
+						</Grid>
+					</AccordionDetails>
+				</Accordion>
+				<Accordion
+					expanded={accordionOpen.spectrum}
+					onChange={handleAccordionChange('spectrum')}
+					sx={{
+						backgroundColor: accordionOpen.spectrum ? grey[300] : grey[100],
+						borderRadius: 0,
+						boxShadow: 'none',
+						mb: 0,
+						transition: 'background-color 0.3s ease'
+					}}
+				>
+					<AccordionSummary
+						expandIcon={accordionOpen.spectrum && <ExpandMore />}
+						aria-controls="panel2-content"
+						id="panel2-header"
+						sx={{ color: grey[900], px: accordionOpen.spectrum ? 2 : 1 }}
+					>
+						<Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center' }}>
+							<DataObjectOutlined sx={open ? { mr: 1 } : { ml: 2 }}  />
+							{open && <span>IR Intensity</span>}
+						</Typography>
+					</AccordionSummary>
+					<AccordionDetails sx={{ display: 'flex', flexDirection: 'column', p: 0, borderBottom: '1px solid', borderColor: grey[300] }}>
+						<Grid container sx={{ width: '100%', height: '100%', bgcolor: grey[50], display: 'flex', flexDirection: 'row' }}>
+							<Grid size={{ xs: 12 }} sx={{ display: 'flex', flexDirection: 'column', px: 2, pb: 2,flexGrow: 1, mt: 0, pt: 2 }}>
+								<Box sx={{ border: '1px solid', borderRadius: 2, p: 1, borderColor: 'divider' }}>
+									<Typography variant="caption" sx={{ mb: 1, color: 'text.secondary' }}>
+										Function
+									</Typography>
+									<FormGroup sx={{ display: 'flex', flexDirection: 'row', gap: 1 }}>
+										<FormControlLabel
+											control={<Checkbox checked={shape==="gaussian"} onChange={(_, checked) => {
+												if (value !== viewerTab.graph) { setValue(viewerTab.graph); }
+												setShape("gaussian");
+											}} />}
+											label="Gaussian"
+										/>
+										<FormControlLabel
+											control={<Checkbox checked={shape==="lorentzian"} onChange={(_, checked) => {
+												if (value !== viewerTab.graph) { setValue(viewerTab.graph); }
+												setShape("lorentzian");
+											}} />}
+											label="Lorentzian"
+										/>
+									</FormGroup>
+								</Box>
+							</Grid>
+							<Grid size={{ xs: 12 }} sx={{ display: 'flex', flexDirection: 'column', px: 2, pb: 2,flexGrow: 1, mt: 0 }}>
+								<Box sx={{ border: '1px solid', borderRadius: 2, p: 1, borderColor: 'divider' }}>
+									<Typography variant="caption" sx={{ mb: 1, color: 'text.secondary' }}>
+										Width
+									</Typography>
+									<FormGroup>
+										<Slider
+											value={width}
+											min={0}
+											max={150}
+											step={1}
+											marks={[{ value: 0, label: '0' }, { value: 150, label: '150' }]}
+											valueLabelDisplay="auto"
+											onChange={(_, newValue) => {
+												if (value !== viewerTab.graph) { setValue(viewerTab.graph); }
+												setWidth(newValue as number);
+											}}
+											sx={{ width: '80%', alignSelf: 'center', my: 2 }}
+										/>
+									</FormGroup>
+								</Box>
 							</Grid>
 						</Grid>
 					</AccordionDetails>
