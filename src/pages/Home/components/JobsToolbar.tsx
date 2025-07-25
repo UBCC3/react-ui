@@ -21,6 +21,7 @@ import {
 	TuneOutlined,
 	DeleteOutlineOutlined
 } from '@mui/icons-material';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { blueGrey } from '@mui/material/colors';
 
 interface JobsToolbarProps {
@@ -37,6 +38,8 @@ interface JobsToolbarProps {
 	structures: Array<{ structure_id: string; name: string }>;
 	selectedStructure: string;
 	onStructureChange: (structureId: string) => void;
+	onZipDownload: () => void;
+	downloadDisabled:(selectedJobId: string | null) => boolean;
 }
 
 export default function JobsToolbar({
@@ -52,7 +55,9 @@ export default function JobsToolbar({
 	onRefresh,
 	structures,
 	selectedStructure,
-	onStructureChange
+	onStructureChange,
+	onZipDownload,
+	downloadDisabled,
 }: JobsToolbarProps) {
 	return (
 		<Toolbar sx={{ justifyContent: 'space-between', bgcolor: blueGrey['A200'] }}>
@@ -78,6 +83,16 @@ export default function JobsToolbar({
 				</Box>
 				<Divider orientation="vertical" flexItem sx={{ mx: 2 }} />
 				<Box>
+					<Tooltip title="Dwonload job files">
+						<span>
+							<IconButton
+								disabled={downloadDisabled(selectedJobId)}
+								onClick={onZipDownload}
+							>
+								<FileDownloadIcon />
+							</IconButton>
+						</span>
+					</Tooltip>
 					<Tooltip title="View job details">
 						<span>
 							<IconButton

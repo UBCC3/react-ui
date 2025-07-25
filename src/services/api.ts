@@ -654,3 +654,20 @@ export const getChemicalFormula = async (
 		};
 	}
 };
+
+export const getZipPresignedUrl= async (
+	jobId: string,
+	token: string,
+): Promise<Response> => {
+	try {
+		const API = createClusterAPI(token);
+		const res = await API.get(`/download/archive/${jobId}`);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to fetch presigned job file urls', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+}
