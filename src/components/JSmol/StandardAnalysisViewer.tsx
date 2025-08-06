@@ -1,8 +1,8 @@
 import {
-	Box,
+	Box, Chip,
 	Grid,
 	Tab,
-	Tabs
+	Tabs,
 } from "@mui/material";
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -10,6 +10,7 @@ import {Job, JobResult} from "../../types";
 import React, {lazy, Suspense, useEffect, useState} from "react";
 import {fetchRawFileFromS3Url} from "./util";
 import MolmakerLoading from "../custom/MolmakerLoading";
+import {MolmakerPageTitle} from "../custom";
 
 const OptimizationViewer = lazy(() => import('./OptimizationViewer'));
 const VibrationViewer = lazy(() => import('./VibrationViewer'));
@@ -92,28 +93,88 @@ const StandardAnalysisViewer: React.FC<StandardAnalysisViewerProp> = ({
 
 		switch (type) {
 			case ResultTab.optimization:
-				return result["geometric optimization"] === "Error" ? <CancelIcon color="error"/> : <CheckCircleIcon color="success"/>;
+				return result["geometric optimization"] === "Error" ?
+					<CancelIcon color="error" fontSize={"small"} sx={{ p: 0, m: 0  }} /> :
+					<CheckCircleIcon color="success" fontSize={"small"} sx={{ p: 0, m: 0  }} />;
 			case ResultTab.orbitals:
-				return result["molecular orbitals"] === "Error" ? <CancelIcon color="error"/> : <CheckCircleIcon color="success"/>;
+				return result["molecular orbitals"] === "Error" ?
+					<CancelIcon color="error" fontSize={"small"} sx={{ p: 0, m: 0  }} /> :
+					<CheckCircleIcon color="success" fontSize={"small"} sx={{ p: 0, m: 0  }} />;
 			case ResultTab.frequency:
-				return result["vibrational frequencies"] === "Error" ? <CancelIcon color="error"/> : <CheckCircleIcon color="success"/>;
+				return result["vibrational frequencies"] === "Error" ?
+					<CancelIcon color="error" fontSize={"small"} sx={{ p: 0, m: 0  }} /> :
+					<CheckCircleIcon color="success" fontSize={"small"} sx={{ p: 0, m: 0  }} />;
 		}
+	}
+
+	const renderCalculationType = (type: string) => {
+		switch (type) {
+			case "standard":
+				return "Standard Analysis";
+			case "optimization":
+				return "Geometric Optimization";
+			case "frequency":
+				return "Vibration Frequency";
+			case "orbitals":
+				return "Molecular Orbital";
+			case "energy":
+				return "Molecular Energy";
+		}
+
 	}
 
 	if (loading) { return (<MolmakerLoading />); }
 
 	return (
-		<Grid sx={{ display: 'flex', flexDirection: 'column', flex: '1 0 auto', position: 'relative' }}>
-			<Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+		<Box>
+			<Box>
+				<MolmakerPageTitle title={job.job_name} subtitle={renderCalculationType(job.calculation_type)} removeBottomPadding={true} />
+				{job.tags.map((tag, index) => (
+					<Chip
+						key={`simple-tab-${index}`}
+						label={tag}
+						variant="outlined"
+					/>
+				))}
+			</Box>
+			<Box sx={{ borderBottom: 1, borderColor: 'divider', m: 0, p: 0 }}>
 				<Tabs
 					value={currentTab}
 					onChange={handleCurrentTabChange}
-					textColor="primary"
-					indicatorColor="primary"
 				>
-					<Tab icon={jobStatusIcon(ResultTab.optimization)} iconPosition="end" label="Geometric Optimization" {...a11yProps(0)} />
-					<Tab icon={jobStatusIcon(ResultTab.frequency)} iconPosition="end" label="Vibration Analysis" {...a11yProps(1)} />
-					<Tab icon={jobStatusIcon(ResultTab.orbitals)} iconPosition="end" label="Molecular Orbital" {...a11yProps(2)} />
+					<Tab
+						icon={jobStatusIcon(ResultTab.optimization)}
+						iconPosition="end"
+						label="Geometric Optimization"
+						{...a11yProps(0)}
+						sx={{
+							py: 0,
+							m: 0,
+							textTransform: 'none'
+						}}
+					/>
+					<Tab
+						icon={jobStatusIcon(ResultTab.frequency)}
+						iconPosition="end"
+						label="Vibration Analysis"
+						{...a11yProps(1)}
+						sx={{
+							py: 0,
+							m: 0,
+							textTransform: 'none'
+						}}
+					/>
+					<Tab
+						icon={jobStatusIcon(ResultTab.orbitals)}
+						iconPosition="end"
+						label="Molecular Orbital"
+						{...a11yProps(2)}
+						sx={{
+							py: 0,
+							m: 0,
+							textTransform: 'none'
+						}}
+					/>
 				</Tabs>
 			</Box>
 			<CustomTabPanel value={currentTab} index={ResultTab.optimization}>
@@ -146,9 +207,8 @@ const StandardAnalysisViewer: React.FC<StandardAnalysisViewerProp> = ({
 					/>
 				</Suspense>
 			</CustomTabPanel>
-		</Grid>
-
-	)
+		</Box>
+	);
 }
 
 export default StandardAnalysisViewer;

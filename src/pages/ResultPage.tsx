@@ -8,9 +8,7 @@ import {fetchJobResultFiles, getJobByJobID} from "../services/api";
 import MolmakerLoading from "../components/custom/MolmakerLoading";
 import NotFound from "./NotFound";
 import {MolmakerAlert} from "../components/custom";
-import {OrbitalViewer} from "../components/JSmol";
-import OptimizationViewer from "../components/JSmol/OptimizationViewer";
-import StandardAnalysisViewer from "../components/JSmol/StandardAnalysisViewer";
+import {OrbitalViewer, OptimizationViewer, StandardAnalysisViewer} from "../components/JSmol";
 
 const ResultPage = () => {
 	const { jobId } = useParams<{ jobId: string }>();

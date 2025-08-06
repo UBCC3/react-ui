@@ -12,7 +12,7 @@ import AdvancedAnalysis from './pages/SubmitJob/AdvancedAnalysis';
 import MainContent from './components/MainContent';
 import { DrawerProvider } from './components/DrawerContext';
 import { Box, CssBaseline } from '@mui/material';
-import VibrationResult from "./pages/resultPage";
+import ResultPage from "./pages/ResultPage";
 
 function App() {
 	return (
@@ -36,7 +36,7 @@ function App() {
 							{/*/>*/}
 							<Route
 								path="/result/:jobId"
-								element={<RequireAuth><VibrationResult /></RequireAuth>}
+								element={<RequireAuth><ResultPage /></RequireAuth>}
 							/>
 							<Route
 								path="/submit"

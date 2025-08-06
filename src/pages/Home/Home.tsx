@@ -355,6 +355,7 @@ export default function Home() {
 				setLoading(false);
 				return;
 			}
+			jobs.find((job: Job, idx: number) => (job.job_id === selectedJobId))!.status = JobStatus.CANCELLED;
 			if (!jobToCancel.slurm_id) {
 				setAlertMsg('Job Slurm ID is missing.');
 				setAlertSeverity('error');

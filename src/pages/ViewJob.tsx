@@ -57,6 +57,7 @@ function ViewJob() {
 					} else if (jobData.calculation_type === "standard") {
 						navigate(`/result/${jobData.job_id}`);
 					}
+					// TODO energy
 				} else if (jobData.status === 'error' || jobData.status === 'failed') {
 					resultResponse = await fetchJobError(jobId as string, token);
 				}

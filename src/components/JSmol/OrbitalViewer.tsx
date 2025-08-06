@@ -21,7 +21,8 @@ import {
 	IconButton,
 	Divider,
 	Button,
-	GlobalStyles,
+	GlobalStyles, FormControlLabel, Radio, RadioGroup,
+    Box,
 } from "@mui/material";
 import {Job, JobResult, Orbital} from "../../types";
 import { grey, blueGrey } from "@mui/material/colors";
@@ -69,6 +70,9 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	const [page, setPage] = useState(0);
 	const [selectedOrbital, setSelectedOrbital] = useState<Orbital | null>(null);
 	const [open, setOpen] = useState(true);
+
+	// orbital display option
+	const [meshOrFill, setMeshOrFill] = useState<"fill" | "mesh">("fill");
 
 	// partial charge table
 	const [atoms, setAtoms] = useState<Atom[]>([]);
@@ -125,14 +129,16 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 		if (!viewerObj || orbitals.length === 0 || selectedOrbital === null) return;
 
 		// show selected orbital
+		const displayOption: string = meshOrFill === "fill" ? "NOMESH FILL" : "NOFILL MESH";
 		const script = `
 			frame 1;
+			mo delete all;
 			label OFF;
 			isosurface delete;
-			mo ${selectedOrbital.index};
+			isosurface COLOR red blue MO ${selectedOrbital.index} ${displayOption};
 		`;
 		window.Jmol.script(viewerObj, script);
-	}, [orbitals, selectedOrbital, viewerObj]);
+	}, [orbitals, selectedOrbital, viewerObj, meshOrFill]);
 
 	useEffect(() => {
 		if (!viewerObj) return;
@@ -245,12 +251,14 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 				},
 			}} />
 			<Grid container spacing={2} sx={{ width: '100%' }}>
-				<Grid size={12} sx={{ display: 'flex', flexDirection: 'column', flex: '1 0 auto' }}>
-					<Typography variant="h5">
-						Molecular Orbital Result
-					</Typography>
-					<Divider sx={{ mt: 3, width: '100%' }} />
-				</Grid>
+				{ (job.calculation_type !== "standard") && (
+					<Grid size={12} sx={{ display: 'flex', flexDirection: 'column', flex: '1 0 auto' }}>
+						<Typography variant="h5">
+							Molecular Orbital Result
+						</Typography>
+						<Divider sx={{ mt: 3, width: '100%' }} />
+					</Grid>
+				)}
 				<Grid sx={{ display: 'flex', flexDirection: 'column', flex: '1 0 auto', position: 'relative' }}>
 					<Paper
 						ref={viewerRef}
@@ -376,6 +384,8 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 						<AccordionDetails sx={{ display: 'flex', flexDirection: 'column', p: 0, borderBottom: '1px solid', borderColor: grey[300] }}>
 							<OrbitalProperty
 								viewerObj={viewerObj}
+								meshOrFill={meshOrFill}
+								setMeshOrFill={setMeshOrFill}
 							/>
 						</AccordionDetails>
 					</Accordion>

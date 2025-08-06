@@ -5,7 +5,7 @@ import {
 	Divider 
 } from '@mui/material'
 
-const MolmakerPageTitle = ({ title, subtitle }) => {
+const MolmakerPageTitle = ({ title, subtitle, removeBottomPadding=false }) => {
   	return (
 		<React.Fragment>
 			<Grid container sx={{ display: 'flex', alignItems: 'start', flexDirection: 'column', justifyContent: 'center' }}>
@@ -16,7 +16,7 @@ const MolmakerPageTitle = ({ title, subtitle }) => {
 					{subtitle}
 				</Typography>
 			</Grid>
-			<Divider sx={{ my: 3 }} />
+			<Divider sx={{ mb: (removeBottomPadding ? 0: 3), mt: 3 }} />
 		</React.Fragment>
   	)
 }

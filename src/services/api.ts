@@ -124,7 +124,8 @@ export const submitStandardAnalysis = async (
 	charge: number,
 	multiplicity: number,
 	structure_id: string,
-	token: any
+	token: any,
+	opt_type? : 'ts' | 'ground',
 ): Promise<Response> => {
 	const formData = new FormData();
 	formData.append("file", file);
@@ -132,6 +133,10 @@ export const submitStandardAnalysis = async (
 	formData.append("charge", charge.toString());
 	formData.append("multiplicity", multiplicity.toString());
 	// formData.append("structure_id", structure_id);
+
+	if (opt_type !== undefined && opt_type === 'ts') {
+		formData.append("opt_type", opt_type);
+	}
 	try {
 		const API = createClusterAPI(token);
 		const response = await API.post("/run_standard_analysis/", formData);
@@ -665,6 +670,20 @@ export const getZipPresignedUrl= async (
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error('Failed to fetch presigned job file urls', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+}
+
+export const getOptimizationTypes = async (token: string): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.get('/enums/optimization_types/');
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to fetch optimization types', error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,

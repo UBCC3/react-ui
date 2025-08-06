@@ -23,9 +23,9 @@ import {
     MolmakerAlert,
     MolmakerLoading, MolmakerConfirm
 } from '../../components/custom'
-import { 
-    getCalculationTypes, 
-    getLibraryStructures, 
+import {
+    getCalculationTypes,
+    getLibraryStructures,
     getStructureDataFromS3,
     getWavefunctionMethods,
     getDensityFunctionalMethods,
@@ -33,7 +33,7 @@ import {
     getMultiplicities,
     createJob,
     AddAndUploadStructureToS3,
-    getStructuresTags,
+    getStructuresTags, getOptimizationTypes,
 } from '../../services/api'
 import { Structure } from '../../types'
 import { submitAdvancedAnalysis, getChemicalFormula } from '../../services/api'
