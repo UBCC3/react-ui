@@ -12,11 +12,15 @@ interface Job {
 	submitted_at: string;
 	completed_at: string | null;
 	user_sub: string;
+	user_email: string;
+	group_id: string | null;
+	group_name: string | null;
 	slurm_id: string | null;
 	structures: Array<{ structure_id: string; name: string }>;
 	tags: string[];
 	runtime: string | null;
 	is_deleted: boolean;
+	is_public: boolean;
 	result(result: any, arg1: null, arg2: number): unknown;
 }
 

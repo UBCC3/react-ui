@@ -1,4 +1,3 @@
-// App.jsx  ────────────────────────────────────────────────────────────────
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home/Home';
 import StandardAnalysis from './pages/SubmitJob/StandardAnalysis';
@@ -9,13 +8,19 @@ import RequireAuth from './components/RequireAuth';
 import MenuDrawer from './components/MenuDrawer';
 import MoleculeLibrary from './pages/MoleculeLibrary';
 import AdvancedAnalysis from './pages/SubmitJob/AdvancedAnalysis';
+import Admin from './pages/Admin';
+import Group from './pages/Group';
 import MainContent from './components/MainContent';
 import { DrawerProvider } from './components/DrawerContext';
-import { Box, CssBaseline } from '@mui/material';
+import { Box, CssBaseline, Typography } from '@mui/material';
 import ResultPage from "./components/JSmol/resultPage";
 import VibrationResult from "./components/JSmol/vibrationResult";
+import { useAuth0 } from '@auth0/auth0-react';
+import Users from './pages/Users';
 
 function App() {
+	const { user } = useAuth0();
+
 	return (
 		<BrowserRouter>
 			<DrawerProvider>
@@ -52,6 +57,18 @@ function App() {
 							<Route
 								path="/advanced"
 								element={<RequireAuth><AdvancedAnalysis /></RequireAuth>}
+							/>
+							<Route
+								path="/admin"
+								element={<RequireAuth><Admin /></RequireAuth>}
+							/>
+							<Route
+								path="/users"
+								element={<RequireAuth><Users /></RequireAuth>}
+							/>
+							<Route
+								path="/group"
+								element={<RequireAuth><Group /></RequireAuth>}
 							/>
 							<Route
 								path="*"

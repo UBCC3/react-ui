@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Paper, Typography, Divider, Box, Skeleton, SxProps, Theme } from '@mui/material';
-import { blueGrey } from '@mui/material/colors';
+import { blueGrey, grey } from '@mui/material/colors';
+import { Atom } from 'lucide-react';
 
 // Extend the Window interface to include the $3Dmol global
 declare global {
@@ -67,11 +68,13 @@ const MolmakerMoleculePreview: React.FC<MolmakerMoleculePreviewProp> = ({
 				flexDirection: 'column',
 				width: '100%',
 				height: '100%',
+				borderRadius: 2,
 				...(maxHeight ? { maxHeight } : {}),
 				...sx
 			}}
 		>
-			<Typography variant="h6" color="text.secondary" sx={{ p: 2, bgcolor: blueGrey[200] }}>
+			<Typography variant="h6" color="text.secondary" sx={{ p: 2, bgcolor: blueGrey[200], borderTopLeftRadius: 5, borderTopRightRadius: 5, display: 'flex', alignItems: 'center' }}>
+				<Atom size={24} style={{ marginRight: 10 }} />
 				{title}
 			</Typography>
 			<Divider />
@@ -80,7 +83,7 @@ const MolmakerMoleculePreview: React.FC<MolmakerMoleculePreviewProp> = ({
 					flex: 1,
 					position: 'relative',
 					border: '1px solid',
-					borderColor: 'grey.300'
+					borderColor: grey[200],
 				}}
 			>
 				{data ? (
