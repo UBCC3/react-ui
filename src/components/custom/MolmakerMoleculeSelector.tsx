@@ -191,6 +191,8 @@ const MolmakerMoleculeSelector = ({
 					<Autocomplete
 						multiple
 						freeSolo
+						disableCloseOnSelect
+						disablePortal
 						id="tags-input"
 						options={options}
 						value={structureTags}

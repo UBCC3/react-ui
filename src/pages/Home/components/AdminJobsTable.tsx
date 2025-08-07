@@ -1,0 +1,270 @@
+import React from 'react';
+import {
+	TableContainer,
+	Table,
+	TableHead,
+	TableRow,
+	TableCell,
+	TableBody,
+	Chip,
+	Box,
+	Typography,
+	Button,
+	Grid
+} from '@mui/material';
+import { ArrowDropUpOutlined, ArrowDropDownOutlined, AutoMode, TuneOutlined } from '@mui/icons-material';
+import { statusColors } from '../../../constants';
+import { blueGrey } from '@mui/material/colors';
+import type { Job } from '../../../types';
+
+interface JobsTableProps {
+	jobs: Job[];
+	page: number;
+	rowsPerPage: number;
+	order: 'asc' | 'desc';
+	orderBy: keyof Job;
+	selectedJobId: string | null;
+	onSort: (column: keyof Job) => void;
+	onRowClick: (jobId: string) => void;
+	displayColumns: {
+		job_name: boolean;
+		job_notes: boolean;
+		status: boolean;
+		structures: boolean;
+		tags: boolean;
+		runtime: boolean;
+		submitted_at: boolean;
+		completed_at: boolean;
+	};
+}
+
+interface AdminJobsTableProps extends JobsTableProps {
+	displayColumns: {
+		job_id: boolean;
+		job_name: boolean;
+		user_email: boolean;
+		group_id: boolean;
+		group_name: boolean;
+		job_notes: boolean;
+		status: boolean;
+		structures: boolean;
+		tags: boolean;
+		runtime: boolean;
+		submitted_at: boolean;
+		completed_at: boolean;
+	};
+}
+
+export default function AdminJobsTable({
+	jobs,
+	page,
+	rowsPerPage,
+	order,
+	orderBy,
+	selectedJobId,
+	onSort,
+	onRowClick,
+	displayColumns
+}: AdminJobsTableProps) {
+	// Comparator that handles strings, dates, and structures-length
+	const comparator = React.useCallback((a: Job, b: Job): number => {
+		let aVal: string | number = a[orderBy] as any;
+		let bVal: string | number = b[orderBy] as any;
+
+		if (orderBy === 'submitted_at') {
+			aVal = new Date(a.submitted_at).getTime();
+			bVal = new Date(b.submitted_at).getTime();
+		} else if (orderBy === 'structures') {
+			aVal = a.structures.length;
+			bVal = b.structures.length;
+		} else {
+			// coerce to lowercase for string compare
+			aVal = String(aVal).toLowerCase();
+			bVal = String(bVal).toLowerCase();
+		}
+
+		if (aVal < bVal) return order === 'asc' ? -1 : 1;
+		if (aVal > bVal) return order === 'asc' ? 1 : -1;
+		return 0;
+	}, [order, orderBy]);
+
+	// Memoize sorted list
+	const sortedJobs = React.useMemo(() => {
+		return [...jobs].sort(comparator);
+	}, [jobs, comparator]);
+
+  	// Then slice for pagination
+	const paginatedJobs = sortedJobs.slice(
+		page * rowsPerPage,
+		page * rowsPerPage + rowsPerPage
+	);
+
+	const renderHeader = (label: string, column: keyof Job) => (
+		<TableCell
+			sx={{ whiteSpace: 'nowrap', cursor: 'pointer' }}
+			onClick={() => onSort(column)}
+		>
+			<Box sx={{ display: 'flex', alignItems: 'bottom' }}>
+				{label}
+				{orderBy === column && (
+				<Box sx={{ ml: 1 }}>
+					{order === 'asc' ? (
+						<ArrowDropUpOutlined color="primary" />
+					) : (
+						<ArrowDropDownOutlined color="primary" />
+					)}
+				</Box>
+				)}
+			</Box>
+		</TableCell>
+	);
+
+  	return (
+		<TableContainer>
+			<Table>
+				<TableHead sx={{ bgcolor: blueGrey[50] }}>
+					<TableRow>
+						{displayColumns.job_id && renderHeader('Job ID', 'job_id')}
+						{displayColumns.job_name && renderHeader('Job Name', 'job_name')}
+						{displayColumns.user_email && renderHeader('User Email', 'user_email')}
+						{displayColumns.group_id && renderHeader('Group ID', 'group_id')}
+						{displayColumns.group_name && renderHeader('Group Name', 'group_name')}
+						{displayColumns.job_notes && renderHeader('Notes', 'job_notes')}
+						{displayColumns.status && renderHeader('Status', 'status')}
+						{displayColumns.structures && renderHeader('Structures', 'structures')}
+						{displayColumns.tags && renderHeader('Tags', 'tags')}
+						{displayColumns.runtime && renderHeader('Runtime', 'runtime')}
+						{displayColumns.submitted_at && renderHeader('Submitted At', 'submitted_at')}
+						{displayColumns.completed_at && renderHeader('Completed At', 'completed_at')}
+					</TableRow>
+				</TableHead>
+				<TableBody>
+					{paginatedJobs.length === 0 ? (
+						<TableRow>
+							<TableCell colSpan={8} align="center">
+								<Typography variant="body2" color="text.secondary">
+									No jobs added yet.
+								</Typography>
+								<Grid container sx={{ mt: 2, justifyContent: 'center' }} spacing={2}>
+									<Grid>
+										<Button
+											variant="contained"
+											color="primary"
+											sx={{ textTransform: 'none' }}
+											startIcon={<AutoMode />}
+											onClick={() => window.location.href = '/submit'}
+										>
+											Run Standard Analysis
+										</Button>
+									</Grid>
+									<Grid>
+										<Button
+											variant="outlined"
+											sx={{ textTransform: 'none' }}
+											startIcon={<TuneOutlined />}
+											onClick={() => window.location.href = '/advanced'}
+										>
+											Run Advanced Analysis
+										</Button>
+									</Grid>
+								</Grid>
+							</TableCell>
+						</TableRow>
+					) : (
+						paginatedJobs.map((job) => (
+							<TableRow
+								key={job.job_id}
+								onClick={() => onRowClick(job.job_id)}
+								sx={{
+								backgroundColor:
+									job.job_id === selectedJobId ? 'rgba(0,0,0,0.08)' : 'transparent',
+								cursor: 'pointer'
+								}}
+							>
+								{displayColumns.job_id && (
+									<TableCell>
+										{job.job_id}
+									</TableCell>
+								)}
+								{displayColumns.job_name && (
+									<TableCell>
+										{job.job_name}
+									</TableCell>
+								)}
+								{displayColumns.user_email && (
+									<TableCell>
+										{job.user_email}
+									</TableCell>
+								)}
+								{displayColumns.group_id && (
+									<TableCell>
+										{job.group_id || 'N/A'}
+									</TableCell>
+								)}
+								{displayColumns.group_name && (
+									<TableCell>
+										{job.group_name || 'N/A'}
+									</TableCell>
+								)}
+								{displayColumns.job_notes && (
+									<TableCell>{job.job_notes || 'N/A'}</TableCell>
+								)}
+								{displayColumns.status && (
+									<TableCell>
+										<Chip
+											label={job.status}
+											size="small"
+											sx={{
+											bgcolor: statusColors[job.status] ?? 'grey.300',
+											color: 'white',
+											textTransform: 'capitalize'
+											}}
+										/>
+									</TableCell>
+								)}
+								{displayColumns.structures && (
+									<TableCell>
+										{job.structures.length ? job.structures
+											.map((s) => (
+												<Chip
+												key={s.structure_id}
+												label={s.name}
+												variant="outlined"
+												size="small"
+												sx={{ mr: 0.5, mb: 0.5 }}
+												/>
+											)) : 'N/A'}
+									</TableCell>
+								)}
+								{displayColumns.tags && (
+									<TableCell>
+										{job.tags.length > 0 ? (
+											job.tags.join(', ')
+										) : (
+											<Typography variant="body2" color="text.secondary">No tags</Typography>
+										)}
+									</TableCell>
+								)}
+								{displayColumns.runtime && (
+									<TableCell>
+										{job.runtime ? job.runtime : 'unavailable'}
+									</TableCell>
+								)}
+								{displayColumns.submitted_at && (
+									<TableCell>
+										{new Date(job.submitted_at).toLocaleString()}
+									</TableCell>
+								)}
+								{displayColumns.completed_at && (
+									<TableCell>
+										{job.completed_at ? new Date(job.completed_at).toLocaleString() : 'N/A'}
+									</TableCell>
+								)}
+							</TableRow>
+						))
+					)}
+				</TableBody>
+	  		</Table>
+		</TableContainer>
+  	);
+}

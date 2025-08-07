@@ -24,29 +24,27 @@ import {
 import { blueGrey, grey } from '@mui/material/colors';
 import { 
 	cancelJobBySlurmID,
-	getAllJobs, 
+	adminGetAllJobs, 
 	getJobStatusBySlurmID, 
 	getLibraryStructures, 
 	getStructureDataFromS3, 
 	updateJob,
-	deleteJob,
-	upsertCurrentUser
-} from '../../services/api';
-import { JobStatus } from '../../constants';
-import JobsStatus from './components/JobsStatus';
-import JobsToolbar from './components/JobsToolbar';
-import JobsTable from './components/JobsTable';
+	deleteJob
+} from '../services/api';
+import { JobStatus } from '../constants';
+import JobsToolbar from './Home/components/JobsToolbar';
 import {
 	MolmakerPageTitle,
 	MolmakerMoleculePreview, 
 	MolmakerLoading, 
 	MolmakerAlert,
 	MolmakerConfirm
-} from '../../components/custom';
-import type { Job, Structure } from '../../types';
+} from '../components/custom';
+import type { Job, Structure } from '../types';
 import { DeleteOutlineOutlined, Add, FilterAltOutlined } from '@mui/icons-material';
+import AdminJobsTable from './Home/components/AdminJobsTable';
 
-export default function Home() {
+export default function Admin() {
 	const navigate = useNavigate();
 	const { user, getAccessTokenSilently } = useAuth0();
 
@@ -89,9 +87,16 @@ export default function Home() {
 		extent: 'contains' | 'equals' | 'startsWith';
 	}>>([{ column: 'job_name', value: '', extent: 'contains' }]);
 
+	const [adminPanelToken, setAdminPanelToken] = useState<string | null>(null);
+
+
 	// map column name to display name
 	const columnDisplayNames: Record<any, string> = {
+		job_id: 'Job ID',
 		job_name: 'Job Name',
+		user_email: 'User Email',
+		group_id: 'Group ID',
+		group_name: 'Group Name',
 		job_notes: 'Job Notes',
 		status: 'Status',
 		structures: 'Structures',
@@ -102,7 +107,11 @@ export default function Home() {
 	}
 
 	const [displayColumns, setDisplayColumns] = useState({
+		job_id: true,
 		job_name: true,
+		user_email: true,
+		group_id: true,
+		group_name: true,
 		job_notes: true,
 		status: true,
 		structures: true,
@@ -115,6 +124,11 @@ export default function Home() {
 	// track jobs for polling
 	const jobsRef = useRef<Job[]>([]);
 	useEffect(() => { jobsRef.current = jobs; }, [jobs]);
+
+	// Store token for AdminGroupPanel
+	useEffect(() => {
+		getAccessTokenSilently().then(setAdminPanelToken).catch(() => setAdminPanelToken(null));
+	}, [getAccessTokenSilently]);
 
 	const handleFilterSubmit = () => {
 		setLoading(true);
@@ -170,26 +184,6 @@ export default function Home() {
 		}
 	}
 
-	useEffect(() => {
-		if (!user) return;
-
-		const loadUserProfile = async () => {
-			try {
-				const token = await getAccessTokenSilently();
-				const result = await upsertCurrentUser(token, user.email || '');
-
-				if (result.status === 200 && result.data) {
-					console.log('User synced:', result.data);
-				} else {
-					console.warn('Upsert returned', result.status, result.error);
-				}
-			} catch (err) {
-				console.error('Failed to sync user to our database:', err);
-			}
-		};
-		loadUserProfile();
-	}, [user, getAccessTokenSilently]);
-
 	// poll statuses every 5s
 	useEffect(() => {
 		const tick = async () => {
@@ -201,6 +195,7 @@ export default function Home() {
 				jobId: string;
 				newStatus?: string;
 				newRuntime?: string;
+				userSub?: string;
 			}> = [];
 
 			for (const job of jobsRef.current) {
@@ -216,7 +211,7 @@ export default function Home() {
 			const resp = await getJobStatusBySlurmID(job.slurm_id!, token);
 			if (resp.error) {
 				console.warn(`Failed to fetch status for job ${job.job_id}:`, resp.error);
-				continue; // skip this job if there's an error
+				continue;
 			}
 			const fetchedStatus = resp.data.state;
 			const fetchedRuntime = resp.data.elapsed;
@@ -228,6 +223,7 @@ export default function Home() {
 			) {
 				toUpdate.push({
 					jobId: job.job_id,
+					userSub: job.user_sub,
 					newStatus: fetchedStatus,
 					newRuntime: fetchedRuntime,
 				});
@@ -235,13 +231,13 @@ export default function Home() {
 			}
 
 			if (toUpdate.length === 0) {
-				return; // nothing to do
+				return;
 			}
 
-			// Apply updates on the server one by one (or you could Promise.all)
+			// Apply updates on the server
 			await Promise.all(
-				toUpdate.map(({ jobId, newStatus, newRuntime }) =>
-					updateJob(jobId ?? '', newStatus ?? '', newRuntime ?? '', user?.sub ?? '', token)
+				toUpdate.map(({ jobId, newStatus, newRuntime, userSub }) =>
+					updateJob(jobId ?? '', newStatus ?? '', newRuntime ?? '', userSub ?? '', token)
 				)
 			);
 
@@ -278,7 +274,7 @@ export default function Home() {
 			try {
 				const token = await getAccessTokenSilently();
 				const [jobsResponse, structuresResponse] = await Promise.all([
-					getAllJobs(token),
+					adminGetAllJobs(token),
 					getLibraryStructures(token)
 				]);
 				
@@ -351,7 +347,7 @@ export default function Home() {
 
 		try {
 			const token = await getAccessTokenSilently();
-			const response = await getAllJobs(token);
+			const response = await adminGetAllJobs(token);
 			setJobs(response.data);
 			setFilterStructureId('');
 		} catch (err) {
@@ -515,29 +511,25 @@ export default function Home() {
 				</Snackbar>
 			</Box>
 			<MolmakerPageTitle
-				title="Dashboard"
+				title="Admin Dashboard"
 				subtitle={
 					<>
-						Hello, {user?.name}
+						Welcome to the admin dashboard. Here you can manage jobs, users, and groups.
 					</>
 				}
 			/>
+			{/* {adminPanelToken && <AdminGroupPanel token={adminPanelToken} />} */}
 			{/* Filters */}
 			<Grid container spacing={2} sx={{ mb: 4 }} size={12}>
 				<Grid size={{ xs: 12, sm: 7 }}>
-					<Paper elevation={2} sx={{ borderRadius: 2, bgcolor: grey[50] }}>
-						<Typography
-							variant="h6" 
-							color="text.secondary" 
-							bgcolor={blueGrey[200]} 
-							sx={{ p: 2, display: 'flex', alignItems: 'center', borderTopLeftRadius: 5, borderTopRightRadius: 5 }}
-						>
+					<Paper sx={{ borderRadius: 2 }}>
+						<Typography variant="h6" color="text.secondary" bgcolor={blueGrey[200]} sx={{ p: 2, display: 'flex', alignItems: 'center', borderTopLeftRadius: 5, borderTopRightRadius: 5 }}>
 							<FilterAltOutlined sx={{ mr: 1 }} />
 							Filters
 						</Typography>
 						<Divider />
 						<Box sx={{ p: 2 }}>
-							<Typography variant="body2" color={grey[600]} sx={{ mb: 2, mt: 1, fontWeight: 'bold' }}>
+							<Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
 								Show columns
 							</Typography>
 							<FormGroup
@@ -569,11 +561,11 @@ export default function Home() {
 							</FormGroup>
 						</Box>
 						<Box sx={{ px: 2, pb: 2 }}>
-							<Typography variant="body2" color={grey[600]} sx={{ mb: 2, fontWeight: 'bold' }}>
+							<Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
 								Filter
 							</Typography>
 							{/* Each filter row on its own line */}
-							<Box sx={{ bgcolor: grey[200], p: 3, borderRadius: 2 }}>
+							<Box sx={{ bgcolor: grey[100], p: 3, borderRadius: 1 }}>
 								{filters.map((filter, index) => (
 									<Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
 										<Select
@@ -650,7 +642,6 @@ export default function Home() {
 								>
 									Add Filter
 								</Button>
-								
 								<Button
 									variant="contained"
 									color="primary"
@@ -683,7 +674,7 @@ export default function Home() {
 							data={previewData}
 							format='xyz'
 							source={'library'}
-							sx={{ height: '100%' }}
+							sx={{ maxHeight: '100%' }}
 						/>
 					)}
 				</Grid>
@@ -714,9 +705,9 @@ export default function Home() {
 					structures={structures}
 					selectedStructure={filterStructureId}
 					onStructureChange={setFilterStructureId}
+					isGroupAdmin={true}
 				/>
-				<Divider />
-				<JobsTable
+				<AdminJobsTable
 					jobs={filteredJobs}
 					page={page}
 					rowsPerPage={rowsPerPage}

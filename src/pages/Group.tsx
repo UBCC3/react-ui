@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -6,7 +6,6 @@ import {
 	Paper,
 	Divider,
 	TablePagination,
-	Dialog,
 	Snackbar,
 	Button,
 	Typography,
@@ -24,71 +23,28 @@ import {
 import { blueGrey, grey } from '@mui/material/colors';
 import { 
 	cancelJobBySlurmID,
-	getAllJobs, 
 	getJobStatusBySlurmID, 
 	getLibraryStructures, 
 	getStructureDataFromS3, 
 	updateJob,
 	deleteJob,
-	upsertCurrentUser
-} from '../../services/api';
-import { JobStatus } from '../../constants';
-import JobsStatus from './components/JobsStatus';
-import JobsToolbar from './components/JobsToolbar';
-import JobsTable from './components/JobsTable';
+	getCurrentUserGroupJobs,
+	upsertCurrentUser,
+} from '../services/api';
+import { JobStatus } from '../constants';
+import JobsToolbar from './Home/components/JobsToolbar';
 import {
 	MolmakerPageTitle,
 	MolmakerMoleculePreview, 
-	MolmakerLoading, 
 	MolmakerAlert,
 	MolmakerConfirm
-} from '../../components/custom';
-import type { Job, Structure } from '../../types';
+} from '../components/custom';
+import type { Job, Structure } from '../types';
 import { DeleteOutlineOutlined, Add, FilterAltOutlined } from '@mui/icons-material';
+import GroupPanel from '../components/GroupPanel';
+import GroupJobsTable from './Home/components/GroupJobsTable';
 
-export default function Home() {
-	const navigate = useNavigate();
-	const { user, getAccessTokenSilently } = useAuth0();
-
-	// confirm delete job
-	const [openConfirmDelete, setOpenConfirmDelete] = useState<boolean>(false);
-	const handleOpenConfirmDelete = () => setOpenConfirmDelete(true);
-
-	// data state
-	const [jobs, setJobs] = useState<Job[]>([]);
-	const [structures, setStructures] = useState<Structure[]>([]);
-
-	// UI state
-	const [error, setError] = useState<string | null>(null);
-	const [open, setOpen] = useState<boolean>(false);
-	const [page, setPage] = useState<number>(0);
-	const [rowsPerPage, setRowsPerPage] = useState<number>(5);
-	const [loading, setLoading] = useState<boolean>(true);
-	const [structureLoading, setStructureLoading] = useState<boolean>(false);
-
-	// selection
-	const [selectedJobId, setSelectedJobId] = useState<string>('');
-	const [filterStructureId, setFilterStructureId] = useState<string>('');
-
-	// preview state
-	const [previewData, setPreviewData] = useState<string>('');
-
-	// sorting
-	const [order, setOrder] = useState<'asc' | 'desc'>('desc');
-	const [orderBy, setOrderBy] = useState<keyof Job>('submitted_at');
-	const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
-
-	// general alert
-	const [alertShow, setAlertShow] = useState<boolean>(false);
-	const [alertMsg, setAlertMsg] = useState<string>('');
-	const [alertSeverity, setAlertSeverity] = useState<'success' | 'error' | 'info' | 'warning'>('info');
-
-	const [filters, setFilters] = useState<Array<{
-		column: keyof Job;
-		value: string;
-		extent: 'contains' | 'equals' | 'startsWith';
-	}>>([{ column: 'job_name', value: '', extent: 'contains' }]);
-
+export default function Group() {
 	// map column name to display name
 	const columnDisplayNames: Record<any, string> = {
 		job_name: 'Job Name',
@@ -99,6 +55,7 @@ export default function Home() {
 		runtime: 'Runtime',
 		submitted_at: 'Submitted At',
 		completed_at: 'Completed At',
+		is_public: 'Visibility',
 	}
 
 	const [displayColumns, setDisplayColumns] = useState({
@@ -109,219 +66,162 @@ export default function Home() {
 		tags: true,
 		runtime: true,
 		submitted_at: true,
-		completed_at: true
+		completed_at: true,
+		is_public: true,
 	});
 
-	// track jobs for polling
+	// Router and Auth hooks
+	const navigate = useNavigate();
+	const { user, getAccessTokenSilently } = useAuth0();
+
+	// Admin panel token and user role
+	const [adminPanelToken, setAdminPanelToken] = useState<string | null>(null);
+	const [userRole, setUserRole] = useState<string>('');
+
+	// Data states
+	const [jobs, setJobs] = useState<Job[]>([]);
+	const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
+	const [structures, setStructures] = useState<Structure[]>([]);
+
+	// UI states
+	const [loading, setLoading] = useState(true);
+	const [structureLoading, setStructureLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+	const [page, setPage] = useState(0);
+	const [rowsPerPage, setRowsPerPage] = useState(5);
+
+	// Selection & preview
+	const [selectedJobId, setSelectedJobId] = useState<string>('');
+	const [previewData, setPreviewData] = useState<string>('');
+
+	// Filters
+	const [filterStructureId, setFilterStructureId] = useState<string>('');
+	const [filters, setFilters] = useState<Array<{ column: keyof Job; value: string; extent: 'contains' | 'equals' | 'startsWith' }>>([
+		{ column: 'job_name', value: '', extent: 'contains' }
+	]);
+
+	// Sorting
+	const [order, setOrder] = useState<'asc' | 'desc'>('desc');
+	const [orderBy, setOrderBy] = useState<keyof Job>('submitted_at');
+
+	// Alerts & confirmation
+	const [alertShow, setAlertShow] = useState(false);
+	const [alertMsg, setAlertMsg] = useState('');
+	const [alertSeverity, setAlertSeverity] = useState<'success' | 'error' | 'info' | 'warning'>('info');
+	const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+
+	// Track jobs for polling
 	const jobsRef = useRef<Job[]>([]);
 	useEffect(() => { jobsRef.current = jobs; }, [jobs]);
 
-	const handleFilterSubmit = () => {
-		setLoading(true);
-		try {
-			let filtered = jobsRef.current;
-
-			// Apply each filter
-			for (const filter of filters) {
-				filtered = filtered.filter(job => {
-					let jobValue = '';
-					if (filter.column === 'structures') {
-						jobValue = job.structures.map(s => s.name).join(', ').toLowerCase();
-					} else {
-						jobValue = String(job[filter.column] ?? '').toLowerCase();
-					}
-					const filterValue = filter.value.toLowerCase();
-
-					switch (filter.extent) {
-						case 'contains':
-							if (filter.column === 'tags' || filter.column === 'structures') {
-								console.log(job[filter.column], filterValue);
-								// Special handling for tags and structures
-								console.log("Filtering by tags or structures:", jobValue, filterValue);
-								return jobValue.split(',').some(tag => tag.trim().toLowerCase().includes(filterValue));
-							}
-							// Default contains behavior
-							return jobValue.includes(filterValue);
-						case 'equals':
-							if (filter.column === 'tags' || filter.column === 'structures') {
-								// Special handling for tags and structures
-								return jobValue.split(',').some(tag => tag.trim().toLowerCase() === filterValue);
-							}
-							return jobValue === filterValue;
-						case 'startsWith':
-							if (filter.column === 'tags' || filter.column === 'structures') {
-								// Special handling for tags and structures
-								return jobValue.split(',').some(tag => tag.trim().toLowerCase().startsWith(filterValue));
-							}
-							return jobValue.startsWith(filterValue);
-						default:
-							return true; // no filter applied
-					}
-				});
-			}
-
-			setFilteredJobs(filtered);
-			setPage(0); // reset to first page
-		} catch (err) {
-			setError('Failed to apply filters');
-			console.error('Failed to apply filters:', err);
-		} finally {
-			setLoading(false);
-		}
-	}
-
+	// Initialize token and role
 	useEffect(() => {
-		if (!user) return;
+		getAccessTokenSilently()
+			.then(token => setAdminPanelToken(token))
+			.catch(() => setAdminPanelToken(null));
 
-		const loadUserProfile = async () => {
-			try {
-				const token = await getAccessTokenSilently();
-				const result = await upsertCurrentUser(token, user.email || '');
-
-				if (result.status === 200 && result.data) {
-					console.log('User synced:', result.data);
-				} else {
-					console.warn('Upsert returned', result.status, result.error);
-				}
-			} catch (err) {
-				console.error('Failed to sync user to our database:', err);
-			}
-		};
-		loadUserProfile();
-	}, [user, getAccessTokenSilently]);
-
-	// poll statuses every 5s
-	useEffect(() => {
-		const tick = async () => {
-		try {
+		(async () => {
 			const token = await getAccessTokenSilently();
+			const { data: ud } = await upsertCurrentUser(token, user?.email || '');
+			setUserRole(ud.role || '');
+		})();
+	}, [getAccessTokenSilently, user?.email]);
 
-			// Gather all the changes we need to apply
-			const toUpdate: Array<{
-				jobId: string;
-				newStatus?: string;
-				newRuntime?: string;
-			}> = [];
-
-			for (const job of jobsRef.current) {
-			// skip terminal jobs
-			if (
-				[JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED]
-				.includes(job.status)
-			) {
-				continue;
-			}
-
-			// fetch latest from backend
-			const resp = await getJobStatusBySlurmID(job.slurm_id!, token);
-			if (resp.error) {
-				console.warn(`Failed to fetch status for job ${job.job_id}:`, resp.error);
-				continue; // skip this job if there's an error
-			}
-			const fetchedStatus = resp.data.state;
-			const fetchedRuntime = resp.data.elapsed;
-
-			// if anything changed, queue it up
-			if (
-				fetchedStatus !== job.status ||
-				fetchedRuntime !== job.runtime
-			) {
-				toUpdate.push({
-					jobId: job.job_id,
-					newStatus: fetchedStatus,
-					newRuntime: fetchedRuntime,
-				});
-			}
-			}
-
-			if (toUpdate.length === 0) {
-				return; // nothing to do
-			}
-
-			// Apply updates on the server one by one (or you could Promise.all)
-			await Promise.all(
-				toUpdate.map(({ jobId, newStatus, newRuntime }) =>
-					updateJob(jobId ?? '', newStatus ?? '', newRuntime ?? '', user?.sub ?? '', token)
-				)
-			);
-
-			// And mirror them in local state
-			setJobs((prev) =>
-			prev.map((j) => {
-				const upd = toUpdate.find((u) => u.jobId === j.job_id);
-				return upd
-				? {
-					...j,
-					status:  upd.newStatus  ?? j.status,
-					runtime: upd.newRuntime ?? j.runtime,
-					}
-				: j;
-			})
-			);
-		} catch (err: any) {
-			console.error("Polling error:", err);
-			setError("Failed to refresh job statuses.");
-		}
-		};
-
-		// start pool
-		const id = setInterval(tick, 5000);
-		// run immediately once
-		tick();
-
-		return () => clearInterval(id);
-	}, [getAccessTokenSilently]);
-
-	// load jobs & structures
+	// Load jobs & structures (and apply structure filter immediately)
 	useEffect(() => {
-		const loadData = async () => {
+		setLoading(true);
+		(async () => {
 			try {
 				const token = await getAccessTokenSilently();
-				const [jobsResponse, structuresResponse] = await Promise.all([
-					getAllJobs(token),
-					getLibraryStructures(token)
+				const [jr, sr] = await Promise.all([
+					getCurrentUserGroupJobs(token),
+					getLibraryStructures(token),
 				]);
-				
-				setJobs(jobsResponse.data.filter(job => job.is !== JobStatus.PENDING));
-				setFilteredJobs(jobsResponse.data);
-
-				const sortedStructures = structuresResponse.data.sort((a, b) => a.name.localeCompare(b.name));
-				setStructures([{ 
-					structure_id: '', 
-					name: 'All', 
-					user_sub: '', 
-					location: '',
-					uploaded_at: '',
-					notes: ''
-				}, ...sortedStructures]);
-			} catch (err) {
+				setJobs(jr.data);
+				// Apply structure filter if set
+				const initial = filterStructureId
+					? jr.data.filter(j => j.structures.some(s => s.structure_id === filterStructureId))
+					: jr.data;
+				setFilteredJobs(initial);
+				// Prep structure list
+				const sortedStructs = sr.data.sort((a,b) => a.name.localeCompare(b.name));
+				setStructures([{ structure_id:'', name:'All', user_sub:'', location:'', uploaded_at:'', notes:'' }, ...sortedStructs]);
+			} catch (e) {
+				console.error(e);
 				setError('Failed to load data');
-				console.error('Failed to load data', err);
 			} finally {
 				setLoading(false);
 			}
-		}
+		})();
+	}, [getAccessTokenSilently, filterStructureId]);
 
-		setLoading(true);
-		loadData();
-	}, []);
-
-	// filter jobs when structure filter changes
+	// Poll job statuses every 5s
 	useEffect(() => {
+		let id: ReturnType<typeof setInterval>;
+		const tick = async () => {
+			try {
+				const token = await getAccessTokenSilently();
+				const toUpdate: Array<{ jobId:string; newStatus:string; newRuntime:string; userSub:string }> = [];
+				for (const j of jobsRef.current) {
+					if ([JobStatus.COMPLETED,JobStatus.FAILED,JobStatus.CANCELLED].includes(j.status)) continue;
+					const r = await getJobStatusBySlurmID(j.slurm_id!, token);
+					if (r.error) continue;
+					const { state, elapsed } = r.data;
+					if (state !== j.status || elapsed !== j.runtime) {
+						toUpdate.push({ jobId:j.job_id, newStatus:state, newRuntime:elapsed, userSub:j.user_sub });
+					}
+				}
+				if (toUpdate.length) {
+					await Promise.all(toUpdate.map(u =>
+						updateJob(u.jobId, u.newStatus, u.newRuntime, u.userSub, token)
+					));
+					setJobs(prev => prev.map(j => {
+						const u = toUpdate.find(x => x.jobId === j.job_id);
+						return u ? { ...j, status:u.newStatus, runtime:u.newRuntime } : j;
+					}));
+				}
+			} catch (e) {
+				console.error(e);
+				setError('Failed to refresh job statuses.');
+			}
+		};
+		tick();
+		id = setInterval(tick, 5000);
+		return () => clearInterval(id);
+	}, [getAccessTokenSilently]);
+
+	// Apply custom filters
+	const handleFilterSubmit = useCallback(() => {
 		setLoading(true);
 		try {
-			const filtered = filterStructureId
-				? jobs.filter(job => job.structures.some(s => s.structure_id === filterStructureId))
-				: jobs;
-			setFilteredJobs(filtered);
+			let res = [...jobsRef.current];
+			filters.forEach(f => {
+				const val = f.value.toLowerCase();
+				res = res.filter(job => {
+					const raw = f.column === 'structures'
+						? job.structures.map(s=>s.name).join(',').toLowerCase()
+						: String(job[f.column] ?? '').toLowerCase();
+					if (['tags','structures'].includes(f.column)) {
+						const arr = raw.split(',').map(x=>x.trim());
+						return arr.some(x =>
+							f.extent==='contains' ? x.includes(val) :
+							f.extent==='equals'   ? x===val :
+							x.startsWith(val)
+						);
+					}
+					return f.extent==='contains' ? raw.includes(val) :
+						f.extent==='equals'   ? raw===val :
+						raw.startsWith(val);
+				});
+			});
+			setFilteredJobs(res);
 			setPage(0);
-		} catch (err) {
-			setError('Failed to filter jobs');
-			console.error('Failed to filter jobs:', err);
+		} catch {
+			setError('Failed to apply filters');
 		} finally {
 			setLoading(false);
 		}
-	}, [filterStructureId, jobs]);
+	}, [filters]);
 
 	const openMoleculeViewer = async (structureId: string) => {
 		console.log("Opening molecule viewer for structure ID:", structureId);
@@ -337,7 +237,6 @@ export default function Home() {
 			}
 			setPreviewData(response.data);
 			setError(null);
-			// setOpen(true);
 		} catch (err) {
 			setError('Failed to load molecule structure. Please try again.');
 			console.error("Failed to load molecule structure:", err);
@@ -351,7 +250,7 @@ export default function Home() {
 
 		try {
 			const token = await getAccessTokenSilently();
-			const response = await getAllJobs(token);
+			const response = await getCurrentUserGroupJobs(token);
 			setJobs(response.data);
 			setFilterStructureId('');
 		} catch (err) {
@@ -455,11 +354,13 @@ export default function Home() {
 		return true;
 	}
 
-	if (loading) {
-		return (
-			<MolmakerLoading />
-		);
-	}
+	// Confirmation & alert helpers
+	const showAlert = (msg:string, sev:typeof alertSeverity) => {
+		setAlertMsg(msg);
+		setAlertSeverity(sev);
+		setAlertShow(true);
+	};
+	const confirmDelete = () => setConfirmDeleteOpen(true);
 
 	return (
 		<Box bgcolor="rgb(247, 249, 252)" p={4}>
@@ -471,28 +372,11 @@ export default function Home() {
 					sx={{ mb: 4 }}
 				/>
 			)}
-			{/* Structure Preview Dialog */}
-			<Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
-				<Box sx={{ width: '100%', height: 400 }}>
-					<MolmakerMoleculePreview
-						data={previewData}
-						format='xyz'
-						source="library"
-						title="Structure Preview"
-						sx={{ width: '100%', height: '100%' }}
-					/>
-				</Box>
-			</Dialog>
 			<MolmakerConfirm
-				open={openConfirmDelete}
-				onClose={() => setOpenConfirmDelete(false)}
-				textToShow={
-					"Are you sure you want to delete this row? This action cannot be undone."
-				}
-				onConfirm={() => {
-					handleDelete();
-					setOpenConfirmDelete(false);
-				}}
+				open={confirmDeleteOpen}
+				onClose={() => setConfirmDeleteOpen(false)}
+				onConfirm={handleDelete}
+				textToShow="Are you sure you want to delete this job? This action cannot be undone."
 			/>
 			<Box
 				sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
@@ -515,18 +399,20 @@ export default function Home() {
 				</Snackbar>
 			</Box>
 			<MolmakerPageTitle
-				title="Dashboard"
+				title="Group Dashboard"
 				subtitle={
 					<>
-						Hello, {user?.name}
+						Welcome to the group dashboard. Here you can manage jobs and structures within your group.
 					</>
 				}
 			/>
+			{adminPanelToken && <GroupPanel token={adminPanelToken} />}
+
 			{/* Filters */}
 			<Grid container spacing={2} sx={{ mb: 4 }} size={12}>
 				<Grid size={{ xs: 12, sm: 7 }}>
-					<Paper elevation={2} sx={{ borderRadius: 2, bgcolor: grey[50] }}>
-						<Typography
+					<Paper sx={{ borderRadius: 2, bgcolor: grey[50] }}>
+						<Typography 
 							variant="h6" 
 							color="text.secondary" 
 							bgcolor={blueGrey[200]} 
@@ -650,7 +536,6 @@ export default function Home() {
 								>
 									Add Filter
 								</Button>
-								
 								<Button
 									variant="contained"
 									color="primary"
@@ -683,13 +568,12 @@ export default function Home() {
 							data={previewData}
 							format='xyz'
 							source={'library'}
-							sx={{ height: '100%' }}
+							sx={{ height:'100%' }}
 						/>
 					)}
 				</Grid>
 			</Grid>
-			{/* <JobsStatus jobs={jobs} /> */}
-			<Paper>
+			<Paper sx={{ borderRadius: 2, bgcolor: grey[50] }}>
 				<JobsToolbar
 					selectedJobId={selectedJobId}
 					onViewDetails={() => navigate(`/jobs/${selectedJobId}`)}
@@ -709,15 +593,17 @@ export default function Home() {
 					cancelDisabled={cancelDisabled}
 					deleteDisabled={deleteDisabled}
 					onCancelJob={handleCancel}
-					onDeleteJob={handleOpenConfirmDelete}
+					onDeleteJob={confirmDelete}
 					onRefresh={handleRefresh}
 					structures={structures}
 					selectedStructure={filterStructureId}
 					onStructureChange={setFilterStructureId}
+					isGroupAdmin={userRole === 'group_admin'}
 				/>
 				<Divider />
-				<JobsTable
+				<GroupJobsTable
 					jobs={filteredJobs}
+					loading={loading}
 					page={page}
 					rowsPerPage={rowsPerPage}
 					order={order}
@@ -741,6 +627,7 @@ export default function Home() {
 					}}
 					onRowClick={setSelectedJobId}
 					displayColumns={displayColumns}
+					isGroupAdmin={userRole === 'group_admin'}
 				/>
 				<TablePagination
 					component="div"
@@ -750,7 +637,7 @@ export default function Home() {
 					onPageChange={(_, newPage) => setPage(newPage)}
 					onRowsPerPageChange={e => { setRowsPerPage(+e.target.value); setPage(0); }}
 					rowsPerPageOptions={[5, 10, 25]}
-					sx={{ bgcolor: blueGrey.A200 }}
+					sx={{ bgcolor: blueGrey.A200, borderBottomLeftRadius: 5, borderBottomRightRadius: 5 }}
 				/>
 			</Paper>
 		</Box>

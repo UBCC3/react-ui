@@ -19,7 +19,8 @@ import {
 	Block,
 	AutoMode,
 	TuneOutlined,
-	DeleteOutlineOutlined
+	DeleteOutlineOutlined,
+	WorkHistoryOutlined
 } from '@mui/icons-material';
 import { blueGrey } from '@mui/material/colors';
 
@@ -37,6 +38,7 @@ interface JobsToolbarProps {
 	structures: Array<{ structure_id: string; name: string }>;
 	selectedStructure: string;
 	onStructureChange: (structureId: string) => void;
+	isGroupAdmin?: boolean;
 }
 
 export default function JobsToolbar({
@@ -52,11 +54,13 @@ export default function JobsToolbar({
 	onRefresh,
 	structures,
 	selectedStructure,
-	onStructureChange
+	onStructureChange,
+	isGroupAdmin = false,
 }: JobsToolbarProps) {
 	return (
-		<Toolbar sx={{ justifyContent: 'space-between', bgcolor: blueGrey['A200'] }}>
-			<Typography variant="h6" color="text.secondary">
+		<Toolbar sx={{ justifyContent: 'space-between', bgcolor: blueGrey['A200'], borderTopLeftRadius: 5, borderTopRightRadius: 5 }}>
+			<Typography variant="h6" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+				<WorkHistoryOutlined sx={{ mr: 2 }} />
 				Jobs History
 			</Typography>
 			<Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -108,26 +112,30 @@ export default function JobsToolbar({
 							</IconButton>
 						</span>
 					</Tooltip>
-					<Tooltip title="Cancel job">
-						<span>
-							<IconButton
-								disabled={cancelDisabled(selectedJobId)}
-								onClick={onCancelJob}
-							>
-								<Block />
-							</IconButton>
-						</span>
-					</Tooltip>
-					<Tooltip title="Delete job">
-						<span>
-							<IconButton
-								disabled={deleteDisabled(selectedJobId)}
-								onClick={onDeleteJob}
-							>
-								<DeleteOutlineOutlined />
-							</IconButton>
-						</span>
-					</Tooltip>
+					{isGroupAdmin && (
+						<Tooltip title="Cancel job">
+							<span>
+								<IconButton
+									disabled={cancelDisabled(selectedJobId)}
+									onClick={onCancelJob}
+								>
+									<Block />
+								</IconButton>
+							</span>
+						</Tooltip>
+					)}
+					{isGroupAdmin && (
+						<Tooltip title="Delete job">
+							<span>
+								<IconButton
+									disabled={deleteDisabled(selectedJobId)}
+									onClick={onDeleteJob}
+								>
+									<DeleteOutlineOutlined />
+								</IconButton>
+							</span>
+						</Tooltip>
+					)}
 				</Box>
 				<Divider orientation="vertical" flexItem sx={{ mx: 2 }} />
 				<Tooltip title="Refresh jobs">
@@ -149,22 +157,6 @@ export default function JobsToolbar({
 						</MenuItem>
 					))}
 				</Select>
-				{/* <FormControl sx={{ minWidth: 160, ml: 2 }}>
-					<InputLabel id="structure-select-label">Structure</InputLabel>
-					<Select
-						labelId="structure-select-label"
-						value={selectedStructure}
-						label="Structure"
-						size='small'
-						onChange={(e) => onStructureChange(e.target.value as string)}
-					>
-						{structures.map(({ structure_id, name }) => (
-							<MenuItem key={structure_id} value={structure_id}>
-								{name}
-							</MenuItem>
-						))}
-					</Select>
-				</FormControl> */}
 			</Box>
 		</Toolbar>
 	);
