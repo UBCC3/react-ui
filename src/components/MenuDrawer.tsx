@@ -14,13 +14,13 @@ import {
 	ListItemText, 
 	Typography,
 } from '@mui/material';
-import { AdminPanelSettingsOutlined, TuneOutlined, DashboardOutlined, CollectionsOutlined, AutoMode, PeopleAltOutlined, ExpandLess, ExpandMore, AccountCircleOutlined } from '@mui/icons-material';
+import { AdminPanelSettingsOutlined, TuneOutlined, DashboardOutlined, CollectionsOutlined, AutoMode, PeopleAltOutlined, ExpandLess, ExpandMore, AccountCircleOutlined, BorderRight } from '@mui/icons-material';
 import logo from '../assets/logo.svg';
 import { useNavigate } from 'react-router-dom';
 import { useDrawer } from './DrawerContext';
 import { useAuth0 } from '@auth0/auth0-react';
 import { upsertCurrentUser } from '../services/api';
-import { grey } from '@mui/material/colors';
+import { blue, grey } from '@mui/material/colors';
 
 const DRAWER_WIDTH  = 250;
 const CLOSED_WIDTH  = 56;
@@ -48,8 +48,8 @@ const PermanentDrawer = styled(Drawer, {
 })(({ theme, open }) => ({
 	'& .MuiDrawer-paper': {
 		boxSizing: 'border-box',
-		backgroundColor: 'rgb(35, 48, 68)',
-		color: theme.palette.text.secondary,
+		color: grey[300],
+		borderRight: `1px solid ${grey[300]}`,
 		...(open ? openedMixin(theme) : closedMixin(theme)),
 	},
 }));
@@ -84,8 +84,8 @@ export default function MenuDrawer() {
 	}, [user]);
 
 	const drawerContent = (
-		<>
-			<DrawerHeader sx={{ justifyContent: open ? 'space-between' : 'center', paddingLeft: open ? 2: 0, bgcolor: 'rgba(25, 35, 51, 0.3)' }}>
+		<Box className="bg-slate-200 h-full">
+			<DrawerHeader sx={{ justifyContent: open ? 'space-between' : 'center', paddingLeft: open ? 2: 0, borderBottom: '1px solid', borderColor: 'divider', height: '65px' }}>
 				{open && (
 					<Typography
 						variant="h6"
@@ -95,19 +95,20 @@ export default function MenuDrawer() {
 							display: 'flex',
 							alignItems: 'center',
 							textDecoration: 'none',
-							color: grey[300],
+							color: grey[800],
 							fontSize: '1.2rem',
 						}}
 					>
 						<img src={logo} alt="Logo" style={{ height: 35, marginRight: '1.2rem' }} />
-						MolMaker
+						<h1 className="font-semibold text-xl select-none font-sans">
+							MolMaker
+						</h1>
 					</Typography>
 				)}
-				<IconButton onClick={toggle} sx={{ color: grey[300] }}>
+				<IconButton onClick={toggle} sx={{ color: grey[800], ml: open ? 0 : 1 }}>
 					{open ? <ChevronLeftOutlinedIcon /> : <MenuIcon />}
 				</IconButton>
 			</DrawerHeader>
-			<Divider sx={{ bgcolor: grey[700] }} />
 			<List
 				component="nav"
 			>
@@ -143,34 +144,24 @@ export default function MenuDrawer() {
 						sx={{
 							py: 2,
 							justifyContent: open ? 'initial' : 'center',
-							'&.Mui-selected': {
-								bgcolor: 'rgb(45, 61, 84)',
-								'&:hover': { bgcolor: 'rgb(58, 76, 103)'}
-							},
-							'&:hover': { bgcolor: 'rgb(58, 76, 103)'},
 						}}
 					>
-						<ListItemIcon sx={{ color: 'grey', minWidth: 0, mr: open ? 3 : 'auto' }}>
+						<ListItemIcon sx={{ color: blue[600], minWidth: 0, mr: open ? 3 : 'auto' }}>
 							{icon}
 						</ListItemIcon>
 						{open && (
 							<ListItemText
 								primary={
-									<Typography 
-										sx={{ 
-											color: grey[500],
-											fontSize: '0.9rem', 
-										}}
-									>
+									<span className='text-gray-600 text-sm font-semibold font-sans'>
 										{text}
-									</Typography>}
+									</span>
+								}
 							/>
 						)}
 					</ListItemButton>
 				))}
 				{groupId && (
 					<>
-						<Divider sx={{ bgcolor: grey[700] }} />
 						<ListItemButton
 							key={'my-group'}
 							selected={selectedIndex === 4}
@@ -180,34 +171,26 @@ export default function MenuDrawer() {
 							}}
 							sx={{
 								py: 2,
-								justifyContent: open ? 'initial' : 'center',
-								'&.Mui-selected': {
-									bgcolor: 'rgb(45, 61, 84)',
-									'&:hover': { bgcolor: 'rgb(58, 76, 103)'}
-								},
-								'&:hover': { bgcolor: 'rgb(58, 76, 103)'},
+								justifyContent: open ? 'initial' : 'center'
 							}}
 						>
-							<ListItemIcon sx={{ color: 'grey', minWidth: 0, mr: open ? 3 : 'auto' }}>
+							<ListItemIcon sx={{ color: blue[600], minWidth: 0, mr: open ? 3 : 'auto' }}>
 								<PeopleAltOutlined />
 							</ListItemIcon>
-							<ListItemText
-								primary={
-									<Typography 
-										sx={{ 
-											color: grey[500],
-											fontSize: '0.9rem', 
-										}}
-									>
-										My Group
-									</Typography>}
-							/>
+							{open && (
+								<ListItemText
+									primary={
+										<span className='text-gray-600 text-sm font-semibold font-sans'>
+											My Group
+										</span>
+									}
+								/>
+							)}
 						</ListItemButton>
 					</>
 				)}
 				{role === 'admin' && (
 					<>
-						<Divider sx={{ bgcolor: grey[700] }} />
 						<ListItemButton
 							key={'admin-panel'}
 							selected={selectedIndex === 5}
@@ -218,36 +201,27 @@ export default function MenuDrawer() {
 							sx={{
 								py: 2,
 								justifyContent: open ? 'initial' : 'center',
-								'&.Mui-selected': {
-									bgcolor: 'rgb(45, 61, 84)',
-									'&:hover': { bgcolor: 'rgb(58, 76, 103)'}
-								},
-								'&:hover': { bgcolor: 'rgb(58, 76, 103)'},
 							}}
 						>
-							<ListItemIcon sx={{ color: 'grey', minWidth: 0, mr: open ? 3 : 'auto' }}>
+							<ListItemIcon sx={{ color: blue[600], minWidth: 0, mr: open ? 3 : 'auto' }}>
 								<AdminPanelSettingsOutlined />
 							</ListItemIcon>
 							<ListItemText
 								primary={
-									<Typography 
-										sx={{ 
-											color: grey[500],
-											fontSize: '0.9rem', 
-										}}
-									>
+									<span className='text-gray-600 text-sm font-semibold font-sans'>
 										Admin Panel
-									</Typography>}
+									</span>
+								}
 							/>
 							<IconButton
 								size="small"
-								sx={{ color: 'grey', ml: 1 }}
+								sx={{ color: grey[800], ml: 1 }}
 								onClick={(e) => {
 									e.stopPropagation();
 									setExpanded(!expanded);
 								}}
 							>
-								{expanded ? <ExpandLess sx={{ color: 'grey' }}/> : <ExpandMore sx={{ color: 'grey' }}/>}
+								{expanded ? <ExpandLess sx={{ color: grey[800] }}/> : <ExpandMore sx={{ color: grey[800] }}/>}
 							</IconButton>
 						</ListItemButton>
 						<Collapse in={expanded} timeout="auto" unmountOnExit>
@@ -262,27 +236,18 @@ export default function MenuDrawer() {
 									sx={{
 										py: 2,
 										pl: open ? 4 : 2,
-										justifyContent: open ? 'initial' : 'center',
-										'&.Mui-selected': {
-											bgcolor: 'rgb(45, 61, 84)',
-											'&:hover': { bgcolor: 'rgb(58, 76, 103)'}
-										},
-										'&:hover': { bgcolor: 'rgb(58, 76, 103)'},
+										justifyContent: open ? 'initial' : 'center'
 									}}
 								>
-									<ListItemIcon sx={{ color: 'grey', minWidth: 0, mr: open ? 3 : 'auto' }}>
+									<ListItemIcon sx={{ color: blue[600], minWidth: 0, mr: open ? 3 : 'auto' }}>
 										<AccountCircleOutlined />
 									</ListItemIcon>
 									<ListItemText
 										primary={
-											<Typography 
-												sx={{ 
-													color: grey[500],
-													fontSize: '0.8rem', 
-												}}
-											>
+											<span className='text-gray-600 text-sm font-semibold font-sans'>
 												Users List
-											</Typography>}
+											</span>
+										}
 									/>
 								</ListItemButton>
 							</List>
@@ -290,7 +255,7 @@ export default function MenuDrawer() {
 					</>
 				)}
 			</List>
-		</>
+		</Box>
 	);
 
 	return (

@@ -22,7 +22,7 @@ import {
 	DeleteOutlineOutlined,
 	WorkHistoryOutlined
 } from '@mui/icons-material';
-import { blueGrey } from '@mui/material/colors';
+import { blue, blueGrey, grey } from '@mui/material/colors';
 
 interface JobsToolbarProps {
 	selectedJobId: string | null;
@@ -58,9 +58,9 @@ export default function JobsToolbar({
 	isGroupAdmin = false,
 }: JobsToolbarProps) {
 	return (
-		<Toolbar sx={{ justifyContent: 'space-between', bgcolor: blueGrey['A200'], borderTopLeftRadius: 5, borderTopRightRadius: 5 }}>
-			<Typography variant="h6" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
-				<WorkHistoryOutlined sx={{ mr: 2 }} />
+		<Toolbar sx={{ justifyContent: 'space-between', borderTopLeftRadius: 5, borderTopRightRadius: 5 }}>
+			<Typography variant="h6" color={grey[800]} sx={{ display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: '1.1rem' }}>
+				<WorkHistoryOutlined sx={{ mr: 2, color: blue[600] }} />
 				Jobs History
 			</Typography>
 			<Box sx={{ display: 'flex', alignItems: 'center' }}>

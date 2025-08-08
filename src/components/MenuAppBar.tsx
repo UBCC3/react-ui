@@ -43,109 +43,113 @@ import { grey } from '@mui/material/colors';
 const ITEM_HEIGHT = 48;
 
 export default function MenuAppBar() {
-  const { open, width } = useDrawer();
-  const {
-	loginWithRedirect,
-	logout,
-	isAuthenticated,
-	user,
-	getAccessTokenSilently,
-  } = useAuth0();
+	const { open, width } = useDrawer();
+	const {
+		loginWithRedirect,
+		logout,
+		isAuthenticated,
+		user,
+		getAccessTokenSilently,
+	} = useAuth0();
 
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [anchorRequestsEl, setAnchorRequestsEl] = useState<null | HTMLElement>(null);
+	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+	const [anchorRequestsEl, setAnchorRequestsEl] = useState<null | HTMLElement>(null);
 
-  const [sentRequests, setSentRequests] = useState<any[]>([]);
-  const [incomingRequests, setIncomingRequests] = useState<any[]>([]);
+	const [sentRequests, setSentRequests] = useState<any[]>([]);
+	const [incomingRequests, setIncomingRequests] = useState<any[]>([]);
 
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-  const [requestType, setRequestType] = useState<'approve' | 'reject' | 'delete' | null>(null);
-  const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
+	const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+	const [requestType, setRequestType] = useState<'approve' | 'reject' | 'delete' | null>(null);
+	const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
 
-  const statusColors: Record<string, string> = {
-	pending: 'orange',
-	approved: 'green',
-	rejected: 'red',
-  };
-
-  const handleMenu = (event: MouseEvent<HTMLElement>) => {
-	setAnchorEl(event.currentTarget);
-  };
-  const handleClose = () => setAnchorEl(null);
-
-  const handleRequestsClick = (event: MouseEvent<HTMLElement>) => {
-	setAnchorRequestsEl(event.currentTarget);
-  };
-  const handleRequestsClose = () => setAnchorRequestsEl(null);
-
-  const handleApproveRequest = async (requestId: string) => {
-	const token = await getAccessTokenSilently();
-	if (!token) return;
-	await approveRequest(requestId, token);
-	setIncomingRequests(prev => prev.filter(r => r.request_id !== requestId));
-  };
-
-  const handleRejectRequest = async (requestId: string) => {
-	const token = await getAccessTokenSilently();
-	if (!token) return;
-	await rejectRequest(requestId, token);
-	setIncomingRequests(prev => prev.filter(r => r.request_id !== requestId));
-  };
-
-  const handleDeleteRequest = async (requestId: string) => {
-	const token = await getAccessTokenSilently();
-	if (!token) return;
-	await deleteRequest(requestId, token);
-	setSentRequests(prev => prev.filter(r => r.request_id !== requestId));
-  };
-
-  useEffect(() => {
-	const fetchSent = async () => {
-	  const token = await getAccessTokenSilently();
-	  if (!token || !user?.sub) return;
-	  const resp = await getSentRequests(user.sub, token);
-	  setSentRequests(resp.data);
+	const statusColors: Record<string, string> = {
+		pending: 'orange',
+		approved: 'green',
+		rejected: 'red',
 	};
 
-	const fetchIncoming = async () => {
-	  const token = await getAccessTokenSilently();
-	  if (!token || !user?.sub) return;
-	  const resp = await getRequests(user.sub, token);
-	  setIncomingRequests(resp.data);
+	const handleMenu = (event: MouseEvent<HTMLElement>) => {
+		setAnchorEl(event.currentTarget);
+	};
+	const handleClose = () => setAnchorEl(null);
+
+	const handleRequestsClick = (event: MouseEvent<HTMLElement>) => {
+		setAnchorRequestsEl(event.currentTarget);
+	};
+	const handleRequestsClose = () => setAnchorRequestsEl(null);
+
+	const handleApproveRequest = async (requestId: string) => {
+		const token = await getAccessTokenSilently();
+		if (!token) return;
+		await approveRequest(requestId, token);
+		setIncomingRequests(prev => prev.filter(r => r.request_id !== requestId));
 	};
 
-	fetchSent();
-	fetchIncoming();
-  }, [user?.sub, getAccessTokenSilently]);
+	const handleRejectRequest = async (requestId: string) => {
+		const token = await getAccessTokenSilently();
+		if (!token) return;
+		await rejectRequest(requestId, token);
+		setIncomingRequests(prev => prev.filter(r => r.request_id !== requestId));
+	};
+
+	const handleDeleteRequest = async (requestId: string) => {
+		const token = await getAccessTokenSilently();
+		if (!token) return;
+		await deleteRequest(requestId, token);
+		setSentRequests(prev => prev.filter(r => r.request_id !== requestId));
+	};
+
+	useEffect(() => {
+		const fetchSent = async () => {
+		const token = await getAccessTokenSilently();
+		if (!token || !user?.sub) return;
+		const resp = await getSentRequests(user.sub, token);
+		setSentRequests(resp.data);
+		};
+
+		const fetchIncoming = async () => {
+		const token = await getAccessTokenSilently();
+		if (!token || !user?.sub) return;
+		const resp = await getRequests(user.sub, token);
+		setIncomingRequests(resp.data);
+		};
+
+		fetchSent();
+		fetchIncoming();
+	}, [user?.sub, getAccessTokenSilently]);
 
   	return (
-		<>
+		<Box className="bg-slate-200">
 			<AppBar
 				component="nav"
 				position="fixed"
-				elevation={0}
+				elevation={2}
 				sx={{
-				width: { sm: `calc(100% - ${width}px)` },
-				ml: { sm: `${width}px` },
-				bgcolor: 'white',
+					width: { sm: `calc(100% - ${width}px)` },
+					ml: { sm: `${width}px` },
+					bgcolor:'inherit',
+					borderBottom: '1px solid',
+					borderColor: 'divider',
 				}}
 			>
 				<Toolbar>
 				{!open ? (
 					<Typography
-					variant="h6"
-					component="a"
-					href="/"
-					sx={{
-						flexGrow: 1,
-						color: 'text.primary',
-						textDecoration: 'none',
-						display: 'flex',
-						alignItems: 'center',
-					}}
+						variant="h6"
+						component="a"
+						href="/"
+						sx={{
+							flexGrow: 1,
+							color: grey[800],
+							textDecoration: 'none',
+							display: 'flex',
+							alignItems: 'center',
+						}}
 					>
-					<img src={logo} alt="Logo" style={{ height: 35, marginRight: 12 }} />
-					MolMaker
+						<img src={logo} alt="Logo" style={{ height: 35, marginRight: 12 }} />
+						<h1 className="font-semibold text-xl select-none font-sans">
+							MolMaker
+						</h1>
 					</Typography>
 				) : (
 					<Box sx={{ flexGrow: 1 }} />
@@ -161,7 +165,7 @@ export default function MenuAppBar() {
 								aria-haspopup="true"
 								aria-expanded={anchorRequestsEl ? 'true' : undefined}
 							>
-								<Avatar sx={{ bgcolor: grey[300], color: grey[800] }}>
+								<Avatar sx={{ bgcolor: grey[100], color: grey[700] }}>
 									<InboxOutlined fontSize="medium" />
 								</Avatar>
 							</IconButton>
@@ -174,7 +178,7 @@ export default function MenuAppBar() {
 							aria-haspopup="true"
 							aria-expanded={anchorEl ? 'true' : undefined}
 						>
-							<Avatar sx={{ bgcolor: grey[300], color: grey[800] }}>
+							<Avatar sx={{ bgcolor: grey[100], color: grey[700] }}>
 								<PersonIcon fontSize="medium" />
 							</Avatar>
 						</IconButton>
@@ -188,16 +192,16 @@ export default function MenuAppBar() {
 						<MenuItem disabled>{user?.name}</MenuItem>
 						<Divider />
 						<MenuItem onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}>
-						<ListItemIcon>
-							<Logout fontSize="small" />
-						</ListItemIcon>
-						Logout
+							<ListItemIcon>
+								<Logout fontSize="small" />
+							</ListItemIcon>
+							Logout
 						</MenuItem>
 					</Menu>
 					</>
 				) : (
 					<Button color="inherit" onClick={() => loginWithRedirect()}>
-					Login
+						Login
 					</Button>
 				)}
 				</Toolbar>
@@ -280,15 +284,15 @@ export default function MenuAppBar() {
 					</Box>
 					{req.status === 'pending' && (
 						<IconButton
-						size="small"
-						onClick={() => {
-							setConfirmDialogOpen(true);
-							setRequestType('delete');
-							setSelectedRequest(req.request_id);
-						}}
-						color="primary"
+							size="small"
+							onClick={() => {
+								setConfirmDialogOpen(true);
+								setRequestType('delete');
+								setSelectedRequest(req.request_id);
+							}}
+							color="primary"
 						>
-						<PersonAddDisabledOutlined />
+							<PersonAddDisabledOutlined />
 						</IconButton>
 					)}
 					</MenuItem>
@@ -304,42 +308,42 @@ export default function MenuAppBar() {
 			>
 				<DialogTitle id="confirm-dialog-title">Confirm Action</DialogTitle>
 				<DialogContent>
-				<DialogContentText id="confirm-dialog-description">
-					{requestType === 'approve'
-					? 'Are you sure you want to approve this request?'
-					: requestType === 'reject'
-					? 'Are you sure you want to reject this request?'
-					: 'Are you sure you want to delete this request?'}
-				</DialogContentText>
+					<DialogContentText id="confirm-dialog-description">
+						{requestType === 'approve'
+						? 'Are you sure you want to approve this request?'
+						: requestType === 'reject'
+						? 'Are you sure you want to reject this request?'
+						: 'Are you sure you want to delete this request?'}
+					</DialogContentText>
 				</DialogContent>
 				<DialogActions>
-				<Button
-					onClick={() => setConfirmDialogOpen(false)}
-					sx={{ textTransform: 'none', color: 'grey.600', borderColor: 'grey.400' }}
-					variant="outlined"
-				>
-					Cancel
-				</Button>
-				<Button
-					onClick={async () => {
-					if (requestType === 'approve' && selectedRequest) {
-						await handleApproveRequest(selectedRequest);
-					} else if (requestType === 'reject' && selectedRequest) {
-						await handleRejectRequest(selectedRequest);
-					} else if (requestType === 'delete' && selectedRequest) {
-						await handleDeleteRequest(selectedRequest);
-					}
-					setConfirmDialogOpen(false);
-					}}
-					color="primary"
-					variant="contained"
-					startIcon={<CheckCircleOutlineOutlined />}
-					sx={{ textTransform: 'none' }}
-				>
-					Confirm
-				</Button>
+					<Button
+						onClick={() => setConfirmDialogOpen(false)}
+						sx={{ textTransform: 'none', color: 'grey.600', borderColor: 'grey.400' }}
+						variant="outlined"
+					>
+						Cancel
+					</Button>
+					<Button
+						onClick={async () => {
+						if (requestType === 'approve' && selectedRequest) {
+							await handleApproveRequest(selectedRequest);
+						} else if (requestType === 'reject' && selectedRequest) {
+							await handleRejectRequest(selectedRequest);
+						} else if (requestType === 'delete' && selectedRequest) {
+							await handleDeleteRequest(selectedRequest);
+						}
+						setConfirmDialogOpen(false);
+						}}
+						color="primary"
+						variant="contained"
+						startIcon={<CheckCircleOutlineOutlined />}
+						sx={{ textTransform: 'none' }}
+					>
+						Confirm
+					</Button>
 				</DialogActions>
 			</Dialog>
-		</>
+		</Box>
   	);
 }
