@@ -21,7 +21,7 @@ import {
 	Card,
 	CircularProgress
 } from '@mui/material';
-import { blueGrey, grey } from '@mui/material/colors';
+import { blueGrey, grey, blue } from '@mui/material/colors';
 import { 
 	cancelJobBySlurmID,
 	adminGetAllJobs, 
@@ -41,7 +41,7 @@ import {
 	MolmakerConfirm
 } from '../components/custom';
 import type { Job, Structure } from '../types';
-import { DeleteOutlineOutlined, Add, FilterAltOutlined } from '@mui/icons-material';
+import { DeleteOutlineOutlined, Add, ManageSearchOutlined } from '@mui/icons-material';
 import AdminJobsTable from './Home/components/AdminJobsTable';
 
 export default function Admin() {
@@ -458,7 +458,7 @@ export default function Admin() {
 	}
 
 	return (
-		<Box bgcolor="rgb(247, 249, 252)" p={4}>
+		<Box p={4} className="bg-stone-100 min-h-screen">
 			{error && (
 				<MolmakerAlert
 					text={error}
@@ -518,18 +518,19 @@ export default function Admin() {
 					</>
 				}
 			/>
-			{/* {adminPanelToken && <AdminGroupPanel token={adminPanelToken} />} */}
-			{/* Filters */}
 			<Grid container spacing={2} sx={{ mb: 4 }} size={12}>
 				<Grid size={{ xs: 12, sm: 7 }}>
-					<Paper sx={{ borderRadius: 2 }}>
-						<Typography variant="h6" color="text.secondary" bgcolor={blueGrey[200]} sx={{ p: 2, display: 'flex', alignItems: 'center', borderTopLeftRadius: 5, borderTopRightRadius: 5 }}>
-							<FilterAltOutlined sx={{ mr: 1 }} />
-							Filters
+					<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50] }}>
+						<Typography 
+							variant="h6" 
+							color={grey[800]}
+							sx={{ p: 2, display: 'flex', alignItems: 'center', borderTopLeftRadius: 5, borderTopRightRadius: 5, fontWeight: 'bold', fontSize: '1.1rem' }}
+						>
+							<ManageSearchOutlined sx={{ mr: 1, color: blue[600] }} />
+							Custom Query
 						</Typography>
-						<Divider />
-						<Box sx={{ p: 2 }}>
-							<Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+						<Box sx={{ px: 2 }}>
+							<Typography variant="body2" color={grey[600]} sx={{ mb: 2, mt: 1, fontWeight: 'bold' }}>
 								Show columns
 							</Typography>
 							<FormGroup
@@ -539,33 +540,38 @@ export default function Admin() {
 									gap: 1,
 									mt: 1,
 								}}
-								>
+							>
 								{Object.keys(columnDisplayNames).map((col) => (
 									<FormControlLabel
-									key={col}
-									control={
-										<Checkbox
-											checked={displayColumns[col as keyof Job]}
-											onChange={(e) => {
-												setDisplayColumns(prev => ({
-													...prev,
-													[col as keyof Job]: e.target.checked
-												}));
-											}}
-											color="primary"
-										/>
-									}
-									label={columnDisplayNames[col as keyof Job]}
+										key={col}
+										control={
+											<Checkbox
+												checked={displayColumns[col as keyof Job]}
+												onChange={(e) => {
+													setDisplayColumns(prev => ({
+														...prev,
+														[col as keyof Job]: e.target.checked
+													}));
+												}}
+												color="primary"
+												size="small"
+											/>
+										}
+										label={
+											<span className='text-xs text-gray-600 font-semibold'>
+												{columnDisplayNames[col as keyof Job].toUpperCase()}
+											</span>
+										}
 									/>
 								))}
 							</FormGroup>
 						</Box>
-						<Box sx={{ px: 2, pb: 2 }}>
-							<Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+						<Box sx={{ px: 2, py: 2 }}>
+							<Typography variant="body2" color={grey[600]} sx={{ mb: 2, fontWeight: 'bold' }}>
 								Filter
 							</Typography>
 							{/* Each filter row on its own line */}
-							<Box sx={{ bgcolor: grey[100], p: 3, borderRadius: 1 }}>
+							<Box sx={{ bgcolor: grey[200], p: 3, borderRadius: 2 }}>
 								{filters.map((filter, index) => (
 									<Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
 										<Select
@@ -679,8 +685,7 @@ export default function Admin() {
 					)}
 				</Grid>
 			</Grid>
-			{/* <JobsStatus jobs={jobs} /> */}
-			<Paper>
+			<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50], mb: 4 }}>
 				<JobsToolbar
 					selectedJobId={selectedJobId}
 					onViewDetails={() => navigate(`/jobs/${selectedJobId}`)}
@@ -741,7 +746,6 @@ export default function Admin() {
 					onPageChange={(_, newPage) => setPage(newPage)}
 					onRowsPerPageChange={e => { setRowsPerPage(+e.target.value); setPage(0); }}
 					rowsPerPageOptions={[5, 10, 25]}
-					sx={{ bgcolor: blueGrey.A200 }}
 				/>
 			</Paper>
 		</Box>

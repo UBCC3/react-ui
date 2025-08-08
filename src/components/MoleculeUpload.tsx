@@ -228,8 +228,8 @@ const MoleculeUpload: React.FC<MoleculeUploadProps> = ({
 					submitConfirmed={submitConfirmed}
 					setStructureImageData={setStructureImageData}
 				/>
-				<Box sx={{ padding: 2, display: 'flex', flexDirection: 'column', gap: 2 }} component="form" onSubmit={handleSubmit}>
-					<MolmakerSectionHeader text="Structure Information" />
+				<Box p={3} className="bg-stone-100 h-full display flex flex-col" gap={3} component="form" onSubmit={handleSubmit}>
+					<MolmakerSectionHeader text="Structure Information" sx={{ fontWeight: 'bold', mt: 1 }} />
 					<Button
 						variant="contained"
 						component="label"

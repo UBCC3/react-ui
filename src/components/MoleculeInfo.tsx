@@ -159,8 +159,8 @@ const MoleculeInfo = ({ open, setOpen, selectedStructureId }) => {
 				{loading && <div>Loading...</div>}
 				{error && <div style={{ color: 'red' }}>{error}</div>}
 				{selectedStructureId && (
-					<Box sx={{ padding: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-						<MolmakerSectionHeader text="Structure Information" />
+					<Box p={3} className="bg-stone-100 h-full display flex flex-col" gap={3}>
+						<MolmakerSectionHeader text="Structure Information" sx={{ fontWeight: 'bold', mt: 1 }} />
 						<MolmakerTextField
 							label="Name"
 							value={structureName}

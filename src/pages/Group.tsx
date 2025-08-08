@@ -418,7 +418,7 @@ export default function Group() {
 							sx={{ p: 2, display: 'flex', alignItems: 'center', borderTopLeftRadius: 5, borderTopRightRadius: 5, fontWeight: 'bold', fontSize: '1.1rem' }}
 						>
 							<ManageSearchOutlined sx={{ mr: 1, color: blue[600] }} />
-							Filters
+							Custom Query
 						</Typography>
 						<Box sx={{ px: 2 }}>
 							<Typography variant="body2" color={grey[600]} sx={{ mb: 2, mt: 1, fontWeight: 'bold' }}>

@@ -27,7 +27,7 @@ import {
 	ArrowDropDownOutlined,
 	Add
 } from "@mui/icons-material";
-import { blueGrey } from "@mui/material/colors";
+import { blueGrey, grey, blue } from "@mui/material/colors";
 import {
 	MolmakerPageTitle,
 	MolmakerLoading,
@@ -40,6 +40,7 @@ import {
 import type { Structure } from "../types";
 import MoleculeInfo from "../components/MoleculeInfo";
 import MoleculeUpload from "../components/MoleculeUpload";
+import { Pyramid } from "lucide-react";
 
 const MoleculeLibrary = () => {
 	const { getAccessTokenSilently } = useAuth0();
@@ -198,7 +199,7 @@ const MoleculeLibrary = () => {
 	};
 
   	return (
-		<Box bgcolor={'rgb(247, 249, 252)'} p={4}>
+		<Box p={4} className="bg-stone-100 min-h-screen">
 			<MolmakerConfirm
 				open={openConfirmDelete}
 				onClose={() => setOpenConfirmDelete(false)}
@@ -222,13 +223,14 @@ const MoleculeLibrary = () => {
 			/>
 			<Grid container spacing={3} sx={{ marginTop: 3 }}>
 				<Grid size={12}>
-					<Paper elevation={3}>
-						<Toolbar sx={{ justifyContent: 'space-between', bgcolor: blueGrey[200] }}>
-							<Typography variant="h6" color="text.secondary">
+					<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50] }}>
+						<Toolbar sx={{ justifyContent: 'space-between', borderTopLeftRadius: 5, borderTopRightRadius: 5 }}>
+							<Typography variant="h6" color={grey[800]} sx={{ display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: '1.1rem' }}>
+								<Pyramid style={{ marginRight: 10, color: blue[600] }} />
 								Structures
 							</Typography>
-							<Box sx={{ display: 'flex', alignItems: 'center' }}>
-								<Box sx={{ display: 'flex', alignItems: 'center' }}>
+							<Box sx={{ display: 'flex', alignItems: 'center'}}>
+								<Box sx={{ borderRadius: 1, display: 'flex', alignItems: 'center', px: 2, bgcolor: grey[100], mr: 1 }}>
 									<Tooltip title="Add new structure">
 										<IconButton onClick={() => {
 											setSelectedStructureId("");
@@ -253,25 +255,25 @@ const MoleculeLibrary = () => {
 										</IconButton>
 									</Tooltip>
 								</Box>
-								<Divider orientation="vertical" flexItem sx={{ mx: 2 }} />
-								<Tooltip title="Refresh structures">
-									<IconButton onClick={handleRefresh}>
-										<Refresh />
-									</IconButton>
-								</Tooltip>
+								<Box sx={{ borderRadius: 1, display: 'flex', alignItems: 'center', px: 2, bgcolor: grey[100] }}>
+									<Tooltip title="Refresh structures">
+										<IconButton onClick={handleRefresh}>
+											<Refresh />
+										</IconButton>
+									</Tooltip>
+								</Box>
 							</Box>
 						</Toolbar>
-						<Divider />
 						<TableContainer>
 							<Table>
 								<TableHead>
 									<TableRow sx={{ bgcolor: blueGrey[50] }}>
+										{renderHeader('Thumbnail','imageS3URL')}
 										{renderHeader('Name', 'name')}
 										{renderHeader('Chemical Formula', 'formula')}
 										{renderHeader('Notes', 'notes')}
 										{renderHeader('Tags', 'tags')}
 										{renderHeader('Uploaded At', 'uploaded_at')}
-										{renderHeader('Image','imageS3URL')}
 									</TableRow>
 								</TableHead>
 								<TableBody>
@@ -304,6 +306,14 @@ const MoleculeLibrary = () => {
 												cursor: 'pointer'
 											}}
 										>
+											<TableCell>
+												<Avatar
+													variant="square"
+													alt={`Thumbnail for ${molecule.name}`}
+													src={molecule.imageS3URL}
+													sx={{ width: 64, height: 64 }}
+												/>
+											</TableCell>
 											<TableCell>{molecule.name}</TableCell>
 											<TableCell>{renderFormula(molecule.formula)}</TableCell>
 											<TableCell>{molecule.notes}</TableCell>
@@ -315,14 +325,6 @@ const MoleculeLibrary = () => {
 												)}
 											</TableCell>
 											<TableCell>{new Date(molecule.uploaded_at).toLocaleString()}</TableCell>
-											<TableCell>
-												<Avatar
-													variant="square"
-													alt={`Thumbnail for ${molecule.name}`}
-													src={molecule.imageS3URL}
-													sx={{ width: 64, height: 64 }}
-												/>
-											</TableCell>
 										</TableRow>
 									))}
 								</TableBody>
@@ -336,7 +338,6 @@ const MoleculeLibrary = () => {
 							page={page}
 							onPageChange={(_, newPage) => setPage(newPage)}
 							onRowsPerPageChange={e => { setRowsPerPage(+e.target.value); setPage(0); }}
-							sx={{ bgcolor: blueGrey[200] }}
 						/>
 					</Paper>
 				</Grid>

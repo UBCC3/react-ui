@@ -207,52 +207,58 @@ export default function MenuDrawer() {
 							<ListItemIcon sx={{ color: blue[600], minWidth: 0, mr: open ? 3 : 'auto' }}>
 								<AdminPanelSettingsOutlined />
 							</ListItemIcon>
-							<ListItemText
-								primary={
-									<span className='text-gray-700 text-sm font-semibold font-sans'>
-										Admin Panel
-									</span>
-								}
-							/>
-							<IconButton
-								size="small"
-								sx={{ color: grey[300], ml: 1 }}
-								onClick={(e) => {
-									e.stopPropagation();
-									setExpanded(!expanded);
-								}}
-							>
-								{expanded ? <ExpandLess sx={{ color: grey[700] }}/> : <ExpandMore sx={{ color: grey[800] }}/>}
-							</IconButton>
-						</ListItemButton>
-						<Collapse in={expanded} timeout="auto" unmountOnExit>
-							<List component="div" disablePadding>
-								<ListItemButton 
-									key={'admin-panel'}
-									selected={selectedIndex === 6}
-									onClick={() => {
-										setSelectedIndex(6);
-										navigate('/users');
-									}}
-									sx={{
-										py: 2,
-										pl: open ? 4 : 2,
-										justifyContent: open ? 'initial' : 'center'
-									}}
-								>
-									<ListItemIcon sx={{ color: blue[600], minWidth: 0, mr: open ? 3 : 'auto' }}>
-										<AccountCircleOutlined />
-									</ListItemIcon>
+							{open && (
+								<>
 									<ListItemText
 										primary={
 											<span className='text-gray-700 text-sm font-semibold font-sans'>
-												Users List
+												Admin Panel
 											</span>
 										}
 									/>
-								</ListItemButton>
-							</List>
-					</Collapse>
+									<IconButton
+										size="small"
+										sx={{ color: grey[300], ml: 1 }}
+										onClick={(e) => {
+											e.stopPropagation();
+											setExpanded(!expanded);
+										}}
+									>
+										{expanded ? <ExpandLess sx={{ color: grey[700] }}/> : <ExpandMore sx={{ color: grey[700] }}/>}
+									</IconButton>
+								</>
+							)}
+						</ListItemButton>
+						{open && expanded && (
+							<Collapse in={expanded} timeout="auto" unmountOnExit>
+								<List component="div" disablePadding>
+									<ListItemButton 
+										key={'admin-panel'}
+										selected={selectedIndex === 6}
+										onClick={() => {
+											setSelectedIndex(6);
+											navigate('/users');
+										}}
+										sx={{
+											py: 2,
+											pl: open ? 4 : 2,
+											justifyContent: open ? 'initial' : 'center'
+										}}
+									>
+										<ListItemIcon sx={{ color: blue[600], minWidth: 0, mr: open ? 3 : 'auto' }}>
+											<AccountCircleOutlined />
+										</ListItemIcon>
+										<ListItemText
+											primary={
+												<span className='text-gray-700 text-sm font-semibold font-sans'>
+													Users List
+												</span>
+											}
+										/>
+									</ListItemButton>
+								</List>
+							</Collapse>
+						)}
 					</>
 				)}
 			</List>

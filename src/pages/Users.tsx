@@ -30,12 +30,14 @@ import {
 	Tab, 
 	Tabs, 
 	TextField, 
+	Tooltip, 
 	Typography
 } from '@mui/material';
-import { CancelOutlined, DeleteOutlined, EditOutlined, ExpandMore, RemoveCircleOutline, SaveOutlined, Search } from '@mui/icons-material';
+import { CancelOutlined, DeleteOutlined, EditOutlined, ExpandMore, RemoveCircleOutline, SaveOutlined, Search, GroupAddOutlined, ManageAccountsOutlined } from '@mui/icons-material';
 import { MolmakerPageTitle } from '../components/custom';
 import { Group, Job, User } from '../types';
 import { green, red, blue, blueGrey, grey } from '@mui/material/colors';
+import { UserRound, UsersRound } from 'lucide-react';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -230,7 +232,7 @@ const Users = () => {
 	};
 
 	return (
-		<Box sx={{ padding: 4 }}>
+		<Box p={4} className="bg-stone-100 min-h-screen">
 			<Dialog
 				open={openConfirmation}
 				onClose={() => setOpenConfirmation(false)}
@@ -281,8 +283,26 @@ const Users = () => {
 			<Box sx={{ width: '100%' }}>
 				<Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
 					<Tabs value={value} onChange={(event, newValue) => setValue(newValue)} aria-label="basic tabs example">
-						<Tab label="User List" {...a11yProps(0)} sx={{ textTransform: 'none' }} />
-						<Tab label="Group Management" {...a11yProps(1)} sx={{ textTransform: 'none' }} />
+						<Tab 
+							label={
+								<div style={{ display: 'flex', alignItems: 'center' }}>
+									<UserRound style={{ marginRight: 10, color: blue[600], width: 18, height: 18, fontWeight: 'bold' }} />
+									<Typography variant="body2" sx={{ fontWeight: 'bold', fontSize: '0.875rem' }}>
+										User List
+									</Typography>
+								</div>
+							}
+							{...a11yProps(0)} sx={{ textTransform: 'none' }} />
+						<Tab 
+							label={
+								<div style={{ display: 'flex', alignItems: 'center' }}>
+									<UsersRound style={{ marginRight: 10, color: blue[600], width: 18, height: 18, fontWeight: 'bold' }} />
+									<Typography variant="body2" sx={{ fontWeight: 'bold', fontSize: '0.875rem' }}>
+										Group Management
+									</Typography>
+								</div>
+							}
+							{...a11yProps(1)} sx={{ textTransform: 'none' }} />
 					</Tabs>
 				</Box>
 				<CustomTabPanel value={value} index={0}>
@@ -296,6 +316,7 @@ const Users = () => {
 							<Paper
 								component="form"
 								sx={{ p: '4px 4px', display: 'flex', alignItems: 'center', width: 400, mb: 2, borderRadius: 2, bgcolor: grey[50] }}
+								elevation={3}
 							>
 								<IconButton sx={{ p: '10px' }} aria-label="search">
 									<Search />
@@ -308,13 +329,13 @@ const Users = () => {
 									onChange={(e) => setKeyword(e.target.value)}
 								/>
 							</Paper>
-							<Typography variant="h6" sx={{ my: 2, fontWeight: 500, fontSize: '0.875rem' }}>
+							<Typography variant="h6" sx={{ my: 2, fontWeight: 600, fontSize: '0.875rem', color: grey[700] }}>
 								{filteredUsers.length} users found
 							</Typography>
 							<Grid container spacing={2}>
 								{filteredUsers.map((user) => (
 									<Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={user.user_sub}>
-										<Card sx={{ borderRadius: 2, bgcolor: grey[50] }} elevation={2}>
+										<Card sx={{ borderRadius: 2, bgcolor: grey[50] }} elevation={3}>
 											<CardContent>
 												<Chip
 													label={getRoleName(user.role)}
@@ -370,8 +391,13 @@ const Users = () => {
 					)}
 				</CustomTabPanel>
 				<CustomTabPanel value={value} index={1}>
-					<Paper sx={{ p: 2, borderRadius: 2, bgcolor: grey[50] }} elevation={2}>
-						<Typography variant="body2" color={grey[600]} sx={{ mb: 2, mt: 1, fontWeight: 'bold' }}>
+					<Paper sx={{ p: 3, borderRadius: 2, bgcolor: grey[50] }} elevation={3}>
+						<Typography 
+							variant="h6" 
+							color={grey[800]}
+							sx={{ display: 'flex', alignItems: 'center', borderTopLeftRadius: 5, borderTopRightRadius: 5, fontWeight: 'bold', fontSize: '1.1rem', mb: 3 }}
+						>
+							<GroupAddOutlined sx={{ mr: 1, color: blue[600] }} />
 							Create New Group
 						</Typography>
 						<Box display="flex" gap={2}>
@@ -382,14 +408,19 @@ const Users = () => {
 							</Button>
 						</Box>
 					</Paper>
-					<Paper sx={{ borderRadius: 2, maxHeight: 500, overflowY: 'auto', p: 2, mt: 2, bgcolor: grey[50] }} elevation={2}>
-						<Typography variant="body2" color={grey[600]} sx={{ mb: 2, mt: 1, fontWeight: 'bold' }}>
+					<Paper sx={{ borderRadius: 2, maxHeight: 500, overflowY: 'auto', p: 3, mt: 2, bgcolor: grey[50] }} elevation={3}>
+						<Typography 
+							variant="h6" 
+							color={grey[800]}
+							sx={{ display: 'flex', alignItems: 'center', borderTopLeftRadius: 5, borderTopRightRadius: 5, fontWeight: 'bold', fontSize: '1.1rem', mb: 3 }}
+						>
+							<ManageAccountsOutlined sx={{ mr: 1, color: blue[600] }} />
 							Manage User Roles and Groups
 						</Typography>
 						{groups.map(group => (
 							<Accordion key={group.group_id}>
 								<AccordionSummary expandIcon={<ExpandMore />} sx={{ bgcolor: grey[100] }}>
-									<Typography variant="body1" color="text.primary" sx={{ fontWeight: 'medium', fontSize: '0.875rem' }}>
+									<Typography variant="body1" color={grey[700]} sx={{ fontWeight: 'bold', fontSize: '0.875rem' }}>
 										{group.name}
 									</Typography>
 								</AccordionSummary>
@@ -403,18 +434,18 @@ const Users = () => {
 									</List>
 								</AccordionDetails>
 								<AccordionActions sx={{ justifyContent: 'flex-end', bgcolor: grey[100], p: 1 }}>
-									<Button 
-										variant="contained" 
-										size="small" 
-										onClick={() => {
-											setSelectedGroup(group);
-											setOpenConfirmation(true);
-										}} 
-										sx={{ textTransform: 'none' }} color='error'
-										startIcon={<DeleteOutlined />}
-									>
-										Delete Group
-									</Button>
+									<Tooltip title="Delete Group" arrow>
+										<IconButton
+											size="small" 
+											onClick={() => {
+												setSelectedGroup(group);
+												setOpenConfirmation(true);
+											}} 
+											sx={{ textTransform: 'none' }} color='error'
+										>
+											<DeleteOutlined />
+										</IconButton>
+									</Tooltip>
 								</AccordionActions>
 							</Accordion>
 						))}
