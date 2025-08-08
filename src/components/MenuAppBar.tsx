@@ -165,7 +165,7 @@ export default function MenuAppBar() {
 								aria-haspopup="true"
 								aria-expanded={anchorRequestsEl ? 'true' : undefined}
 							>
-								<Avatar sx={{ bgcolor: grey[400], color: grey[700] }}>
+								<Avatar sx={{ bgcolor: grey[100], color: grey[700] }}>
 									<InboxOutlined fontSize="medium" />
 								</Avatar>
 							</IconButton>
@@ -178,7 +178,7 @@ export default function MenuAppBar() {
 							aria-haspopup="true"
 							aria-expanded={anchorEl ? 'true' : undefined}
 						>
-							<Avatar sx={{ bgcolor: grey[400], color: grey[700] }}>
+							<Avatar sx={{ bgcolor: grey[100], color: grey[700] }}>
 								<PersonIcon fontSize="medium" />
 							</Avatar>
 						</IconButton>
