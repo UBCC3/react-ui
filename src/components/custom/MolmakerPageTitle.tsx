@@ -2,22 +2,23 @@ import React from 'react'
 import { 
 	Grid, 
 	Typography, 
-	Divider 
+	Box 
 } from '@mui/material'
 
 const MolmakerPageTitle = ({ title, subtitle }) => {
   	return (
-		<React.Fragment>
+		<Box sx={{
+			mb: 3
+		}}>
 			<Grid container sx={{ display: 'flex', alignItems: 'start', flexDirection: 'column', justifyContent: 'center' }}>
-				<Typography variant="h5" color="text.primary" sx={{ flexGrow: 1, mb: 2 }}>
+				<h5>
 					{title}
-				</Typography>
+				</h5>
 				<Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
 					{subtitle}
 				</Typography>
 			</Grid>
-			<Divider sx={{ my: 3 }} />
-		</React.Fragment>
+		</Box>
   	)
 }
 

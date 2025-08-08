@@ -21,7 +21,7 @@ import {
 	Card,
 	CircularProgress
 } from '@mui/material';
-import { blueGrey, grey } from '@mui/material/colors';
+import { blue, blueGrey, grey } from '@mui/material/colors';
 import { 
 	cancelJobBySlurmID,
 	getAllJobs, 
@@ -44,7 +44,7 @@ import {
 	MolmakerConfirm
 } from '../../components/custom';
 import type { Job, Structure } from '../../types';
-import { DeleteOutlineOutlined, Add, FilterAltOutlined } from '@mui/icons-material';
+import { DeleteOutlineOutlined, Add, ManageSearchOutlined } from '@mui/icons-material';
 
 export default function Home() {
 	const navigate = useNavigate();
@@ -462,7 +462,7 @@ export default function Home() {
 	}
 
 	return (
-		<Box bgcolor="rgb(247, 249, 252)" p={4}>
+		<Box p={4} sx={{ minHeight: `calc(100vh - 64px)` }} className="bg-stone-100">
 			{error && (
 				<MolmakerAlert
 					text={error}
@@ -514,30 +514,25 @@ export default function Home() {
 					</div>
 				</Snackbar>
 			</Box>
-			<MolmakerPageTitle
-				title="Dashboard"
-				subtitle={
-					<>
-						Hello, {user?.name}
-					</>
-				}
-			/>
+			<Box sx={{ mb: 4 }}>
+				<h3 className="font-semibold text-2xl font-sans select-none mb-2 text-gray-600">
+					Hello, {user?.email || 'User'}
+				</h3>
+			</Box>
 			{/* Filters */}
 			<Grid container spacing={2} sx={{ mb: 4 }} size={12}>
 				<Grid size={{ xs: 12, sm: 7 }}>
-					<Paper elevation={2} sx={{ borderRadius: 2, bgcolor: grey[50] }}>
+					<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50] }}>
 						<Typography
 							variant="h6" 
-							color="text.secondary" 
-							bgcolor={blueGrey[200]} 
-							sx={{ p: 2, display: 'flex', alignItems: 'center', borderTopLeftRadius: 5, borderTopRightRadius: 5 }}
+							color={grey[800]}
+							sx={{ p: 2, display: 'flex', alignItems: 'center', borderTopLeftRadius: 5, borderTopRightRadius: 5, fontWeight: 'bold', fontSize: '1.1rem' }}
 						>
-							<FilterAltOutlined sx={{ mr: 1 }} />
-							Filters
+							<ManageSearchOutlined sx={{ mr: 1, color: blue[600] }} />
+							Custom Query
 						</Typography>
-						<Divider />
-						<Box sx={{ p: 2 }}>
-							<Typography variant="body2" color={grey[600]} sx={{ mb: 2, mt: 1, fontWeight: 'bold' }}>
+						<Box sx={{ px: 2 }}>
+							<Typography variant="body2" color={grey[600]} sx={{ mb: 2, fontWeight: 'bold' }}>
 								Show columns
 							</Typography>
 							<FormGroup
@@ -547,32 +542,36 @@ export default function Home() {
 									gap: 1,
 									mt: 1,
 								}}
-								>
+							>
 								{Object.keys(columnDisplayNames).map((col) => (
 									<FormControlLabel
-									key={col}
-									control={
-										<Checkbox
-											checked={displayColumns[col as keyof Job]}
-											onChange={(e) => {
-												setDisplayColumns(prev => ({
-													...prev,
-													[col as keyof Job]: e.target.checked
-												}));
-											}}
-											color="primary"
-										/>
-									}
-									label={columnDisplayNames[col as keyof Job]}
+										key={col}
+										control={
+											<Checkbox
+												checked={displayColumns[col as keyof Job]}
+												onChange={(e) => {
+													setDisplayColumns(prev => ({
+														...prev,
+														[col as keyof Job]: e.target.checked
+													}));
+												}}
+												color="primary"
+												size="small"
+											/>
+										}
+										label={
+											<span className='text-xs text-gray-600 font-semibold'>
+												{columnDisplayNames[col as keyof Job].toUpperCase()}
+											</span>
+										}
 									/>
 								))}
 							</FormGroup>
 						</Box>
-						<Box sx={{ px: 2, pb: 2 }}>
+						<Box sx={{ px: 2, py: 2 }}>
 							<Typography variant="body2" color={grey[600]} sx={{ mb: 2, fontWeight: 'bold' }}>
 								Filter
 							</Typography>
-							{/* Each filter row on its own line */}
 							<Box sx={{ bgcolor: grey[200], p: 3, borderRadius: 2 }}>
 								{filters.map((filter, index) => (
 									<Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -637,7 +636,6 @@ export default function Home() {
 										</IconButton>
 									</Box>
 								))}
-								{/* Add Filter button always directly below all filters */}
 								<Button
 									variant="outlined"
 									color="primary"
@@ -650,7 +648,6 @@ export default function Home() {
 								>
 									Add Filter
 								</Button>
-								
 								<Button
 									variant="contained"
 									color="primary"
@@ -688,8 +685,7 @@ export default function Home() {
 					)}
 				</Grid>
 			</Grid>
-			{/* <JobsStatus jobs={jobs} /> */}
-			<Paper>
+			<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50], mb: 4 }}>
 				<JobsToolbar
 					selectedJobId={selectedJobId}
 					onViewDetails={() => navigate(`/jobs/${selectedJobId}`)}
@@ -715,7 +711,6 @@ export default function Home() {
 					selectedStructure={filterStructureId}
 					onStructureChange={setFilterStructureId}
 				/>
-				<Divider />
 				<JobsTable
 					jobs={filteredJobs}
 					page={page}
@@ -750,7 +745,6 @@ export default function Home() {
 					onPageChange={(_, newPage) => setPage(newPage)}
 					onRowsPerPageChange={e => { setRowsPerPage(+e.target.value); setPage(0); }}
 					rowsPerPageOptions={[5, 10, 25]}
-					sx={{ bgcolor: blueGrey.A200 }}
 				/>
 			</Paper>
 		</Box>

@@ -14,7 +14,8 @@ import {
 } from '@mui/material';
 import { ArrowDropUpOutlined, ArrowDropDownOutlined, AutoMode, TuneOutlined } from '@mui/icons-material';
 import { statusColors } from '../../../constants';
-import { blueGrey } from '@mui/material/colors';
+import { blueGrey, grey } from '@mui/material/colors';
+import { ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
 import type { Job } from '../../../types';
 
 interface JobsTableProps {
@@ -87,16 +88,16 @@ export default function JobsTable({
 			sx={{ whiteSpace: 'nowrap', cursor: 'pointer' }}
 			onClick={() => onSort(column)}
 		>
-			<Box sx={{ display: 'flex', alignItems: 'bottom' }}>
-				{label}
+			<Box sx={{ display: 'flex', alignItems: 'center', width: '100%', fontSize: '0.7rem', fontWeight: 'bold', color: grey[700] }}>
+				{label.toUpperCase()}
 				{orderBy === column && (
-				<Box sx={{ ml: 1 }}>
-					{order === 'asc' ? (
-						<ArrowDropUpOutlined color="primary" />
-					) : (
-						<ArrowDropDownOutlined color="primary" />
-					)}
-				</Box>
+					<Box sx={{ ml: 1 }}>
+						{order === 'asc' ? (
+							<ArrowUpAZ style={{ width: 18, height: 18 }} />
+						) : (
+							<ArrowDownAZ style={{ width: 18, height: 18 }} />
+						)}
+					</Box>
 				)}
 			</Box>
 		</TableCell>
@@ -105,7 +106,7 @@ export default function JobsTable({
   	return (
 		<TableContainer>
 			<Table>
-				<TableHead sx={{ bgcolor: blueGrey[50] }}>
+				<TableHead sx={{ bgcolor: grey[200] }}>
 					<TableRow>
 						{displayColumns.job_name && renderHeader('Job Name', 'job_name')}
 						{displayColumns.job_notes && renderHeader('Notes', 'job_notes')}
