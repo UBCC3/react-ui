@@ -140,7 +140,7 @@ export default function MenuAppBar() {
 						href="/"
 						sx={{
 							flexGrow: 1,
-							color: grey[800],
+							color: grey[200],
 							textDecoration: 'none',
 							display: 'flex',
 							alignItems: 'center',

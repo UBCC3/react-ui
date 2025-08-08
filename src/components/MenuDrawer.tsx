@@ -14,7 +14,7 @@ import {
 	ListItemText, 
 	Typography,
 } from '@mui/material';
-import { AdminPanelSettingsOutlined, TuneOutlined, DashboardOutlined, CollectionsOutlined, AutoMode, PeopleAltOutlined, ExpandLess, ExpandMore, AccountCircleOutlined, BorderRight } from '@mui/icons-material';
+import { AdminPanelSettingsOutlined, TuneOutlined, DashboardOutlined, CollectionsOutlined, AutoMode, PeopleAltOutlined, ExpandLess, ExpandMore, AccountCircleOutlined } from '@mui/icons-material';
 import logo from '../assets/logo.svg';
 import { useNavigate } from 'react-router-dom';
 import { useDrawer } from './DrawerContext';
@@ -49,7 +49,8 @@ const PermanentDrawer = styled(Drawer, {
 	'& .MuiDrawer-paper': {
 		boxSizing: 'border-box',
 		color: grey[300],
-		borderRight: `1px solid ${grey[300]}`,
+		border: '1px solid',
+		borderColor: 'divider',
 		...(open ? openedMixin(theme) : closedMixin(theme)),
 	},
 }));
@@ -105,7 +106,7 @@ export default function MenuDrawer() {
 						</h1>
 					</Typography>
 				)}
-				<IconButton onClick={toggle} sx={{ color: grey[800], ml: open ? 0 : 1 }}>
+				<IconButton onClick={toggle} sx={{ color: grey[700], ml: open ? 0 : 1 }}>
 					{open ? <ChevronLeftOutlinedIcon /> : <MenuIcon />}
 				</IconButton>
 			</DrawerHeader>
@@ -152,7 +153,7 @@ export default function MenuDrawer() {
 						{open && (
 							<ListItemText
 								primary={
-									<span className='text-gray-600 text-sm font-semibold font-sans'>
+									<span className='text-gray-700 text-sm font-semibold font-sans'>
 										{text}
 									</span>
 								}
@@ -180,7 +181,7 @@ export default function MenuDrawer() {
 							{open && (
 								<ListItemText
 									primary={
-										<span className='text-gray-600 text-sm font-semibold font-sans'>
+										<span className='text-gray-700 text-sm font-semibold font-sans'>
 											My Group
 										</span>
 									}
@@ -208,20 +209,20 @@ export default function MenuDrawer() {
 							</ListItemIcon>
 							<ListItemText
 								primary={
-									<span className='text-gray-600 text-sm font-semibold font-sans'>
+									<span className='text-gray-700 text-sm font-semibold font-sans'>
 										Admin Panel
 									</span>
 								}
 							/>
 							<IconButton
 								size="small"
-								sx={{ color: grey[800], ml: 1 }}
+								sx={{ color: grey[300], ml: 1 }}
 								onClick={(e) => {
 									e.stopPropagation();
 									setExpanded(!expanded);
 								}}
 							>
-								{expanded ? <ExpandLess sx={{ color: grey[800] }}/> : <ExpandMore sx={{ color: grey[800] }}/>}
+								{expanded ? <ExpandLess sx={{ color: grey[700] }}/> : <ExpandMore sx={{ color: grey[800] }}/>}
 							</IconButton>
 						</ListItemButton>
 						<Collapse in={expanded} timeout="auto" unmountOnExit>
@@ -244,7 +245,7 @@ export default function MenuDrawer() {
 									</ListItemIcon>
 									<ListItemText
 										primary={
-											<span className='text-gray-600 text-sm font-semibold font-sans'>
+											<span className='text-gray-700 text-sm font-semibold font-sans'>
 												Users List
 											</span>
 										}

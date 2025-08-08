@@ -15,15 +15,14 @@ import {
   Tooltip,
 } from '@mui/material';
 import {
-  ArrowDropUpOutlined,
-  ArrowDropDownOutlined,
   AutoMode,
   TuneOutlined,
   VisibilityOutlined,
   VisibilityOffOutlined,
 } from '@mui/icons-material';
-import { blueGrey, grey } from '@mui/material/colors';
+import { grey } from '@mui/material/colors';
 import { useAuth0 } from '@auth0/auth0-react';
+import { ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
 
 import type { Job } from '../../../types';
 import { updateVisibility } from '../../../services/api';
@@ -108,14 +107,14 @@ export default function GroupJobsTable({
 			sx={{ whiteSpace: 'nowrap', cursor: 'pointer' }}
 			onClick={() => onSort(column)}
 		>
-			<Box sx={{ display: 'flex', alignItems: 'center' }}>
-				{label}
+			<Box sx={{ display: 'flex', alignItems: 'center', width: '100%', fontSize: '0.7rem', fontWeight: 'bold', color: grey[700] }}>
+				{label.toUpperCase()}
 				{orderBy === column && (
 					<Box sx={{ ml: 1 }}>
 						{order === 'asc' ? (
-						<ArrowDropUpOutlined color="primary" />
+							<ArrowUpAZ style={{ width: 18, height: 18 }} />
 						) : (
-						<ArrowDropDownOutlined color="primary" />
+							<ArrowDownAZ style={{ width: 18, height: 18 }} />
 						)}
 					</Box>
 				)}
@@ -126,7 +125,7 @@ export default function GroupJobsTable({
   	return (
 		<TableContainer>
 			<Table>
-				<TableHead sx={{ bgcolor: blueGrey[50] }}>
+				<TableHead sx={{ bgcolor: grey[200] }}>
 					<TableRow>
 						{displayColumns.job_name && renderHeader('Job Name', 'job_name')}
 						{displayColumns.job_notes && renderHeader('Notes', 'job_notes')}

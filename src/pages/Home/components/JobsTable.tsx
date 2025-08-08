@@ -12,9 +12,9 @@ import {
 	Button,
 	Grid
 } from '@mui/material';
-import { ArrowDropUpOutlined, ArrowDropDownOutlined, AutoMode, TuneOutlined } from '@mui/icons-material';
+import { AutoMode, TuneOutlined } from '@mui/icons-material';
 import { statusColors } from '../../../constants';
-import { blueGrey, grey } from '@mui/material/colors';
+import { grey } from '@mui/material/colors';
 import { ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
 import type { Job } from '../../../types';
 

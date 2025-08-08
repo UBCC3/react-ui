@@ -27,7 +27,7 @@ import {
 	CircularProgress,
 	Grid,
 } from '@mui/material';
-import { blueGrey, grey } from '@mui/material/colors';
+import { blue, blueGrey, grey } from '@mui/material/colors';
 import {
 	GroupOutlined,
 	RemoveCircleOutlineOutlined,
@@ -162,27 +162,25 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 	);
 
   	return (
-		<Paper sx={{ mb: 4, bgcolor: grey[50], borderRadius: 2 }}>
+		<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50], mb: 4 }}>
 			{/* Header */}
 			<Typography
 				variant="h6"
-				color="text.secondary"
-				bgcolor={blueGrey[200]}
-				sx={{ p: 2, display: 'flex', alignItems: 'center', borderTopLeftRadius: 5, borderTopRightRadius: 5 }}
+				color={grey[800]}
+				sx={{ p: 2, display: 'flex', alignItems: 'center', borderTopLeftRadius: 5, borderTopRightRadius: 5, fontWeight: 'bold', fontSize: '1.1rem' }}
 			>
-				<GroupOutlined sx={{ mr: 1 }} /> Group Management
+				<GroupOutlined sx={{ mr: 1, color: blue[600] }} />
+				Group Management
 			</Typography>
 			{loading ? (
-				<Paper sx={{ mb: 4, p: 4, bgcolor: grey[100], borderRadius: 2 }}>
-					<Box display="flex" alignItems="center" justifyContent="center">
-						<CircularProgress />
-						<Typography variant="body2" sx={{ ml: 2 }}>{loadingMessage}</Typography>
-					</Box>
-				</Paper>
+				<Box sx={{ mb: 4, p: 4, bgcolor: grey[50] }} display="flex" alignItems="center" justifyContent="center">
+					<CircularProgress />
+					<Typography variant="body2" sx={{ ml: 2 }}>{loadingMessage}</Typography>
+				</Box>
 			) : (
 				<>
 					{/* Group Info and Add Member */}
-					<Typography variant="body2" sx={{ px: 2, mb: 2, mt: 3, fontWeight: 'bold', color: grey[600] }}>
+					<Typography variant="body2" sx={{ px: 2, mb: 2, fontWeight: 'bold', color: grey[600] }}>
 						{userRole === 'group_admin' ? 'Manage Group' : 'Group Information'}
 					</Typography>
 
@@ -190,8 +188,8 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 						<Grid size={{ xs: 12, md: 6 }}>
 							{/* Group Name */}
 							<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2 }}>
-								<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-								{userRole === 'group_admin' ? 'Update Group Name' : 'Group Name'}
+								<Typography variant="body2" color={grey[800]} sx={{ mb: 2 }}>
+									{userRole === 'group_admin' ? 'Update Group Name' : 'Group Name'}
 								</Typography>
 								<Box display="flex" gap={2}>
 									<TextField
@@ -203,13 +201,13 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 									/>
 									{userRole === 'group_admin' && (
 										<Button
-										variant="contained"
-										onClick={handleGroupUpdate}
-										size="small"
-										disabled={!groupName}
-										sx={{ textTransform: 'none' }}
+											variant="contained"
+											onClick={handleGroupUpdate}
+											size="small"
+											disabled={!groupName}
+											sx={{ textTransform: 'none' }}
 										>
-										Update
+											Update
 										</Button>
 									)}
 								</Box>
@@ -220,7 +218,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 							{userRole === 'group_admin' && (
 								<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2 }}>
 									{newUserError && <Alert severity="error" sx={{ mb: 2 }}>{newUserError}</Alert>}
-									<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+									<Typography variant="body2" color={grey[800]} sx={{ mb: 2 }}>
 										Add User to Group
 									</Typography>
 									<Box display="flex" gap={2}>
@@ -247,16 +245,30 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 					
 
 					{/* User Table */}
-					<Typography variant="body2" sx={{ px: 2, mb: 2, mt: 3, fontWeight: 'bold', color: grey[600] }}>
+					<Typography variant="body2" sx={{ px: 2, my: 2, fontWeight: 'bold', color: grey[600] }}>
 						{userRole === 'group_admin' ? 'Manage Group Members' : 'Your Group Members'}
 					</Typography>
 					<Table>
-						<TableHead sx={{ bgcolor: blueGrey[50] }}>
-						<TableRow>
-							<TableCell>Email</TableCell>
-							<TableCell>Role</TableCell>
-							{userRole === 'group_admin' && <TableCell>Remove</TableCell>}
-						</TableRow>
+						<TableHead sx={{ bgcolor: grey[200] }}>
+							<TableRow>
+								<TableCell>
+									<Box sx={{ display: 'flex', alignItems: 'center', width: '100%', fontSize: '0.7rem', fontWeight: 'bold', color: grey[700] }}>
+										EMAIL
+									</Box>
+								</TableCell>
+								<TableCell>
+									<Box sx={{ display: 'flex', alignItems: 'center', width: '100%', fontSize: '0.7rem', fontWeight: 'bold', color: grey[700] }}>
+										ROLE
+									</Box>
+								</TableCell>
+								{userRole === 'group_admin' && (
+									<TableCell>
+										<Box sx={{ display: 'flex', alignItems: 'center', width: '100%', fontSize: '0.7rem', fontWeight: 'bold', color: grey[700] }}>
+											REMOVE
+										</Box>
+									</TableCell>
+								)}
+							</TableRow>
 						</TableHead>
 						<TableBody>
 						{paginatedUsers.map(u => (
@@ -264,11 +276,11 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 							<TableCell>{u.email}</TableCell>
 							<TableCell>
 								<FormControl fullWidth size="small">
-								<InputLabel id={`role-${u.user_sub}`}>Role</InputLabel>
-								<Select labelId={`role-${u.user_sub}`} label="Role" value={u.role} disabled>
-									<MenuItem value="group_admin">group_admin</MenuItem>
-									<MenuItem value="member">member</MenuItem>
-								</Select>
+									<InputLabel id={`role-${u.user_sub}`}>Role</InputLabel>
+									<Select labelId={`role-${u.user_sub}`} label="Role" value={u.role} disabled>
+										<MenuItem value="group_admin">Group Admin</MenuItem>
+										<MenuItem value="member">Member</MenuItem>
+									</Select>
 								</FormControl>
 							</TableCell>
 							{userRole === 'group_admin' && (
@@ -297,7 +309,6 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 						onPageChange={(_, newPage) => setPage(newPage)}
 						onRowsPerPageChange={e => { setRowsPerPage(+e.target.value); setPage(0); }}
 						rowsPerPageOptions={[5, 10, 25]}
-						sx={{ bgcolor: blueGrey.A200, borderBottomLeftRadius: 5, borderBottomRightRadius: 5 }}
 					/>
 					{/* Remove User Dialog */}
 					<Dialog open={removeDialogOpen} onClose={() => setRemoveDialogOpen(false)} fullWidth>

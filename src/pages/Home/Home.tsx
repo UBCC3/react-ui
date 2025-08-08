@@ -515,9 +515,9 @@ export default function Home() {
 				</Snackbar>
 			</Box>
 			<Box sx={{ mb: 4 }}>
-				<h3 className="font-semibold text-2xl font-sans select-none mb-2 text-gray-600">
+				<h5 className="font-semibold text-2xl text-gray-700 mb-2 font-sans">
 					Hello, {user?.email || 'User'}
-				</h3>
+				</h5>
 			</Box>
 			{/* Filters */}
 			<Grid container spacing={2} sx={{ mb: 4 }} size={12}>

@@ -64,7 +64,7 @@ export default function JobsToolbar({
 				Jobs History
 			</Typography>
 			<Box sx={{ display: 'flex', alignItems: 'center' }}>
-				<Box>
+				<Box sx={{ borderRadius: 1, display: 'flex', alignItems: 'center', px: 2, bgcolor: grey[100], mr: 1 }}>
 					<Tooltip title="Run Standard Job">
 						<IconButton
 							onClick={() => window.location.href = '/submit'}
@@ -80,8 +80,7 @@ export default function JobsToolbar({
 						</IconButton>
 					</Tooltip>
 				</Box>
-				<Divider orientation="vertical" flexItem sx={{ mx: 2 }} />
-				<Box>
+				<Box sx={{ borderRadius: 1, display: 'flex', alignItems: 'center', px: 2, bgcolor: grey[100], mr: 1 }}>
 					<Tooltip title="View job details">
 						<span>
 							<IconButton
@@ -137,12 +136,13 @@ export default function JobsToolbar({
 						</Tooltip>
 					)}
 				</Box>
-				<Divider orientation="vertical" flexItem sx={{ mx: 2 }} />
-				<Tooltip title="Refresh jobs">
-					<IconButton onClick={onRefresh}>
-						<Refresh />
-					</IconButton>
-				</Tooltip>
+				<Box sx={{ borderRadius: 1, display: 'flex', alignItems: 'center', px: 2, bgcolor: grey[100] }}>
+					<Tooltip title="Refresh jobs">
+						<IconButton onClick={onRefresh}>
+							<Refresh />
+						</IconButton>
+					</Tooltip>
+				</Box>
 				<Select
 					labelId="structure-select-label"
 					value={selectedStructure}
