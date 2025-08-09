@@ -113,9 +113,7 @@ export default function MenuDrawer() {
 					{open ? <ChevronLeftOutlinedIcon /> : <MenuIcon />}
 				</IconButton>
 			</DrawerHeader>
-			<List
-				component="nav"
-			>
+			<List component="nav">
 				{[
 					{
 						text: 'My Dashboard',

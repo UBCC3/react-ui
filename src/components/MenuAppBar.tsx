@@ -119,7 +119,7 @@ export default function MenuAppBar() {
 	}, [user?.sub, getAccessTokenSilently]);
 
   	return (
-		<Box className="bg-slate-200">
+		<Box className="bg-slate-100">
 			<AppBar
 				component="nav"
 				position="fixed"
@@ -165,7 +165,7 @@ export default function MenuAppBar() {
 								aria-haspopup="true"
 								aria-expanded={anchorRequestsEl ? 'true' : undefined}
 							>
-								<Avatar sx={{ bgcolor: grey[100], color: grey[700] }}>
+								<Avatar sx={{ bgcolor: grey[300], color: grey[700] }}>
 									<InboxOutlined fontSize="medium" />
 								</Avatar>
 							</IconButton>
@@ -178,7 +178,7 @@ export default function MenuAppBar() {
 							aria-haspopup="true"
 							aria-expanded={anchorEl ? 'true' : undefined}
 						>
-							<Avatar sx={{ bgcolor: grey[100], color: grey[700] }}>
+							<Avatar sx={{ bgcolor: grey[300], color: grey[700] }}>
 								<PersonIcon fontSize="medium" />
 							</Avatar>
 						</IconButton>
@@ -212,13 +212,13 @@ export default function MenuAppBar() {
 				open={Boolean(anchorRequestsEl)}
 				onClose={handleRequestsClose}
 				slotProps={{
-				paper: { style: { maxHeight: ITEM_HEIGHT * 4.5 } },
+					paper: { style: { maxHeight: ITEM_HEIGHT * 4.5 } },
 				}}
 			>
 				<ListSubheader sx={{ fontWeight: 'bold' }}>Incoming Requests</ListSubheader>
 				{incomingRequests.length === 0 ? (
 					<MenuItem disabled>No incoming requests</MenuItem>
-					) : (
+				) : (
 					incomingRequests.map(req => (
 						<MenuItem
 							key={req.request_id}
@@ -235,9 +235,9 @@ export default function MenuAppBar() {
 								<IconButton
 									size="small"
 									onClick={() => {
-									setConfirmDialogOpen(true);
-									setRequestType('approve');
-									setSelectedRequest(req.request_id);
+										setConfirmDialogOpen(true);
+										setRequestType('approve');
+										setSelectedRequest(req.request_id);
 									}}
 									color="success"
 								>
@@ -246,9 +246,9 @@ export default function MenuAppBar() {
 								<IconButton
 									size="small"
 									onClick={() => {
-									setConfirmDialogOpen(true);
-									setRequestType('reject');
-									setSelectedRequest(req.request_id);
+										setConfirmDialogOpen(true);
+										setRequestType('reject');
+										setSelectedRequest(req.request_id);
 									}}
 									color="error"
 								>
@@ -262,41 +262,41 @@ export default function MenuAppBar() {
 				<Divider />
 				<ListSubheader sx={{ fontWeight: 'bold' }}>Sent Requests</ListSubheader>
 				{sentRequests.length === 0 ? (
-				<MenuItem disabled>No sent requests</MenuItem>
+					<MenuItem disabled>No sent requests</MenuItem>
 				) : (
-				sentRequests.map(req => (
-					<MenuItem
-					key={req.request_id}
-					sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}
-					>
-					<Box>
-						{req.receiver_name}
-						<Chip
-						label={req.status}
-						size="small"
-						sx={{
-							bgcolor: statusColors[req.status] ?? 'grey.300',
-							color: 'white',
-							textTransform: 'capitalize',
-							ml: 1,
-						}}
-						/>
-					</Box>
-					{req.status === 'pending' && (
-						<IconButton
-							size="small"
-							onClick={() => {
-								setConfirmDialogOpen(true);
-								setRequestType('delete');
-								setSelectedRequest(req.request_id);
-							}}
-							color="primary"
+					sentRequests.map(req => (
+						<MenuItem
+							key={req.request_id}
+							sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}
 						>
-							<PersonAddDisabledOutlined />
-						</IconButton>
-					)}
-					</MenuItem>
-				))
+							<Box>
+								{req.receiver_name}
+								<Chip
+									label={req.status}
+									size="small"
+									sx={{
+										bgcolor: statusColors[req.status] ?? 'grey.300',
+										color: 'white',
+										textTransform: 'capitalize',
+										ml: 1,
+									}}
+								/>
+							</Box>
+							{req.status === 'pending' && (
+								<IconButton
+									size="small"
+									onClick={() => {
+										setConfirmDialogOpen(true);
+										setRequestType('delete');
+										setSelectedRequest(req.request_id);
+									}}
+									color="primary"
+								>
+									<PersonAddDisabledOutlined />
+								</IconButton>
+							)}
+						</MenuItem>
+					))
 				)}
 			</Menu>
 
