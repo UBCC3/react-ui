@@ -23,10 +23,9 @@ import {
 	Refresh,
 	VisibilityOutlined,
 	DeleteOutlineOutlined,
-	ArrowDropUpOutlined,
-	ArrowDropDownOutlined,
 	Add
 } from "@mui/icons-material";
+import { ArrowUpAZ, ArrowDownAZ } from "lucide-react";
 import { blueGrey, grey, blue } from "@mui/material/colors";
 import {
 	MolmakerPageTitle,
@@ -131,16 +130,16 @@ const MoleculeLibrary = () => {
 			sx={{ whiteSpace: 'nowrap', cursor: 'pointer' }}
 			onClick={() => onSort(column)}
 		>
-			<Box sx={{ display: 'flex', alignItems: 'bottom' }}>
-				{label}
+			<Box sx={{ display: 'flex', alignItems: 'center', width: '100%', fontSize: '0.7rem', fontWeight: 'bold', color: grey[700] }}>
+				{label.toUpperCase()}
 				{orderBy === column && (
-				<Box sx={{ ml: 1 }}>
-					{order === 'asc' ? (
-						<ArrowDropUpOutlined color="primary" />
-					) : (
-						<ArrowDropDownOutlined color="primary" />
-					)}
-				</Box>
+					<Box sx={{ ml: 1 }}>
+						{order === 'asc' ? (
+							<ArrowUpAZ style={{ width: 18, height: 18 }} />
+						) : (
+							<ArrowDownAZ style={{ width: 18, height: 18 }} />
+						)}
+					</Box>
 				)}
 			</Box>
 		</TableCell>
@@ -267,7 +266,7 @@ const MoleculeLibrary = () => {
 						<TableContainer>
 							<Table>
 								<TableHead>
-									<TableRow sx={{ bgcolor: blueGrey[50] }}>
+									<TableRow sx={{ bgcolor: grey[200] }}>
 										{renderHeader('Thumbnail','imageS3URL')}
 										{renderHeader('Name', 'name')}
 										{renderHeader('Chemical Formula', 'formula')}
@@ -308,7 +307,7 @@ const MoleculeLibrary = () => {
 										>
 											<TableCell>
 												<Avatar
-													variant="square"
+													variant="rounded"
 													alt={`Thumbnail for ${molecule.name}`}
 													src={molecule.imageS3URL}
 													sx={{ width: 64, height: 64 }}

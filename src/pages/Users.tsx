@@ -37,7 +37,7 @@ import { CancelOutlined, DeleteOutlined, EditOutlined, ExpandMore, RemoveCircleO
 import { MolmakerPageTitle } from '../components/custom';
 import { Group, Job, User } from '../types';
 import { green, red, blue, blueGrey, grey } from '@mui/material/colors';
-import { UserRound, UsersRound } from 'lucide-react';
+import { UserRound, UserRoundPen, UserRoundX, UsersRound } from 'lucide-react';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -236,12 +236,13 @@ const Users = () => {
 			<Dialog
 				open={openConfirmation}
 				onClose={() => setOpenConfirmation(false)}
-				fullWidth
+				sx={{ borderRadius: 2 }}
 			>
-				<DialogTitle>
+				<DialogTitle sx={{ color: grey[800], fontWeight: 'bold', fontSize: '1.1rem', px: 2, pb: 1, pt: 3, bgcolor: grey[50], display: 'flex', alignItems: 'center' }}>
+					<UserRoundX style={{ marginRight: 10, color: blue[600], width: 24, height: 24 }} />
 					Confirm Deletion
 				</DialogTitle>
-				<DialogContent sx={{ bgcolor: 'background.paper', mt: 1 }}>
+				<DialogContent sx={{ px: 2, bgcolor: grey[50] }}>
 					<Typography variant="body1" color="textPrimary">
 						Are you sure you want to delete the group <strong>{selectedGroup?.name}</strong>?
 					</Typography>
@@ -249,17 +250,12 @@ const Users = () => {
 						This action cannot be undone. All associated users will be removed from this group.
 					</Typography>
 				</DialogContent>
-				<DialogActions>
+				<DialogActions sx={{ px: 2, pb: 3, pt: 0, bgcolor: grey[50] }}>
 					<Button 
 							onClick={() => setOpenConfirmation(false)} 
-							startIcon={<CancelOutlined />}
 							variant='outlined'
-							sx={{
-								color: grey[700],
-								borderColor: grey[700],
-								'&:hover': { borderColor: grey[900], color: grey[900] },
-								textTransform: 'none',
-							}}
+							sx={{ textTransform: 'none', borderRadius: 2 }}
+							color="inherit"
 						>
 							Cancel
 						</Button>
@@ -271,7 +267,7 @@ const Users = () => {
 								setDeleteUserConfirmation(false);
 							}}
 							color="error"
-							sx={{ ml: 1, textTransform: 'none' }}
+							sx={{ ml: 1, textTransform: 'none', borderRadius: 2 }}
 							startIcon={<DeleteOutlined />}
 							variant='contained'
 						>
@@ -403,7 +399,7 @@ const Users = () => {
 						<Box display="flex" gap={2}>
 							<TextField label="Group Name" value={groupName} onChange={(e) => setGroupName(e.target.value)} size="small" required />
 							<TextField label="Group Admin Email" value={groupAdmin} onChange={(e) => setGroupAdmin(e.target.value)}  size="small" required />
-							<Button variant="contained" onClick={handleGroupCreate} size='small' disabled={!groupName || !groupAdmin} sx={{ textTransform: 'none' }}>
+							<Button variant="contained" onClick={handleGroupCreate} size='small' disabled={!groupName || !groupAdmin} sx={{ textTransform: 'none', borderRadius: 2 }}>
 								Create Group
 							</Button>
 						</Box>
@@ -457,12 +453,13 @@ const Users = () => {
 				<Dialog
 					open={openEditDialog}
 					onClose={() => setOpenEditDialog(false)}
-					fullWidth
+					sx={{ borderRadius: 2 }}
 				>
-					<DialogTitle sx={{ bgcolor: blueGrey[200], color: blueGrey[900] }}>
+					<DialogTitle sx={{ color: grey[800], fontWeight: 'bold', fontSize: '1.1rem', px: 2, pb: 1, pt: 3, bgcolor: grey[50], display: 'flex', alignItems: 'center' }}>
+						<UserRoundPen style={{ marginRight: 10, color: blue[600], width: 24, height: 24 }} />
 						Edit User
 					</DialogTitle>
-					<DialogContent sx={{ bgcolor: 'background.paper', mt: 1 }}>
+					<DialogContent sx={{ px: 2, bgcolor: grey[50] }}>
 						<TextField
 							label="Email"
 							value={selectedUser?.email || ''}
@@ -505,6 +502,16 @@ const Users = () => {
 								<MenuItem value="member">Member</MenuItem>
 							</TextField>
 						</FormControl>
+					</DialogContent>
+					<DialogActions sx={{ px: 2, pb: 3, pt: 0, bgcolor: grey[50] }}>
+						<Button
+							variant="outlined"
+							color="inherit"
+							onClick={() => setOpenEditDialog(false)}
+							sx={{ textTransform: 'none', borderRadius: 2 }}
+						>
+							Cancel
+						</Button>
 						<Button
 							variant="contained"
 							color="primary"
@@ -512,23 +519,25 @@ const Users = () => {
 								handleEditUser(selectedUser);
 								setOpenEditDialog(false);
 							}}
-							sx={{ mt: 2, textTransform: 'none' }}
+							sx={{ textTransform: 'none', borderRadius: 2 }}
 							startIcon={<SaveOutlined />}
 						>
 							Save Changes
 						</Button>
-					</DialogContent>
+					</DialogActions>
 				</Dialog>
 			)}
 			{deleteUserConfirmation && (
 				<Dialog
 					open={deleteUserConfirmation}
 					onClose={() => setDeleteUserConfirmation(false)}
+					sx={{ borderRadius: 2 }}
 				>
-					<DialogTitle>
+					<DialogTitle sx={{ color: grey[800], fontWeight: 'bold', fontSize: '1.1rem', px: 2, pb: 1, pt: 3, bgcolor: grey[50], display: 'flex', alignItems: 'center' }}>
+						<UserRoundX style={{ marginRight: 10, color: blue[600], width: 24, height: 24 }} />
 						Confirm Deletion
 					</DialogTitle>
-					<DialogContent sx={{ bgcolor: 'background.paper', mt: 2 }}>
+					<DialogContent sx={{ px: 2, bgcolor: grey[50] }}>
 						<Typography variant="body1" color="textPrimary">
 							Are you sure you want to delete the user <strong>{selectedUser?.email}</strong>?
 						</Typography>
@@ -536,17 +545,12 @@ const Users = () => {
 							This action cannot be undone. Any jobs and structures associated with this user will also be deleted.
 						</Typography>
 					</DialogContent>
-					<DialogActions>
+					<DialogActions sx={{ px: 2, pb: 3, pt: 0, bgcolor: grey[50] }}>
 						<Button 
 							onClick={() => setDeleteUserConfirmation(false)} 
-							startIcon={<CancelOutlined />}
 							variant='outlined'
-							sx={{
-								color: grey[700],
-								borderColor: grey[700],
-								'&:hover': { borderColor: grey[900], color: grey[900] },
-								textTransform: 'none',
-							}}
+							color="inherit"
+							sx={{ textTransform: 'none', borderRadius: 2 }}
 						>
 							Cancel
 						</Button>
@@ -558,7 +562,7 @@ const Users = () => {
 								setDeleteUserConfirmation(false);
 							}}
 							color="error"
-							sx={{ ml: 1, textTransform: 'none' }}
+							sx={{ ml: 1, textTransform: 'none', borderRadius: 2 }}
 							startIcon={<DeleteOutlined />}
 							variant='contained'
 						>

@@ -651,9 +651,8 @@ export default function Admin() {
 								<Button
 									variant="contained"
 									color="primary"
-									size="small"
 									onClick={handleFilterSubmit}
-									sx={{ mt: 2, textTransform: 'none', display: 'block' }}
+									sx={{ mt: 2, textTransform: 'none', display: 'block', borderRadius: 2 }}
 									fullWidth
 								>
 									Apply Filters

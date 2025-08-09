@@ -26,7 +26,7 @@ import { ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
 
 import type { Job } from '../../../types';
 import { updateVisibility } from '../../../services/api';
-import { statusColors } from '../../../constants';
+import { statusColors, statusIcons } from '../../../constants';
 
 interface JobsTableProps {
   jobs: Job[];
@@ -198,41 +198,43 @@ export default function GroupJobsTable({
 											{displayColumns.status && (
 												<TableCell>
 													<Chip
-													label={job.status}
-													size="small"
-													sx={{
-														bgcolor: statusColors[job.status] ?? 'grey.300',
-														color: 'white',
-														textTransform: 'capitalize',
-													}}
+														label={job.status}
+														size="small"
+														sx={{
+															bgcolor: statusColors[job.status] ?? grey[300],
+															color: 'white',
+															textTransform: 'capitalize',
+															fontSize: '0.65rem',
+														}}
+														icon={statusIcons[job.status] ? React.createElement(statusIcons[job.status], { style: { color: 'white', width: 16, height: 16 } }) : undefined}
 													/>
 												</TableCell>
 											)}
 											{displayColumns.structures && (
 												<TableCell>
 													{job.structures.length ? (
-													job.structures.map(s => (
-														<Chip
-														key={s.structure_id}
-														label={s.name}
-														variant="outlined"
-														size="small"
-														sx={{ mr: 0.5, mb: 0.5 }}
-														/>
-													))
+														job.structures.map(s => (
+															<Chip
+																key={s.structure_id}
+																label={s.name}
+																variant="outlined"
+																size="small"
+																sx={{ mr: 0.5, mb: 0.5 }}
+															/>
+														))
 													) : (
-													'N/A'
+														'N/A'
 													)}
 												</TableCell>
 											)}
 											{displayColumns.tags && (
 												<TableCell>
 													{job.tags.length > 0 ? (
-													job.tags.join(', ')
+														job.tags.join(', ')
 													) : (
-													<Typography variant="body2" color="text.secondary">
-														No tags
-													</Typography>
+														<Typography variant="body2" color="text.secondary">
+															No tags
+														</Typography>
 													)}
 												</TableCell>
 											)}
@@ -247,8 +249,8 @@ export default function GroupJobsTable({
 											{displayColumns.completed_at && (
 												<TableCell>
 													{job.completed_at
-													? new Date(job.completed_at).toLocaleString()
-													: 'N/A'}
+														? new Date(job.completed_at).toLocaleString()
+														: 'N/A'}
 												</TableCell>
 											)}
 											{displayColumns.is_public && isGroupAdmin && (
@@ -256,27 +258,27 @@ export default function GroupJobsTable({
 													{job.is_public ? (
 													<Tooltip title="Make Private">
 														<IconButton
-														size="small"
-														color="primary"
-														onClick={e => {
-															e.stopPropagation();
-															toggleVisibility(job.job_id, false);
-														}}
+															size="small"
+															color="primary"
+															onClick={e => {
+																e.stopPropagation();
+																toggleVisibility(job.job_id, false);
+															}}
 														>
-														<VisibilityOutlined />
+															<VisibilityOutlined />
 														</IconButton>
 													</Tooltip>
 													) : (
 													<Tooltip title="Make Public">
 														<IconButton
-														size="small"
-														sx={{ color: grey[600] }}
-														onClick={e => {
-															e.stopPropagation();
-															toggleVisibility(job.job_id, true);
-														}}
+															size="small"
+															sx={{ color: grey[600] }}
+															onClick={e => {
+																e.stopPropagation();
+																toggleVisibility(job.job_id, true);
+															}}
 														>
-														<VisibilityOffOutlined />
+															<VisibilityOffOutlined />
 														</IconButton>
 													</Tooltip>
 													)}

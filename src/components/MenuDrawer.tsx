@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import { AdminPanelSettingsOutlined, TuneOutlined, DashboardOutlined, CollectionsOutlined, AutoMode, PeopleAltOutlined, ExpandLess, ExpandMore, AccountCircleOutlined } from '@mui/icons-material';
 import logo from '../assets/logo.svg';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useDrawer } from './DrawerContext';
 import { useAuth0 } from '@auth0/auth0-react';
 import { upsertCurrentUser } from '../services/api';
@@ -67,6 +67,7 @@ export default function MenuDrawer() {
 	const { user, getAccessTokenSilently } = useAuth0();
 	const { open, toggle } = useDrawer();
 	const navigate         = useNavigate();
+	const location = useLocation(); 
 	const [selectedIndex, setSelectedIndex] = React.useState(0);
 	const [role, setRole] = React.useState('');
 	const [groupId, setGroupId] = React.useState('');
@@ -82,6 +83,8 @@ export default function MenuDrawer() {
 			}
 		};
 		fetchUserRoleAndGroup();
+
+		setExpanded(location.pathname === '/users');
 	}, [user]);
 
 	const drawerContent = (
@@ -137,7 +140,7 @@ export default function MenuDrawer() {
 				].map(({ text, icon, path }, idx) => (
 					<ListItemButton
 						key={text}
-						selected={selectedIndex === idx}
+						selected={location.pathname === path}
 						onClick={() => {
 							setSelectedIndex(idx);
 							navigate(path);
@@ -165,7 +168,7 @@ export default function MenuDrawer() {
 					<>
 						<ListItemButton
 							key={'my-group'}
-							selected={selectedIndex === 4}
+							selected={location.pathname === '/group'}
 							onClick={() => {
 								setSelectedIndex(4);
 								navigate('/group');
@@ -194,7 +197,7 @@ export default function MenuDrawer() {
 					<>
 						<ListItemButton
 							key={'admin-panel'}
-							selected={selectedIndex === 5}
+							selected={location.pathname === '/admin'}
 							onClick={() => {
 								setSelectedIndex(5);
 								navigate('/admin');
@@ -234,7 +237,7 @@ export default function MenuDrawer() {
 								<List component="div" disablePadding>
 									<ListItemButton 
 										key={'admin-panel'}
-										selected={selectedIndex === 6}
+										selected={location.pathname === '/users'}
 										onClick={() => {
 											setSelectedIndex(6);
 											navigate('/users');

@@ -390,7 +390,7 @@ const AdvancedAnalysis = () => {
 	}
 
     return (
-        <Box bgcolor="rgb(247, 249, 252)" p={4}>
+        <Box p={4} className="bg-stone-100 min-h-screen">
             <MolmakerConfirm
                 open={openConfirmImage}
                 onClose={() => setOpenConfirmImage(false)}
@@ -412,7 +412,7 @@ const AdvancedAnalysis = () => {
             />
             <Grid container spacing={3}>
                 <Grid size={{ xs: 12, md: 6 }}>
-                    <Paper elevation={3} sx={{ padding: 4 }}>
+                    <Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50] }}>
                         <Box component="form" onSubmit={handleSubmitJob}>
                             <Grid container direction="column" spacing={2}>
                                 {/* Error message */}
@@ -424,11 +424,11 @@ const AdvancedAnalysis = () => {
                                     />
                                 )}
                                 {/* required info */}
-                                <Grid>
+                                <Grid sx={{ mx: 2, mt: 3 }}>
                                     <MolmakerSectionHeader text="Required fields are marked with *"/>
                                 </Grid>
                                 {/* Job name */}
-                                <Grid>
+                                <Grid sx={{ mx: 2 }}>
                                     <MolmakerTextField
                                         label="Job Name"
                                         value={jobName}
@@ -493,9 +493,9 @@ const AdvancedAnalysis = () => {
                                 />
                                 <Divider />
                                 {/* Theory */}
-                                <Box>
+                                <Box sx={{ mx: 2 }}>
                                     <Grid>
-                                        <MolmakerSectionHeader text="Theory" />
+                                        <MolmakerSectionHeader text="Theory" sx={{ fontWeight: 'bold', mb: 1 }}  />
                                     </Grid>
                                     <Grid sx={{ mb: 1 }}>
                                         <MolmakerRadioGroup
@@ -543,9 +543,9 @@ const AdvancedAnalysis = () => {
                                 </Box>
                                 <Divider />
                                 {/* Calculation parameters */}
-                                <Box>
+                                <Box sx={{ mx: 2 }}>
                                     <Grid>
-                                        <MolmakerSectionHeader text="Calculation Parameters" />
+                                        <MolmakerSectionHeader text="Calculation Parameters" sx={{ fontWeight: 'bold', mb: 3 }} />
                                     </Grid>
                                     <Grid container spacing={2} sx={{ my: 2 }}>
                                         <Grid size={{ xs: 12, md: 6 }}>
@@ -617,7 +617,7 @@ const AdvancedAnalysis = () => {
                                     </Grid>
                                 </Box>
                                 {/* Calculation Keywords */}
-                                <Accordion disableGutters elevation={0} sx={{ mt: 3 }} >
+                                <Accordion disableGutters elevation={0} sx={{ bgcolor: 'transparent', px: 2 }}>
                                     <AccordionSummary
                                         expandIcon={ <ExpandMoreIcon /> }
                                         aria-controls="keywords-content"
@@ -625,23 +625,24 @@ const AdvancedAnalysis = () => {
                                         sx={{
                                             px: 0,
                                             mx: 0,
+                                            mt: 0.5,
                                             width: "100%",
                                         }}
                                     >
-                                        <MolmakerSectionHeader text="Calculation Keywords" />
+                                        <MolmakerSectionHeader text="Calculation Keywords" sx={{ fontWeight: 'bold' }} />
                                     </AccordionSummary>
                                     <AccordionDetails
                                         sx={{
                                             p: 2,
                                             borderRadius: 2,
                                             width: "100%",
-                                            bgcolor: grey[100],
+                                            bgcolor: grey[200],
                                         }}
                                     >
                                         <KeywordEditor maxEntries={20} onChange={handleKeywordsChange} />
                                     </AccordionDetails>
                                 </Accordion>
-                                <Grid size={12}>
+                                <Grid sx={{ mx: 2, mb: 3 }}>
                                     <Button
                                         type="submit"
                                         variant="contained"
@@ -649,7 +650,7 @@ const AdvancedAnalysis = () => {
                                         size="large"
                                         startIcon={<PlayCircleOutlineIcon />}
                                         fullWidth
-                                        sx={{ flexGrow: 1, textTransform: 'none' }}
+                                        sx={{ flexGrow: 1, textTransform: 'none', borderRadius: 2 }}
                                     >
                                         Run Advanced Analysis
                                     </Button>

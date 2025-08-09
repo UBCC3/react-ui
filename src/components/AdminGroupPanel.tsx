@@ -77,7 +77,7 @@ export default function AdminGroupPanel({ token }: { token: string }) {
 				<Box display="flex" gap={2}>
 					<TextField label="Group Name" value={groupName} onChange={(e) => setGroupName(e.target.value)} size="small" required />
 					<TextField label="Group Admin Email" value={groupAdmin} onChange={(e) => setGroupAdmin(e.target.value)}  size="small" required />
-					<Button variant="contained" onClick={handleGroupCreate} size='small' disabled={!groupName || !groupAdmin} sx={{ textTransform: 'none' }}>
+					<Button variant="contained" onClick={handleGroupCreate} size='small' disabled={!groupName || !groupAdmin} sx={{ textTransform: 'none', borderRadius: 2 }}>
 						Create Group
 					</Button>
 				</Box>
@@ -110,19 +110,17 @@ export default function AdminGroupPanel({ token }: { token: string }) {
 									<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
 											<Button
 												variant="outlined"
-												size="small"
 												onClick={() => handleUserUpdate(user.user_sub, user.role, '')}
-												sx={{ textTransform: 'none' }}
+												sx={{ textTransform: 'none', borderRadius: 2 }}
 												startIcon={<PersonRemoveAlt1Outlined />}
 											>
 												Remove from Group
 											</Button>
 											<Button
 												variant="outlined"
-												size="small"
 												color="error"
 												onClick={() => handleUserUpdate(user.user_sub, user.role, group.group_id)}
-												sx={{ textTransform: 'none' }}
+												sx={{ textTransform: 'none', borderRadius: 2 }}
 												startIcon={<DeleteOutlineOutlined />}
 											>
 												Delete User

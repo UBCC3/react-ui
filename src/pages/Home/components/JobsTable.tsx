@@ -13,7 +13,7 @@ import {
 	Grid
 } from '@mui/material';
 import { AutoMode, TuneOutlined } from '@mui/icons-material';
-import { statusColors } from '../../../constants';
+import { statusColors, statusIcons } from '../../../constants';
 import { grey } from '@mui/material/colors';
 import { ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
 import type { Job } from '../../../types';
@@ -175,10 +175,12 @@ export default function JobsTable({
 											label={job.status}
 											size="small"
 											sx={{
-											bgcolor: statusColors[job.status] ?? 'grey.300',
-											color: 'white',
-											textTransform: 'capitalize'
+												bgcolor: statusColors[job.status] ?? grey[300],
+												color: 'white',
+												textTransform: 'capitalize',
+												fontSize: '0.65rem',
 											}}
+											icon={statusIcons[job.status] ? React.createElement(statusIcons[job.status], { style: { color: 'white', width: 16, height: 16 } }) : undefined}
 										/>
 									</TableCell>
 								)}
@@ -187,11 +189,11 @@ export default function JobsTable({
 										{job.structures.length ? job.structures
 											.map((s) => (
 												<Chip
-												key={s.structure_id}
-												label={s.name}
-												variant="outlined"
-												size="small"
-												sx={{ mr: 0.5, mb: 0.5 }}
+													key={s.structure_id}
+													label={s.name}
+													variant="outlined"
+													size="small"
+													sx={{ mr: 0.5, mb: 0.5 }}
 												/>
 											)) : 'N/A'}
 									</TableCell>

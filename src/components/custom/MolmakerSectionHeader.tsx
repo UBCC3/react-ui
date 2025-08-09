@@ -17,7 +17,7 @@ const MolmakerSectionHeader = ({
 	return (
 		<Typography 
 			variant="body2" 
-			color={grey[700]}
+			color={grey[600]}
 			sx={{ ...sx }}
 		>
 			{text}

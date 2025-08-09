@@ -234,7 +234,7 @@ const MoleculeUpload: React.FC<MoleculeUploadProps> = ({
 						variant="contained"
 						component="label"
 						startIcon={<CloudUploadOutlined />}
-						sx={{ textTransform: 'none' }}
+						sx={{ textTransform: 'none', borderRadius: 2 }}
 						fullWidth
 					>
 						{uploadedFile ? uploadedFile.name : 'Select File'}
@@ -295,7 +295,7 @@ const MoleculeUpload: React.FC<MoleculeUploadProps> = ({
 								variant="outlined"
 								type="submit"
 								startIcon={<AddPhotoAlternateOutlined />}
-								sx={{ textTransform: 'none' }}
+								sx={{ textTransform: 'none', borderRadius: 2 }}
 								fullWidth
 							>
 								Add to Library
@@ -307,7 +307,7 @@ const MoleculeUpload: React.FC<MoleculeUploadProps> = ({
 								color="inherit"
 								onClick={() => setOpen(false)}
 								startIcon={<Close />}
-								sx={{ textTransform: 'none' }}
+								sx={{ textTransform: 'none', borderRadius: 2 }}
 								fullWidth
 							>
 								Close

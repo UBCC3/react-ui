@@ -15,8 +15,8 @@ export default function MainContent({ children }) {
 					easing  : theme.transitions.easing.sharp,
 					duration: theme.transitions.duration.standard,
 				}),
-				bgcolor: "rgb(247, 249, 252)",
 			}}
+			className="bg-stone-100"
 		>
 			<Toolbar />
 			{children}

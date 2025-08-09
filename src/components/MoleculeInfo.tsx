@@ -210,7 +210,7 @@ const MoleculeInfo = ({ open, setOpen, selectedStructureId }) => {
 										variant="contained"
 										color="primary"
 										onClick={handleSave}
-										sx={{ textTransform: 'none' }}
+										sx={{ textTransform: 'none', borderRadius: 2 }}
 										fullWidth
 										startIcon={<Save />}
 									>
@@ -221,7 +221,7 @@ const MoleculeInfo = ({ open, setOpen, selectedStructureId }) => {
 										variant="outlined"
 										color="primary"
 										onClick={() => setIsEditing(true)}
-										sx={{ textTransform: 'none' }}
+										sx={{ textTransform: 'none', borderRadius: 2 }}
 										fullWidth
 										startIcon={<Edit />}
 									>
@@ -234,7 +234,7 @@ const MoleculeInfo = ({ open, setOpen, selectedStructureId }) => {
 									variant="outlined"
 									color="inherit"
 									onClick={() => setOpen(false)}
-									sx={{ textTransform: 'none' }}
+									sx={{ textTransform: 'none', borderRadius: 2 }}
 									fullWidth
 									startIcon={<Close />}
 								>

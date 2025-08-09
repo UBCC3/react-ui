@@ -173,7 +173,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 				Group Management
 			</Typography>
 			{loading ? (
-				<Box sx={{ mb: 4, p: 4, bgcolor: grey[50] }} display="flex" alignItems="center" justifyContent="center">
+				<Box sx={{ mb: 4, p: 4, bgcolor: grey[50], borderRadius: 2 }} display="flex" alignItems="center" justifyContent="center">
 					<CircularProgress />
 					<Typography variant="body2" sx={{ ml: 2 }}>{loadingMessage}</Typography>
 				</Box>

@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import { AutoMode, TuneOutlined } from '@mui/icons-material';
 import { ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
-import { statusColors } from '../../../constants';
+import { statusColors, statusIcons } from '../../../constants';
 import { blueGrey, grey } from '@mui/material/colors';
 import type { Job } from '../../../types';
 
@@ -216,10 +216,12 @@ export default function AdminJobsTable({
 											label={job.status}
 											size="small"
 											sx={{
-											bgcolor: statusColors[job.status] ?? 'grey.300',
-											color: 'white',
-											textTransform: 'capitalize'
+												bgcolor: statusColors[job.status] ?? grey[300],
+												color: 'white',
+												textTransform: 'capitalize',
+												fontSize: '0.65rem',
 											}}
+											icon={statusIcons[job.status] ? React.createElement(statusIcons[job.status], { style: { color: 'white', width: 16, height: 16 } }) : undefined}
 										/>
 									</TableCell>
 								)}

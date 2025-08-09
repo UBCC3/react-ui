@@ -78,11 +78,11 @@ const MolmakerMoleculeSelector = ({
 	}, [])
 
 	return (
-  	<Grid container sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+  	<Grid container sx={{ display: 'flex', flexDirection: 'column', gap: 2, mx: 2 }}>
 		<Grid>
-			<MolmakerSectionHeader text="Molecule Source" />
+			<MolmakerSectionHeader text="Molecule Source" sx={{ fontWeight: 'bold' }} />
 		</Grid>
-		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, bgcolor: grey[100], p: 2, borderRadius: 1 }}>
+		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, bgcolor: grey[200], p: 2, borderRadius: 2 }}>
 			{/* Source radios */}
 			<Grid>
 				<MolmakerRadioGroup
@@ -119,7 +119,7 @@ const MolmakerMoleculeSelector = ({
 							component="label"
 							disabled={source !== 'upload'}
 							startIcon={<CloudUploadOutlined />}
-							sx={{ textTransform: 'none', minWidth: 180 }}
+							sx={{ textTransform: 'none', minWidth: 180, borderRadius: 2 }}
 						>
 							{file ? file.name : 'Select File'}
 							<input
