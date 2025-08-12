@@ -13,6 +13,7 @@ import MainContent from './components/MainContent';
 import { DrawerProvider } from './components/DrawerContext';
 import { Box, CssBaseline } from '@mui/material';
 import ResultPage from "./pages/ResultPage";
+import JobFail from "./pages/JobFail";
 
 function App() {
 	return (
@@ -37,6 +38,10 @@ function App() {
 							<Route
 								path="/result/:jobId"
 								element={<RequireAuth><ResultPage /></RequireAuth>}
+							/>
+							<Route
+								path="/fail/:jobId"
+								element={<RequireAuth><JobFail /></RequireAuth>}
 							/>
 							<Route
 								path="/submit"

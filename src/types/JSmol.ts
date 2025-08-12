@@ -8,6 +8,18 @@ export type Orbital = {
 	type: string;
 };
 
+export interface JobError {
+	id: string | null
+	input_data: any
+	success: boolean
+	error: {
+		error_type: string,
+		error_message: string,
+		extras: any
+	}
+	extras: any
+}
+
 export interface JobResult {
 	jobId: string
 	calculation: string
@@ -17,12 +29,17 @@ export interface JobResult {
 
 export type VibrationMode = {
 	index: number;
-	frequencyCM: number;
+	frequencyCM: ComplexNumber;
 	irIntensity: number;
 	symmetry: string;
 	forceConstant: number;
 	charTemp: number;
 };
+
+export type ComplexNumber = {
+	real: number;
+	imag: number;
+}
 
 export type Atom = {
 	atomIndex: number;

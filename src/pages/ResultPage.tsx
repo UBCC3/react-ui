@@ -8,7 +8,12 @@ import {fetchJobResultFiles, getJobByJobID} from "../services/api";
 import MolmakerLoading from "../components/custom/MolmakerLoading";
 import NotFound from "./NotFound";
 import {MolmakerAlert} from "../components/custom";
-import {OrbitalViewer, OptimizationViewer, StandardAnalysisViewer} from "../components/JSmol";
+import {
+	OrbitalViewer,
+	OptimizationViewer,
+	StandardAnalysisViewer,
+	EnergyViewer
+} from "../components/JSmol";
 
 const ResultPage = () => {
 	const { jobId } = useParams<{ jobId: string }>();
@@ -91,6 +96,14 @@ const ResultPage = () => {
 					sx={{ mb: 4 }}
 				/>
 			)}
+			{(job && job.calculation_type === "energy") && (
+				<EnergyViewer
+					job={job}
+					jobResultFiles={jobResultFiles!}
+					viewerObjId={"JSmolApplet1"}
+					setError={setError}
+				/>
+			)}
 			{(job && job.calculation_type === "frequency") && (
 				<VibrationViewer
 					job={job}
@@ -107,7 +120,7 @@ const ResultPage = () => {
 					setError={setError}
 				/>
 			)}
-			{(job && job.calculation_type === "optimization") && (
+			{(job && (job.calculation_type === "optimization" || job.calculation_type === "transition" || job.calculation_type === "irc")) && (
 				<OptimizationViewer
 					job={job}
 					jobResultFiles={jobResultFiles!}

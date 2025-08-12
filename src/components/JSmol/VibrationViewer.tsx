@@ -31,17 +31,13 @@ import {
 	Fullscreen,
 	FullscreenExit
 } from "@mui/icons-material";
-import {Job, JobResult, VibrationMode} from "../../types";
+import {Job, JobResult, VibrationMode, ComplexNumber} from "../../types";
 import {fetchRawFileFromS3Url} from "./util"
 import MolmakerLoading from "../custom/MolmakerLoading";
 import CalculatedQuantities from "./CalculatedQuantities";
 import IRSpectrumPlot from "../IRSpectrumPlot";
+import {formatComplex} from "../../utils";
 
-declare global {
-	interface Window {
-		Jmol: any;
-	}
-}
 
 function a11yProps(index: number) {
 	return {
@@ -104,8 +100,8 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 	const [shape, setShape] = useState<'gaussian' | 'lorentzian'>('gaussian');
 
 	useEffect(() => {
+		setLoading(true);
 		fetchRawFileFromS3Url(resultURL, 'json').then((res) => {
-			// console.log(res);
 			const workflowKeys = ['geometric optimization', 'molecular orbitals', 'vibrational frequencies'];
 			const isWorkflowSchema = Object.keys(res).some(k => workflowKeys.includes(k));
 			const resultJson = isWorkflowSchema ? ((res as any)["vibrational frequencies"]) : res;
@@ -156,25 +152,27 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 
 		const charTemp: number[] = result.extras.Psi4.char_temp;
 		const forceConstant: number[] = result.extras.Psi4.force_constant;
-		const frequency: number[] = result.extras.Psi4.frequency;
+		const frequency: ComplexNumber[] = result.extras.Psi4.frequency;
 		const irIntensity: number[] = result.extras.Psi4.ir_intensity;
+		const realFrequency: number[] = result.extras.Psi4.real_frequency;
+		const realIrIntensity: number[] = result.extras.Psi4.real_ir_intensity;
 		const symmetry: string[] = result.extras.Psi4.symmetry;
 
-		const modes: VibrationMode[] = frequency.map((freq: number, idx: number) => {
+		const modes: VibrationMode[] = frequency.map((freq: ComplexNumber, idx: number) => {
 			return {
 				index: idx + 1,
 				frequencyCM: freq,
 				irIntensity: irIntensity[idx],
-				symmetry: symmetry[idx],
+				symmetry: (symmetry[idx] === null ? "None" : symmetry[idx]),
 				forceConstant: forceConstant[idx],
 				charTemp: charTemp[idx],
 			}
 		})
 		setModes(modes);
-		const graphData: {freq: number, intensity: number}[] = frequency.map((freq: number, idx: number) => {
+		const graphData: {freq: number, intensity: number}[] = realFrequency.map((freq: number, idx: number) => {
 			return {
 				freq: freq,
-				intensity: irIntensity[idx]
+				intensity: realIrIntensity[idx]
 			}
 		})
 		setGraphData(graphData);
@@ -330,7 +328,7 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 										>
 											<TableCell>{mode.index}</TableCell>
 											<TableCell>{mode.symmetry}</TableCell>
-											<TableCell>{mode.frequencyCM.toFixed(2)}</TableCell>
+											<TableCell>{formatComplex(mode.frequencyCM)}</TableCell>
 											<TableCell>{mode.irIntensity.toFixed(2)}</TableCell>
 											<TableCell>{mode.forceConstant.toFixed(2)}</TableCell>
 											<TableCell>{mode.charTemp.toFixed(2)}</TableCell>

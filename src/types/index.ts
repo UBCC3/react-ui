@@ -5,6 +5,7 @@ import {
 	Orbital,
 	JobResult,
 	VibrationMode,
+	ComplexNumber,
 } from "./JSmol";
 
 export {
@@ -14,4 +15,5 @@ export {
 	Orbital,
 	JobResult,
 	VibrationMode,
+	ComplexNumber,
 }

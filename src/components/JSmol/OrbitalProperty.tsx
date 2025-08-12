@@ -4,7 +4,6 @@ import {
 	MenuList,
 	MenuItem,
 	ListItemText,
-	Slider,
 	Typography,
 	FormGroup,
 	FormControlLabel,
@@ -15,7 +14,7 @@ import {
 } from "@mui/material";
 import { blue, blueGrey, grey } from "@mui/material/colors";
 import React, { useEffect, useState } from "react";
-import {JobResult} from "../../types";
+import {Orbital} from "../../types";
 
 enum propertiesOptions {
 	density,
@@ -24,20 +23,25 @@ enum propertiesOptions {
 
 interface OrbitalPropertyProps {
 	viewerObj: any;
+	selectedOrbital: Orbital | null;
 	meshOrFill: 'mesh' | 'fill';
 	setMeshOrFill: React.Dispatch<React.SetStateAction<"fill" | "mesh">>;
+	showIsosurface: boolean;
+	setShowIsosurface: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({
 	viewerObj,
+	selectedOrbital,
 	meshOrFill,
 	setMeshOrFill,
+	showIsosurface,
+	setShowIsosurface,
 }) => {
 	const [propertyOption, setPropertyOption] = useState<false | propertiesOptions>(false);
 	const [cutoff, setCutoff] = useState<number>(0.02);
 	const [translucent, setTranslucent] = useState<number>(0.5);
 	const [showMolecule, setShowMolecule] = useState(true);
-	const [showIsosurface, setShowIsosurface] = useState(true);
 
 	// slice plane
 	const [sliceShow, setSliceShow] = useState<boolean>(false);
@@ -59,7 +63,7 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({
 						isosurface delete;
 						mo delete all;
 						mo density cutoff ${cutoff} translucent ${translucent} fill;
-						MO titleFormat " ";
+						mo titleFormat " ";
 						zoom 50;
 					`;
 				case propertiesOptions.potential:
@@ -97,8 +101,9 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({
 
 		window.Jmol.script(
 			viewerObj,
-			`isosurface ID ${slicePlaneId} PLANE {${sliceX}, ${sliceY}, ${sliceZ}, ${sliceD}}; 
-			isosurface ID ${slicePlaneId} ${sliceShow ? "ON":"OFF"};`
+			`isosurface ID ${slicePlaneId} PLANE {${sliceX}, ${sliceY}, ${sliceZ}, ${sliceD}} contour 21 mo ${selectedOrbital?.index} colorscheme "bwr" resolution 5;
+			isosurface ID ${slicePlaneId} ${sliceShow ? "ON":"OFF"};
+			background ${sliceShow ? "black" : "white"};`
 		);
 	}, [viewerObj, sliceX, sliceY, sliceZ, sliceD, sliceShow]);
 
@@ -111,7 +116,8 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({
 		if (!viewerObj) return;
 		window.Jmol.script(
 			viewerObj,
-			showIsosurface ? "mo on; isosurface on;" : "mo off; isosurface off;"
+			`${showIsosurface ? "mo on; isosurface on;" : "mo off; isosurface off;"}
+			isosurface ID ${slicePlaneId} ${sliceShow ? "ON":"OFF"};`
 		);
 	}, [viewerObj, showIsosurface]);
 

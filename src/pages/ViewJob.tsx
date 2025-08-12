@@ -47,18 +47,12 @@ function ViewJob() {
 				// Fetch result or error only based on job status
 				let resultResponse: { data?: any; error?: string } | null = null;
 				if (jobData.status === 'completed') {
-					// resultResponse = await fetchJobResults(jobId as string, token);
-					if (jobData.calculation_type == "frequency") {
-						navigate(`/result/${jobData.job_id}`);
-					} else if (jobData.calculation_type === "orbitals") {
-						navigate(`/result/${jobData.job_id}`);
-					} else if (jobData.calculation_type === "optimization") {
-						navigate(`/result/${jobData.job_id}`);
-					} else if (jobData.calculation_type === "standard") {
-						navigate(`/result/${jobData.job_id}`);
-					}
-					// TODO energy
-				} else if (jobData.status === 'error' || jobData.status === 'failed') {
+					navigate(`/result/${jobData.job_id}`);
+				}
+				else if (jobData.status === "failed") {
+					navigate(`/fail/${jobData.job_id}`);
+				}
+				else if (jobData.status === 'error' || jobData.status === 'failed') {
 					resultResponse = await fetchJobError(jobId as string, token);
 				}
 

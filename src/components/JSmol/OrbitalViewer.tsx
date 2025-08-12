@@ -37,12 +37,7 @@ import {Atom} from "../../types/JSmol";
 import {fetchRawFileFromS3Url} from "./util";
 import MolmakerLoading from "../custom/MolmakerLoading";
 import CalculatedQuantities from "./CalculatedQuantities";
-
-declare global {
-	interface Window {
-		Jmol: any;
-	}
-}
+import PartialCharge from "./PartialCharge";
 
 interface OrbitalViewerProp {
 	job: Job;
@@ -73,10 +68,11 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 
 	// orbital display option
 	const [meshOrFill, setMeshOrFill] = useState<"fill" | "mesh">("fill");
+	const [showIsosurface, setShowIsosurface] = useState(true);
 
 	// partial charge table
-	const [atoms, setAtoms] = useState<Atom[]>([]);
-	const [selectAtom, setSelectAtom] = useState<Atom | null>(null);
+	// const [atoms, setAtoms] = useState<Atom[]>([]);
+	// const [selectAtom, setSelectAtom] = useState<Atom | null>(null);
 
 	// Replace single open state with an object for each accordion
 	const [accordionOpen, setAccordionOpen] = useState({
@@ -111,31 +107,35 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 
 	}, [resultURL]);
 
-	useEffect(() => {
-		if (!selectAtom) return;
-
-		const script: string = `
-			frame 2;
-			label OFF;
-			isosurface delete;
-			mo delete all;
-			select atomno=${selectAtom.atomNo};
-			label %a %P;
-		`;
-		window.Jmol.script(viewerObj, script);
-	}, [selectAtom]);
+	// useEffect(() => {
+	// 	if (!selectAtom) return;
+	//
+	// 	const script: string = `
+	// 		frame 2;
+	// 		label OFF;
+	// 		isosurface delete;
+	// 		mo delete all;
+	// 		select atomno=${selectAtom.atomNo};
+	// 		label %a %P;
+	// 	`;
+	// 	window.Jmol.script(viewerObj, script);
+	// }, [selectAtom]);
 
 	useEffect(() => {
 		if (!viewerObj || orbitals.length === 0 || selectedOrbital === null) return;
 
 		// show selected orbital
+		// isosurface COLOR red blue MO ${selectedOrbital.index} ${displayOption};
 		const displayOption: string = meshOrFill === "fill" ? "NOMESH FILL" : "NOFILL MESH";
 		const script = `
 			frame 1;
 			mo delete all;
 			label OFF;
 			isosurface delete;
-			isosurface COLOR red blue MO ${selectedOrbital.index} ${displayOption};
+			mo ${selectedOrbital.index};
+			mo ${displayOption};
+			mo titleFormat " ";
+			${showIsosurface ? "mo on; isosurface on;" : "mo off; isosurface off;"}
 		`;
 		window.Jmol.script(viewerObj, script);
 	}, [orbitals, selectedOrbital, viewerObj, meshOrFill]);
@@ -159,30 +159,30 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 		setOrbitals(orbitalsArray);
 
 		// fetch partial charges
-		window.Jmol.script(
-			viewerObj,
-			`calculate PARTIALCHARGE;`
-		);
-		setTimeout(() => {
-			const atomsArray = window.Jmol.getPropertyAsArray(
-				viewerObj,
-				"atomInfo"
-			)
-			console.log("atomsArray", atomsArray);
-			const atoms: Atom[] = atomsArray.map((a: any): Atom => ({
-				atomIndex: a.atomIndex,
-				atomNo: a.atomno,
-				bondCount: a.bondCount,
-				element: a.element,
-				model: a.model,
-				partialCharge: a.partialCharge,
-				sym: a.sym,
-				x: a.x,
-				y: a.y,
-				z: a.z,
-			}))
-			setAtoms(atoms);
-		}, 500)
+		// window.Jmol.script(
+		// 	viewerObj,
+		// 	`calculate PARTIALCHARGE;`
+		// );
+		// setTimeout(() => {
+		// 	const atomsArray = window.Jmol.getPropertyAsArray(
+		// 		viewerObj,
+		// 		"atomInfo"
+		// 	)
+		// 	console.log("atomsArray", atomsArray);
+		// 	const atoms: Atom[] = atomsArray.map((a: any): Atom => ({
+		// 		atomIndex: a.atomIndex,
+		// 		atomNo: a.atomno,
+		// 		bondCount: a.bondCount,
+		// 		element: a.element,
+		// 		model: a.model,
+		// 		partialCharge: a.partialCharge,
+		// 		sym: a.sym,
+		// 		x: a.x,
+		// 		y: a.y,
+		// 		z: a.z,
+		// 	}))
+		// 	setAtoms(atoms);
+		// }, 500)
 	}, [viewerObj]);
 
 	useEffect(() => {
@@ -295,16 +295,16 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 					<Accordion
 						expanded={accordionOpen.orbitals}
 						onChange={handleAccordionChange('orbitals')}
-						sx={{ 
+						sx={{
 							backgroundColor: accordionOpen.orbitals ? grey[300] : grey[100],
-							borderRadius: 0, 
-							boxShadow: 'none', 
-							mb: 0, 
-							transition: 'background-color 0.3s ease' 
+							borderRadius: 0,
+							boxShadow: 'none',
+							mb: 0,
+							transition: 'background-color 0.3s ease'
 						}}
 					>
-						<AccordionSummary 
-							expandIcon={accordionOpen.orbitals && <ExpandMore />} 
+						<AccordionSummary
+							expandIcon={accordionOpen.orbitals && <ExpandMore />}
 							aria-controls="panel1-content"
 							id="panel1-header"
 							sx={{ color: grey[900], px: accordionOpen.orbitals ? 2 : 1 }}
@@ -362,15 +362,15 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 					<Accordion
 						expanded={accordionOpen.properties}
 						onChange={handleAccordionChange('properties')}
-						sx={{ 
+						sx={{
 							backgroundColor: accordionOpen.properties ? grey[300] : grey[100],
-							borderRadius: 0, 
-							boxShadow: 'none', 
-							mb: 0, 
-							transition: 'background-color 0.3s ease' 
+							borderRadius: 0,
+							boxShadow: 'none',
+							mb: 0,
+							transition: 'background-color 0.3s ease'
 						}}
 					>
-						<AccordionSummary 
+						<AccordionSummary
 							expandIcon={accordionOpen.properties && <ExpandMore />}
 							aria-controls="panel2-content"
 							id="panel2-header"
@@ -384,29 +384,32 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 						<AccordionDetails sx={{ display: 'flex', flexDirection: 'column', p: 0, borderBottom: '1px solid', borderColor: grey[300] }}>
 							<OrbitalProperty
 								viewerObj={viewerObj}
+								selectedOrbital={selectedOrbital}
 								meshOrFill={meshOrFill}
 								setMeshOrFill={setMeshOrFill}
+								showIsosurface={showIsosurface}
+								setShowIsosurface={setShowIsosurface}
 							/>
 						</AccordionDetails>
 					</Accordion>
 					<Accordion
 						expanded={accordionOpen.quantities}
 						onChange={handleAccordionChange('quantities')}
-						sx={{ 
+						sx={{
 							backgroundColor: accordionOpen.quantities ? grey[300] : grey[100],
-							borderRadius: 0, 
-							boxShadow: 'none', 
-							mb: 0, 
-							transition: 'background-color 0.3s ease' 
+							borderRadius: 0,
+							boxShadow: 'none',
+							mb: 0,
+							transition: 'background-color 0.3s ease'
 						}}
 					>
 						<AccordionSummary
 							expandIcon={accordionOpen.quantities && <ExpandMore />}
 							aria-controls="panel3-content"
 							id="panel3-header"
-							sx={{ 
+							sx={{
 								color: grey[900],
-								px: accordionOpen.quantities ? 2 : 1 
+								px: accordionOpen.quantities ? 2 : 1
 							}}
 						>
 							<Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center' }}>
@@ -423,14 +426,14 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 						onChange={handleAccordionChange('charges')}
 						sx={{
 							backgroundColor: accordionOpen.charges ? grey[300] : grey[100],
-							borderRadius: 0, 
-							boxShadow: 'none', 
-							mb: 0, 
-							transition: 'background-color 0.3s ease' 
+							borderRadius: 0,
+							boxShadow: 'none',
+							mb: 0,
+							transition: 'background-color 0.3s ease'
 						}}
 					>
-						<AccordionSummary 
-							expandIcon={accordionOpen.charges && <ExpandMore />} 
+						<AccordionSummary
+							expandIcon={accordionOpen.charges && <ExpandMore />}
 							aria-controls="panel4-content"
 							id="panel4-header"
 							sx={{ color: grey[900], px: accordionOpen.charges ? 2 : 1 }}
@@ -441,68 +444,10 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 							</Typography>
 						</AccordionSummary>
 						<AccordionDetails sx={{ display: 'flex', flexDirection: 'column', p: 0, bgcolor: grey[50]}}>
-							<MenuList>
-								<MenuItem
-									onClick={() => {
-										setSelectAtom(null);
-
-										const script = `
-											frame 2;
-											label OFF;
-											isosurface delete;
-											mo delete all;
-											select *;
-											label %P;
-											set labelfront;
-											color label black;
-											background LABELS white;
-										`;
-										window.Jmol.script(viewerObj, script);
-									}}
-									sx={{
-										mb: 1,
-										mx: 1,
-										p: 2,
-										borderRadius: 2,
-										bgcolor: grey[200],
-										'&:hover': {
-											backgroundColor: blueGrey[50],
-										},
-									}}
-								>
-									<ListItemText primary={"Display All Partial Charges"} />
-								</MenuItem>
-							</MenuList>
-							<TableContainer sx={{ flex: 1 }}>
-								<Table>
-									<TableHead>
-										<TableRow sx={{ bgcolor: grey[200] }}>
-											<TableCell>Atom</TableCell>
-											<TableCell>Symbol</TableCell>
-											<TableCell>Charge</TableCell>
-										</TableRow>
-									</TableHead>
-									<TableBody>
-										{atoms && atoms.map((a:Atom, idx: number) => (
-											<TableRow 
-												key={idx}
-												onClick={() => setSelectAtom(a)}
-												sx={{
-													cursor: 'pointer',
-													bgcolor: (selectAtom && a === selectAtom) ? blueGrey[100]:grey[50],
-													'&:hover': {
-														backgroundColor: blueGrey[50],
-													},
-												}}
-											>
-												<TableCell>{a.atomNo}</TableCell>
-												<TableCell>{a.sym}</TableCell>
-												<TableCell>{a.partialCharge}</TableCell>
-											</TableRow>
-										))}
-									</TableBody>
-								</Table>
-							</TableContainer>
+							<PartialCharge
+								frameNo={2}
+								viewerObj={viewerObj}
+							/>
 						</AccordionDetails>
 					</Accordion>
 					<Button
