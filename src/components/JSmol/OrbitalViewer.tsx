@@ -13,19 +13,26 @@ import {
 	TablePagination,
 	TableRow,
 	Typography,
-	ListItemText,
 	Drawer,
 	Toolbar,
 	IconButton,
 	Divider,
 	Button,
-	GlobalStyles, FormControlLabel, Radio, RadioGroup,
-    Box,
+	GlobalStyles, Autocomplete,
 } from "@mui/material";
 import {Job, JobResult, Orbital} from "../../types";
 import { grey, blueGrey } from "@mui/material/colors";
 import OrbitalProperty from "./OrbitalProperty";
-import { ExpandMore, DataObjectOutlined, AdjustOutlined, ContrastOutlined, CalculateOutlined, Fullscreen, FullscreenExit, Add } from "@mui/icons-material";
+import {
+	ExpandMore,
+	DataObjectOutlined,
+	AdjustOutlined,
+	ContrastOutlined,
+	CalculateOutlined,
+	Fullscreen,
+	FullscreenExit,
+	AddPhotoAlternateOutlined
+} from "@mui/icons-material";
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -36,6 +43,9 @@ import {fetchRawFileFromS3Url} from "./util";
 import MolmakerLoading from "../custom/MolmakerLoading";
 import CalculatedQuantities from "./CalculatedQuantities";
 import PartialCharge from "./PartialCharge";
+import {useAuth0} from "@auth0/auth0-react";
+import {MolmakerTextField} from "../custom";
+import {AddAndUploadStructureToS3} from "../../services/api";
 
 interface OrbitalViewerProp {
 	job: Job;
@@ -69,9 +79,6 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	const [meshOrFill, setMeshOrFill] = useState<"fill" | "mesh">("fill");
 	const [showIsosurface, setShowIsosurface] = useState(true);
 
-	// partial charge table
-	// const [atoms, setAtoms] = useState<Atom[]>([]);
-	// const [selectAtom, setSelectAtom] = useState<Atom | null>(null);
 
 	// Replace single open state with an object for each accordion
 	const [accordionOpen, setAccordionOpen] = useState({
@@ -89,6 +96,46 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	const resultURL = jobResultFiles.urls["result"];
 	const [result, setResult] = useState<any | null>(null);
 	const [loading, setLoading] = useState(true);
+
+	// dialog state
+	const [options, setOptions] = useState<string[]>([]);
+	const [moleculeName, setMoleculeName] = useState('');
+	const [chemicalFormula, setChemicalFormula] = useState('');
+	const [moleculeNotes, setMoleculeNotes] = useState('');
+	const [structureTags, setStructureTags] = useState<string[]>([]);
+	const [submitAttempted, setSubmitAttempted] = useState(false);
+
+	const handleSubmit = async () => {
+		setSubmitAttempted(true);
+		const canvas = viewerRef.current?.querySelector('canvas');
+		const imageDataUrl = canvas?.toDataURL('image/png') || '';
+
+		const xyzString = window.Jmol.evaluate(viewerObj, 'write("xyz")');
+		console.log("Generated XYZ:\n", xyzString);
+		const xyzBlob = new Blob([xyzString], { type: 'chemical/x-xyz' });
+		const xyzFile = new File([xyzBlob], `${moleculeName || 'structure'}.xyz`, {
+			type: 'chemical/x-xyz',
+		});
+
+		const token = await getAccessTokenSilently();
+
+		await AddAndUploadStructureToS3(
+			xyzFile,
+			moleculeName,
+			chemicalFormula,
+			moleculeNotes,
+			imageDataUrl,
+			token,
+			structureTags
+		);
+
+		setAddDialogOpen(false);
+		setMoleculeName('');
+		setChemicalFormula('');
+		setMoleculeNotes('');
+		setStructureTags([]);
+		setSubmitAttempted(false);
+	}
 
 	useEffect(() => {
 		fetchRawFileFromS3Url(resultURL, 'json').then((res) => {
