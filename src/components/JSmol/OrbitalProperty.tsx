@@ -4,34 +4,52 @@ import {
 	MenuList,
 	MenuItem,
 	ListItemText,
-	Slider,
 	Typography,
 	FormGroup,
 	FormControlLabel,
 	Checkbox,
-	TextField
+	TextField,
+    RadioGroup,
+    Radio
 } from "@mui/material";
 import { blue, blueGrey, grey } from "@mui/material/colors";
 import React, { useEffect, useState } from "react";
+import {Orbital} from "../../types";
 
 enum propertiesOptions {
 	density,
-	potential, // TODO ESP, HOMO, LUMO, Radical
-	homo,
-	lumo,
-	radical
+	potential,
 }
 
 interface OrbitalPropertyProps {
 	viewerObj: any;
+	selectedOrbital: Orbital | null;
+	meshOrFill: 'mesh' | 'fill';
+	setMeshOrFill: React.Dispatch<React.SetStateAction<"fill" | "mesh">>;
+	showIsosurface: boolean;
+	setShowIsosurface: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({ viewerObj }) => {
+const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({
+	viewerObj,
+	selectedOrbital,
+	meshOrFill,
+	setMeshOrFill,
+	showIsosurface,
+	setShowIsosurface,
+}) => {
 	const [propertyOption, setPropertyOption] = useState<false | propertiesOptions>(false);
 	const [cutoff, setCutoff] = useState<number>(0.02);
 	const [translucent, setTranslucent] = useState<number>(0.5);
 	const [showMolecule, setShowMolecule] = useState(true);
-	const [showIsosurface, setShowIsosurface] = useState(true);
+
+	// slice plane
+	const [sliceShow, setSliceShow] = useState<boolean>(false);
+	const [sliceX, setSliceX] = useState<string>("0.000");
+	const [sliceY, setSliceY] = useState<string>("0.000");
+	const [sliceZ, setSliceZ] = useState<string>("0.000");
+	const [sliceD, setSliceD] = useState<string>("0.000");
+	const slicePlaneId = "slice1";
 
 	useEffect(() => {
 		if (propertyOption === false || !viewerObj) return;
@@ -39,8 +57,25 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({ viewerObj }) => {
 		const script = () => {
 			switch (propertyOption) {
 				case propertiesOptions.density:
-					return `mo density cutoff ${cutoff} translucent ${translucent} fill;`;
-				// TODO: other cases
+					return `
+						frame 1;
+						label OFF;
+						isosurface delete;
+						mo delete all;
+						mo density cutoff ${cutoff} translucent ${translucent} fill;
+						mo titleFormat " ";
+						zoom 50;
+					`;
+				case propertiesOptions.potential:
+					return `
+						frame 2;
+						label OFF;
+						isosurface delete;
+						mo delete all;
+						isosurface resolution 6 molecular map mep;
+						isosurface translucent 0.5;
+						zoom 50;
+					`;
 				default:
 					return '';
 			}
@@ -54,14 +89,35 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({ viewerObj }) => {
 
 	useEffect(() => {
 		if (!viewerObj) return;
+		window.Jmol.script(
+			viewerObj,
+			sliceShow ? `isosurface ID ${slicePlaneId} ON;` : `isosurface ID ${slicePlaneId} OFF;`
+		);
+	}, [viewerObj, sliceShow]);
+
+	useEffect(() => {
+		if (!viewerObj) return;
+		if (sliceX === "" || sliceY === "" || sliceZ === "" || sliceD === "") return;
+
+		window.Jmol.script(
+			viewerObj,
+			`isosurface ID ${slicePlaneId} PLANE {${sliceX}, ${sliceY}, ${sliceZ}, ${sliceD}} contour 21 mo ${selectedOrbital?.index} colorscheme "bwr" resolution 5;
+			isosurface ID ${slicePlaneId} ${sliceShow ? "ON":"OFF"};
+			background ${sliceShow ? "black" : "white"};`
+		);
+	}, [viewerObj, sliceX, sliceY, sliceZ, sliceD, sliceShow]);
+
+	useEffect(() => {
+		if (!viewerObj) return;
 		window.Jmol.script(viewerObj, showMolecule ? "display all" : "hide all");
-	}, [showMolecule, viewerObj]);
+	}, [viewerObj, showMolecule]);
 
 	useEffect(() => {
 		if (!viewerObj) return;
 		window.Jmol.script(
 			viewerObj,
-			showIsosurface ? "mo on" : "mo off"
+			`${showIsosurface ? "mo on; isosurface on;" : "mo off; isosurface off;"}
+			isosurface ID ${slicePlaneId} ${sliceShow ? "ON":"OFF"};`
 		);
 	}, [viewerObj, showIsosurface]);
 
@@ -73,9 +129,6 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({ viewerObj }) => {
 					{Object.entries({
 						density: 'Electron Density',
 						potential: 'Electrostatic potential',
-						homo: 'Electrophilic (HOMO) frontier density',
-						lumo: 'Electrophilic (LUMO) frontier density',
-						radical: 'Radical frontier density'
 					}).map(([key, label]) => (
 						<MenuItem
 							onClick={() => setPropertyOption(propertiesOptions[key as keyof typeof propertiesOptions])}
@@ -126,6 +179,16 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({ viewerObj }) => {
 					<Typography variant="caption" sx={{ mb: 1, color: 'text.secondary' }}>
 						Display
 					</Typography>
+					<RadioGroup sx={{ display: 'flex', flexDirection: 'row', gap: 1 }}>
+						<FormControlLabel
+							control={<Radio checked={meshOrFill === "fill"} onChange={(_, checked) => setMeshOrFill("fill")} />}
+							label="Orbital Shape: Fill"
+						/>
+						<FormControlLabel
+							control={<Radio checked={meshOrFill === "mesh"} onChange={(_, checked) => setMeshOrFill("mesh")} />}
+							label="Mesh"
+						/>
+					</RadioGroup>
 					<FormGroup sx={{ display: 'flex', flexDirection: 'row', gap: 1 }}>
 						<FormControlLabel
 							control={<Checkbox checked={showMolecule} onChange={(_, checked) => setShowMolecule(checked)} />}
@@ -167,7 +230,49 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({ viewerObj }) => {
 						Slice plane
 					</Typography>
 					<FormGroup sx={{ display: 'flex', flexDirection: 'row', gap: 1 }}>
-						<FormControlLabel control={<Checkbox defaultChecked />} label="Show slice plane" />
+						<FormControlLabel
+							control={
+								<Checkbox
+									checked={sliceShow}
+									onChange={(_, checked) => setSliceShow(checked)}
+								/>
+							}
+							label="Show slice plane"
+						/>
+						<Box sx={{ display: 'flex', flexDirection: 'row', gap: 1 }}>
+							<TextField
+								label="ax + "
+								variant="outlined"
+								size="small"
+								value={sliceX}
+								sx={{ width: '80px' }}
+								onChange={(e: React.ChangeEvent<HTMLInputElement>) => {setSliceX(e.currentTarget.value);}}
+							/>
+							<TextField
+								label="by + "
+								variant="outlined"
+								size="small"
+								value={sliceY}
+								sx={{ width: '80px' }}
+								onChange={(e: React.ChangeEvent<HTMLInputElement>) => {setSliceY(e.currentTarget.value);}}
+							/>
+							<TextField
+								label="cz = "
+								variant="outlined"
+								size="small"
+								value={sliceZ}
+								sx={{ width: '80px' }}
+								onChange={(e: React.ChangeEvent<HTMLInputElement>) => {setSliceZ(e.currentTarget.value);}}
+							/>
+							<TextField
+								label="d"
+								variant="outlined"
+								size="small"
+								value={sliceD}
+								sx={{ width: '80px' }}
+								onChange={(e: React.ChangeEvent<HTMLInputElement>) => {setSliceD(e.currentTarget.value);}}
+							/>
+						</Box>
 					</FormGroup>
 				</Box>
 			</Grid>

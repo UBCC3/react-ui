@@ -1,59 +1,79 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, {useEffect, useRef, useState} from "react";
 import {
 	Accordion,
 	AccordionDetails,
 	AccordionSummary,
 	Box,
 	Checkbox,
+	Divider,
+	Drawer,
 	FormControlLabel,
+	FormGroup,
 	Grid,
-	Paper,
+	IconButton,
+	Paper, Slider, Tab,
 	Table,
 	TableBody,
 	TableCell,
 	TableContainer,
 	TableHead,
 	TablePagination,
-	TableRow,
-	Typography,
-	Drawer,
+	TableRow, Tabs,
 	Toolbar,
-	IconButton,
-	Divider
+	Typography
 } from "@mui/material";
-import { grey, blueGrey } from "@mui/material/colors";
+import {blueGrey, grey} from "@mui/material/colors";
 import {
 	AdjustOutlined,
+	CalculateOutlined,
 	DataObjectOutlined,
 	ExpandMore,
 	Fullscreen,
-	FullscreenExit,
-	CalculateOutlined
+	FullscreenExit
 } from "@mui/icons-material";
+import {Job, JobResult, VibrationMode, ComplexNumber} from "../../types";
+import {fetchRawFileFromS3Url} from "./util"
+import MolmakerLoading from "../custom/MolmakerLoading";
+import CalculatedQuantities from "./CalculatedQuantities";
+import IRSpectrumPlot from "../IRSpectrumPlot";
+import {formatComplex} from "../../utils";
 
-declare global {
-	interface Window {
-		Jmol: any;
-	}
+
+function a11yProps(index: number) {
+	return {
+		id: `simple-tab-${index}`,
+		'aria-controls': `simple-tabpanel-${index}`,
+	};
 }
 
-interface VibrationViewerProps {
-	xyzFile: string;
-	viewerObjId: string;
+enum viewerTab {
+	structure,
+	graph,
 }
-
-type VibrationMode = {
-	index: number;
-	frequencyCM: number;
-	pbc: string;
-};
 
 const fullWidth = 400;
 const miniWidth = 80;
 
-const VibrationViewer: React.FC<VibrationViewerProps> = ({ xyzFile, viewerObjId }) => {
+interface VibrationViewerProps {
+	job: Job,
+	jobResultFiles: JobResult;
+	viewerObjId: string;
+	setError: React.Dispatch<React.SetStateAction<string | null>>,
+}
+
+const VibrationViewer: React.FC<VibrationViewerProps> = ({
+	job,
+	jobResultFiles,
+	viewerObjId,
+	setError
+}) => {
 	const viewerRef = useRef<HTMLDivElement>(null);
 	const [viewerObj, setViewerObj] = useState<any>(null);
+	const [loading, setLoading] = useState<boolean>(true);
+	const xyzFileUrl = jobResultFiles.urls["vib"];
+	const resultURL = jobResultFiles.urls["result"];
+	const [result, setResult] = useState<any | null>(null);
+
 	const [modes, setModes] = useState<VibrationMode[]>([]);
 	const rowsPerPage = 25;
 	const [page, setPage] = useState(0);
@@ -64,11 +84,41 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({ xyzFile, viewerObjId 
 	const [accordionOpen, setAccordionOpen] = useState({ 
 		modes: true, 
 		options: false,
+		spectrum: false,
 		quantities: false
 	});
 
+	// structure viewer & graph viewer tab
+	const [value, setValue] = React.useState<viewerTab>(viewerTab.structure);
+	const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+		setValue(newValue);
+	};
+
+	// IR Spectra Graph
+	const [graphData, setGraphData] = useState<{freq: number, intensity: number}[]>([]);
+	const [width, setWidth] = useState(15);
+	const [shape, setShape] = useState<'gaussian' | 'lorentzian'>('gaussian');
+
+	useEffect(() => {
+		setLoading(true);
+		fetchRawFileFromS3Url(resultURL, 'json').then((res) => {
+			const workflowKeys = ['geometric optimization', 'molecular orbitals', 'vibrational frequencies'];
+			const isWorkflowSchema = Object.keys(res).some(k => workflowKeys.includes(k));
+			const resultJson = isWorkflowSchema ? ((res as any)["vibrational frequencies"]) : res;
+			setResult(resultJson);
+		}).catch((err) => {
+			setError("Failed to fetch job details or results");
+			console.error("Failed to fetch job details or results", err);
+		}).finally(() => {
+			setLoading(false);
+		})
+
+	}, [resultURL]);
+
 	// Initialize Jmol viewer
 	useEffect(() => {
+		if (loading) return;
+
 		const jsmolIsReady = (obj: any) => {
 			window.Jmol.script(obj, `reset; zoom 50;`);
 			setViewerObj(obj);
@@ -80,8 +130,9 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({ xyzFile, viewerObjId 
 			height: "100%",
 			use: "HTML5",
 			j2sPath: "/jsmol/j2s",
-			src: xyzFile,
-			script: `load \"XYZ::${xyzFile}\";`,
+			src: xyzFileUrl,
+			serverURL: "https://chemapps.stolaf.edu/jmol/jsmol/php/jsmol.php", // TODO backend to proxy
+			script: `load async "${xyzFileUrl}";`,
 			disableInitialConsole: true,
 			addSelectionOptions: false,
 			debug: false,
@@ -92,37 +143,47 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({ xyzFile, viewerObjId 
 		if (viewerRef.current) {
 			viewerRef.current.innerHTML = window.Jmol.getAppletHtml(viewerObjId, Info);
 		}
-	}, [xyzFile, viewerObjId]);
+	}, [xyzFileUrl, viewerObjId, loading, value]);
 
 	// Fetch vibration modes
 	useEffect(() => {
 		if (!viewerObj) return;
+		if (!result) return;
 
-		const models = window.Jmol.getPropertyAsArray(viewerObj, "auxiliaryInfo.models");
-		const frequencyRegExp = /frequency_cm-1=([+-]?\d+(?:\.\d+)?)/;
-		const pbcRegExp = /pbc=\"([^\"]*)\"/;
+		const charTemp: number[] = result.extras.Psi4.char_temp;
+		const forceConstant: number[] = result.extras.Psi4.force_constant;
+		const frequency: ComplexNumber[] = result.extras.Psi4.frequency;
+		const irIntensity: number[] = result.extras.Psi4.ir_intensity;
+		const realFrequency: number[] = result.extras.Psi4.real_frequency;
+		const realIrIntensity: number[] = result.extras.Psi4.real_ir_intensity;
+		const symmetry: string[] = result.extras.Psi4.symmetry;
 
-		const parsed = models.map((m: any) => {
-			const name: string = m.modelName;
-			const fMatch = name.match(frequencyRegExp) || [];
-			const pMatch = name.match(pbcRegExp) || [];
+		const modes: VibrationMode[] = frequency.map((freq: ComplexNumber, idx: number) => {
 			return {
-				index: m.modelNumber,
-				frequencyCM: parseFloat(fMatch[1] || "0"),
-				pbc: pMatch[1] || "",
-			};
-		});
-
-		parsed.sort((a, b) => a.index - b.index);
-		setModes(parsed);
-	}, [viewerObj]);
+				index: idx + 1,
+				frequencyCM: freq,
+				irIntensity: irIntensity[idx],
+				symmetry: (symmetry[idx] === null ? "None" : symmetry[idx]),
+				forceConstant: forceConstant[idx],
+				charTemp: charTemp[idx],
+			}
+		})
+		setModes(modes);
+		const graphData: {freq: number, intensity: number}[] = realFrequency.map((freq: number, idx: number) => {
+			return {
+				freq: freq,
+				intensity: realIrIntensity[idx]
+			}
+		})
+		setGraphData(graphData);
+	}, [viewerObj, result]);
 
 	// Update display on selection or toggles
 	useEffect(() => {
 		if (!viewerObj || selectedMode === null) return;
 
 		let script = `model ${selectedMode.index}; vibration ${vibrationOn ? 'ON' : 'OFF'}; vector ${vectorOn ? 'ON' : 'OFF'};`;
-		if (vectorOn) script += ` color vectors yellow; vector 10;`;
+		if (vectorOn) script += ` color vectors yellow; vector 19;`;
 		window.Jmol.script(viewerObj, script);
 	}, [viewerObj, selectedMode, vibrationOn, vectorOn]);
 
@@ -132,6 +193,7 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({ xyzFile, viewerObjId 
 			setAccordionOpen({
 				modes: false,
 				options: false,
+				spectrum: false,
 				quantities: false
 			});
 		}
@@ -145,25 +207,52 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({ xyzFile, viewerObjId 
 		if (isExpanded && !open) setOpen(true); // Open drawer if opening an accordion
 	};
 
+	if (loading) { return (<MolmakerLoading />); }
+
 	return (
 		<Grid container spacing={2} sx={{ width: '100%' }}>
-			<Grid size={12} sx={{ display: 'flex', flexDirection: 'column' }}>
-				<Typography variant="h5">
-					Vibration Analysis Result
-				</Typography>
-				<Divider sx={{ mt: 3, width: '100%' }} />
-			</Grid>
+			{ (job.calculation_type !== "standard") && (
+				<Grid size={12} sx={{ display: 'flex', flexDirection: 'column' }}>
+					<Typography variant="h5">
+						Vibration Analysis Result
+					</Typography>
+					<Divider sx={{ mt: 3, width: '100%' }} />
+				</Grid>
+			)}
 			<Grid sx={{ display: 'flex', flexDirection: 'column', flex: '1 0 auto', position: 'relative' }}>
-				<Paper 
-					ref={viewerRef} 
-					sx={{ 
-						width: '100%', 
-						height: '70vh', 
-						boxSizing: 'border-box', 
-						borderRadius: 2 
-					}} 
-					elevation={3} 
-				/>
+				<Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+					<Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
+						<Tab label="Structure Viewer" {...a11yProps(0)} />
+						<Tab label="Graph Viewer" {...a11yProps(1)} />
+					</Tabs>
+				</Box>
+				{value === 0 && (
+					<Paper
+						ref={viewerRef}
+						sx={{
+							width: '100%',
+							height: '70vh',
+							boxSizing: 'border-box',
+							borderRadius: 2
+							// zIndex removed
+						}}
+						elevation={3}
+					/>
+				)}
+				{value === 1 && (
+					<Paper
+						sx={{
+							width: '100%',
+							height: '70vh',
+							boxSizing: 'border-box',
+							borderRadius: 2,
+							p: 4,
+						}}
+						elevation={3}
+					>
+						<IRSpectrumPlot data={graphData} width={width} shape={shape}/>
+					</Paper>
+				)}
 			</Grid>
 			<Drawer
 				variant="persistent"
@@ -213,15 +302,22 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({ xyzFile, viewerObjId 
 							<Table>
 								<TableHead>
 									<TableRow sx={{ bgcolor: grey[200] }}>
-										<TableCell>Frequency</TableCell>
-										<TableCell>PBC</TableCell>
+										<TableCell>Mode</TableCell>
+										<TableCell>Symmetry</TableCell>
+										<TableCell>Frequency (cm<sup>-1</sup>)</TableCell>
+										<TableCell>IR Intensity</TableCell>
+										<TableCell>Force Constant (mDyne/A)</TableCell>
+										<TableCell>Char Temp (K)</TableCell>
 									</TableRow>
 								</TableHead>
 								<TableBody>
 									{modes.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((mode) => (
 										<TableRow
 											key={mode.index}
-											onClick={() => setSelectedMode(mode)}
+											onClick={() => {
+												if (value !== viewerTab.structure) { setValue(viewerTab.structure); }
+												setSelectedMode(mode);
+											}}
 											sx={{ 
 												cursor: 'pointer',
 												bgcolor: grey[50],
@@ -230,8 +326,12 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({ xyzFile, viewerObjId 
 												},
 											}}
 										>
-											<TableCell>{mode.frequencyCM.toFixed(2)}</TableCell>
-											<TableCell>{mode.pbc}</TableCell>
+											<TableCell>{mode.index}</TableCell>
+											<TableCell>{mode.symmetry}</TableCell>
+											<TableCell>{formatComplex(mode.frequencyCM)}</TableCell>
+											<TableCell>{mode.irIntensity.toFixed(2)}</TableCell>
+											<TableCell>{mode.forceConstant.toFixed(2)}</TableCell>
+											<TableCell>{mode.charTemp.toFixed(2)}</TableCell>
 										</TableRow>
 									))}
 								</TableBody>
@@ -287,6 +387,78 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({ xyzFile, viewerObjId 
 					</AccordionDetails>
 				</Accordion>
 				<Accordion
+					expanded={accordionOpen.spectrum}
+					onChange={handleAccordionChange('spectrum')}
+					sx={{
+						backgroundColor: accordionOpen.spectrum ? grey[300] : grey[100],
+						borderRadius: 0,
+						boxShadow: 'none',
+						mb: 0,
+						transition: 'background-color 0.3s ease'
+					}}
+				>
+					<AccordionSummary
+						expandIcon={accordionOpen.spectrum && <ExpandMore />}
+						aria-controls="panel2-content"
+						id="panel2-header"
+						sx={{ color: grey[900], px: accordionOpen.spectrum ? 2 : 1 }}
+					>
+						<Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center' }}>
+							<DataObjectOutlined sx={open ? { mr: 1 } : { ml: 2 }}  />
+							{open && <span>IR Intensity</span>}
+						</Typography>
+					</AccordionSummary>
+					<AccordionDetails sx={{ display: 'flex', flexDirection: 'column', p: 0, borderBottom: '1px solid', borderColor: grey[300] }}>
+						<Grid container sx={{ width: '100%', height: '100%', bgcolor: grey[50], display: 'flex', flexDirection: 'row' }}>
+							<Grid size={{ xs: 12 }} sx={{ display: 'flex', flexDirection: 'column', px: 2, pb: 2,flexGrow: 1, mt: 0, pt: 2 }}>
+								<Box sx={{ border: '1px solid', borderRadius: 2, p: 1, borderColor: 'divider' }}>
+									<Typography variant="caption" sx={{ mb: 1, color: 'text.secondary' }}>
+										Function
+									</Typography>
+									<FormGroup sx={{ display: 'flex', flexDirection: 'row', gap: 1 }}>
+										<FormControlLabel
+											control={<Checkbox checked={shape==="gaussian"} onChange={(_, checked) => {
+												if (value !== viewerTab.graph) { setValue(viewerTab.graph); }
+												setShape("gaussian");
+											}} />}
+											label="Gaussian"
+										/>
+										<FormControlLabel
+											control={<Checkbox checked={shape==="lorentzian"} onChange={(_, checked) => {
+												if (value !== viewerTab.graph) { setValue(viewerTab.graph); }
+												setShape("lorentzian");
+											}} />}
+											label="Lorentzian"
+										/>
+									</FormGroup>
+								</Box>
+							</Grid>
+							<Grid size={{ xs: 12 }} sx={{ display: 'flex', flexDirection: 'column', px: 2, pb: 2,flexGrow: 1, mt: 0 }}>
+								<Box sx={{ border: '1px solid', borderRadius: 2, p: 1, borderColor: 'divider' }}>
+									<Typography variant="caption" sx={{ mb: 1, color: 'text.secondary' }}>
+										Width
+									</Typography>
+									<FormGroup>
+										<Slider
+											value={width}
+											min={0}
+											max={150}
+											step={1}
+											marks={[{ value: 0, label: '0' }, { value: 150, label: '150' }]}
+											valueLabelDisplay="auto"
+											onChange={(_, newValue) => {
+												if (value !== viewerTab.graph) { setValue(viewerTab.graph); }
+												setWidth(newValue as number);
+											}}
+											sx={{ width: '80%', alignSelf: 'center', my: 2 }}
+										/>
+									</FormGroup>
+								</Box>
+							</Grid>
+						</Grid>
+					</AccordionDetails>
+				</Accordion>
+				<Accordion
 					expanded={accordionOpen.quantities}
 					onChange={handleAccordionChange('quantities')}
 					sx={{ 
@@ -312,39 +484,7 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({ xyzFile, viewerObjId 
 						</Typography>
 					</AccordionSummary>
 					<AccordionDetails sx={{ display: 'flex', flexDirection: 'column', p: 0 }}>
-						<TableContainer sx={{ flex: 1 }}>
-							<Table>
-								<TableHead>
-									<TableRow sx={{ bgcolor: grey[200] }}>
-										<TableCell>Quantity</TableCell>
-										<TableCell>Value</TableCell>
-									</TableRow>
-								</TableHead>
-								<TableBody>
-									{[
-										{ label: 'Symmetry', value: 'cs' },
-										{ label: 'Basis', value: '6-31G(D)' },
-										{ label: 'SCF Energy', value: '-76.010720255688 Hartree' },
-										{ label: 'Dipole Moment', value: '2.19764298641837 Debye' },
-										{ label: 'CPU time', value: '3 sec' },
-									].map((item, index) => (
-										<TableRow 
-											key={index}
-											sx={{
-												cursor: 'pointer',
-												bgcolor: grey[50],
-												'&:hover': {
-													backgroundColor: blueGrey[50],
-												},
-											}}
-										>
-											<TableCell>{item.label}</TableCell>
-											<TableCell>{item.value}</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</TableContainer>
+						<CalculatedQuantities job={job} result={result} />
 					</AccordionDetails>
 				</Accordion>
 			</Drawer>

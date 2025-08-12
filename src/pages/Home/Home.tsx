@@ -24,10 +24,10 @@ import {
 import { blue, blueGrey, grey } from '@mui/material/colors';
 import { 
 	cancelJobBySlurmID,
-	getAllJobs, 
-	getJobStatusBySlurmID, 
-	getLibraryStructures, 
-	getStructureDataFromS3, 
+	getAllJobs,
+	getJobStatusBySlurmID,
+	getLibraryStructures,
+	getStructureDataFromS3,
 	updateJob,
 	deleteJob,
 	upsertCurrentUser
@@ -375,6 +375,7 @@ export default function Home() {
 				setLoading(false);
 				return;
 			}
+			jobs.find((job: Job, idx: number) => (job.job_id === selectedJobId))!.status = JobStatus.CANCELLED;
 			if (!jobToCancel.slurm_id) {
 				setAlertMsg('Job Slurm ID is missing.');
 				setAlertSeverity('error');
@@ -424,6 +425,71 @@ export default function Home() {
 			setLoading(false);
 		}
 	};
+
+	async function downloadZipFromS3WithBlob(presignedUrl: string, filename = "result.zip") {
+		const response = await fetch(presignedUrl);
+		if (!response.ok) throw new Error("Failed to download file");
+
+		const blob = await response.blob();
+		const blobUrl = window.URL.createObjectURL(blob);
+
+		const link = document.createElement("a");
+		link.href = blobUrl;
+		link.download = filename;
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+
+		// Clean up
+		window.URL.revokeObjectURL(blobUrl);
+	}
+
+	const handleZipDownload = async () => {
+		setLoading(true);
+		try {
+			const token = await getAccessTokenSilently();
+			const response = await getZipPresignedUrl(selectedJobId, token);
+			if (response.error) {
+				setAlertMsg('Failed to download the job archive');
+				setAlertSeverity('error');
+				setAlertShow(true);
+				return;
+			}
+			const jobToDownloadZip = jobs.find(j => j.job_id === selectedJobId);
+			if (!jobToDownloadZip) {
+				setAlertMsg('Selected job not found.');
+				setAlertSeverity('error');
+				setAlertShow(true);
+				setLoading(false);
+				return;
+			}
+			const zipUrl: string = response.data.url;
+			await downloadZipFromS3WithBlob(zipUrl, `${jobToDownloadZip.job_name}.zip`);
+			setSelectedJobId('');
+			setAlertMsg('Job archive download successfully!');
+			setAlertSeverity('success');
+			setAlertShow(true);
+		} catch (err) {
+			setAlertMsg('Failed to download the job archive');
+			setAlertSeverity('error');
+			setAlertShow(true);
+			console.error('Failed to download the job', err);
+		} finally {
+			setLoading(false);
+		}
+	}
+
+	const downloadDisabled = (selectedJobId: string | null): boolean => {
+		if (!selectedJobId) { return true; }
+
+		const jobToDownloadZip = jobs.find(j => j.job_id === selectedJobId);
+		if (!jobToDownloadZip) { return true; }
+		if ([JobStatus.CANCELLED, JobStatus.PENDING, JobStatus.RUNNING, JobStatus.UNKNOWN].includes(jobToDownloadZip.status)) {
+			return true
+		}
+
+		return false
+	}
 
 	const cancelDisabled = (selectedJobId: string | null) : boolean => {
 		if (!selectedJobId) {
@@ -687,7 +753,9 @@ export default function Home() {
 			<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50], mb: 4 }}>
 				<JobsToolbar
 					selectedJobId={selectedJobId}
-					onViewDetails={() => navigate(`/jobs/${selectedJobId}`)}
+					onViewDetails={() => {
+						navigate(`/jobs/${selectedJobId}`);
+					}}
 					onViewStructure={() => {
 						const job = filteredJobs.find(j => j.job_id === selectedJobId);
 						if (job?.structures.length) {
@@ -709,6 +777,8 @@ export default function Home() {
 					structures={structures}
 					selectedStructure={filterStructureId}
 					onStructureChange={setFilterStructureId}
+					onZipDownload={handleZipDownload}
+					downloadDisabled={downloadDisabled}
 				/>
 				<JobsTable
 					jobs={filteredJobs}

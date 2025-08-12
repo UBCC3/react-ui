@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import {useNavigate, useParams} from 'react-router-dom';
 import { useAuth0 } from "@auth0/auth0-react";
 import {
 	Box,
@@ -13,6 +13,7 @@ import NotFound from './NotFound';
 import type { Job } from '../types';
 
 function ViewJob() {
+	const navigate = useNavigate();
 	const { jobId } = useParams<{ jobId: string }>();
   	const { getAccessTokenSilently } = useAuth0();
 
@@ -46,8 +47,12 @@ function ViewJob() {
 				// Fetch result or error only based on job status
 				let resultResponse: { data?: any; error?: string } | null = null;
 				if (jobData.status === 'completed') {
-					resultResponse = await fetchJobResults(jobId as string, token);
-				} else if (jobData.status === 'error' || jobData.status === 'failed') {
+					navigate(`/result/${jobData.job_id}`);
+				}
+				else if (jobData.status === "failed") {
+					navigate(`/fail/${jobData.job_id}`);
+				}
+				else if (jobData.status === 'error' || jobData.status === 'failed') {
 					resultResponse = await fetchJobError(jobId as string, token);
 				}
 

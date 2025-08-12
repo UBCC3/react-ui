@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { Response } from '../types'
+import job from "../types/Job";
 // getAllGroups, createGroup, getAllUsers, updateUser 
 
 export const createBackendAPI = (
@@ -343,17 +344,22 @@ export const submitStandardAnalysis = async (
 	charge: number,
 	multiplicity: number,
 	structure_id: string,
-	token: any
+	token: any,
+	opt_type? : 'ts' | 'ground',
 ): Promise<Response> => {
 	const formData = new FormData();
 	formData.append("file", file);
-	formData.append("job_name", jobName);
+	// formData.append("job_name", jobName);
 	formData.append("charge", charge.toString());
 	formData.append("multiplicity", multiplicity.toString());
-	formData.append("structure_id", structure_id);
+	// formData.append("structure_id", structure_id);
+
+	if (opt_type !== undefined && opt_type === 'ts') {
+		formData.append("opt_type", opt_type);
+	}
 	try {
 		const API = createClusterAPI(token);
-		const response = await API.post("/upload_submit/", formData);
+		const response = await API.post("/run_standard_analysis/", formData);
 		return {
 			status: response.status,
 			data: response.data,
@@ -582,6 +588,25 @@ export const fetchJobResults = async (
 		};
 	}
 };
+
+export const fetchJobResultFiles = async (
+	token: string,
+	jobId: string,
+	calculation: string,
+	status: string
+):Promise<Response> => {
+	try {
+		const API = createClusterAPI(token);
+		const res = await API.get(`/files/${jobId}/${calculation}/${status}`);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to fetch presigned job file urls', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+}
 
 export const fetchJobError = async (
 	jobId: string,
@@ -877,6 +902,19 @@ export const getChemicalFormula = async (
 	}
 };
 
+export const getZipPresignedUrl= async (
+	jobId: string,
+	token: string,
+): Promise<Response> => {
+	try {
+		const API = createClusterAPI(token);
+		const res = await API.get(`/download/archive/${jobId}`);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to fetch presigned job file urls', error);
+	}
+}
+
 export const getRequests = async (
 	userSub: string,
 	token: string
@@ -892,7 +930,17 @@ export const getRequests = async (
 			error: error.response?.data?.detail || error.message,
 		};
 	}
-};
+}
+
+export const getOptimizationTypes = async (token: string): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.get('/enums/optimization_types/');
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to fetch optimization types', error);
+	}
+}
 
 export const getSentRequests = async (
 	userSub: string,

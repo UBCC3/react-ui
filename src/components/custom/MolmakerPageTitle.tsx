@@ -5,7 +5,7 @@ import {
 	Box 
 } from '@mui/material'
 
-const MolmakerPageTitle = ({ title, subtitle }) => {
+const MolmakerPageTitle = ({ title, subtitle, removeBottomPadding=false }) => {
   	return (
 		<Box sx={{
 			mb: 3

@@ -26,15 +26,15 @@ import {
 	MolmakerAlert,
 	MolmakerPageTitle, MolmakerConfirm,
 } from '../../components/custom'
-import { 
-	createJob, 
-	getLibraryStructures, 
-	getStructureDataFromS3, 
-	submitStandardAnalysis, 
+import {
+	createJob,
+	getLibraryStructures,
+	getStructureDataFromS3,
+	submitStandardAnalysis,
 	AddAndUploadStructureToS3,
 	getMultiplicities,
 	getChemicalFormula,
-	getStructuresTags
+	getStructuresTags, getOptimizationTypes
 } from '../../services/api';
 import { Structure } from '../../types';
 import { grey } from '@mui/material/colors';
@@ -67,9 +67,11 @@ export default function StandardAnalysis() {
     const [multiplicity, setMultiplicity] = useState<number>(1);
 	const [structureTags, setStructureTags] = useState<string[]>([]);
 	const [options, setOptions] = useState<string[]>([]);
+	const [optimizationType, setOptimizationType] = useState<'ground' | 'ts'>('ground');
 
 	// dropdown options for multiplicity
 	const [multiplicityOptions, setMultiplicityOptions] = useState<{ [key: string]: number }>({});
+	const [optimizationOptions, setOptimizationOptions] = useState<{ [key: string]: number }>({});
 
 	const [openConfirmImage, setOpenConfirmImage] = useState<boolean>(false);
 	const [submitConfirmed, setSubmitConfirmed] = useState(false);
@@ -142,10 +144,28 @@ export default function StandardAnalysis() {
 				console.error("Failed to fetch tags", err)
 			}
 		}
+
+		const loadOptimizationOptions = async () => {
+			try {
+				const token = await getAccessTokenSilently();
+				const response = await getOptimizationTypes(token);
+				if (response.error) {
+					setError('Failed to load optimization types. Please try again later.');
+					return;
+				}
+				setOptimizationOptions(response.data);
+			} catch (err) {
+				setError('Failed to fetch multiplicity options. Please try again later.');
+				console.error('Failed to fetch multiplicity options', err);
+			} finally {
+				setLoading(false);
+			}
+		}
 		
 		setLoading(true);
 		loadMultiplicityOptions();
 		loadLibraryStructures();
+		loadOptimizationOptions();
 		fetchTags();
 	}, [getAccessTokenSilently]);
 
@@ -251,6 +271,10 @@ export default function StandardAnalysis() {
 		formData.append('charge', charge.toString());
 		formData.append('multiplicity', multiplicity.toString());
 
+	    if (optimizationType === 'ts') {
+		    formData.append('opt_type', optimizationType);
+	    }
+
 		setLoading(true);
 		try {
 
@@ -261,7 +285,8 @@ export default function StandardAnalysis() {
 				charge,
 				multiplicity,
 				structureIdToUse,
-				token
+				token,
+				optimizationType
 			);
 			if (response.error) {
 				throw new Error(response.error);
@@ -291,12 +316,13 @@ export default function StandardAnalysis() {
 				jobNotes,
 				"mp2",
 				"6-311+G(2d,p)",
-				"energy",
+				"standard",
 				charge,
 				multiplicity,
 				structureIdToUse,
 				slurm_id,
 				token,
+				jobTags
 			);
 			if (response.error) {
 				throw new Error(response.error);
@@ -458,6 +484,22 @@ export default function StandardAnalysis() {
 														value: value
 													})
 												)}
+												required
+											/>
+										</Grid>
+										<Grid size={{ xs: 12, md: 6 }}>
+											<MolmakerDropdown
+												label="Optimization Type"
+												value={optimizationType}
+												onChange={(e: React.ChangeEvent<HTMLInputElement>)  => setOptimizationType(e.target.value)}
+												options={Object.entries(optimizationOptions)
+													.map(([key, value]) => ({
+															label: key,
+															value: value
+														})
+													)}
+												helperText={submitAttempted && !optimizationOptions ? 'Please select a optimization type' : undefined}
+												error={submitAttempted && !optimizationOptions}
 												required
 											/>
 										</Grid>
