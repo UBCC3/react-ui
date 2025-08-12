@@ -1,5 +1,5 @@
 interface Response {
-	status: number;
+status: number;
 	data?: any;
 	error?: string;
 }

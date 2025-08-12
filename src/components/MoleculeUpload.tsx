@@ -101,7 +101,7 @@ const MoleculeUpload: React.FC<MoleculeUploadProps> = ({
         
         setLoading(true);
 		try {
-      			const token = await getAccessTokenSilently();
+			const token = await getAccessTokenSilently();
 			await AddAndUploadStructureToS3(
 				uploadedFile,
 				structureName,
@@ -228,13 +228,13 @@ const MoleculeUpload: React.FC<MoleculeUploadProps> = ({
 					submitConfirmed={submitConfirmed}
 					setStructureImageData={setStructureImageData}
 				/>
-				<Box sx={{ padding: 2, display: 'flex', flexDirection: 'column', gap: 2 }} component="form" onSubmit={handleSubmit}>
-					<MolmakerSectionHeader text="Structure Information" />
+				<Box p={3} className="bg-stone-100 h-full display flex flex-col" gap={3} component="form" onSubmit={handleSubmit}>
+					<MolmakerSectionHeader text="Structure Information" sx={{ fontWeight: 'bold', mt: 1 }} />
 					<Button
 						variant="contained"
 						component="label"
 						startIcon={<CloudUploadOutlined />}
-						sx={{ textTransform: 'none' }}
+						sx={{ textTransform: 'none', borderRadius: 2 }}
 						fullWidth
 					>
 						{uploadedFile ? uploadedFile.name : 'Select File'}
@@ -295,7 +295,7 @@ const MoleculeUpload: React.FC<MoleculeUploadProps> = ({
 								variant="outlined"
 								type="submit"
 								startIcon={<AddPhotoAlternateOutlined />}
-								sx={{ textTransform: 'none' }}
+								sx={{ textTransform: 'none', borderRadius: 2 }}
 								fullWidth
 							>
 								Add to Library
@@ -307,7 +307,7 @@ const MoleculeUpload: React.FC<MoleculeUploadProps> = ({
 								color="inherit"
 								onClick={() => setOpen(false)}
 								startIcon={<Close />}
-								sx={{ textTransform: 'none' }}
+								sx={{ textTransform: 'none', borderRadius: 2 }}
 								fullWidth
 							>
 								Close

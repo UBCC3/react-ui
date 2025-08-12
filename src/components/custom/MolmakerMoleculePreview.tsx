@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { Paper, Typography, Divider, Box, Skeleton, SxProps, Theme } from '@mui/material';
-import { blueGrey } from '@mui/material/colors';
+import { blue, blueGrey, grey } from '@mui/material/colors';
+import { Atom } from 'lucide-react';
+import { BorderTopRounded } from '@mui/icons-material';
 
 // Extend the Window interface to include the $3Dmol global
 declare global {
@@ -61,26 +63,27 @@ const MolmakerMoleculePreview: React.FC<MolmakerMoleculePreviewProp> = ({
 
 	return (
 		<Paper
-			elevation={2}
+			elevation={3}
 			sx={{
 				display: 'flex',
 				flexDirection: 'column',
 				width: '100%',
 				height: '100%',
+				borderRadius: 2,
+				bgcolor: grey[50],
 				...(maxHeight ? { maxHeight } : {}),
 				...sx
 			}}
 		>
-			<Typography variant="h6" color="text.secondary" sx={{ p: 2, bgcolor: blueGrey[200] }}>
+			<Typography variant="h6" color={grey[800]} sx={{ p: 2, borderTopLeftRadius: 5, borderTopRightRadius: 5, display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: '1.1rem' }}>
+				<Atom size={24} style={{ marginRight: 10, color: blue[600] }} />
 				{title}
 			</Typography>
-			<Divider />
 			<Box
 				sx={{
 					flex: 1,
 					position: 'relative',
-					border: '1px solid',
-					borderColor: 'grey.300'
+					borderRadius: 2,
 				}}
 			>
 				{data ? (
@@ -90,7 +93,7 @@ const MolmakerMoleculePreview: React.FC<MolmakerMoleculePreviewProp> = ({
 					/>
 				) : (
 					<Box display="flex" justifyContent="center" alignItems="center" height="100%">
-						<Skeleton variant="rectangular" width="100%" height="100%" />
+						<Skeleton variant="rectangular" width="100%" height="100%" sx={{ borderBottomLeftRadius: 5, borderBottomRightRadius: 5 }} />
 						<Typography variant="body2" color="text.secondary" sx={{ position: 'absolute' }}>
 							{source === 'upload' ? 'Upload a file to preview' : 'Select a molecule to preview'}
 						</Typography>

@@ -16,6 +16,7 @@ export default function MainContent({ children }) {
 					duration: theme.transitions.duration.standard,
 				}),
 			}}
+			className="bg-stone-100"
 		>
 			<Toolbar />
 			{children}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
@@ -6,6 +6,7 @@ import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftOutlinedIcon from '@mui/icons-material/ChevronLeftOutlined';
 import {
+	Collapse,
 	Divider, 
 	List, 
 	ListItemButton, 
@@ -13,13 +14,13 @@ import {
 	ListItemText, 
 	Typography,
 } from '@mui/material';
-import AutoModeIcon from '@mui/icons-material/AutoMode';
-import CollectionsOutlinedIcon from '@mui/icons-material/CollectionsOutlined';
-import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
-import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined';
+import { AdminPanelSettingsOutlined, TuneOutlined, DashboardOutlined, CollectionsOutlined, AutoMode, PeopleAltOutlined, ExpandLess, ExpandMore, AccountCircleOutlined } from '@mui/icons-material';
 import logo from '../assets/logo.svg';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useDrawer } from './DrawerContext';
+import { useAuth0 } from '@auth0/auth0-react';
+import { upsertCurrentUser } from '../services/api';
+import { blue, grey } from '@mui/material/colors';
 
 const DRAWER_WIDTH  = 250;
 const CLOSED_WIDTH  = 56;
@@ -47,8 +48,9 @@ const PermanentDrawer = styled(Drawer, {
 })(({ theme, open }) => ({
 	'& .MuiDrawer-paper': {
 		boxSizing: 'border-box',
-		backgroundColor: 'rgb(35, 48, 68)',
-		color: theme.palette.text.secondary,
+		color: grey[300],
+		border: '1px solid',
+		borderColor: 'divider',
 		...(open ? openedMixin(theme) : closedMixin(theme)),
 	},
 }));
@@ -62,13 +64,32 @@ const DrawerHeader = styled('div')(({ theme }) => ({
 }));
 
 export default function MenuDrawer() {
+	const { user, getAccessTokenSilently } = useAuth0();
 	const { open, toggle } = useDrawer();
 	const navigate         = useNavigate();
+	const location = useLocation(); 
 	const [selectedIndex, setSelectedIndex] = React.useState(0);
+	const [role, setRole] = React.useState('');
+	const [groupId, setGroupId] = React.useState('');
+	const [expanded, setExpanded] = React.useState(false);
+
+	useEffect(() => {
+		const fetchUserRoleAndGroup = async () => {
+			if (user) {
+				const token = await getAccessTokenSilently();
+				const result = await upsertCurrentUser(token, user.email || '');
+				setRole(result.data.role || '');
+				setGroupId(result.data.group_id || '');
+			}
+		};
+		fetchUserRoleAndGroup();
+
+		setExpanded(location.pathname === '/users');
+	}, [user]);
 
 	const drawerContent = (
-		<>
-			<DrawerHeader sx={{ justifyContent: open ? 'space-between' : 'center', marginLeft: open ? 2: 0 }}>
+		<Box className="bg-slate-200 h-full">
+			<DrawerHeader sx={{ justifyContent: open ? 'space-between' : 'center', paddingLeft: open ? 2: 0, borderBottom: '1px solid', borderColor: 'divider', height: '65px' }}>
 				{open && (
 					<Typography
 						variant="h6"
@@ -78,47 +99,46 @@ export default function MenuDrawer() {
 							display: 'flex',
 							alignItems: 'center',
 							textDecoration: 'none',
-							color: 'rgb(238,238,238)',
+							color: grey[800],
+							fontSize: '1.2rem',
 						}}
 					>
-						<img src={logo} alt="Logo" style={{ height: 35, marginRight: 12 }} />
-						MolMaker
+						<img src={logo} alt="Logo" style={{ height: 35, marginRight: '1.2rem' }} />
+						<h1 className="font-semibold text-xl select-none font-sans">
+							MolMaker
+						</h1>
 					</Typography>
 				)}
-				<IconButton onClick={toggle} sx={{ color: 'grey.300' }}>
+				<IconButton onClick={toggle} sx={{ color: grey[700], ml: open ? 0 : 1 }}>
 					{open ? <ChevronLeftOutlinedIcon /> : <MenuIcon />}
 				</IconButton>
 			</DrawerHeader>
-			<Divider />
-
-			<List
-				component="nav"
-			>
+			<List component="nav">
 				{[
 					{
-						text: 'Dashboard',
-						icon: <DashboardOutlinedIcon />,
+						text: 'My Dashboard',
+						icon: <DashboardOutlined />,
 						path: '/'
 					},
 					{
 						text: 'Standard Analysis',
-						icon: <AutoModeIcon />,
+						icon: <AutoMode />,
 						path: '/submit'
 					},
 					{
 						text: 'Advanced Analysis', 
-						icon: <TuneOutlinedIcon />,
+						icon: <TuneOutlined />,
 						path: '/advanced'
 					},
 					{ 
 						text: 'My Structure Library',
-						icon: <CollectionsOutlinedIcon />,
+						icon: <CollectionsOutlined />,
 						path: '/library'
-					},
+					}
 				].map(({ text, icon, path }, idx) => (
 					<ListItemButton
 						key={text}
-						selected={selectedIndex === idx}
+						selected={location.pathname === path}
 						onClick={() => {
 							setSelectedIndex(idx);
 							navigate(path);
@@ -126,33 +146,124 @@ export default function MenuDrawer() {
 						sx={{
 							py: 2,
 							justifyContent: open ? 'initial' : 'center',
-							'&.Mui-selected': {
-								bgcolor: 'rgb(50, 70, 100)',
-								'&:hover': { bgcolor: 'rgb(69, 93, 130)'}
-							},
-							'&:hover': { bgcolor: 'rgb(69, 93, 130)'},
 						}}
 					>
-						<ListItemIcon sx={{ color: 'grey', minWidth: 0, mr: open ? 3 : 'auto' }}>
+						<ListItemIcon sx={{ color: blue[600], minWidth: 0, mr: open ? 3 : 'auto' }}>
 							{icon}
 						</ListItemIcon>
 						{open && (
 							<ListItemText
 								primary={
-									<Typography 
-										sx={{ 
-											color: 'rgb(238,238,238)',
-											fontSize: '0.875rem', 
-										}}
-									>
+									<span className='text-gray-700 text-sm font-semibold font-sans'>
 										{text}
-									</Typography>}
+									</span>
+								}
 							/>
 						)}
 					</ListItemButton>
 				))}
+				{groupId && (
+					<>
+						<ListItemButton
+							key={'my-group'}
+							selected={location.pathname === '/group'}
+							onClick={() => {
+								setSelectedIndex(4);
+								navigate('/group');
+							}}
+							sx={{
+								py: 2,
+								justifyContent: open ? 'initial' : 'center'
+							}}
+						>
+							<ListItemIcon sx={{ color: blue[600], minWidth: 0, mr: open ? 3 : 'auto' }}>
+								<PeopleAltOutlined />
+							</ListItemIcon>
+							{open && (
+								<ListItemText
+									primary={
+										<span className='text-gray-700 text-sm font-semibold font-sans'>
+											My Group
+										</span>
+									}
+								/>
+							)}
+						</ListItemButton>
+					</>
+				)}
+				{role === 'admin' && (
+					<>
+						<ListItemButton
+							key={'admin-panel'}
+							selected={location.pathname === '/admin'}
+							onClick={() => {
+								setSelectedIndex(5);
+								navigate('/admin');
+							}}
+							sx={{
+								py: 2,
+								justifyContent: open ? 'initial' : 'center',
+							}}
+						>
+							<ListItemIcon sx={{ color: blue[600], minWidth: 0, mr: open ? 3 : 'auto' }}>
+								<AdminPanelSettingsOutlined />
+							</ListItemIcon>
+							{open && (
+								<>
+									<ListItemText
+										primary={
+											<span className='text-gray-700 text-sm font-semibold font-sans'>
+												Admin Panel
+											</span>
+										}
+									/>
+									<IconButton
+										size="small"
+										sx={{ color: grey[300], ml: 1 }}
+										onClick={(e) => {
+											e.stopPropagation();
+											setExpanded(!expanded);
+										}}
+									>
+										{expanded ? <ExpandLess sx={{ color: grey[700] }}/> : <ExpandMore sx={{ color: grey[700] }}/>}
+									</IconButton>
+								</>
+							)}
+						</ListItemButton>
+						{open && expanded && (
+							<Collapse in={expanded} timeout="auto" unmountOnExit>
+								<List component="div" disablePadding>
+									<ListItemButton 
+										key={'admin-panel'}
+										selected={location.pathname === '/users'}
+										onClick={() => {
+											setSelectedIndex(6);
+											navigate('/users');
+										}}
+										sx={{
+											py: 2,
+											pl: open ? 4 : 2,
+											justifyContent: open ? 'initial' : 'center'
+										}}
+									>
+										<ListItemIcon sx={{ color: blue[600], minWidth: 0, mr: open ? 3 : 'auto' }}>
+											<AccountCircleOutlined />
+										</ListItemIcon>
+										<ListItemText
+											primary={
+												<span className='text-gray-700 text-sm font-semibold font-sans'>
+													Users List
+												</span>
+											}
+										/>
+									</ListItemButton>
+								</List>
+							</Collapse>
+						)}
+					</>
+				)}
 			</List>
-		</>
+		</Box>
 	);
 
 	return (

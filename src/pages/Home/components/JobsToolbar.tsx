@@ -19,10 +19,10 @@ import {
 	Block,
 	AutoMode,
 	TuneOutlined,
-	DeleteOutlineOutlined
+	DeleteOutlineOutlined,
+	WorkHistoryOutlined
 } from '@mui/icons-material';
-import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import { blueGrey } from '@mui/material/colors';
+import { blue, blueGrey, grey } from '@mui/material/colors';
 
 interface JobsToolbarProps {
 	selectedJobId: string | null;
@@ -38,8 +38,7 @@ interface JobsToolbarProps {
 	structures: Array<{ structure_id: string; name: string }>;
 	selectedStructure: string;
 	onStructureChange: (structureId: string) => void;
-	onZipDownload: () => void;
-	downloadDisabled:(selectedJobId: string | null) => boolean;
+	isGroupAdmin?: boolean;
 }
 
 export default function JobsToolbar({
@@ -56,16 +55,16 @@ export default function JobsToolbar({
 	structures,
 	selectedStructure,
 	onStructureChange,
-	onZipDownload,
-	downloadDisabled,
+	isGroupAdmin = false,
 }: JobsToolbarProps) {
 	return (
-		<Toolbar sx={{ justifyContent: 'space-between', bgcolor: blueGrey['A200'] }}>
-			<Typography variant="h6" color="text.secondary">
+		<Toolbar sx={{ justifyContent: 'space-between', borderTopLeftRadius: 5, borderTopRightRadius: 5 }}>
+			<Typography variant="h6" color={grey[800]} sx={{ display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: '1.1rem' }}>
+				<WorkHistoryOutlined sx={{ mr: 2, color: blue[600] }} />
 				Jobs History
 			</Typography>
 			<Box sx={{ display: 'flex', alignItems: 'center' }}>
-				<Box>
+				<Box sx={{ borderRadius: 1, display: 'flex', alignItems: 'center', px: 2, bgcolor: grey[100], mr: 1 }}>
 					<Tooltip title="Run Standard Job">
 						<IconButton
 							onClick={() => window.location.href = '/submit'}
@@ -81,18 +80,7 @@ export default function JobsToolbar({
 						</IconButton>
 					</Tooltip>
 				</Box>
-				<Divider orientation="vertical" flexItem sx={{ mx: 2 }} />
-				<Box>
-					<Tooltip title="Dwonload job files">
-						<span>
-							<IconButton
-								disabled={downloadDisabled(selectedJobId)}
-								onClick={onZipDownload}
-							>
-								<FileDownloadIcon />
-							</IconButton>
-						</span>
-					</Tooltip>
+				<Box sx={{ borderRadius: 1, display: 'flex', alignItems: 'center', px: 2, bgcolor: grey[100], mr: 1 }}>
 					<Tooltip title="View job details">
 						<span>
 							<IconButton
@@ -123,33 +111,38 @@ export default function JobsToolbar({
 							</IconButton>
 						</span>
 					</Tooltip>
-					<Tooltip title="Cancel job">
-						<span>
-							<IconButton
-								disabled={cancelDisabled(selectedJobId)}
-								onClick={onCancelJob}
-							>
-								<Block />
-							</IconButton>
-						</span>
-					</Tooltip>
-					<Tooltip title="Delete job">
-						<span>
-							<IconButton
-								disabled={deleteDisabled(selectedJobId)}
-								onClick={onDeleteJob}
-							>
-								<DeleteOutlineOutlined />
-							</IconButton>
-						</span>
+					{isGroupAdmin && (
+						<Tooltip title="Cancel job">
+							<span>
+								<IconButton
+									disabled={cancelDisabled(selectedJobId)}
+									onClick={onCancelJob}
+								>
+									<Block />
+								</IconButton>
+							</span>
+						</Tooltip>
+					)}
+					{isGroupAdmin && (
+						<Tooltip title="Delete job">
+							<span>
+								<IconButton
+									disabled={deleteDisabled(selectedJobId)}
+									onClick={onDeleteJob}
+								>
+									<DeleteOutlineOutlined />
+								</IconButton>
+							</span>
+						</Tooltip>
+					)}
+				</Box>
+				<Box sx={{ borderRadius: 1, display: 'flex', alignItems: 'center', px: 2, bgcolor: grey[100] }}>
+					<Tooltip title="Refresh jobs">
+						<IconButton onClick={onRefresh}>
+							<Refresh />
+						</IconButton>
 					</Tooltip>
 				</Box>
-				<Divider orientation="vertical" flexItem sx={{ mx: 2 }} />
-				<Tooltip title="Refresh jobs">
-					<IconButton onClick={onRefresh}>
-						<Refresh />
-					</IconButton>
-				</Tooltip>
 				<Select
 					labelId="structure-select-label"
 					value={selectedStructure}
@@ -164,22 +157,6 @@ export default function JobsToolbar({
 						</MenuItem>
 					))}
 				</Select>
-				{/* <FormControl sx={{ minWidth: 160, ml: 2 }}>
-					<InputLabel id="structure-select-label">Structure</InputLabel>
-					<Select
-						labelId="structure-select-label"
-						value={selectedStructure}
-						label="Structure"
-						size='small'
-						onChange={(e) => onStructureChange(e.target.value as string)}
-					>
-						{structures.map(({ structure_id, name }) => (
-							<MenuItem key={structure_id} value={structure_id}>
-								{name}
-							</MenuItem>
-						))}
-					</Select>
-				</FormControl> */}
 			</Box>
 		</Toolbar>
 	);

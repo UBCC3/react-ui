@@ -7,6 +7,9 @@ import {
 	VibrationMode,
 	ComplexNumber,
 } from "./JSmol";
+import User from './User';
+import Group from './Group';
+
 
 export {
 	Job,
@@ -16,4 +19,6 @@ export {
 	JobResult,
 	VibrationMode,
 	ComplexNumber,
+	User,
+	Group
 }

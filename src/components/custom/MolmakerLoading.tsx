@@ -7,9 +7,12 @@ const MolmakerLoading = () => {
 			display='flex'
 			justifyContent='center'
 			alignItems='center'
-			bgcolor={'rgb(247, 249, 252)'}
-			height={'80vh'}
 			flexDirection={{ xs: 'column', sm: 'column' }}
+			sx={{
+				height: `calc(100vh - 64px)`,
+				backgroundColor: 'background.default',
+			}}
+			className="bg-stone-100 dark:bg-stone-900"
 		>
 			<CircularProgress
 				size={80}

@@ -4,8 +4,6 @@ import {
 	AccordionDetails,
 	AccordionSummary,
 	Grid,
-	MenuItem,
-	MenuList,
 	Paper,
 	Table,
 	TableBody,
@@ -55,6 +53,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	viewerObjId,
 	setError,
 }) => {
+	const { getAccessTokenSilently } = useAuth0();
 	const viewerRef = useRef<HTMLDivElement>(null);
 
 	const [viewerObj, setViewerObj] = useState<any>(null);
@@ -120,6 +119,22 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	// 	`;
 	// 	window.Jmol.script(viewerObj, script);
 	// }, [selectAtom]);
+
+	const onMoleculeNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		setMoleculeName(event.target.value);
+	};
+
+	const onChemicalFormulaChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		setChemicalFormula(event.target.value);
+	};
+
+	const onMoleculeNotesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		setMoleculeNotes(event.target.value);
+	};
+
+	const onStructureTagsChange = (event: React.ChangeEvent<{}>, value: string[]) => {
+		setStructureTags(value);
+	};
 
 	useEffect(() => {
 		if (!viewerObj || orbitals.length === 0 || selectedOrbital === null) return;
@@ -460,7 +475,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 							display: open ? 'flex' : 'none',
 							textTransform: 'none',
 						}}
-						startIcon={<Add />}
+						startIcon={<AddPhotoAlternateOutlined />}
 						onClick={() => setAddDialogOpen(true)}
 					>
 						Add Structure to My Library
@@ -474,27 +489,76 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 				sx={{ zIndex: 9999 }}
 				disableEnforceFocus
 			>
-				<DialogTitle>Add Structure to My Library</DialogTitle>
-				<DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 3, minWidth: 500 }}>
-					<TextField
-						label="Molecule Name"
-						value={molName}
-						onChange={e => setMolName(e.target.value)}
+				<DialogTitle sx={{ bgcolor: blueGrey[300], color: grey[800], display: 'flex', alignItems: 'center' }}>
+					<AddPhotoAlternateOutlined sx={{ mr: 1 }} />
+					Add Structure to My Library
+				</DialogTitle>
+				<Divider />
+				<DialogContent sx={{ display: 'flex', flexDirection: 'column', p: 2, minWidth: 500 }}>
+					<MolmakerTextField
 						fullWidth
-						autoFocus
+						label="Structure Name"
+						value={moleculeName}
+						onChange={onMoleculeNameChange}
+						required
+						error={submitAttempted && !moleculeName}
+						helperText={submitAttempted && !moleculeName ? 'Please enter a name' : ''}
+						sx={{ mt: 1 }}
 					/>
-					<TextField
-						label="Notes"
-						value={molNotes}
-						onChange={e => setMolNotes(e.target.value)}
+					<MolmakerTextField
 						fullWidth
+						label="Chemical Formula"
+						value={chemicalFormula}
+						onChange={onChemicalFormulaChange}
+						required
+						error={submitAttempted && !chemicalFormula}
+						helperText={submitAttempted && !chemicalFormula ? 'Please enter a chemical formula' : ''}
+						sx={{ mt: 2 }}
+					/>
+					<MolmakerTextField
+						fullWidth
+						label="Structure Notes"
+						value={moleculeNotes}
+						onChange={onMoleculeNotesChange}
 						multiline
-						minRows={2}
+						rows={3}
+						sx={{ mt: 2 }}
+					/>
+					<Autocomplete
+						multiple
+						freeSolo
+						disablePortal
+						options={options}
+						value={structureTags}
+						onChange={(_, newValue) => setStructureTags(newValue)}
+						renderInput={(params) => (
+							<TextField
+								{...params}
+								variant="outlined"
+								label="Structure Tags"
+								placeholder="Press enter to add tags"
+							/>
+						)}
+						sx={{ mt: 2 }}
 					/>
 				</DialogContent>
-				<DialogActions>
-					<Button onClick={() => setAddDialogOpen(false)} variant="outlined" color="primary">Cancel</Button>
-					<Button onClick={() => {/* submit logic here */}} variant="contained" color="primary">Submit</Button>
+				<DialogActions sx={{ pr: 2, pb: 2 }}>
+					<Button 
+						onClick={() => setAddDialogOpen(false)} 
+						variant="outlined" 
+						color="primary"
+						sx={{ textTransform: 'none' }}
+					>
+						Cancel
+					</Button>
+					<Button
+						onClick={handleSubmit}
+						variant="contained"
+						color="primary"
+						sx={{ textTransform: 'none' }}
+					>
+						Submit
+					</Button>
 				</DialogActions>
 			</Dialog>
 		</>

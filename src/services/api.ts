@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { Response } from '../types'
 import job from "../types/Job";
+// getAllGroups, createGroup, getAllUsers, updateUser 
 
 export const createBackendAPI = (
 	token: any
@@ -22,6 +23,225 @@ export const createClusterAPI = (
 			Authorization: `Bearer ${token}`,
 		},
 	});
+};
+
+export const getCurrentUserGroupJobs = async (
+	token: any
+): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.get('/group/jobs/');
+		return {
+			status: res.status,
+			data: res.data
+		};
+	} catch (error: any) {
+		console.error('Failed to fetch jobs', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+export const getCurrentUserMembers = async (
+	token: any
+): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.get('/group/users/');
+		return {
+			status: res.status,
+			data: res.data
+		};
+	} catch (error: any) {
+		console.error('Failed to fetch members', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+export const upsertCurrentUser = async (
+	token: any,
+	email: string
+): Promise<Response> => {
+	const formData = new FormData();
+	formData.append('email', email);
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.post('/users/me/', formData);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to sync user to our database:', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+export const getAllGroups = async (token: any): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.get('/admin/groups/');
+		for (const group of res.data) {
+			const members = group.members || [];
+		}
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to fetch groups', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+export const getGroupById = async (groupId: string, token: any): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.get(`/group/${groupId}`);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to fetch group by ID', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+export const updateGroupName = async (groupId: string, newName: string, token: any): Promise<Response> => {
+	const formData = new FormData();
+	formData.append("group_name", newName);
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.patch(`/group/${groupId}`, formData);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to update group name', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+export const createGroup = async (name: string, token: any): Promise<Response> => {
+	const formData = new FormData();
+	formData.append("name", name);
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.post('/admin/groups/', formData);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to create group', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+export const deleteGroup = async (token: any, groupId: string): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.delete(`/group/${groupId}`);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to delete group', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+export const getAllUsers = async (token: any): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.get('/admin/users/');
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to fetch users', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+export const getUserByEmail = async (
+	email: string,
+	token: any
+): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.get(`/users/${email}`);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to fetch user by email', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+export const deleteUser = async (token: any, userSub: string): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.delete(`/users/${userSub}`);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to delete user', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+export const updateUser = async (
+	token: any,
+	userSub: string,
+	role?: string, 
+	group_id?: string,
+): Promise<Response> => {
+	const formData = new FormData();
+	if (role) formData.append("role", role);
+	if (group_id) formData.append("group_id", group_id);
+	try {
+		console.log('Updating user:', { userSub, role, group_id });
+		const API = createBackendAPI(token);
+		const res = await API.put(`/admin/users/${userSub}`, formData);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to update user', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+export const adminGetAllJobs = async (token: any): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.get('/admin/jobs/');
+		return { 
+			status: res.status, 
+			data: res.data 
+		};
+	} catch (error: any) {
+		console.error('Failed to fetch jobs', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
 };
 
 export const cancelJobBySlurmID = async (
@@ -322,17 +542,17 @@ export const getJobByJobID = async (
 
 // API endpoints for job-related operations
 export const getAllJobs = async (token: string): Promise<Response> => {
-  try {
-    const API = createBackendAPI(token);
-    const res = await API.get('/jobs/');
-    return { status: res.status, data: res.data };
-  } catch (error: any) {
-    console.error('Failed to fetch jobs', error);
-    return {
-      status: error.response?.status || 500,
-      error: error.response?.data?.detail || error.message,
-    };
-  }
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.get('/jobs/');
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to fetch jobs', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
 };
 
 export const getJobById = async (
@@ -512,12 +732,14 @@ export const updateJob = async (
 	jobId: string,
 	state: string,
 	runtime: string,
+	userSub: string,
 	token: string
 ): Promise<UpdateJobResponse> => {
 	console.log('Updating job:', { jobId, state, runtime });
 	const formData = new FormData();
 	formData.append('state', state);
 	formData.append('runtime', runtime);
+	formData.append('user_sub', userSub);
 	try {
 		const API = createBackendAPI(token);
 		const res = await API.patch(`/jobs/${jobId}`, formData);
@@ -531,6 +753,26 @@ export const updateJob = async (
 	catch (error: any) {
 		console.error('Failed to update job', error);
 		throw {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+export const updateVisibility = async (
+	jobId: string,
+	isPublic: boolean,
+	token: string
+): Promise<Response> => {
+	try {
+		const formData = new FormData();
+		formData.append('is_public', isPublic.toString());
+		const API = createBackendAPI(token);
+		const res = await API.patch(`/jobs/${jobId}/visibility/`, formData);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to update job visibility', error);
+		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
 		};
@@ -670,6 +912,19 @@ export const getZipPresignedUrl= async (
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error('Failed to fetch presigned job file urls', error);
+	}
+}
+
+export const getRequests = async (
+	userSub: string,
+	token: string
+): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.get(`/request/${userSub}/`);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to fetch requests', error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -684,9 +939,93 @@ export const getOptimizationTypes = async (token: string): Promise<Response> => 
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error('Failed to fetch optimization types', error);
+	}
+}
+
+export const getSentRequests = async (
+	userSub: string,
+	token: string
+): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.get(`/request/sent/${userSub}/`);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to fetch sent requests', error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
 		};
 	}
-}
+};
+
+export const sendRequest = async (
+	userSub: string,
+	groupId: string,
+	token: string,
+): Promise<Response> => {
+	const formData = new FormData();
+	formData.append('group_id', groupId);
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.post(`/request/${userSub}/`, formData);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to send request', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+export const approveRequest = async (
+	requestId: string,
+	token: string
+): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.put(`/request/${requestId}/approve/`);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to approve request', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+export const rejectRequest = async (
+	requestId: string,
+	token: string
+): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.put(`/request/${requestId}/reject/`);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to reject request', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+export const deleteRequest = async (
+	requestId: string,
+	token: string
+): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.delete(`/request/${requestId}/`);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error('Failed to delete request', error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};

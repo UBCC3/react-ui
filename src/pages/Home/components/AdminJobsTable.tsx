@@ -13,9 +13,9 @@ import {
 	Grid
 } from '@mui/material';
 import { AutoMode, TuneOutlined } from '@mui/icons-material';
-import { statusColors, statusIcons } from '../../../constants';
-import { grey } from '@mui/material/colors';
 import { ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
+import { statusColors, statusIcons } from '../../../constants';
+import { blueGrey, grey } from '@mui/material/colors';
 import type { Job } from '../../../types';
 
 interface JobsTableProps {
@@ -39,7 +39,24 @@ interface JobsTableProps {
 	};
 }
 
-export default function JobsTable({
+interface AdminJobsTableProps extends JobsTableProps {
+	displayColumns: {
+		job_id: boolean;
+		job_name: boolean;
+		user_email: boolean;
+		group_id: boolean;
+		group_name: boolean;
+		job_notes: boolean;
+		status: boolean;
+		structures: boolean;
+		tags: boolean;
+		runtime: boolean;
+		submitted_at: boolean;
+		completed_at: boolean;
+	};
+}
+
+export default function AdminJobsTable({
 	jobs,
 	page,
 	rowsPerPage,
@@ -49,7 +66,7 @@ export default function JobsTable({
 	onSort,
 	onRowClick,
 	displayColumns
-}: JobsTableProps) {
+}: AdminJobsTableProps) {
 	// Comparator that handles strings, dates, and structures-length
 	const comparator = React.useCallback((a: Job, b: Job): number => {
 		let aVal: string | number = a[orderBy] as any;
@@ -106,9 +123,13 @@ export default function JobsTable({
   	return (
 		<TableContainer>
 			<Table>
-				<TableHead sx={{ bgcolor: grey[200] }}>
+				<TableHead sx={{ bgcolor: blueGrey[50] }}>
 					<TableRow>
+						{displayColumns.job_id && renderHeader('Job ID', 'job_id')}
 						{displayColumns.job_name && renderHeader('Job Name', 'job_name')}
+						{displayColumns.user_email && renderHeader('User Email', 'user_email')}
+						{displayColumns.group_id && renderHeader('Group ID', 'group_id')}
+						{displayColumns.group_name && renderHeader('Group Name', 'group_name')}
 						{displayColumns.job_notes && renderHeader('Notes', 'job_notes')}
 						{displayColumns.status && renderHeader('Status', 'status')}
 						{displayColumns.structures && renderHeader('Structures', 'structures')}
@@ -161,9 +182,29 @@ export default function JobsTable({
 								cursor: 'pointer'
 								}}
 							>
+								{displayColumns.job_id && (
+									<TableCell>
+										{job.job_id}
+									</TableCell>
+								)}
 								{displayColumns.job_name && (
 									<TableCell>
 										{job.job_name}
+									</TableCell>
+								)}
+								{displayColumns.user_email && (
+									<TableCell>
+										{job.user_email}
+									</TableCell>
+								)}
+								{displayColumns.group_id && (
+									<TableCell>
+										{job.group_id || 'N/A'}
+									</TableCell>
+								)}
+								{displayColumns.group_name && (
+									<TableCell>
+										{job.group_name || 'N/A'}
 									</TableCell>
 								)}
 								{displayColumns.job_notes && (
@@ -189,11 +230,11 @@ export default function JobsTable({
 										{job.structures.length ? job.structures
 											.map((s) => (
 												<Chip
-													key={s.structure_id}
-													label={s.name}
-													variant="outlined"
-													size="small"
-													sx={{ mr: 0.5, mb: 0.5 }}
+												key={s.structure_id}
+												label={s.name}
+												variant="outlined"
+												size="small"
+												sx={{ mr: 0.5, mb: 0.5 }}
 												/>
 											)) : 'N/A'}
 									</TableCell>

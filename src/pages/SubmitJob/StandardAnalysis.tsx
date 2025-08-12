@@ -37,6 +37,7 @@ import {
 	getStructuresTags, getOptimizationTypes
 } from '../../services/api';
 import { Structure } from '../../types';
+import { grey } from '@mui/material/colors';
 
 export default function StandardAnalysis() {
 	const navigate = useNavigate();
@@ -352,7 +353,7 @@ export default function StandardAnalysis() {
 	}
 
 	return (
-		<Box bgcolor="rgb(247, 249, 252)" p={4}>
+		<Box p={4} className="bg-stone-100" sx={{ minHeight: `calc(100vh - 64px)` }}>
 			<MolmakerConfirm
 				open={openConfirmImage}
 				onClose={() => setOpenConfirmImage(false)}
@@ -374,7 +375,7 @@ export default function StandardAnalysis() {
 			/>
       		<Grid container spacing={3}>
 				<Grid size={{ xs: 12, md: 6 }}>
-          			<Paper elevation={3} sx={{ p: 4 }}>
+          			<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50] }}>
             			<Box component="form" onSubmit={handleSubmitJob}>
 							<Grid container direction="column" spacing={2}>
 								{/* Error message */}
@@ -386,11 +387,11 @@ export default function StandardAnalysis() {
 									/>
 								)}
 								{/* Info message */}
-								<Grid>
+								<Grid sx={{ mx: 2, mt: 3 }}>
 									<MolmakerSectionHeader text="Required fields are marked with *" />
 								</Grid>
 								{/* Job name */}
-								<Grid>
+								<Grid sx={{ mx: 2 }}>
 									<MolmakerTextField
 										label="Job Name"
 										value={jobName}
@@ -453,9 +454,9 @@ export default function StandardAnalysis() {
 								/>
 								<Divider />
 								{/* Calculation parameters */}
-								<Box>
+								<Box sx={{ mx: 2 }}>
 									<Grid>
-										<MolmakerSectionHeader text="Calculation Parameters" />
+										<MolmakerSectionHeader text="Calculation Parameters" sx={{ fontWeight: 'bold', mb: 3 }} />
 									</Grid>
 									<Grid container spacing={2} sx={{ mt: 2 }}>
 										<Grid size={{ xs: 12, md: 6 }}>
@@ -505,7 +506,7 @@ export default function StandardAnalysis() {
 									</Grid>
 								</Box>
 								{/* Submit button */}
-								<Grid size={12}>
+								<Grid sx={{ mx: 2, mb: 3 }}>
 									<Box display="flex" alignItems="center" gap={1}>
 										<Button
 											type="submit"
@@ -513,7 +514,7 @@ export default function StandardAnalysis() {
 											size="large"
 											startIcon={<PlayCircleOutlineOutlined />}
 											fullWidth
-											sx={{ textTransform: 'none' }}
+											sx={{ textTransform: 'none', borderRadius: 2 }}
 										>
 											Run Standard Analysis
 										</Button>

@@ -159,8 +159,8 @@ const MoleculeInfo = ({ open, setOpen, selectedStructureId }) => {
 				{loading && <div>Loading...</div>}
 				{error && <div style={{ color: 'red' }}>{error}</div>}
 				{selectedStructureId && (
-					<Box sx={{ padding: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-						<MolmakerSectionHeader text="Structure Information" />
+					<Box p={3} className="bg-stone-100 h-full display flex flex-col" gap={3}>
+						<MolmakerSectionHeader text="Structure Information" sx={{ fontWeight: 'bold', mt: 1 }} />
 						<MolmakerTextField
 							label="Name"
 							value={structureName}
@@ -210,7 +210,7 @@ const MoleculeInfo = ({ open, setOpen, selectedStructureId }) => {
 										variant="contained"
 										color="primary"
 										onClick={handleSave}
-										sx={{ textTransform: 'none' }}
+										sx={{ textTransform: 'none', borderRadius: 2 }}
 										fullWidth
 										startIcon={<Save />}
 									>
@@ -221,7 +221,7 @@ const MoleculeInfo = ({ open, setOpen, selectedStructureId }) => {
 										variant="outlined"
 										color="primary"
 										onClick={() => setIsEditing(true)}
-										sx={{ textTransform: 'none' }}
+										sx={{ textTransform: 'none', borderRadius: 2 }}
 										fullWidth
 										startIcon={<Edit />}
 									>
@@ -234,7 +234,7 @@ const MoleculeInfo = ({ open, setOpen, selectedStructureId }) => {
 									variant="outlined"
 									color="inherit"
 									onClick={() => setOpen(false)}
-									sx={{ textTransform: 'none' }}
+									sx={{ textTransform: 'none', borderRadius: 2 }}
 									fullWidth
 									startIcon={<Close />}
 								>
