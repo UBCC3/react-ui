@@ -597,7 +597,7 @@ export const fetchJobResultFiles = async (
 ):Promise<Response> => {
 	try {
 		const API = createClusterAPI(token);
-		const res = await API.get(`/files/${jobId}/${calculation}/${status}`);
+		const res = await API.get(`/s3/files/${jobId}/${calculation}/${status}`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error('Failed to fetch presigned job file urls', error);
@@ -908,7 +908,7 @@ export const getZipPresignedUrl= async (
 ): Promise<Response> => {
 	try {
 		const API = createClusterAPI(token);
-		const res = await API.get(`/download/archive/${jobId}`);
+		const res = await API.get(`/s3/download/archive/${jobId}`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error('Failed to fetch presigned job file urls', error);
