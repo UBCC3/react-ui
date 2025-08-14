@@ -31,43 +31,43 @@ function App() {
 					<MainContent>
 						<Routes>
 							<Route
-								path="/"
+								path="/ubchemica/"
 								element={<RequireAuth><Home /></RequireAuth>}
 							/>
 							<Route
-								path="/result/:jobId"
+								path="/ubchemica/result/:jobId"
 								element={<RequireAuth><ResultPage /></RequireAuth>}
 							/>
 							<Route
-								path="/fail/:jobId"
+								path="/ubchemica/fail/:jobId"
 								element={<RequireAuth><JobFail /></RequireAuth>}
 							/>
 							<Route
-								path="/submit"
+								path="/ubchemica/submit"
 								element={<RequireAuth><StandardAnalysis /></RequireAuth>}
 							/>
 							<Route
-								path="/library"
+								path="/ubchemica/library"
 								element={<RequireAuth><MoleculeLibrary /></RequireAuth>}
 							/>
 							<Route
-								path="/jobs/:jobId"
+								path="/ubchemica/jobs/:jobId"
 								element={<RequireAuth><ViewJob /></RequireAuth>}
 							/>
 							<Route
-								path="/advanced"
+								path="/ubchemica/advanced"
 								element={<RequireAuth><AdvancedAnalysis /></RequireAuth>}
 							/>
 							<Route
-								path="/admin"
+								path="/ubchemica/admin"
 								element={<RequireAuth><Admin /></RequireAuth>}
 							/>
 							<Route
-								path="/users"
+								path="/ubchemica/users"
 								element={<RequireAuth><Users /></RequireAuth>}
 							/>
 							<Route
-								path="/group"
+								path="/ubchemica/group"
 								element={<RequireAuth><Group /></RequireAuth>}
 							/>
 							<Route
