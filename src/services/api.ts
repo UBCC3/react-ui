@@ -5,7 +5,7 @@ export const createBackendAPI = (
 	token: any
 ) => {
 	return axios.create({
-		baseURL: import.meta.env.VITE_MODE === 'development' ? import.meta.env.VITE_STORAGE_API_URL : "https://ubcchemica/api",
+		baseURL: import.meta.env.VITE_MODE === 'development' ? import.meta.env.VITE_STORAGE_API_URL : "https://ubchemica/api",
 		headers: {
 			Authorization: `Bearer ${token}`,
 		},
@@ -16,7 +16,7 @@ export const createClusterAPI = (
 	token: any
 ) => {
 	return axios.create({
-		baseURL: import.meta.env.VITE_MODE === 'development' ? import.meta.env.VITE_API_URL : "https://ubcchemica/api",
+		baseURL: import.meta.env.VITE_MODE === 'development' ? import.meta.env.VITE_API_URL : "https://ubchemica/api",
 		headers: {
 			Authorization: `Bearer ${token}`,
 		},
