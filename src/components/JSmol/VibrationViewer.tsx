@@ -230,7 +230,7 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 					<Paper
 						ref={viewerRef}
 						sx={{
-							width: '100%',
+							width: '1100px',
 							height: '70vh',
 							boxSizing: 'border-box',
 							borderRadius: 2,
