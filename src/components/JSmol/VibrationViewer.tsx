@@ -226,33 +226,32 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 						<Tab label="Graph Viewer" {...a11yProps(1)} />
 					</Tabs>
 				</Box>
-				{value === 0 && (
+				<Box sx={{ position: 'relative', width: '100%', height: '70vh' }}>
 					<Paper
 						ref={viewerRef}
 						sx={{
-							width: '100%',
-							height: '70vh',
-							boxSizing: 'border-box',
-							borderRadius: 2
-							// zIndex removed
+							position: 'absolute',
+							inset: 0,
+							borderRadius: 2,
+							visibility: value === 0 ? 'visible' : 'hidden',
+							pointerEvents: value === 0 ? 'auto' : 'none',
 						}}
 						elevation={3}
 					/>
-				)}
-				{value === 1 && (
 					<Paper
 						sx={{
-							width: '100%',
-							height: '70vh',
-							boxSizing: 'border-box',
+							position: 'absolute',
+							inset: 0,
 							borderRadius: 2,
 							p: 4,
+							visibility: value === 1 ? 'visible' : 'hidden',
+							pointerEvents: value === 1 ? 'auto' : 'none',
 						}}
 						elevation={3}
 					>
 						<IRSpectrumPlot data={graphData} width={width} shape={shape}/>
 					</Paper>
-				)}
+				</Box>
 			</Grid>
 			<Drawer
 				variant="persistent"
