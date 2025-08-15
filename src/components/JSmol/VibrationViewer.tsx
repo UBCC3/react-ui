@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {Suspense, useEffect, useRef, useState} from "react";
 import {
 	Accordion,
 	AccordionDetails,
@@ -44,6 +44,23 @@ function a11yProps(index: number) {
 		id: `simple-tab-${index}`,
 		'aria-controls': `simple-tabpanel-${index}`,
 	};
+}
+
+function CustomTabPanel(props: TabPanelProps) {
+	const { children, value, index, ...other } = props;
+	const isActive = value === index;
+
+	return (
+		<div
+			role="tabpanel"
+			hidden={!isActive}
+			id={`simple-tabpanel-${index}`}
+			aria-labelledby={`simple-tab-${index}`}
+			{...other}
+		>
+			{isActive && <Box sx={{ p: 3 }}>{children}</Box>}
+		</div>
+	);
 }
 
 enum viewerTab {
@@ -226,36 +243,36 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 						<Tab label="Graph Viewer" {...a11yProps(1)} />
 					</Tabs>
 				</Box>
-				{/*{value === 0 && (*/}
-					<Paper
-						ref={viewerRef}
-						sx={{
-							width: '1100px',
-							height: '70vh',
-							boxSizing: 'border-box',
-							borderRadius: 2,
-							visibility: value === 0 ? 'visible' : 'hidden',
-							pointerEvents: value === 0 ? 'auto' : 'none',
-						}}
-						elevation={3}
-					/>
-				{/*)}*/}
-				{/*{value === 1 && (*/}
-					<Paper
-						sx={{
-							width: '100%',
-							height: '70vh',
-							boxSizing: 'border-box',
-							borderRadius: 2,
-							p: 4,
-							visibility: value === 1 ? 'visible' : 'hidden',
-							pointerEvents: value === 1 ? 'auto' : 'none',
-						}}
-						elevation={3}
-					>
-						<IRSpectrumPlot data={graphData} width={width} shape={shape}/>
-					</Paper>
-				{/*)}*/}
+				<CustomTabPanel value={value} index={viewerTab.graph}>
+					<Suspense fallback={<MolmakerLoading />}>
+						<Paper
+							ref={viewerRef}
+							sx={{
+								width: '100%',
+								height: '70vh',
+								boxSizing: 'border-box',
+								borderRadius: 2,
+							}}
+							elevation={3}
+						/>
+					</Suspense>
+				</CustomTabPanel>
+				<CustomTabPanel value={value} index={viewerTab.structure}>
+					<Suspense fallback={<MolmakerLoading />}>
+						<Paper
+							sx={{
+								width: '100%',
+								height: '70vh',
+								boxSizing: 'border-box',
+								borderRadius: 2,
+								p: 4,
+							}}
+							elevation={3}
+						>
+							<IRSpectrumPlot data={graphData} width={width} shape={shape}/>
+						</Paper>
+					</Suspense>
+				</CustomTabPanel>
 			</Grid>
 			<Drawer
 				variant="persistent"
