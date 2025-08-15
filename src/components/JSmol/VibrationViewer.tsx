@@ -118,6 +118,7 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 	// Initialize Jmol viewer
 	useEffect(() => {
 		if (loading) return;
+		if (value !== viewerTab.graph) return;
 
 		const jsmolIsReady = (obj: any) => {
 			window.Jmol.script(obj, `reset; zoom 50;`);
