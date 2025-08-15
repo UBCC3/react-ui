@@ -150,6 +150,7 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 	useEffect(() => {
 		if (!viewerObj) return;
 		if (!result) return;
+		if (value !== viewerTab.structure) return;
 
 		const charTemp: number[] = result.extras.Psi4.char_temp;
 		const forceConstant: number[] = result.extras.Psi4.force_constant;
@@ -182,6 +183,7 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 	// Update display on selection or toggles
 	useEffect(() => {
 		if (!viewerObj || selectedMode === null) return;
+		if (value !== viewerTab.structure) return;
 
 		let script = `model ${selectedMode.index}; vibration ${vibrationOn ? 'ON' : 'OFF'}; vector ${vectorOn ? 'ON' : 'OFF'};`;
 		if (vectorOn) script += ` color vectors yellow; vector 19;`;
