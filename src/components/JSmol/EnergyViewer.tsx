@@ -84,7 +84,7 @@ const EnergyViewer: React.FC<EnergyViewerProps> = ({
 			width: "100%",
 			height: "100%",
 			use: "HTML5",
-			j2sPath: import.meta.env.J2S_PATH,
+			j2sPath: "/ubchemica/jsmol/j2s",
 			src: xyzFileUrl,
 			serverURL: "https://chemapps.stolaf.edu/jmol/jsmol/php/jsmol.php", // TODO backend to proxy
 			script: `
