@@ -22,7 +22,7 @@ function App() {
 	const { user } = useAuth0();
 
 	return (
-		<BrowserRouter>
+		<BrowserRouter basename="/ubchemica">
 			<DrawerProvider>
 				<Box sx={{ display: 'flex' }}>
 					<CssBaseline />
@@ -31,43 +31,43 @@ function App() {
 					<MainContent>
 						<Routes>
 							<Route
-								path="/ubchemica/"
+								path="/"
 								element={<RequireAuth><Home /></RequireAuth>}
 							/>
 							<Route
-								path="/ubchemica/result/:jobId"
+								path="/result/:jobId"
 								element={<RequireAuth><ResultPage /></RequireAuth>}
 							/>
 							<Route
-								path="/ubchemica/fail/:jobId"
+								path="/fail/:jobId"
 								element={<RequireAuth><JobFail /></RequireAuth>}
 							/>
 							<Route
-								path="/ubchemica/submit"
+								path="/submit"
 								element={<RequireAuth><StandardAnalysis /></RequireAuth>}
 							/>
 							<Route
-								path="/ubchemica/library"
+								path="/library"
 								element={<RequireAuth><MoleculeLibrary /></RequireAuth>}
 							/>
 							<Route
-								path="/ubchemica/jobs/:jobId"
+								path="/jobs/:jobId"
 								element={<RequireAuth><ViewJob /></RequireAuth>}
 							/>
 							<Route
-								path="/ubchemica/advanced"
+								path="/advanced"
 								element={<RequireAuth><AdvancedAnalysis /></RequireAuth>}
 							/>
 							<Route
-								path="/ubchemica/admin"
+								path="/admin"
 								element={<RequireAuth><Admin /></RequireAuth>}
 							/>
 							<Route
-								path="/ubchemica/users"
+								path="/users"
 								element={<RequireAuth><Users /></RequireAuth>}
 							/>
 							<Route
-								path="/ubchemica/group"
+								path="/group"
 								element={<RequireAuth><Group /></RequireAuth>}
 							/>
 							<Route
