@@ -1,16 +1,27 @@
 import React, {useMemo, useState} from 'react';
 import { Scatter } from 'react-chartjs-2';
 import {
-	Chart,
+	Chart as ChartJS,
 	LinearScale,
 	PointElement,
 	LineElement,
 	Tooltip,
+	Legend,
+	ScatterController,
+	LineController,
 	ChartData,
-	ChartOptions
+	ChartOptions,
 } from 'chart.js';
 
-Chart.register(LinearScale, PointElement, LineElement, Tooltip);
+ChartJS.register(
+	LinearScale,
+	PointElement,
+	LineElement,
+	Tooltip,
+	Legend,
+	ScatterController,
+	LineController
+);
 
 type Props = {
 	data: { freq: number; intensity: number }[];
@@ -40,7 +51,7 @@ const IRSpectrumPlot: React.FC<Props> = ({
 				backgroundColor: 'black',
 			},
 			{
-				type: 'line' as any,
+				type: 'line' as const,
 				label: `${shape} profile`,
 				data: profile,
 				borderColor: 'red',
