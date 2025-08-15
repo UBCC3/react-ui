@@ -230,9 +230,12 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 					<Paper
 						ref={viewerRef}
 						sx={{
+							width: '100%',
+							height: '70vh',
+							boxSizing: 'border-box',
+							borderRadius: 2,
 							position: 'absolute',
 							inset: 0,
-							borderRadius: 2,
 							visibility: value === 0 ? 'visible' : 'hidden',
 							pointerEvents: value === 0 ? 'auto' : 'none',
 						}}
@@ -240,10 +243,13 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 					/>
 					<Paper
 						sx={{
-							position: 'absolute',
-							inset: 0,
+							width: '100%',
+							height: '70vh',
+							boxSizing: 'border-box',
 							borderRadius: 2,
 							p: 4,
+							position: 'absolute',
+							inset: 0,
 							visibility: value === 1 ? 'visible' : 'hidden',
 							pointerEvents: value === 1 ? 'auto' : 'none',
 						}}
