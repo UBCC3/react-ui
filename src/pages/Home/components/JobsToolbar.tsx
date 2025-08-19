@@ -20,9 +20,10 @@ import {
 	AutoMode,
 	TuneOutlined,
 	DeleteOutlineOutlined,
-	WorkHistoryOutlined
+	WorkHistoryOutlined,
+	ArchiveOutlined
 } from '@mui/icons-material';
-import { blue, blueGrey, grey } from '@mui/material/colors';
+import { blue, grey } from '@mui/material/colors';
 
 interface JobsToolbarProps {
 	selectedJobId: string | null;
@@ -38,6 +39,8 @@ interface JobsToolbarProps {
 	structures: Array<{ structure_id: string; name: string }>;
 	selectedStructure: string;
 	onStructureChange: (structureId: string) => void;
+	onZipDownload: () => void;
+	downloadDisabled: (selectedJobId: string | null) => boolean;
 	isGroupAdmin?: boolean;
 }
 
@@ -55,6 +58,8 @@ export default function JobsToolbar({
 	structures,
 	selectedStructure,
 	onStructureChange,
+	onZipDownload,
+	downloadDisabled,
 	isGroupAdmin = false,
 }: JobsToolbarProps) {
 	return (
@@ -108,6 +113,16 @@ export default function JobsToolbar({
 								onClick={onFilterByStructure}
 							>
 								<FilterList />
+							</IconButton>
+						</span>
+					</Tooltip>
+					<Tooltip title="Download job archive">
+						<span>
+							<IconButton
+								disabled={downloadDisabled(selectedJobId)}
+								onClick={onZipDownload}
+							>
+								<ArchiveOutlined />
 							</IconButton>
 						</span>
 					</Tooltip>

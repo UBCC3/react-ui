@@ -30,7 +30,8 @@ import {
 	getStructureDataFromS3,
 	updateJob,
 	deleteJob,
-	upsertCurrentUser
+	upsertCurrentUser,
+	getZipPresignedUrl
 } from '../../services/api';
 import { JobStatus } from '../../constants';
 import JobsStatus from './components/JobsStatus';
@@ -65,6 +66,7 @@ export default function Home() {
 	const [rowsPerPage, setRowsPerPage] = useState<number>(5);
 	const [loading, setLoading] = useState<boolean>(true);
 	const [structureLoading, setStructureLoading] = useState<boolean>(false);
+	const [userRole, setUserRole] = useState<string>('');
 
 	// selection
 	const [selectedJobId, setSelectedJobId] = useState<string>('');
@@ -179,7 +181,7 @@ export default function Home() {
 				const result = await upsertCurrentUser(token, user.email || '');
 
 				if (result.status === 200 && result.data) {
-					console.log('User synced:', result.data);
+					setUserRole(result.data.role || '');
 				} else {
 					console.warn('Upsert returned', result.status, result.error);
 				}
@@ -779,6 +781,7 @@ export default function Home() {
 					onStructureChange={setFilterStructureId}
 					onZipDownload={handleZipDownload}
 					downloadDisabled={downloadDisabled}
+					isGroupAdmin={true}
 				/>
 				<JobsTable
 					jobs={filteredJobs}

@@ -30,6 +30,7 @@ import {
 	deleteJob,
 	getCurrentUserGroupJobs,
 	upsertCurrentUser,
+	getZipPresignedUrl
 } from '../services/api';
 import { JobStatus } from '../constants';
 import JobsToolbar from './Home/components/JobsToolbar';
@@ -354,6 +355,71 @@ export default function Group() {
 		return true;
 	}
 
+	async function downloadZipFromS3WithBlob(presignedUrl: string, filename = "result.zip") {
+		const response = await fetch(presignedUrl);
+		if (!response.ok) throw new Error("Failed to download file");
+
+		const blob = await response.blob();
+		const blobUrl = window.URL.createObjectURL(blob);
+
+		const link = document.createElement("a");
+		link.href = blobUrl;
+		link.download = filename;
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+
+		// Clean up
+		window.URL.revokeObjectURL(blobUrl);
+	}
+
+	const handleZipDownload = async () => {
+		setLoading(true);
+		try {
+			const token = await getAccessTokenSilently();
+			const response = await getZipPresignedUrl(selectedJobId, token);
+			if (response.error) {
+				setAlertMsg('Failed to download the job archive');
+				setAlertSeverity('error');
+				setAlertShow(true);
+				return;
+			}
+			const jobToDownloadZip = jobs.find(j => j.job_id === selectedJobId);
+			if (!jobToDownloadZip) {
+				setAlertMsg('Selected job not found.');
+				setAlertSeverity('error');
+				setAlertShow(true);
+				setLoading(false);
+				return;
+			}
+			const zipUrl: string = response.data.url;
+			await downloadZipFromS3WithBlob(zipUrl, `${jobToDownloadZip.job_name}.zip`);
+			setSelectedJobId('');
+			setAlertMsg('Job archive download successfully!');
+			setAlertSeverity('success');
+			setAlertShow(true);
+		} catch (err) {
+			setAlertMsg('Failed to download the job archive');
+			setAlertSeverity('error');
+			setAlertShow(true);
+			console.error('Failed to download the job', err);
+		} finally {
+			setLoading(false);
+		}
+	}
+	
+	const downloadDisabled = (selectedJobId: string | null): boolean => {
+		if (!selectedJobId) { return true; }
+
+		const jobToDownloadZip = jobs.find(j => j.job_id === selectedJobId);
+		if (!jobToDownloadZip) { return true; }
+		if ([JobStatus.CANCELLED, JobStatus.PENDING, JobStatus.RUNNING, JobStatus.UNKNOWN].includes(jobToDownloadZip.status)) {
+			return true
+		}
+
+		return false
+	}
+
 	// Confirmation & alert helpers
 	const showAlert = (msg:string, sev:typeof alertSeverity) => {
 		setAlertMsg(msg);
@@ -600,6 +666,8 @@ export default function Group() {
 					structures={structures}
 					selectedStructure={filterStructureId}
 					onStructureChange={setFilterStructureId}
+					onZipDownload={handleZipDownload}
+					downloadDisabled={downloadDisabled}
 					isGroupAdmin={userRole === 'group_admin'}
 				/>
 				<GroupJobsTable
