@@ -68,6 +68,8 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 	setError
 }) => {
 	const viewerRef = useRef<HTMLDivElement>(null);
+	const appletRef = useRef<any>(null);
+
 	const [viewerObj, setViewerObj] = useState<any>(null);
 	const [loading, setLoading] = useState<boolean>(true);
 	const xyzFileUrl = jobResultFiles.urls["vib"];
@@ -118,8 +120,11 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 	// Initialize Jmol viewer
 	useEffect(() => {
 		if (loading) return;
+		if (value !== viewerTab.structure) return;
+		if (!viewerRef.current) return;
 
 		const jsmolIsReady = (obj: any) => {
+			appletRef.current = obj;
 			window.Jmol.script(obj, `reset; zoom 50;`);
 			setViewerObj(obj);
 		};
@@ -129,9 +134,9 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 			width: "100%",
 			height: "100%",
 			use: "HTML5",
-			j2sPath: "/jsmol/j2s",
+			j2sPath: "/ubchemica/jsmol/j2s",
 			src: xyzFileUrl,
-			serverURL: "https://chemapps.stolaf.edu/jmol/jsmol/php/jsmol.php", // TODO backend to proxy
+			serverURL: "https://chemapps.stolaf.edu/jmol/jsmol/php/jsmol.php",
 			script: `load async "${xyzFileUrl}";`,
 			disableInitialConsole: true,
 			addSelectionOptions: false,
@@ -139,16 +144,42 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 			readyFunction: jsmolIsReady,
 		};
 
+		// create and mount
 		window.Jmol.getApplet(viewerObjId, Info);
-		if (viewerRef.current) {
-			viewerRef.current.innerHTML = window.Jmol.getAppletHtml(viewerObjId, Info);
-		}
+		viewerRef.current.innerHTML = window.Jmol.getAppletHtml(viewerObjId, Info);
+
+		// cleanup on unmount or when xyzFileUrl/viewer changes
+		return () => {
+			try {
+				if (appletRef.current) {
+					window.Jmol.script(appletRef.current, `!exit; spin off; animation off; set refreshing off;`);
+				}
+			} catch {}
+			if (viewerRef.current) viewerRef.current.innerHTML = "";
+			appletRef.current = null;
+			setViewerObj(null);
+		};
 	}, [xyzFileUrl, viewerObjId, loading, value]);
+
+	// when switching away from structure, stop and clear immediately
+	useEffect(() => {
+		if (value === viewerTab.structure) return;
+		try {
+			if (appletRef.current) {
+				window.Jmol.script(appletRef.current, `!exit;`); // immediate stop
+			}
+		} catch {}
+		if (viewerRef.current) viewerRef.current.innerHTML = "";
+		appletRef.current = null;
+		setViewerObj(null);
+	}, [value]);
+
 
 	// Fetch vibration modes
 	useEffect(() => {
 		if (!viewerObj) return;
 		if (!result) return;
+		if (value !== viewerTab.structure) return;
 
 		const charTemp: number[] = result.extras.Psi4.char_temp;
 		const forceConstant: number[] = result.extras.Psi4.force_constant;
@@ -181,6 +212,7 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 	// Update display on selection or toggles
 	useEffect(() => {
 		if (!viewerObj || selectedMode === null) return;
+		if (value !== viewerTab.structure) return;
 
 		let script = `model ${selectedMode.index}; vibration ${vibrationOn ? 'ON' : 'OFF'}; vector ${vectorOn ? 'ON' : 'OFF'};`;
 		if (vectorOn) script += ` color vectors yellow; vector 19;`;
