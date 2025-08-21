@@ -16,7 +16,18 @@ export const createClusterAPI = (
 	token: any
 ) => {
 	return axios.create({
-		baseURL: import.meta.env.VITE_MODE === 'development' ? import.meta.env.VITE_API_URL : "https://ubchemica.com/ubchemica/api",
+		baseURL: import.meta.env.VITE_MODE === 'development' ? import.meta.env.VITE_API_URL : "https://ubchemica.com/ubchemica/api/cluster",
+		headers: {
+			Authorization: `Bearer ${token}`,
+		},
+	});
+};
+
+export const createStorageAPI = (
+	token: any
+) => {
+	return axios.create({
+		baseURL: import.meta.env.VITE_MODE === 'development' ? import.meta.env.VITE_API_URL : "https://ubchemica.com/ubchemica/api/storage",
 		headers: {
 			Authorization: `Bearer ${token}`,
 		},
@@ -248,7 +259,7 @@ export const cancelJobBySlurmID = async (
 ): Promise<Response> => {
 	try {
 		const API = createClusterAPI(token);
-		const response = await API.post(`/cluster/cancel/${slurmId}`);
+		const response = await API.post(`/cancel/${slurmId}`);
 		if (response.status !== 200) {
 			throw new Error(`HTTP ${response.status}`);
 		}
@@ -272,7 +283,7 @@ export const getJobStatusBySlurmID = async (
 ): Promise<Response> => {
 	try {
 		const API = createClusterAPI(token);
-		const response = await API.get(`/cluster/status/${slurmId}`);
+		const response = await API.get(`/status/${slurmId}`);
 		if (response.status !== 200) {
 			throw new Error(`HTTP ${response.status}`);
 		}
@@ -321,8 +332,8 @@ export const submitAdvancedAnalysis = async (
 		formData.append("keywords", keywords);
 	}
 	try {
-		const API = createClusterAPI(token); // No token needed for this endpoint
-		const response = await API.post("/cluster/run_advanced_analysis", formData);
+		const API = createClusterAPI(token);
+		const response = await API.post("/run_advanced_analysis", formData);
 		return {
 			status: response.status,
 			data: response.data,
@@ -357,7 +368,7 @@ export const submitStandardAnalysis = async (
 	}
 	try {
 		const API = createClusterAPI(token);
-		const response = await API.post("/cluster/run_standard_analysis", formData);
+		const response = await API.post("/run_standard_analysis", formData);
 		return {
 			status: response.status,
 			data: response.data,
@@ -576,7 +587,7 @@ export const fetchJobResults = async (
 ): Promise<Response> => {
 	try {
 		const API = createClusterAPI(token);
-		const res = await API.get(`/cluster/result/${jobId}`);
+		const res = await API.get(`/result/${jobId}`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error('Failed to fetch job results', error);
@@ -594,7 +605,7 @@ export const fetchJobResultFiles = async (
 	status: string
 ):Promise<Response> => {
 	try {
-		const API = createClusterAPI(token);
+		const API = createStorageAPI(token);
 		const res = await API.get(`/storage/files/${jobId}/${calculation}/${status}`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
@@ -612,7 +623,7 @@ export const fetchJobError = async (
 ): Promise<Response> => {
 	try {
 		const API = createClusterAPI(token);
-		const res = await API.get(`/cluster/error/${jobId}`);
+		const res = await API.get(`/error/${jobId}`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error('Failed to fetch job error', error);
@@ -905,8 +916,8 @@ export const getZipPresignedUrl= async (
 	token: string,
 ): Promise<Response> => {
 	try {
-		const API = createClusterAPI(token);
-		const res = await API.get(`/storage/download/archive/${jobId}`);
+		const API = createStorageAPI(token);
+		const res = await API.get(`/download/archive/${jobId}`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error('Failed to fetch presigned job file urls', error);

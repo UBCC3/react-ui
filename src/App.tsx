@@ -22,7 +22,7 @@ function App() {
 	const { user } = useAuth0();
 
 	return (
-		<BrowserRouter basename="/ubchemica">
+		<BrowserRouter basename={import.meta.env.VITE_MODE === 'development' ? '' : '/ubchemica'}>
 			<DrawerProvider>
 				<Box sx={{ display: 'flex' }}>
 					<CssBaseline />

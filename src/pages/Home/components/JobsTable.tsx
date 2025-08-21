@@ -167,7 +167,9 @@ export default function JobsTable({
 									</TableCell>
 								)}
 								{displayColumns.job_notes && (
-									<TableCell>{job.job_notes || 'N/A'}</TableCell>
+									<TableCell>{job.job_notes || (
+										<Typography variant="caption" color="text.secondary">No notes</Typography>
+									)}</TableCell>
 								)}
 								{displayColumns.status && (
 									<TableCell>
@@ -195,7 +197,9 @@ export default function JobsTable({
 													size="small"
 													sx={{ mr: 0.5, mb: 0.5 }}
 												/>
-											)) : 'N/A'}
+											)) : (
+												<Typography variant="caption" color="text.secondary">No structures</Typography>
+											)}
 									</TableCell>
 								)}
 								{displayColumns.tags && (
@@ -203,13 +207,15 @@ export default function JobsTable({
 										{job.tags.length > 0 ? (
 											job.tags.join(', ')
 										) : (
-											<Typography variant="body2" color="text.secondary">No tags</Typography>
+											<Typography variant="caption" color="text.secondary">No tags</Typography>
 										)}
 									</TableCell>
 								)}
 								{displayColumns.runtime && (
 									<TableCell>
-										{job.runtime ? job.runtime : 'unavailable'}
+										{job.runtime ? job.runtime : (
+											<Typography variant="caption" color="text.secondary">N/A</Typography>
+										)}
 									</TableCell>
 								)}
 								{displayColumns.submitted_at && (
@@ -219,7 +225,9 @@ export default function JobsTable({
 								)}
 								{displayColumns.completed_at && (
 									<TableCell>
-										{job.completed_at ? new Date(job.completed_at).toLocaleString() : 'N/A'}
+										{job.completed_at ? new Date(job.completed_at).toLocaleString() : (
+											<Typography variant="caption" color="text.secondary">N/A</Typography>
+										)}
 									</TableCell>
 								)}
 							</TableRow>
