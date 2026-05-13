@@ -25,6 +25,9 @@ const MolmakerSectionHeader = ({
 	)
 }
 
+/**
+ * Runtime prop validation for MolmakerSectionHeader.
+ */
 MolmakerSectionHeader.propTypes = {
 	text: PropTypes.string.isRequired,
 	sx: PropTypes.object

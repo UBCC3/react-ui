@@ -38,7 +38,11 @@ import CalculatedQuantities from "./CalculatedQuantities";
 import IRSpectrumPlot from "../IRSpectrumPlot";
 import {formatComplex} from "../../utils";
 
-
+/**
+ * Generate accessibility props for a Material UI Tab.
+ * 
+ * The returned IDs connect each tab with its corresponding tab panel.
+ */
 function a11yProps(index: number) {
 	return {
 		id: `simple-tab-${index}`,
@@ -46,14 +50,22 @@ function a11yProps(index: number) {
 	};
 }
 
+/**
+ * Main display tabs for the vibration result page.
+ */
 enum viewerTab {
 	structure,
 	graph,
 }
 
+// Width of the expanded result drawer in pixels.
 const fullWidth = 400;
+// Width of the collapsed result drawer in pixels.
 const miniWidth = 80;
 
+/**
+ * Props for the VibrationViewer component.
+ */
 interface VibrationViewerProps {
 	job: Job,
 	jobResultFiles: JobResult;
@@ -61,28 +73,59 @@ interface VibrationViewerProps {
 	setError: React.Dispatch<React.SetStateAction<string | null>>,
 }
 
+/**
+ * Displays the vibrational frequency analysis result viewer.
+ * 
+ * This component loads vibrational trajectory data into JSmol, extracts
+ * vibration modes from the result JSON, displays vibration mode information
+ * in a table, and renders an IR specturm graph from the calculated real
+ * frequencies and intensities.
+ */
 const VibrationViewer: React.FC<VibrationViewerProps> = ({
 	job,
 	jobResultFiles,
 	viewerObjId,
 	setError
 }) => {
+    // DOM container where JSmol injects the molecular viewer.
 	const viewerRef = useRef<HTMLDivElement>(null);
+
+    // Stores the active JSmol applet so it can be stopped/cleared when switching tabs.
 	const appletRef = useRef<any>(null);
 
+    // JSmol viewer object used to run scripts from React controls.
 	const [viewerObj, setViewerObj] = useState<any>(null);
+
+    // Tracks whether result JSON and viewer setup are still loading.
 	const [loading, setLoading] = useState<boolean>(true);
+
+    // URL to the vibration structure/trajectory file
 	const xyzFileUrl = jobResultFiles.urls["vib"];
+
+    // URL to the calculation result JSON.
 	const resultURL = jobResultFiles.urls["result"];
+
+    // Parsed vibration result JSON.
 	const [result, setResult] = useState<any | null>(null);
 
+    // Parsed vibration modes displayed in the mode table.
 	const [modes, setModes] = useState<VibrationMode[]>([]);
+
+    // Pagination state for the vibration mode table.
 	const rowsPerPage = 25;
 	const [page, setPage] = useState(0);
+
+    // Currently selected vibraiton mode shown in the JSmol viewer.
 	const [selectedMode, setSelectedMode] = useState<VibrationMode | null>(null);
+
+    // JSmol display toggles for vibration animation and displacement vectors.
 	const [vibrationOn, setVibrationOn] = useState(true);
 	const [vectorOn, setVectorOn] = useState(true);
+
+    // Controls whether the right-side result drawer is expanded or collapsed.
 	const [open, setOpen] = useState(true);
+
+    // Controls which drawer accordions are expanded.
 	const [accordionOpen, setAccordionOpen] = useState({ 
 		modes: true, 
 		options: false,
@@ -101,6 +144,7 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 	const [width, setWidth] = useState(15);
 	const [shape, setShape] = useState<'gaussian' | 'lorentzian'>('gaussian');
 
+    // Fetch and normalize the vibration result JSON.
 	useEffect(() => {
 		setLoading(true);
 		fetchRawFileFromS3Url(resultURL, 'json').then((res) => {
@@ -219,6 +263,12 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 		window.Jmol.script(viewerObj, script);
 	}, [viewerObj, selectedMode, vibrationOn, vectorOn]);
 
+    /**
+     * Expand or collapse the result drawer.
+     * 
+     * Collapsing the drawer also closes all accordions so only icons remain
+     * visible in the mini drawer state.
+     */
 	const toggle = () => {
 		if (open) {
 			setOpen(false);
@@ -234,6 +284,12 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 		}
 	}
 
+    /**
+     * Updaate the expanded state of a drawer accordion.
+     * 
+     * If the user opens an accordion while the drawer is collapsed, the drawer
+     * automatically expands so the accordion content is visible.
+     */
 	const handleAccordionChange = (panel: keyof typeof accordionOpen) => (_event: React.SyntheticEvent, isExpanded: boolean) => {
 		setAccordionOpen(prev => ({ ...prev, [panel]: isExpanded }));
 		if (isExpanded && !open) setOpen(true); // Open drawer if opening an accordion

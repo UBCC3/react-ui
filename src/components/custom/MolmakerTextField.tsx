@@ -54,6 +54,9 @@ const MolmakerTextField = ({
 	/>
 );
 
+/**
+ * Runtime prop validation for MolmakerTextField.
+ */
 MolmakerTextField.propTypes = {
 	label: PropTypes.string.isRequired,
 	value: PropTypes.any.isRequired,

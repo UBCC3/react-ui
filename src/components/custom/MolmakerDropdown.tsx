@@ -60,6 +60,9 @@ const MolmakerDropdown = ({
   	</FormControl>
 );
 
+/**
+ * Runtime prop validation for MolmakerDropdown.
+ */
 MolmakerDropdown.propTypes = {
 	label: PropTypes.string.isRequired,
 	value: PropTypes.any.isRequired,

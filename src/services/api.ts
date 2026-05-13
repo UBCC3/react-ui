@@ -1,6 +1,11 @@
 import axios from 'axios';
 import { Response } from '../types'
 
+/**
+ * Creates an Axios instance for the main backend API.
+ * Uses the development URL from environment variables when running locally,
+ * otherwise uses the production backend URL.
+ */
 export const createBackendAPI = (
 	token: any
 ) => {
@@ -12,6 +17,10 @@ export const createBackendAPI = (
 	});
 };
 
+/**
+ * Creates an Axios instance for cluster-related API calls.
+ * This is used for operations such as submitting, cancelling, and checking jobs.
+ */
 export const createClusterAPI = (
 	token: any
 ) => {
@@ -23,6 +32,10 @@ export const createClusterAPI = (
 	});
 };
 
+/**
+ * Creates an Axios instance for storage-related API calls.
+ * This is used for downloading files, archives, and presigned URLs.
+ */
 export const createStorageAPI = (
 	token: any
 ) => {
@@ -34,6 +47,9 @@ export const createStorageAPI = (
 	});
 };
 
+/**
+ * Fetches all jobs that belong to the current user's group.
+ */
 export const getCurrentUserGroupJobs = async (
 	token: any
 ): Promise<Response> => {
@@ -53,6 +69,9 @@ export const getCurrentUserGroupJobs = async (
 	}
 };
 
+/**
+ * Fetches all members in the current user's group.
+ */
 export const getCurrentUserMembers = async (
 	token: any
 ): Promise<Response> => {
@@ -72,6 +91,10 @@ export const getCurrentUserMembers = async (
 	}
 };
 
+/**
+ * Creates or updates the currently authenticated user in the backend database.
+ * The user's email is sent as form data.
+ */
 export const upsertCurrentUser = async (
 	token: any,
 	email: string
@@ -91,6 +114,9 @@ export const upsertCurrentUser = async (
 	}
 };
 
+/**
+ * Fetches all groups from the admin endpoint.
+ */
 export const getAllGroups = async (token: any): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
@@ -108,6 +134,9 @@ export const getAllGroups = async (token: any): Promise<Response> => {
 	}
 };
 
+/**
+ * Fetches a specific group using its group ID.
+ */
 export const getGroupById = async (groupId: string, token: any): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
@@ -122,6 +151,9 @@ export const getGroupById = async (groupId: string, token: any): Promise<Respons
 	}
 };
 
+/**
+ * Updates the name of an existing group.
+ */
 export const updateGroupName = async (groupId: string, newName: string, token: any): Promise<Response> => {
 	const formData = new FormData();
 	formData.append("group_name", newName);
@@ -138,6 +170,9 @@ export const updateGroupName = async (groupId: string, newName: string, token: a
 	}
 };
 
+/**
+ * Creates a new group using the provided group name.
+ */
 export const createGroup = async (name: string, token: any): Promise<Response> => {
 	const formData = new FormData();
 	formData.append("name", name);
@@ -154,6 +189,9 @@ export const createGroup = async (name: string, token: any): Promise<Response> =
 	}
 };
 
+/**
+ * Deletes a group by its own group ID.
+ */
 export const deleteGroup = async (token: any, groupId: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
@@ -168,6 +206,9 @@ export const deleteGroup = async (token: any, groupId: string): Promise<Response
 	}
 };
 
+/**
+ * Fetches all users from the admin endpoint.
+ */
 export const getAllUsers = async (token: any): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
@@ -182,6 +223,9 @@ export const getAllUsers = async (token: any): Promise<Response> => {
 	}
 };
 
+/**
+ * Fetches a user record using the user's email address.
+ */
 export const getUserByEmail = async (
 	email: string,
 	token: any
@@ -199,6 +243,9 @@ export const getUserByEmail = async (
 	}
 };
 
+/**
+ * Deletes a user using their Auth0 user_sub value.
+ */
 export const deleteUser = async (token: any, userSub: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
@@ -213,6 +260,10 @@ export const deleteUser = async (token: any, userSub: string): Promise<Response>
 	}
 };
 
+/**
+ * Updates a user's role and/or group assignment.
+ * Only values that are provided are appended to the request body.
+ */
 export const updateUser = async (
 	token: any,
 	userSub: string,
@@ -236,6 +287,9 @@ export const updateUser = async (
 	}
 };
 
+/**
+ * Fetches all jobs from the admin jobs endpoint.
+ */
 export const adminGetAllJobs = async (token: any): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
@@ -253,6 +307,9 @@ export const adminGetAllJobs = async (token: any): Promise<Response> => {
 	}
 };
 
+/**
+ * Cancels a running or queued cluster job using its SLURM ID.
+ */
 export const cancelJobBySlurmID = async (
 	slurmId: string,
 	token: any
@@ -277,6 +334,9 @@ export const cancelJobBySlurmID = async (
 	}
 }
 
+/**
+ * Fetches the latest SLURM status for a job and normalizes the state to lowercase.
+ */
 export const getJobStatusBySlurmID = async (
 	slurmId: string,
 	token: any
@@ -311,6 +371,11 @@ export const getJobStatusBySlurmID = async (
 	}
 };
 
+/**
+ * Submits an advanced analysis job to the cluster API.
+ * The uploaded molecular file, calculation settings, and optional keyword file.
+ * are sent as multipart form data.
+ */
 export const submitAdvancedAnalysis = async (
 	file: File | Blob,
 	calculationType: string,
@@ -347,6 +412,10 @@ export const submitAdvancedAnalysis = async (
 	}
 };
 
+/**
+ * Submits a standard analysis job to the cluster API.
+ * If the optimization type is transition state, the opt_type field is included.
+ */
 export const submitStandardAnalysis = async (
 	jobName: string,
 	file: File | Blob,
@@ -382,6 +451,10 @@ export const submitStandardAnalysis = async (
 	}
 };
 
+/**
+ * Converts a base64 data URL into a Blob object.
+ * This is used to upload generated structure images as normal files.
+ */
 function dataURLToBlob(dataURL) {
 	const parts = dataURL.split(',');
 	const mime = parts[0].match(/:(.*?);/)[1];
@@ -393,6 +466,10 @@ function dataURLToBlob(dataURL) {
 	return new Blob([array], { type: mime });
 }
 
+/**
+ * Creates a new structure entry and uploads its related files to storage.
+ * Includes the molecular file, metadata, tags, and preview image.
+ */
 export const AddAndUploadStructureToS3 = async (
 	file: File | Blob,
 	name: string,
@@ -432,6 +509,9 @@ export const AddAndUploadStructureToS3 = async (
 	}
 };
 
+/**
+ * Requests a presigned URL for a structure file, then downloads the file content from S3.
+ */
 export const getStructureDataFromS3 = async (
 	structureId: string,
 	token: any,
@@ -458,6 +538,9 @@ export const getStructureDataFromS3 = async (
 	}
 };
 
+/**
+ * Fetches all structures available in the current user's library.
+ */
 export const getLibraryStructures = async (
 	token: any,
 ): Promise<Response> => {
@@ -477,6 +560,9 @@ export const getLibraryStructures = async (
 	}
 }
 
+/**
+ * Fetches metadata/details ffor one structure by structure ID.
+ */
 export const getStructureById = async (
 	structureId: string,
 	token: any,
@@ -497,6 +583,9 @@ export const getStructureById = async (
 	}
 };
 
+/**
+ * Updates an existing structure's metadata, including name, formula, notes, and tags.
+ */
 export const updateStructure = async (
 	structureId: string,
 	name: string,
@@ -529,6 +618,9 @@ export const updateStructure = async (
 	}
 };
 
+/**
+ * Fetches job details using the job ID.
+ */
 export const getJobByJobID = async (
 	jobId: string, 
 	token: any,
@@ -550,6 +642,9 @@ export const getJobByJobID = async (
 }
 
 // API endpoints for job-related operations
+/**
+ * Fetches all jobs visible to the current user.
+ */
 export const getAllJobs = async (token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
@@ -564,6 +659,9 @@ export const getAllJobs = async (token: string): Promise<Response> => {
 	}
 };
 
+/**
+ * Fetches details for a single job by job ID.
+ */
 export const getJobById = async (
 	jobId: string,
 	token: string
@@ -581,6 +679,9 @@ export const getJobById = async (
   }
 };
 
+/**
+ * Fetches computed result metadata for a completed cluster job.
+ */
 export const fetchJobResults = async (
 	jobId: string,
 	token: string
@@ -598,6 +699,9 @@ export const fetchJobResults = async (
 	}
 };
 
+/**
+ * Fetches presigned URLs for files generated byb a specific job calculation.
+ */
 export const fetchJobResultFiles = async (
 	token: string,
 	jobId: string,
@@ -617,6 +721,9 @@ export const fetchJobResultFiles = async (
 	}
 }
 
+/**
+ * Fetches error output for a failed or problematic cluster job.
+ */
 export const fetchJobError = async (
 	jobId: string,
 	token: string
@@ -634,6 +741,11 @@ export const fetchJobError = async (
 	}
 };
 
+/**
+ * Creates a job record in the backend database.
+ * This stores the job file, calculation settings, optional structure link,
+ * SLURM ID, notes, and tags.
+ */
 export const createJob = async (
 	file: File | Blob,
 	jobId: string,
@@ -676,6 +788,9 @@ export const createJob = async (
 	}
 };
 
+/**
+ * Updates a job's status using one of the allowed status values.
+ */
 export const updateJobStatus = async (
 	jobId: string,
 	status: 'pending' | 'running' | 'completed' | 'failed',
@@ -703,6 +818,9 @@ interface UpdateJobResponse {
   message?: string;
 }
 
+/**
+ * Deletes a ob record by job ID.
+ */
 export const deleteJob = async (
 	jobId: string,
 	token: string
@@ -720,6 +838,9 @@ export const deleteJob = async (
 	}
 };
 
+/**
+ * Deletes a structure record by structure ID.
+ */
 export const deleteStructure = async (
 	structureId: string,
 	token: string
@@ -737,6 +858,10 @@ export const deleteStructure = async (
 	}
 };
 
+/**
+ * Updates a job's state, runtime, and associated user in the backend.
+ * Throws the error object instead of returning a Response when the request fails.
+ */
 export const updateJob = async (
 	jobId: string,
 	state: string,
@@ -768,6 +893,9 @@ export const updateJob = async (
 	}
 };
 
+/**
+ * Updates whether a job is public or private.
+ */
 export const updateVisibility = async (
 	jobId: string,
 	isPublic: boolean,
@@ -788,6 +916,9 @@ export const updateVisibility = async (
 	}
 };
 
+/**
+ * Updates the stored runtime value for a job.
+ */
 export const updateJobRuntime = async (
 	jobId: string,
 	runtime: string,
@@ -806,6 +937,9 @@ export const updateJobRuntime = async (
 	}
 };
 
+/**
+ * Fetches the list of supported calculation types from the backend enum endpoint.
+ */
 export const getCalculationTypes = async (token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
@@ -820,6 +954,9 @@ export const getCalculationTypes = async (token: string): Promise<Response> => {
 	}
 }
 
+/**
+ * Fetches the list of supported wavefunction theory methods.
+ */
 export const getWavefunctionMethods = async (token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
@@ -834,6 +971,9 @@ export const getWavefunctionMethods = async (token: string): Promise<Response> =
 	}
 }
 
+/**
+ * Fetches the list of supported density functional theory methods.
+ */
 export const getDensityFunctionalMethods = async (token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
@@ -848,6 +988,9 @@ export const getDensityFunctionalMethods = async (token: string): Promise<Respon
 	}
 }
 
+/**
+ * Fetches the list of supported basis sets.
+ */
 export const getBasisSets = async (token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
@@ -862,6 +1005,9 @@ export const getBasisSets = async (token: string): Promise<Response> => {
 	}
 }
 
+/**
+ * Fetches the list of supported spin multiplicities.
+ */
 export const getMultiplicities = async (token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
@@ -876,6 +1022,10 @@ export const getMultiplicities = async (token: string): Promise<Response> => {
 	}
 }
 
+/**
+ * Fetches all tags that are currently used by structures.
+ * This can be used for tag filtering, autocomplete, or displaying available structure categories.
+ */
 export const getStructuresTags = async (token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
@@ -891,6 +1041,10 @@ export const getStructuresTags = async (token: string): Promise<Response> => {
 	}
 };
 
+/**
+ * Uploads a molecular structure file and asks the backend to extract or calculate
+ * its chemical formula.
+ */
 export const getChemicalFormula = async (
 	file: File | Blob,
 	token: string
@@ -911,6 +1065,10 @@ export const getChemicalFormula = async (
 	}
 };
 
+/**
+ * Requests a presigned URL for downloading a zipped archive of all result files
+ * associated with a specific job.
+ */
 export const getZipPresignedUrl= async (
 	jobId: string,
 	token: string,
@@ -928,6 +1086,9 @@ export const getZipPresignedUrl= async (
 	}
 }
 
+/**
+ * Fetches all incoming group-related requests for the given user.
+ */
 export const getRequests = async (
 	userSub: string,
 	token: string
@@ -945,6 +1106,9 @@ export const getRequests = async (
 	}
 }
 
+/**
+ * Fetches the list of supported optimization types from the backend enum endpoint.
+ */
 export const getOptimizationTypes = async (token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
@@ -959,6 +1123,9 @@ export const getOptimizationTypes = async (token: string): Promise<Response> => 
 	}
 }
 
+/**
+ * Fetches all group-related requests sent by the given user.
+ */
 export const getSentRequests = async (
 	userSub: string,
 	token: string
@@ -976,6 +1143,9 @@ export const getSentRequests = async (
 	}
 };
 
+/**
+ * Sends a group-related request on behalf of the given user.
+ */
 export const sendRequest = async (
 	userSub: string,
 	groupId: string,
@@ -996,6 +1166,9 @@ export const sendRequest = async (
 	}
 };
 
+/**
+ * Approves an incoming request by request ID.
+ */
 export const approveRequest = async (
 	requestId: string,
 	token: string
@@ -1013,6 +1186,9 @@ export const approveRequest = async (
 	}
 };
 
+/**
+ * Rejects an incoming request by request ID.
+ */
 export const rejectRequest = async (
 	requestId: string,
 	token: string
@@ -1030,6 +1206,9 @@ export const rejectRequest = async (
 	}
 };
 
+/**
+ * Deletes a request by request ID.
+ */
 export const deleteRequest = async (
 	requestId: string,
 	token: string

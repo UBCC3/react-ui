@@ -20,10 +20,22 @@ import { getAllUsers } from '../../../services/api';
 import { useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 
+/**
+ * Admin table component for displaying all registered users.
+ * 
+ * This component handles:
+ * - Fetching all users from the backend
+ * - Storing the users in local component state
+ * - Displaying user account information in a table
+ * - Showing placeholder action buttons for editing and deleting users
+ */
 export default function AdminUsersTable({}) {
 	const { getAccessTokenSilently } = useAuth0();
 	const [users, setUsers] = React.useState<User[]>([]);
 
+    /**
+     * Fetches all users when the component first loads.
+     */
   	useEffect(() => {
 		const fetchUsers = async () => {
 			const token = await getAccessTokenSilently();

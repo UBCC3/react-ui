@@ -18,6 +18,9 @@ import { grey } from '@mui/material/colors';
 import { ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
 import type { Job } from '../../../types';
 
+/**
+ * Props for the JobsTable
+ */
 interface JobsTableProps {
 	jobs: Job[];
 	page: number;
@@ -39,6 +42,16 @@ interface JobsTableProps {
 	};
 }
 
+/**
+ * Displays a sortable and paginated  table of jobs.
+ * 
+ * The component supports:
+ * - sorting by clicking column headers,
+ * - selecting a row,
+ * - hiding or showing specific columns,
+ * - displaying empty states when no jobs exist,
+ * - redirecting users to standard or advanced analysis pages.
+ */
 export default function JobsTable({
 	jobs,
 	page,
@@ -83,6 +96,9 @@ export default function JobsTable({
 		page * rowsPerPage + rowsPerPage
 	);
 
+    /**
+     * Renders a sortable table header cell.
+     */
 	const renderHeader = (label: string, column: keyof Job) => (
 		<TableCell
 			sx={{ whiteSpace: 'nowrap', cursor: 'pointer' }}

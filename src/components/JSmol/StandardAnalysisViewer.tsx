@@ -12,10 +12,17 @@ import {fetchRawFileFromS3Url} from "./util";
 import MolmakerLoading from "../custom/MolmakerLoading";
 import {MolmakerPageTitle} from "../custom";
 
+// Lazy-load result viewer components so the standard analysis page only loads
+// each heavy JSmol viewer when its tab is rendered.
 const OptimizationViewer = lazy(() => import('./OptimizationViewer'));
 const VibrationViewer = lazy(() => import('./VibrationViewer'));
 const OrbitalViewer = lazy(() => import('./OrbitalViewer'));
 
+/**
+ * Generate accessibility props for a Material UI Tab.
+ * 
+ * The returned IDs connect each tab with its corresponding tab panel.
+ */
 function a11yProps(index: number) {
 	return {
 		id: `simple-tab-${index}`,
@@ -23,12 +30,20 @@ function a11yProps(index: number) {
 	};
 }
 
+/**
+ * Standard analysis result tabs.
+ * 
+ * The enum numeric values are used directly by the MUI Tabs component.
+ */
 enum ResultTab {
 	optimization,
 	frequency,
 	orbitals,
 }
 
+/**
+ * Props for the StandardAnalysisViewer component.
+ */
 interface StandardAnalysisViewerProp {
 	job: Job,
 	jobResultFiles: JobResult;
@@ -36,12 +51,20 @@ interface StandardAnalysisViewerProp {
 	setError:   React.Dispatch<React.SetStateAction<string | null>>,
 }
 
+/**
+ * Props for a tab panel.
+ */
 interface TabPanelProps {
 	children?: React.ReactNode;
 	index: number;
 	value: number;
 }
 
+/**
+ * Renders the content for one tab.
+ * 
+ * The panel is hidden unless its index matches the currently selected tab.
+ */
 function CustomTabPanel(props: TabPanelProps) {
 	const { children, value, index, ...other } = props;
 	const isActive = value === index;
@@ -59,6 +82,15 @@ function CustomTabPanel(props: TabPanelProps) {
 	);
 }
 
+/**
+ * Displays the full standard analysis result page.
+ * 
+ * A standard analysis contains multiple calculation otuputs, including
+ * geometric optimization, vibrational frequency analysis, and molecular
+ * orbital analysis. This component fetches the workflow result JSON, displays
+ * success/error statuts icons for each calculation step, and renders each
+ * detailed viewer inside a tab.
+ */
 const StandardAnalysisViewer: React.FC<StandardAnalysisViewerProp> = ({
 	job,
 	jobResultFiles,
@@ -74,6 +106,7 @@ const StandardAnalysisViewer: React.FC<StandardAnalysisViewerProp> = ({
 	// tabs
 	const [currentTab, setCurrentTab] = useState<ResultTab>(ResultTab.optimization);
 
+    // Fetch the standard analysis result JSON when the result URL changes.
 	useEffect(() => {
 		fetchRawFileFromS3Url(resultURL, 'json').then((res) => {
 			console.log(res);
@@ -87,7 +120,18 @@ const StandardAnalysisViewer: React.FC<StandardAnalysisViewerProp> = ({
 
 	}, [resultURL]);
 
+    /**
+     * Update the currently selected result tab.
+     */
 	const handleCurrentTabChange = (event: React.SyntheticEvent, newValue: number) => { setCurrentTab(newValue); };
+
+    /**
+     * Return a success or error icon for a standard analysis calculation step.
+     * 
+     * The workflow result JSON stores each step under a named key. If a step's
+     * value is `"Error"`, the tab shows an error icon. Otherwise, it shows a
+     * success icon.
+     */
 	const jobStatusIcon = (type: ResultTab): React.ReactElement => {
 		if (!result) return (<></>);
 
@@ -107,6 +151,9 @@ const StandardAnalysisViewer: React.FC<StandardAnalysisViewerProp> = ({
 		}
 	}
 
+    /**
+     * Convert the backend calculation type value into a user-facing label.
+     */
 	const renderCalculationType = (type: string) => {
 		switch (type) {
 			case "standard":

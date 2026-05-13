@@ -46,6 +46,7 @@ import { DeleteOutlineOutlined, Add, ManageSearchOutlined } from '@mui/icons-mat
 import AdminJobsTable from './Home/components/AdminJobsTable';
 
 export default function Admin() {
+    // used to redirect the user after the job is successfully submitted
 	const navigate = useNavigate();
 	const { user, getAccessTokenSilently } = useAuth0();
 
@@ -82,12 +83,14 @@ export default function Admin() {
 	const [alertMsg, setAlertMsg] = useState<string>('');
 	const [alertSeverity, setAlertSeverity] = useState<'success' | 'error' | 'info' | 'warning'>('info');
 
+    // stores all custom table filters created by the user.
 	const [filters, setFilters] = useState<Array<{
 		column: keyof Job;
 		value: string;
 		extent: 'contains' | 'equals' | 'startsWith';
 	}>>([{ column: 'job_name', value: '', extent: 'contains' }]);
 
+    // stores the Auth0 access token passed down to admin-related child components.
 	const [adminPanelToken, setAdminPanelToken] = useState<string | null>(null);
 
 
@@ -107,6 +110,7 @@ export default function Admin() {
 		completed_at: 'Completed At',
 	}
 
+    // tracks which table columns shoul be displayed
 	const [displayColumns, setDisplayColumns] = useState({
 		job_id: true,
 		job_name: true,
@@ -131,6 +135,7 @@ export default function Admin() {
 		getAccessTokenSilently().then(setAdminPanelToken).catch(() => setAdminPanelToken(null));
 	}, [getAccessTokenSilently]);
 
+    // Applies all custom filters to the current jobs list.
 	const handleFilterSubmit = () => {
 		setLoading(true);
 		try {
@@ -231,6 +236,7 @@ export default function Admin() {
 			}
 			}
 
+            // Do nothing if every tracked job is already up to date.
 			if (toUpdate.length === 0) {
 				return;
 			}
@@ -261,7 +267,7 @@ export default function Admin() {
 		}
 		};
 
-		// start pool
+		// start polling every 5 seconds
 		const id = setInterval(tick, 5000);
 		// run immediately once
 		tick();
@@ -274,15 +280,21 @@ export default function Admin() {
 		const loadData = async () => {
 			try {
 				const token = await getAccessTokenSilently();
+
+                // Fetch jobs and library structures in parallel.
 				const [jobsResponse, structuresResponse] = await Promise.all([
 					adminGetAllJobs(token),
 					getLibraryStructures(token)
 				]);
 				
+                // Store jobs, excluding pending jobs from the main jobs list.
 				setJobs(jobsResponse.data.filter(job => job.is !== JobStatus.PENDING));
 				setFilteredJobs(jobsResponse.data);
 
+                // Sort structures alphabetically for easier dropdown navigation.
 				const sortedStructures = structuresResponse.data.sort((a, b) => a.name.localeCompare(b.name));
+
+                // Add a default "All" option before the real structures.
 				setStructures([{ 
 					structure_id: '', 
 					name: 'All', 
@@ -320,6 +332,7 @@ export default function Admin() {
 		}
 	}, [filterStructureId, jobs]);
 
+    // Loads molecule data for a selected structure and displays it in the preview area.
 	const openMoleculeViewer = async (structureId: string) => {
 		console.log("Opening molecule viewer for structure ID:", structureId);
 		setStructureLoading(true);
@@ -327,11 +340,15 @@ export default function Admin() {
 
 		try {
 			const token = await getAccessTokenSilently();
+
+            // Fetch the structure file contents from S3 through the backend.
 			const response = await getStructureDataFromS3(structureId, token);
 			if (response.error) {
 				setError('Failed to load molecule structure. Please try again.');
 				return;
 			}
+            
+            // Store the molecule data so MolmakerMoleculePreview can render it.
 			setPreviewData(response.data);
 			setError(null);
 			// setOpen(true);
@@ -343,6 +360,7 @@ export default function Admin() {
 		}
 	};
 
+    // Refreshes jobs from the backend and clears the active structure filter.
 	const handleRefresh = async () => {
 		setLoading(true);
 
@@ -359,11 +377,14 @@ export default function Admin() {
 		}
 	};
 
+    // Cancels the currently selected job using its Slurm ID.
 	const handleCancel = async () => {
 		setLoading(true);
 		
 		try {
 			const token = await getAccessTokenSilently();
+
+            // Find the selected job before trying to cancel it.
 			const jobToCancel = jobs.find(j => j.job_id === selectedJobId);
 			if (!jobToCancel) {
 				setAlertMsg('Selected job not found.');
@@ -379,6 +400,8 @@ export default function Admin() {
 				setLoading(false);
 				return;
 			}
+
+            // Request cancellation from the backend or Slurm service.
 			const response = await cancelJobBySlurmID(jobToCancel.slurm_id, token);
 	
 			if (response.data === 'cancelled') {
@@ -396,10 +419,13 @@ export default function Admin() {
 		}
 	};
 
+    // Deletes the currently selected job from the backend and removes it from local state.
 	const handleDelete = async () => {
 		setLoading(true);
 		try {
 			const token = await getAccessTokenSilently();
+
+            // Send delete request for the selected job.
 			const response = await deleteJob(selectedJobId, token);
 			if (response.error) {
 				setAlertMsg('Failed to delete the job');
@@ -407,7 +433,11 @@ export default function Admin() {
 				setAlertShow(true);
 				return;
 			}
+
+            // Remove deleted job from the local jobs list.
 			setJobs(jobs.filter(job => job.job_id !== selectedJobId));
+
+            // Clear current selection after deletion.
 			setSelectedJobId('');
 			setAlertMsg('Job deleted successfully!');
 			setAlertSeverity('success');
@@ -422,6 +452,7 @@ export default function Admin() {
 		}
 	};
 
+    // Determines whether the cancel button should be disable for the selected job
 	const cancelDisabled = (selectedJobId: string | null) : boolean => {
 		if (!selectedJobId) {
 			return true;
@@ -431,6 +462,8 @@ export default function Admin() {
 		if (!jobToCancel) {
 			return true;
 		}
+
+        // Completed, failed, and cancelled jobs cannot be cancelled again.
 		if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED].includes(jobToCancel.status)) {
 			return true
 		}
@@ -438,6 +471,7 @@ export default function Admin() {
 		return false
 	}
 
+    // Determines whether the delete button should be disabled for the selected job.
 	const deleteDisabled = (selectedJobId: string | null) : boolean => {
 		if (!selectedJobId) {
 			return true;
@@ -446,19 +480,24 @@ export default function Admin() {
 		if (!jobToDelete) {
 			return true;
 		}
+
+        // Only allow deletion for terminal jobs.
 		if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED].includes(jobToDelete.status)) {
 			return false;
 		}
 		return true;
 	}
 
+    // Downloads a ZIP file from a presigned S3 URL using a temporary browser blob link.
 	async function downloadZipFromS3WithBlob(presignedUrl: string, filename = "result.zip") {
 		const response = await fetch(presignedUrl);
 		if (!response.ok) throw new Error("Failed to download file");
 
+        // Convert response data into a downloadable browser blob.
 		const blob = await response.blob();
 		const blobUrl = window.URL.createObjectURL(blob);
-
+        
+        // Create a temporary anchor element to trigger the download.
 		const link = document.createElement("a");
 		link.href = blobUrl;
 		link.download = filename;
@@ -470,10 +509,13 @@ export default function Admin() {
 		window.URL.revokeObjectURL(blobUrl);
 	}
 
+    // Retrieves a presigned ZIP URL for the selected job and downloads the archive.
 	const handleZipDownload = async () => {
 		setLoading(true);
 		try {
 			const token = await getAccessTokenSilently();
+
+            // Ask the backend for a temporary S3 download URL.
 			const response = await getZipPresignedUrl(selectedJobId, token);
 			if (response.error) {
 				setAlertMsg('Failed to download the job archive');
@@ -490,6 +532,8 @@ export default function Admin() {
 				return;
 			}
 			const zipUrl: string = response.data.url;
+
+            // Download the ZIP file using the job name as the filename.
 			await downloadZipFromS3WithBlob(zipUrl, `${jobToDownloadZip.job_name}.zip`);
 			setSelectedJobId('');
 			setAlertMsg('Job archive download successfully!');
@@ -505,11 +549,14 @@ export default function Admin() {
 		}
 	}
 	
+    // Determines whether the ZIP download button should be disabled for the selected job.
 	const downloadDisabled = (selectedJobId: string | null): boolean => {
 		if (!selectedJobId) { return true; }
 
 		const jobToDownloadZip = jobs.find(j => j.job_id === selectedJobId);
 		if (!jobToDownloadZip) { return true; }
+
+        // Archives are not downloadable while jobs are active, pending, cancelled, or unknown.
 		if ([JobStatus.CANCELLED, JobStatus.PENDING, JobStatus.RUNNING, JobStatus.UNKNOWN].includes(jobToDownloadZip.status)) {
 			return true
 		}
@@ -517,6 +564,7 @@ export default function Admin() {
 		return false
 	}
 
+    // Show a full-page loading component while data is being fetched or actions are running.
 	if (loading) {
 		return (
 			<MolmakerLoading />
@@ -525,6 +573,7 @@ export default function Admin() {
 
 	return (
 		<Box p={4} className="bg-stone-100 min-h-screen">
+            {/* Show a page-level error alert when a general error exists. */}
 			{error && (
 				<MolmakerAlert
 					text={error}
@@ -533,6 +582,7 @@ export default function Admin() {
 					sx={{ mb: 4 }}
 				/>
 			)}
+
 			{/* Structure Preview Dialog */}
 			<Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
 				<Box sx={{ width: '100%', height: 400 }}>
@@ -545,6 +595,8 @@ export default function Admin() {
 					/>
 				</Box>
 			</Dialog>
+
+            {/* Confirmation dialog shown before permanently deleting a job */}
 			<MolmakerConfirm
 				open={openConfirmDelete}
 				onClose={() => setOpenConfirmDelete(false)}
@@ -556,6 +608,8 @@ export default function Admin() {
 					setOpenConfirmDelete(false);
 				}}
 			/>
+
+            {/* Snackbar container for success, error, info, and warning messages. */}
 			<Box
 				sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
 			>
@@ -576,6 +630,8 @@ export default function Admin() {
 					</div>
 				</Snackbar>
 			</Box>
+
+            {/* Main page heading and description. */}
 			<MolmakerPageTitle
 				title="Admin Dashboard"
 				subtitle={
@@ -584,7 +640,9 @@ export default function Admin() {
 					</>
 				}
 			/>
+
 			<Grid container spacing={2} sx={{ mb: 4 }} size={12}>
+                {/* Left panel for selecting visible columns and building custom filters. */}
 				<Grid size={{ xs: 12, sm: 7 }}>
 					<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50] }}>
 						<Typography 
@@ -595,6 +653,8 @@ export default function Admin() {
 							<ManageSearchOutlined sx={{ mr: 1, color: blue[600] }} />
 							Custom Query
 						</Typography>
+
+                        {/* Column visibility controls. */}
 						<Box sx={{ px: 2 }}>
 							<Typography variant="body2" color={grey[600]} sx={{ mb: 2, mt: 1, fontWeight: 'bold' }}>
 								Show columns
@@ -632,6 +692,8 @@ export default function Admin() {
 								))}
 							</FormGroup>
 						</Box>
+
+                        {/* Custom filtering controls. */}
 						<Box sx={{ px: 2, py: 2 }}>
 							<Typography variant="body2" color={grey[600]} sx={{ mb: 2, fontWeight: 'bold' }}>
 								Filter
@@ -639,6 +701,7 @@ export default function Admin() {
 							{/* Each filter row on its own line */}
 							<Box sx={{ bgcolor: grey[200], p: 3, borderRadius: 2 }}>
 								{filters.map((filter, index) => (
+                                    // One row represents one filter condition.
 									<Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
 										<Select
 											value={filter.column}
@@ -701,6 +764,7 @@ export default function Admin() {
 										</IconButton>
 									</Box>
 								))}
+
 								{/* Add Filter button always directly below all filters */}
 								<Button
 									variant="outlined"
@@ -714,6 +778,8 @@ export default function Admin() {
 								>
 									Add Filter
 								</Button>
+
+                                {/* Applies all custom filters to the table. */}
 								<Button
 									variant="contained"
 									color="primary"
@@ -727,6 +793,8 @@ export default function Admin() {
 						</Box>
 					</Paper>
 				</Grid>
+
+                {/* Right panel for molecule preview. */}
 				<Grid size={{ xs: 12, sm: 5 }}>
 					{structureLoading ? (
 						<Card
@@ -750,17 +818,21 @@ export default function Admin() {
 					)}
 				</Grid>
 			</Grid>
+
+            {/* Main jobs table section. */}
 			<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50], mb: 4 }}>
 				<JobsToolbar
 					selectedJobId={selectedJobId}
 					onViewDetails={() => navigate(`/jobs/${selectedJobId}`)}
 					onViewStructure={() => {
+                        // Preview the first structure attached to the selected job.
 						const job = filteredJobs.find(j => j.job_id === selectedJobId);
 						if (job?.structures.length) {
 							openMoleculeViewer(job.structures[0].structure_id);
 						}
 					}}
 					onFilterByStructure={() => {
+                        // Filter the table by the first structure attached to the selected job.
 						const job = filteredJobs.find(j => j.job_id === selectedJobId);
 						if (job?.structures.length) {
 							setFilterStructureId(job.structures[0].structure_id);
@@ -779,6 +851,8 @@ export default function Admin() {
 					downloadDisabled={downloadDisabled}
 					isGroupAdmin={true}
 				/>
+
+                {/* Table containing the filtered, sorted, and selectable job rows. */}
 				<AdminJobsTable
 					jobs={filteredJobs}
 					page={page}
@@ -805,6 +879,8 @@ export default function Admin() {
 					onRowClick={setSelectedJobId}
 					displayColumns={displayColumns}
 				/>
+
+                {/*  Pagination controls for the jobs table. */}
 				<TablePagination
 					component="div"
 					count={filteredJobs.length}

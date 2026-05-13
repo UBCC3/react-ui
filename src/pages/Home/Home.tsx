@@ -85,6 +85,7 @@ export default function Home() {
 	const [alertMsg, setAlertMsg] = useState<string>('');
 	const [alertSeverity, setAlertSeverity] = useState<'success' | 'error' | 'info' | 'warning'>('info');
 
+    // stores custom table filters entered by the user
 	const [filters, setFilters] = useState<Array<{
 		column: keyof Job;
 		value: string;
@@ -103,6 +104,7 @@ export default function Home() {
 		completed_at: 'Completed At',
 	}
 
+    // controls which columns are currently visible in the jobs table.
 	const [displayColumns, setDisplayColumns] = useState({
 		job_name: true,
 		job_notes: true,
@@ -118,6 +120,16 @@ export default function Home() {
 	const jobsRef = useRef<Job[]>([]);
 	useEffect(() => { jobsRef.current = jobs; }, [jobs]);
 
+    /**
+     * Applies all custom filters to the current jobs list.
+     * 
+     * Each filter checks one selected column using one of three matching modes:
+     * - contains,
+     * - equals,
+     * - startsWith.
+     * 
+     * Tags and structures are handled specially because they contain multiple values.
+     */
 	const handleFilterSubmit = () => {
 		setLoading(true);
 		try {
@@ -172,6 +184,9 @@ export default function Home() {
 		}
 	}
 
+    /**
+     * Syncs the Auth0 user with the app database.
+     */
 	useEffect(() => {
 		if (!user) return;
 
@@ -325,6 +340,9 @@ export default function Home() {
 		}
 	}, [filterStructureId, jobs]);
 
+    /**
+     * Loads molecule structure data from S3 and sends it to the preview component.
+     */
 	const openMoleculeViewer = async (structureId: string) => {
 		console.log("Opening molecule viewer for structure ID:", structureId);
 		setStructureLoading(true);
@@ -348,6 +366,9 @@ export default function Home() {
 		}
 	};
 
+    /**
+     * Reloads all jobs from the backend and clears the structure filter.
+     */
 	const handleRefresh = async () => {
 		setLoading(true);
 
@@ -364,6 +385,12 @@ export default function Home() {
 		}
 	};
 
+    /**
+     * Cancels the currently selected job through its Slurm ID.
+     * 
+     * The selected job must exist and must have a Slurm ID before the cancel
+     * request can be sent.
+     */
 	const handleCancel = async () => {
 		setLoading(true);
 		
@@ -402,6 +429,9 @@ export default function Home() {
 		}
 	};
 
+    /**
+     * Deletes the selected job from the backend and removes it from local state.
+     */
 	const handleDelete = async () => {
 		setLoading(true);
 		try {
@@ -428,6 +458,12 @@ export default function Home() {
 		}
 	};
 
+    /**
+     * Downloads a zip file from a presigned S3 URL.
+     * 
+     * The file is fetched as a Blob, converted into a temporary browser URL,
+     * and then downloaded using a temporary anchor element.
+     */
 	async function downloadZipFromS3WithBlob(presignedUrl: string, filename = "result.zip") {
 		const response = await fetch(presignedUrl);
 		if (!response.ok) throw new Error("Failed to download file");
@@ -446,6 +482,10 @@ export default function Home() {
 		window.URL.revokeObjectURL(blobUrl);
 	}
 
+    /**
+     * Requests a presigned zip download URL for the selectd job,
+     * then downloads the archive using the job name as the filename.
+     */
 	const handleZipDownload = async () => {
 		setLoading(true);
 		try {
@@ -481,6 +521,9 @@ export default function Home() {
 		}
 	}
 
+    /**
+     * Returns true when the selected job archive should not be downloadable.
+     */
 	const downloadDisabled = (selectedJobId: string | null): boolean => {
 		if (!selectedJobId) { return true; }
 
@@ -493,6 +536,9 @@ export default function Home() {
 		return false
 	}
 
+    /**
+     * Returns true when the selected job cannot be cancelled.
+     */
 	const cancelDisabled = (selectedJobId: string | null) : boolean => {
 		if (!selectedJobId) {
 			return true;
@@ -509,6 +555,9 @@ export default function Home() {
 		return false
 	}
 
+    /**
+     * Returns true when the selected job cannot be deleted.
+     */
 	const deleteDisabled = (selectedJobId: string | null) : boolean => {
 		if (!selectedJobId) {
 			return true;
@@ -523,6 +572,7 @@ export default function Home() {
 		return true;
 	}
 
+    // Show the full-page loading component while data is being fetched.
 	if (loading) {
 		return (
 			<MolmakerLoading />

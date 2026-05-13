@@ -62,6 +62,9 @@ const MolmakerRadioGroup = ({
   </FormControl>
 );
 
+/**
+ * Runtime prop validation for MolmakerRadioGroup.
+ */
 MolmakerRadioGroup.propTypes = {
 	name: PropTypes.string.isRequired,
 	value: PropTypes.any.isRequired,

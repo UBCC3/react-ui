@@ -5,6 +5,14 @@ import {
 	Box 
 } from '@mui/material'
 
+/**
+ * Renders a reusable MolmakerPageTitle
+ * 
+ * Props:
+ * - title: the main title of the panel
+ * - subtitle: the sub title of thhe panel
+ * - removeBottomPadding: when true, remove the bottom padding
+ */
 const MolmakerPageTitle = ({ title, subtitle, removeBottomPadding=false }) => {
   	return (
 		<Box sx={{

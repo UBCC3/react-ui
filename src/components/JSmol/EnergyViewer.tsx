@@ -19,9 +19,14 @@ import CalculatedQuantities from "./CalculatedQuantities";
 import PartialCharge from "./PartialCharge";
 
 
+// Width of the expanded result drawer in pixels.
 const fullWidth = 400;
+// Width of the collapsed result drawer in pixels.
 const miniWidth = 80;
 
+/**
+ * Props for the EnergyViewer component.
+ */
 type EnergyViewerProps = {
 	job: Job,
 	jobResultFiles: JobResult;
@@ -29,6 +34,14 @@ type EnergyViewerProps = {
 	setError:   React.Dispatch<React.SetStateAction<string | null>>,
 }
 
+/**
+ * Displays the molecular energy result viewer.
+ * 
+ * This component loads the molecular structure into a JSmol viewer, fetches
+ * the calculation result JSON, and displays result details in a persistent
+ * right-side drawer. The drawer can be expanded or collapsed, and contains
+ * accordions for calculated quantities and partial charges.
+ */
 const EnergyViewer: React.FC<EnergyViewerProps> = ({
 	job,
 	jobResultFiles,

@@ -16,11 +16,17 @@ import { blue, blueGrey, grey } from "@mui/material/colors";
 import React, { useEffect, useState } from "react";
 import {Orbital} from "../../types";
 
+/**
+ * Property visualization modes supported by the orbital viewer
+ */
 enum propertiesOptions {
 	density,
 	potential,
 }
 
+/**
+ * Props for the OrbitalProperty component
+ */
 interface OrbitalPropertyProps {
 	viewerObj: any;
 	selectedOrbital: Orbital | null;
@@ -30,6 +36,14 @@ interface OrbitalPropertyProps {
 	setShowIsosurface: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+/**
+ * Displays orbital property controls for the JSmol orbital viewer
+ * 
+ * This component allows the user to switch between electron density and
+ * electrostatic potential visualizations, control whether the molecule and
+ * isosurface are visible, choose mesh/fill display style, and configure a
+ * slice plane through the selected molecular orbital
+ */
 const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({
 	viewerObj,
 	selectedOrbital,
@@ -51,6 +65,7 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({
 	const [sliceD, setSliceD] = useState<string>("0.000");
 	const slicePlaneId = "slice1";
 
+    // Render the selected mapped property whenever its options change
 	useEffect(() => {
 		if (propertyOption === false || !viewerObj) return;
 
@@ -87,6 +102,7 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({
 		}
 	}, [propertyOption, viewerObj, cutoff, translucent]);
 
+    // Toggle the existing slice plae on or off
 	useEffect(() => {
 		if (!viewerObj) return;
 		window.Jmol.script(
@@ -95,6 +111,7 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({
 		);
 	}, [viewerObj, sliceShow]);
 
+    // Rebuild the slice plane whenever its plane equation values change.
 	useEffect(() => {
 		if (!viewerObj) return;
 		if (sliceX === "" || sliceY === "" || sliceZ === "" || sliceD === "") return;
@@ -107,11 +124,13 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({
 		);
 	}, [viewerObj, sliceX, sliceY, sliceZ, sliceD, sliceShow]);
 
+    // Show or hide the molecular structure itself
 	useEffect(() => {
 		if (!viewerObj) return;
 		window.Jmol.script(viewerObj, showMolecule ? "display all" : "hide all");
 	}, [viewerObj, showMolecule]);
 
+    // Show or hide orbital and isosurface objects while preserving slice plane visibility
 	useEffect(() => {
 		if (!viewerObj) return;
 		window.Jmol.script(

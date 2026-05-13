@@ -59,6 +59,7 @@ export default function Group() {
 		is_public: 'Visibility',
 	}
 
+    // tracks which columns are currently visible in the jobs table.
 	const [displayColumns, setDisplayColumns] = useState({
 		job_name: true,
 		job_notes: true,
@@ -134,11 +135,16 @@ export default function Group() {
 		(async () => {
 			try {
 				const token = await getAccessTokenSilently();
+
+                // Fetch jobs and structures in parallel to reduce loading time.
 				const [jr, sr] = await Promise.all([
 					getCurrentUserGroupJobs(token),
 					getLibraryStructures(token),
 				]);
+
+                // Store all group jobs.
 				setJobs(jr.data);
+
 				// Apply structure filter if set
 				const initial = filterStructureId
 					? jr.data.filter(j => j.structures.some(s => s.structure_id === filterStructureId))
@@ -162,16 +168,29 @@ export default function Group() {
 		const tick = async () => {
 			try {
 				const token = await getAccessTokenSilently();
+
+                // Stores jobs whose status or runtime changed since the last poll.
 				const toUpdate: Array<{ jobId:string; newStatus:string; newRuntime:string; userSub:string }> = [];
+
 				for (const j of jobsRef.current) {
+                    // Skip jobs that are alreadiy in a final state.
 					if ([JobStatus.COMPLETED,JobStatus.FAILED,JobStatus.CANCELLED].includes(j.status)) continue;
+
+                    // Fetch the latest Slurm status for this job.
 					const r = await getJobStatusBySlurmID(j.slurm_id!, token);
+
+                    // Ignore failed polling results for this specific job.
 					if (r.error) continue;
+
 					const { state, elapsed } = r.data;
+
+                    // Queue an update only when status or runtime has actually changed.
 					if (state !== j.status || elapsed !== j.runtime) {
 						toUpdate.push({ jobId:j.job_id, newStatus:state, newRuntime:elapsed, userSub:j.user_sub });
 					}
 				}
+
+                // Persist changed statuses to the backend and update local state.
 				if (toUpdate.length) {
 					await Promise.all(toUpdate.map(u =>
 						updateJob(u.jobId, u.newStatus, u.newRuntime, u.userSub, token)
@@ -186,8 +205,12 @@ export default function Group() {
 				setError('Failed to refresh job statuses.');
 			}
 		};
+
+        // Run immediately, then continue polling every 5 seconds.
 		tick();
 		id = setInterval(tick, 5000);
+        
+        // Stop polling when the component unmounts.
 		return () => clearInterval(id);
 	}, [getAccessTokenSilently]);
 
@@ -195,13 +218,17 @@ export default function Group() {
 	const handleFilterSubmit = useCallback(() => {
 		setLoading(true);
 		try {
+            // Start from the latest jobs stored in the ref.
 			let res = [...jobsRef.current];
 			filters.forEach(f => {
 				const val = f.value.toLowerCase();
 				res = res.filter(job => {
+                    // Structures need special handling because they are stored as an array.
 					const raw = f.column === 'structures'
 						? job.structures.map(s=>s.name).join(',').toLowerCase()
 						: String(job[f.column] ?? '').toLowerCase();
+
+                    // Tags and structures may contain multiple comma-separated values.
 					if (['tags','structures'].includes(f.column)) {
 						const arr = raw.split(',').map(x=>x.trim());
 						return arr.some(x =>
@@ -210,11 +237,15 @@ export default function Group() {
 							x.startsWith(val)
 						);
 					}
+                    
+                    // Apply the selected comparison mode to normal text fields.
 					return f.extent==='contains' ? raw.includes(val) :
 						f.extent==='equals'   ? raw===val :
 						raw.startsWith(val);
 				});
 			});
+
+            // Update the table and return to the first page.
 			setFilteredJobs(res);
 			setPage(0);
 		} catch {
@@ -224,6 +255,7 @@ export default function Group() {
 		}
 	}, [filters]);
 
+    // Loads molecule structure data from S3 and displays it in the preview component.
 	const openMoleculeViewer = async (structureId: string) => {
 		console.log("Opening molecule viewer for structure ID:", structureId);
 		setStructureLoading(true);
@@ -231,11 +263,15 @@ export default function Group() {
 
 		try {
 			const token = await getAccessTokenSilently();
+
+            // Retrieve the molecule file data through the backend
 			const response = await getStructureDataFromS3(structureId, token);
 			if (response.error) {
 				setError('Failed to load molecule structure. Please try again.');
 				return;
 			}
+
+            // Store the molecule data so the preview component can render it.
 			setPreviewData(response.data);
 			setError(null);
 		} catch (err) {
@@ -246,6 +282,7 @@ export default function Group() {
 		}
 	};
 
+    // Refreshes group jobs from the backend and clears the active structure filter
 	const handleRefresh = async () => {
 		setLoading(true);
 
@@ -262,11 +299,14 @@ export default function Group() {
 		}
 	};
 
+    // Cancels the currently selected job using its Slurm ID.
 	const handleCancel = async () => {
 		setLoading(true);
 		
 		try {
 			const token = await getAccessTokenSilently();
+
+            // Find the selected job before attempting cancellation
 			const jobToCancel = jobs.find(j => j.job_id === selectedJobId);
 			if (!jobToCancel) {
 				setAlertMsg('Selected job not found.');
@@ -282,6 +322,8 @@ export default function Group() {
 				setLoading(false);
 				return;
 			}
+
+            // Ask the backend or Slurm service to cancel the job.
 			const response = await cancelJobBySlurmID(jobToCancel.slurm_id, token);
 	
 			if (response.data === 'cancelled') {
@@ -299,10 +341,13 @@ export default function Group() {
 		}
 	};
 
+    // Deletes the selected job from the backend and removes it from local state.
 	const handleDelete = async () => {
 		setLoading(true);
 		try {
 			const token = await getAccessTokenSilently();
+
+            // Request deletion of the selected job.
 			const response = await deleteJob(selectedJobId, token);
 			if (response.error) {
 				setAlertMsg('Failed to delete the job');
@@ -310,8 +355,13 @@ export default function Group() {
 				setAlertShow(true);
 				return;
 			}
+
+            // Remove the deleted job from the local jobs list.
 			setJobs(jobs.filter(job => job.job_id !== selectedJobId));
+
+            // Clear the current row selection after deleting.
 			setSelectedJobId('');
+
 			setAlertMsg('Job deleted successfully!');
 			setAlertSeverity('success');
 			setAlertShow(true);
@@ -325,6 +375,7 @@ export default function Group() {
 		}
 	};
 
+    // Returns true when the cancel action should be disabled.
 	const cancelDisabled = (selectedJobId: string | null) : boolean => {
 		if (!selectedJobId) {
 			return true;
@@ -334,6 +385,8 @@ export default function Group() {
 		if (!jobToCancel) {
 			return true;
 		}
+
+        // Final-state jobs cannot be cancelled again.
 		if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED].includes(jobToCancel.status)) {
 			return true
 		}
@@ -341,6 +394,7 @@ export default function Group() {
 		return false
 	}
 
+    // Returns true when the delete action should be disabled.
 	const deleteDisabled = (selectedJobId: string | null) : boolean => {
 		if (!selectedJobId) {
 			return true;
@@ -349,19 +403,24 @@ export default function Group() {
 		if (!jobToDelete) {
 			return true;
 		}
+
+        // Only completed, failed, or cancelled jobs can be deleted.
 		if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED].includes(jobToDelete.status)) {
 			return false;
 		}
 		return true;
 	}
 
+    // Downloads a ZIP file from a presigned S3 URL using a temporary browser blob.
 	async function downloadZipFromS3WithBlob(presignedUrl: string, filename = "result.zip") {
 		const response = await fetch(presignedUrl);
 		if (!response.ok) throw new Error("Failed to download file");
 
+        // Convert the response into a browser-downloadable blob.
 		const blob = await response.blob();
 		const blobUrl = window.URL.createObjectURL(blob);
 
+        // Create a temporary link and click it programmatically to start the download.
 		const link = document.createElement("a");
 		link.href = blobUrl;
 		link.download = filename;
@@ -373,10 +432,13 @@ export default function Group() {
 		window.URL.revokeObjectURL(blobUrl);
 	}
 
+    // Retrieves a presigned ZIP URL for the selected job and downloads the archive.
 	const handleZipDownload = async () => {
 		setLoading(true);
 		try {
 			const token = await getAccessTokenSilently();
+
+            // Ask the backend for a temporary S3 download link.
 			const response = await getZipPresignedUrl(selectedJobId, token);
 			if (response.error) {
 				setAlertMsg('Failed to download the job archive');
@@ -393,6 +455,8 @@ export default function Group() {
 				return;
 			}
 			const zipUrl: string = response.data.url;
+
+            // Download the ZIP file using the job name as the filename.
 			await downloadZipFromS3WithBlob(zipUrl, `${jobToDownloadZip.job_name}.zip`);
 			setSelectedJobId('');
 			setAlertMsg('Job archive download successfully!');
@@ -408,11 +472,14 @@ export default function Group() {
 		}
 	}
 	
+    // Returns true when the ZIP download action should be disabled.
 	const downloadDisabled = (selectedJobId: string | null): boolean => {
 		if (!selectedJobId) { return true; }
 
 		const jobToDownloadZip = jobs.find(j => j.job_id === selectedJobId);
 		if (!jobToDownloadZip) { return true; }
+
+        // Do not allow downloads for jobs that are not successfully finished.
 		if ([JobStatus.CANCELLED, JobStatus.PENDING, JobStatus.RUNNING, JobStatus.UNKNOWN].includes(jobToDownloadZip.status)) {
 			return true
 		}
@@ -426,10 +493,13 @@ export default function Group() {
 		setAlertSeverity(sev);
 		setAlertShow(true);
 	};
+
+    // Opens the delete confirmation dialog.
 	const confirmDelete = () => setConfirmDeleteOpen(true);
 
 	return (
 		<Box p={4} className="bg-stone-100 min-h-screen">
+            {/* Display a page-level error alert when an error message exists. */}
 			{error && (
 				<MolmakerAlert
 					text={error}
@@ -438,12 +508,16 @@ export default function Group() {
 					sx={{ mb: 4 }}
 				/>
 			)}
+
+            {/*  Confirmation modal shown before deleting a selected job. */}
 			<MolmakerConfirm
 				open={confirmDeleteOpen}
 				onClose={() => setConfirmDeleteOpen(false)}
 				onConfirm={handleDelete}
 				textToShow="Are you sure you want to delete this job? This action cannot be undone."
 			/>
+
+            {/* Snackbar wrapper for success, error, info, and warning messages. */}
 			<Box
 				sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
 			>
@@ -464,6 +538,8 @@ export default function Group() {
 					</div>
 				</Snackbar>
 			</Box>
+
+            {/* Page heading and short description */}
 			<MolmakerPageTitle
 				title="Group Dashboard"
 				subtitle={
@@ -472,10 +548,13 @@ export default function Group() {
 					</>
 				}
 			/>
+
+            {/* Show the group admin panel only after an access token is available. */}
 			{adminPanelToken && <GroupPanel token={adminPanelToken} />}
 
 			{/* Filters */}
 			<Grid container spacing={2} sx={{ mb: 4 }} size={12}>
+                {/* Left panel containing column visibility controls and custom filters. */}
 				<Grid size={{ xs: 12, sm: 7 }}>
 					<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50] }}>
 						<Typography 
@@ -486,6 +565,8 @@ export default function Group() {
 							<ManageSearchOutlined sx={{ mr: 1, color: blue[600] }} />
 							Custom Query
 						</Typography>
+
+                        {/* Column visibility controls. */}
 						<Box sx={{ px: 2 }}>
 							<Typography variant="body2" color={grey[600]} sx={{ mb: 2, mt: 1, fontWeight: 'bold' }}>
 								Show columns
@@ -523,6 +604,8 @@ export default function Group() {
 								))}
 							</FormGroup>
 						</Box>
+
+                        {/* Custom filter controls. */}
 						<Box sx={{ px: 2, py: 2 }}>
 							<Typography variant="body2" color={grey[600]} sx={{ mb: 2, fontWeight: 'bold' }}>
 								Filter
@@ -605,6 +688,8 @@ export default function Group() {
 								>
 									Add Filter
 								</Button>
+
+                                {/* Applies all configured filters to the jobs table. */}
 								<Button
 									variant="contained"
 									color="primary"
@@ -618,6 +703,8 @@ export default function Group() {
 						</Box>
 					</Paper>
 				</Grid>
+
+                {/* Right panel showing the selected molecule structure preview. */}
 				<Grid size={{ xs: 12, sm: 5 }}>
 					{structureLoading ? (
 						<Card
@@ -641,6 +728,8 @@ export default function Group() {
 					)}
 				</Grid>
 			</Grid>
+
+            {/* Main group jobs table section. */}
 			<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50], mb: 4 }}>
 				<JobsToolbar
 					selectedJobId={selectedJobId}
@@ -670,6 +759,8 @@ export default function Group() {
 					downloadDisabled={downloadDisabled}
 					isGroupAdmin={userRole === 'group_admin'}
 				/>
+
+                {/* Group jobs table with sorting, pagination, selection, and column visibility. */}
 				<GroupJobsTable
 					jobs={filteredJobs}
 					loading={loading}
@@ -679,9 +770,12 @@ export default function Group() {
 					orderBy={orderBy}
 					selectedJobId={selectedJobId}
 					onSort={(col: keyof Job) => {
+                        // Toggle direction when sorting by the same column again.
 						const isAsc = orderBy === col && order === 'asc';
 						setOrder(isAsc ? 'desc' : 'asc');
 						setOrderBy(col);
+
+                        // Sort dates numerically and other columns alphabetically.
 						const sorted = [...filteredJobs].sort((a, b) => {
 							if (col === 'submitted_at') {
 								return isAsc
@@ -698,6 +792,8 @@ export default function Group() {
 					displayColumns={displayColumns}
 					isGroupAdmin={userRole === 'group_admin'}
 				/>
+
+                {/* Pagination controls for the jobs table. */}
 				<TablePagination
 					component="div"
 					count={filteredJobs.length}

@@ -40,8 +40,19 @@ import {
 } from '../services/api';
 import { grey } from '@mui/material/colors';
 
+// Height used to calculate the maximum visible height of the requests menu.
 const ITEM_HEIGHT = 48;
 
+/**
+ * Main navigation bar component for the app.
+ * 
+ * This component handles:
+ * - Auth0 login/logout display
+ * - Account menu interactions
+ * - Incoming and sent request menus
+ * - Approve, reject, and delete request actions
+ * - Confirmation dialog state
+ */
 export default function MenuAppBar() {
 	const { open, width } = useDrawer();
 	const {
@@ -68,16 +79,34 @@ export default function MenuAppBar() {
 		rejected: 'red',
 	};
 
+    /**
+     * Opens the account menu by setting the clicked element as the menu anchor.
+     */
 	const handleMenu = (event: MouseEvent<HTMLElement>) => {
 		setAnchorEl(event.currentTarget);
 	};
+
+    /**
+     * Closes the account menu by clearing its anchor element.
+     */
 	const handleClose = () => setAnchorEl(null);
 
+    /**
+     * Opens the requests menu by setting the clicked element as the menu anchor.
+     */
 	const handleRequestsClick = (event: MouseEvent<HTMLElement>) => {
 		setAnchorRequestsEl(event.currentTarget);
 	};
+
+    /**
+     * Closes the requests menu by clearing its anchor element.
+     */
 	const handleRequestsClose = () => setAnchorRequestsEl(null);
 
+    /**
+     * Approves an incoming request using the authenticated user's access token,
+     * then removes the approved request from the local incoming requests state.
+     */
 	const handleApproveRequest = async (requestId: string) => {
 		const token = await getAccessTokenSilently();
 		if (!token) return;
@@ -85,6 +114,10 @@ export default function MenuAppBar() {
 		setIncomingRequests(prev => prev.filter(r => r.request_id !== requestId));
 	};
 
+    /**
+     * Rejects an incoming request using the authenticated user's access token,
+     * then removes the rejected request from the local incomng requests state.
+     */
 	const handleRejectRequest = async (requestId: string) => {
 		const token = await getAccessTokenSilently();
 		if (!token) return;
@@ -92,6 +125,10 @@ export default function MenuAppBar() {
 		setIncomingRequests(prev => prev.filter(r => r.request_id !== requestId));
 	};
 
+    /**
+     * Deletes a sent request using the authenticated user's access token,
+     * then removes the deleted request from the local sent requests state.
+     */
 	const handleDeleteRequest = async (requestId: string) => {
 		const token = await getAccessTokenSilently();
 		if (!token) return;
@@ -99,7 +136,14 @@ export default function MenuAppBar() {
 		setSentRequests(prev => prev.filter(r => r.request_id !== requestId));
 	};
 
+    /**
+     * Fetches both sent and incoming requests whenever the authenticated user's
+     * Auth0 id becomes available or changes.
+     */
 	useEffect(() => {
+        /**
+         * Fetches requests sent by the current authenticated user.
+         */
 		const fetchSent = async () => {
 		const token = await getAccessTokenSilently();
 		if (!token || !user?.sub) return;
@@ -107,6 +151,9 @@ export default function MenuAppBar() {
 		setSentRequests(resp.data);
 		};
 
+        /**
+         * Fetches requests received by the current authenticated user.
+         */
 		const fetchIncoming = async () => {
 		const token = await getAccessTokenSilently();
 		if (!token || !user?.sub) return;

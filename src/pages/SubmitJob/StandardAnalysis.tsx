@@ -40,6 +40,7 @@ import { Structure } from '../../types';
 import { grey } from '@mui/material/colors';
 
 export default function StandardAnalysis() {
+    // used to redirect the user after the job is successfully submitted
 	const navigate = useNavigate();
 	const { getAccessTokenSilently } = useAuth0();
 
@@ -51,32 +52,46 @@ export default function StandardAnalysis() {
 	// state for structure preview
     const [structureData, setStructureData] = useState<string>('');
 
-	// state for form
+	// state for basic job information
     const [jobName, setJobName] = useState<string>('');
 	const [jobNotes, setJobNotes] = useState<string>('');
 	const [jobTags, setJobTags] = useState<string[]>([]);
+
+    // controls the source of the molecule
     const [source, setSource] = useState<'upload' | 'library'>('upload');  
+
+    // state for uploaded or selected molecule structure
     const [file, setFile] = useState<File | null>(null);
     const [uploadStructure, setUploadStructure] = useState<boolean>(false);
     const [structures, setStructures] = useState<Structure[]>([]);
     const [selectedStructure, setSelectedStructure] = useState<string>('');
+
+    // metadata used when saving an uploaded structure to the library
     const [structureName, setStructureName] = useState<string>('');
 	const [chemicalFormula, setChemicalFormula] = useState<string>('');
 	const [structureNotes, setStructureNotes] = useState<string>('');
+	const [structureTags, setStructureTags] = useState<string[]>([]);
+
+    // state for calculation parameters
     const [charge, setCharge] = useState<number>(0);
     const [multiplicity, setMultiplicity] = useState<number>(1);
-	const [structureTags, setStructureTags] = useState<string[]>([]);
-	const [options, setOptions] = useState<string[]>([]);
 	const [optimizationType, setOptimizationType] = useState<'ground' | 'ts'>('ground');
+
+    // available tag options shown in the autocomplete input
+	const [options, setOptions] = useState<string[]>([]);
 
 	// dropdown options for multiplicity
 	const [multiplicityOptions, setMultiplicityOptions] = useState<{ [key: string]: number }>({});
 	const [optimizationOptions, setOptimizationOptions] = useState<{ [key: string]: number }>({});
 
+    // structure preview snapshot confirm
 	const [openConfirmImage, setOpenConfirmImage] = useState<boolean>(false);
 	const [submitConfirmed, setSubmitConfirmed] = useState(false);
 	const [structureImageData, setStructureImageData] = useState<string>('');
 
+    /**
+     * Continues job submission after the molecule preview image has been captured.
+     */
 	useEffect(() => {
 		const getStructureImageSubmit = async () => {
 			if (!submitConfirmed || structureImageData === '') return
@@ -90,6 +105,7 @@ export default function StandardAnalysis() {
 
 	// fetch library
 	useEffect(() => {
+        // Load multiplicity options
 		const loadMultiplicityOptions = async () => {
 			try {
 				const token = await getAccessTokenSilently();
@@ -107,6 +123,7 @@ export default function StandardAnalysis() {
 			}
 		}
 
+        // Fetch structures saved in the user's molecule l
 		const loadLibraryStructures = async () => {
 			try {
 				setLoading(true);
@@ -132,6 +149,7 @@ export default function StandardAnalysis() {
 			}
 		}
 
+        // Fetch existing structure tags for autocomplete suggestions
 		const fetchTags = async () => {
 			try {
 				const token = await getAccessTokenSilently()
@@ -145,6 +163,7 @@ export default function StandardAnalysis() {
 			}
 		}
 
+        // Fetch available optimization types from the backend
 		const loadOptimizationOptions = async () => {
 			try {
 				const token = await getAccessTokenSilently();
@@ -162,6 +181,7 @@ export default function StandardAnalysis() {
 			}
 		}
 		
+        // Load all required data for the form
 		setLoading(true);
 		loadMultiplicityOptions();
 		loadLibraryStructures();
@@ -192,6 +212,7 @@ export default function StandardAnalysis() {
 	// 	setError(null);
 	// };
 
+    // Handles selecting a molecule from the user's library
 	const handleLibrarySelect = async (structure_id: string) => {
 		setSelectedStructure(structure_id);
 		setFile(null);
@@ -218,10 +239,12 @@ export default function StandardAnalysis() {
 		}
 	};
 
+    // Handles uploading a molecule file from the user's computer
 	const handleFileChange = async (data, file) => {
 		setStructureData(data);
 		setFile(file);
 
+        // Only .xyz files are accepted for this workflow
 		if (file && file.name.endsWith('.xyz')) {
 			try {
 				const token = await getAccessTokenSilently();
@@ -237,6 +260,7 @@ export default function StandardAnalysis() {
 		}
 	};
 
+    // Performs the full job submission process
   	async function performSubmitJob() {
 		setSubmitAttempted(true);
 		setError(null);
@@ -244,15 +268,20 @@ export default function StandardAnalysis() {
 		let structureIdToUse = selectedStructure;
 		let uploadFile = file;
 
+        // Validate upload mode
 		if (source === 'upload' && !uploadFile) {
 			setError('Please upload a structure file.');
 			return;
 		}
+
+        // Validate library mode
 		if (source === 'library' && !structureIdToUse) {
 			setError('Please select a molecule from the library.');
 			return;
 		}
 
+        // If the user selected a molecule from the library, convert the loaded text
+        // into a File object so it can be sent through the same submit API.
 		if (source === 'library') {
 			const blob = new Blob([structureData], {type: 'text/plain'});
 			uploadFile = new File([blob], `${structureIdToUse}.xyz`, {
@@ -260,17 +289,20 @@ export default function StandardAnalysis() {
 			});
 		}
 
+        // Final guard in case no valid file exists
 		if (!uploadFile) {
 			setError('No file to upload.');
 			return;
 		}
 
+        // Prepare form data for submission
 		const formData = new FormData();
 		formData.append('file', uploadFile);
 		formData.append('job_name', jobName);
 		formData.append('charge', charge.toString());
 		formData.append('multiplicity', multiplicity.toString());
 
+        // Only include optimization type if transition state mode is selected
 	    if (optimizationType === 'ts') {
 		    formData.append('opt_type', optimizationType);
 	    }
@@ -279,6 +311,8 @@ export default function StandardAnalysis() {
 		try {
 
 			const token = await getAccessTokenSilently();
+
+            // Submit the computational analysis job
 			let response = await submitStandardAnalysis(
 				jobName,
 				uploadFile,
@@ -291,8 +325,11 @@ export default function StandardAnalysis() {
 			if (response.error) {
 				throw new Error(response.error);
 			}
-			const {job_id, slurm_id} = response.data;
 
+            // Backend returns both the internal job ID and Slurm job ID
+			const {job_id, slurm_id} = response.data;
+            
+            // If requested, save the uploaded structure into the user's library
 			if (uploadStructure && source === 'upload') {
 				response = await AddAndUploadStructureToS3(
 					uploadFile,
@@ -306,9 +343,12 @@ export default function StandardAnalysis() {
 				if (response.error) {
 					throw new Error(response.error);
 				}
+
+                // Use the newly created structure ID when creating the job record
 				structureIdToUse = response.data.structure_id;
 			}
 
+            // Create the job record in the app database
 			response = await createJob(
 				uploadFile,
 				job_id,
@@ -327,6 +367,8 @@ export default function StandardAnalysis() {
 			if (response.error) {
 				throw new Error(response.error);
 			}
+
+            // Return to the home page after successful submission
 			navigate('/');
 		} catch (err) {
 			setError('Submit failed. Please check your input and try again.');
@@ -336,16 +378,22 @@ export default function StandardAnalysis() {
 		}
 	}
 
+    // Handles the form submit event
 	const handleSubmitJob = (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
+
+        // If the user wants to save an uploaded structure, first ask them
+        // to confirm the molecule preview orientation for the snapshot
 		if (uploadStructure && source === 'upload') {
             setOpenConfirmImage(true);
             return;
         }
         
+        // Otherwise, submit immediately
         performSubmitJob();
 	};
 
+    // Show loading screen while initial data or submission is in progress
 	if (loading) {
 		return (
 			<MolmakerLoading />

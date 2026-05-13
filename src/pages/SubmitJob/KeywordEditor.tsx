@@ -4,13 +4,14 @@ import { Button, Grid, Box, IconButton, TextField } from "@mui/material";
 import { Add, DeleteOutlineOutlined } from "@mui/icons-material";
 import * as React from "react";
 
-
+// Represents one custom calculation keyword entered by the user.
 export interface Keyword {
     key: string,
     type: string,
     value: any
 }
 
+// Available value types that the user can choose for each keyword.
 const KEYWORD_VALUE_TYPE = [
     { label: "String", value: "string" },
     { label: "Integer", value: "int" },
@@ -19,11 +20,27 @@ const KEYWORD_VALUE_TYPE = [
     { label: "Boolean", value: "bool" },
 ]
 
+// Default blank row used when adding a new keyword entry.
 const keywordBlankRow: Keyword = { key: "", type: "string", value: ""}
 
+/**
+ * Renders an editable list of calculation keywords.
+ * 
+ * Users can:
+ * - add keyword rows,
+ * - choose the value type for each keyword,
+ * - enter the keyword value,
+ * - delete keyword rows,
+ * 
+ * The parent component receives only valid rows where the keyword key is not empty.
+ */
 export function KeywordEditor({ maxEntries = 20, onChange }) {
+    // Stores all keyword rows currently shown in the editor.
     const [keywords, setKeywords] = useState([]);
 
+    /**
+     * Renders the correct input field based on the selected keyword value type.
+     */
     const renderValueField = (row, idx) => {
         const commonProps = {
             fullWidth: true,
@@ -91,12 +108,22 @@ export function KeywordEditor({ maxEntries = 20, onChange }) {
 
     };
 
+    /**
+     * Updates one field in a specific keyword row
+     * 
+     * After updating local state, the parent onChange callback is called with
+     * only rows that have a non-emmpty keyword key.
+     */
     const updateKeywordRow = (rowIndexToUpdate, field, newVal) => {
         const updatedKeywords = keywords.map((r, i) => (i === rowIndexToUpdate ? { ...r, [field]: newVal } : r));
         setKeywords(updatedKeywords);
         onChange?.(updatedKeywords.filter(r => r.key.trim() !== ""));
     }
 
+    /**
+     * Adds a new blank keyword row if the maximum number of entries
+     * has not been reached.
+     */
     const addKeywordRow = () => {
         if (keywords.length < maxEntries) {
             setKeywords([
@@ -106,6 +133,11 @@ export function KeywordEditor({ maxEntries = 20, onChange }) {
         }
     }
 
+    /**
+     * Deletes a keyword row by index.
+     * 
+     * After deleting, the parent is updated with the remaining valid rows.
+     */
     const deleteKeywordRow = (idx:number) => {
         const nextRows = keywords.filter((_, i) => i !== idx);
         setKeywords(nextRows.length ? nextRows : []);

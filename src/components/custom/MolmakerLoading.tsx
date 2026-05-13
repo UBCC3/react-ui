@@ -1,6 +1,9 @@
 import React from 'react'
 import { Box, CircularProgress, Typography } from '@mui/material'
 
+/**
+ * Renders a reusable loading screen
+ */
 const MolmakerLoading = () => {
 	return (
 		<Box

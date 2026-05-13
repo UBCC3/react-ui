@@ -11,6 +11,9 @@ declare global {
 	}
 }
 
+/**
+ * Props for the MolmakerMoleculePreview
+ */
 interface MolmakerMoleculePreviewProp {
 	data?: string;
 	format: string;
@@ -22,7 +25,27 @@ interface MolmakerMoleculePreviewProp {
 	setStructureImageData?: (data: string) => void;
 }
 
-
+/**
+ * Renders a reusable molecule preview panel
+ * 
+ * The component uses 3Dmol.js to render molecular structure data inside a
+ * browser canvas.
+ * When `submitConfirmed` changes to true, it captures the rendered canvas
+ * as a PNG data URL and passes it back to the parent through
+ * `setStructureImageData`.
+ * 
+ * Props:
+ * - data: raw molecular structure data to render, such as XYZ file contents
+ * - format: molecular  file format passed to 3Dmol.js, such as "xyz"
+ * - source: indicates where the molecule data comes from.
+ *           Used to customize the empty-state message
+ * - title: title displayed at the top of the preview panel
+ * - maxHeight: optional maximum height for the preview container
+ * - sx: optional MUI style overrides for the root Paper component
+ * - submitConfirmed: when true, captures the current molecule preview image.
+ * - setStructureImageData: optional callback used to send the captured PNG preview
+ *                          to the parent component
+ */
 const MolmakerMoleculePreview: React.FC<MolmakerMoleculePreviewProp> = ({
 	data = '',
 	format,

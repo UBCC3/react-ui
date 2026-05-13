@@ -12,15 +12,32 @@ import type { User, Group } from '../types';
 import { grey, blueGrey } from '@mui/material/colors';
 import { WorkspacesOutlined, ExpandMore, PersonRemoveAlt1Outlined, DeleteOutlineOutlined, GroupRemoveOutlined } from '@mui/icons-material';
 
+/**
+ * Admin panel for creating groups and managing user roles/group assignments.
+ * 
+ * This component fetches all groups and users, allows an admin to create a new
+ * group with a selected group admin, and provides controls for changing user
+ * roles or removing users from groups.
+ */
 export default function AdminGroupPanel({ token }: { token: string }) {
+    // List of groups returned by the backend.
 	const [groups, setGroups] = useState<Group[]>([]);
+
+    // List of all users returned by the backend.
 	const [users, setUsers] = useState<User[]>([]);
+
+    // Form state for creating a new group.
 	const [groupName, setGroupName] = useState('');
 	const [groupAdmin, setGroupAdmin] = useState('');
+
+    // Toggle used to re-fetch group/users after create/update actions.
 	const [reload, setReload] = useState(false);
+
+    // Pagination state.
 	const [page, setPage] = useState(0);
 	const [rowsPerPage, setRowsPerPage] = useState(5);
 
+    // Fetch groups and users whenever the auth token changes or data is reloaded.
 	useEffect(() => {
 		const fetchData = async () => {
 			const [groupResp, userResp] = await Promise.all([
@@ -33,6 +50,13 @@ export default function AdminGroupPanel({ token }: { token: string }) {
 		fetchData();
 	}, [token, reload]);
 
+    /**
+     * Create a new group and assign the selected user as its group admin.
+     * 
+     * The group admin must already exist in the user list. After the group is
+     * created, the selected user is updated with the `group_admin` role and the
+     * newly created group ID.
+     */
 	const handleGroupCreate = async () => {
 		if (!groupName || !groupAdmin) {
 			alert('Please provide both group name and admin email.');
@@ -55,6 +79,11 @@ export default function AdminGroupPanel({ token }: { token: string }) {
 		setReload(!reload);
 	};
 
+    /**
+     * Update a user's role and optionally assign/remove their group.
+     * 
+     * Passing an empty group ID removes the user from their current group.
+     */
 	const handleUserUpdate = async (userSub: string, newRole: string, newGroupId: string) => {
 		if (!newGroupId) {
 			await updateUser(token, userSub, newRole);

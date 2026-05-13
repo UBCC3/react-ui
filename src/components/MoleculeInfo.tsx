@@ -5,6 +5,17 @@ import { getStructureDataFromS3, getStructureById, updateStructure, getStructure
 import { useAuth0 } from '@auth0/auth0-react'
 import { Edit, Close, Save } from '@mui/icons-material'
 
+/**
+ * Side drawer component for viewing and editing information about a selected molecule.
+ * 
+ * This componnet handles:
+ * - Loading molecule structure data from S3
+ * - Displaying the molecule preview
+ * - Loading saved structure metadata such as name, formula, notes, and tags
+ * - Fetching available tag options
+ * - Switching between view mode and edit mode
+ * - Saving edited structure information back to the backend
+ */
 const MoleculeInfo = ({ open, setOpen, selectedStructureId }) => {
 	const [isEditing, setIsEditing] = useState<boolean>(false)
 	const [state, setState] = useState({
@@ -20,6 +31,11 @@ const MoleculeInfo = ({ open, setOpen, selectedStructureId }) => {
 	const [options, setOptions] = useState<string[]>([])
 	const { getAccessTokenSilently } = useAuth0()
 
+    /**
+     * Fetches all existing structure tags when the component first mounts.
+     * 
+     * These tags are used as autocomplete suggestions in the tags input field.
+     */
 	useEffect(() => {
 		const fetchTags = async () => {
 			try {
@@ -37,6 +53,15 @@ const MoleculeInfo = ({ open, setOpen, selectedStructureId }) => {
 		fetchTags()
 	}, [])
 
+    /**
+     * Loads molecule structure data and metadata whenever the selected structure changes.
+     * 
+     * If a structure is selected, this effect:
+     * - Loads the molecule geometry for the preview
+     * - Loads the structure name, notes, tags, and formula
+     * 
+     * If no structure is selected, it clears the molecule preiview data.
+     */
 	useEffect(() => {
 		const fetchStructureInfo = async () => {
 			if (!selectedStructureId) return
@@ -70,6 +95,14 @@ const MoleculeInfo = ({ open, setOpen, selectedStructureId }) => {
 		}
 	}, [selectedStructureId])
 
+    /**
+     * Creates a drawer toggle handler for opening or closing the molecule info drawer.
+     * 
+     * The returned handler ignores Tab and Shift keydown events so keyboard navigation
+     * does not accidentally close or open the drawer.
+     * 
+     * When the drawer opens or closes, edit mode is also reset to false.
+     */
 	const toggleDrawer = (anchor: 'right', open: boolean) => (event: React.KeyboardEvent | React.MouseEvent) => {
 		if (
 			event.type === 'keydown' &&
@@ -88,6 +121,13 @@ const MoleculeInfo = ({ open, setOpen, selectedStructureId }) => {
 		}
 	}
 
+    /**
+     * Saves the edited structure information to the backend
+     * 
+     * This sends the updated name, chemical formula, notes, and tags for the
+     * currently selected structure. If the save succeeds, the component exits
+     * edit mode.
+     */
 	const handleSave = async () => {
 		if (!selectedStructureId) return
 		setLoading(true)
@@ -110,6 +150,12 @@ const MoleculeInfo = ({ open, setOpen, selectedStructureId }) => {
 		}
 	}
 
+    /**
+     * Loads molecule geometry data for the selected structure.
+     * 
+     * The molecule data is fetched from S3 and stored in `structureData`,
+     * which is then passed into the molecule preview component.
+     */
 	const openMoleculeViewer = async (structureId: string) => {
 		setLoading(true);
 		setError(null);
