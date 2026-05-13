@@ -13,18 +13,32 @@ import {blueGrey, grey} from "@mui/material/colors";
 import {Atom} from "../../types/JSmol";
 import React, {useEffect, useMemo, useState} from "react";
 
+/**
+ * Props for the PartialCharge component.
+ */
 interface PartialChargeProps {
 	viewerObj: any;
 	frameNo: number;
 }
 
+/**
+ * DIsplays partial charges for atoms in the selected JSmol frame.
+ * 
+ * This component asks JSmol to calculate partial charges, extracts atom
+ * information from the viewer, and displays the charges in a table. Clicking
+ * an atom row labels that atom in the viewer with its partial charge.
+ */
 const PartialCharge: React.FC<PartialChargeProps> = ({
 	viewerObj,
 	frameNo,
 }) => {
+    // Atom information extracted from JSmol after partial charge calculation.
 	const [atoms, setAtoms] = useState<Atom[]>([]);
+
+    // Currently selected atom to highlight/label in the viewer.
 	const [selectAtom, setSelectAtom] = useState<Atom | null>(null);
 
+    // Calculate and fetch partial charges from JSmol when the viewer is ready.
 	useMemo(() => {
 		if (!viewerObj) return;
 
@@ -56,6 +70,7 @@ const PartialCharge: React.FC<PartialChargeProps> = ({
 		fetchPartialCharges();
 	}, [viewerObj]);
 
+    // Label the selected atom with its partial charge in the JSmol viewer.
 	useEffect(() => {
 		if (!selectAtom) return;
 

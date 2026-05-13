@@ -7,6 +7,15 @@ import {
 	Button
 } from '@mui/material'
 
+/**
+ * Renders a reusable Confirmation dialog.
+ * 
+ * Props:
+ * - open: whether the dialog opens or not
+ * - onClose: actions taken after closing the dialog
+ * - textToShow: written text on the dialog
+ * - onConfirm: actions taken after confirming the prompt
+ */
 const MolmakerConfirm = ({ 
 	open,
 	onClose,

@@ -3,11 +3,25 @@ import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow} from "
 import {blueGrey, grey} from "@mui/material/colors";
 import {Job} from "../../types";
 
+/**
+ * Props for the CalculatedQuantities component.
+ */
 interface CalculatedQuantitiesProps {
 	job: Job,
 	result: any,
 }
 
+/**
+ * Displays key calculated quantities for a completed quantum chemistry job.
+ * 
+ * The component extracts selected values from the calculation result, such as
+ * SCF and MP2 energies, and combines them with job metadata such as method,
+ * basis set, and runtime.
+ * 
+ * Props:
+ * - job: job metadata associated with the completed calculation.
+ * - result: raw calculation result returned by the backend/QCEngine.
+ */
 const CalculatedQuantities: React.FC<CalculatedQuantitiesProps> = ({
 	job,
 	result,

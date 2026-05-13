@@ -5,6 +5,15 @@ import {
 	Box
 } from '@mui/material'
 
+/**
+ * Displays a single status summary card.
+ * 
+ * The card shows:
+ * - the job status name,
+ * - the total number of jobs with that status,
+ * - a matching icon,
+ * - custom background and foreground colors.
+ */
 const StatusCard = ({ status, count, bgColor, fgColor, icon }) => {
 	return (
 		<Card sx={{ backgroundColor: bgColor, color: fgColor }}>

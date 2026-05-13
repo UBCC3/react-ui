@@ -213,6 +213,9 @@ const MolmakerMoleculeSelector = ({
 	</Grid>)
 };
 
+/**
+ * Runtime prop validation for MolmakerMoleculeSelector.
+ */
 MolmakerMoleculeSelector.propTypes = {
 	source: PropTypes.oneOf(['upload', 'library']).isRequired,
 	onSourceChange: PropTypes.func.isRequired,

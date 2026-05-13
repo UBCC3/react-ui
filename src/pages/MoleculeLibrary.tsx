@@ -42,8 +42,10 @@ import MoleculeUpload from "../components/MoleculeUpload";
 import { Pyramid } from "lucide-react";
 
 const MoleculeLibrary = () => {
+    // Auth0 helper used to retrieve access tokens before calling protected APIs.
 	const { getAccessTokenSilently } = useAuth0();
 
+    // state for molecule dialog
 	const [open, setOpen] = useState<boolean>(false);
 	const [openAdd, setOpenAdd] = useState<boolean>(false);
 	const [openConfirmDelete, setOpenConfirmDelete] = useState<boolean>(false);
@@ -60,6 +62,7 @@ const MoleculeLibrary = () => {
 	const [libraryStructures, setLibraryStructures] = useState<Structure[]>([]);
 	const [selectedStructureId, setSelectedStructureId] = useState<string>("");
 
+    // Reloads the structure library from the backend.
 	const handleRefresh = async () => {
 		setLoading(true);
 		try {
@@ -76,14 +79,24 @@ const MoleculeLibrary = () => {
 		}
 	};
 
+    // Deletes the currently selected structure from the library.
 	const handleDelete = async () => {
+        // Do nothing if no structure is selected.
 		if (!selectedStructureId) return;
 
 		try {
 			const token = await getAccessTokenSilently();
+
+            // Delete the selected structure through the backend.
 			await deleteStructure(selectedStructureId, token);
+
+            // Remove the deleted structure from local state so the table updates immediately
 			setLibraryStructures(prev => prev.filter(molecule => molecule.structure_id !== selectedStructureId));
+
+            // Clear the selection after deletion.
 			setSelectedStructureId("");
+
+            // Clear any old error message once deletion succeeds.
 			setError(null);
 		} catch (err) {
 			setError('Failed to delete molecule. Please try again later.');
@@ -91,11 +104,16 @@ const MoleculeLibrary = () => {
 		}
 	};
 
+    // Loads saved molecules when the library page first renders.
 	useEffect(() => {
 		const loadSavedMolecules = async () => {
 			try {
 				const token = await getAccessTokenSilently();
+
+                // Fetch structures saved in the user's molecule library.
 				const response = await getLibraryStructures(token);
+
+                // Normalize the backend response into the Structure shape expected by the UI.
 				setLibraryStructures(response.data.map((item: any) => ({
 					structure_id: item.structure_id,
 					user_sub: item.user_sub,
@@ -119,12 +137,14 @@ const MoleculeLibrary = () => {
 		loadSavedMolecules();
 	}, [])
 
+    // Show the loading screen while the initial molecule list is being fetched.
 	if (loading) {
 		return (
 			<MolmakerLoading />
 		);
 	}
 
+    // Renders a sortable table header cell for the given structure column.
 	const renderHeader = (label: string, column: keyof Structure) => (
 		<TableCell
 			sx={{ whiteSpace: 'nowrap', cursor: 'pointer' }}
@@ -132,6 +152,8 @@ const MoleculeLibrary = () => {
 		>
 			<Box sx={{ display: 'flex', alignItems: 'center', width: '100%', fontSize: '0.7rem', fontWeight: 'bold', color: grey[700] }}>
 				{label.toUpperCase()}
+
+                {/* Show the active sort icon only for the currently sorted column. */}
 				{orderBy === column && (
 					<Box sx={{ ml: 1 }}>
 						{order === 'asc' ? (
@@ -145,17 +167,25 @@ const MoleculeLibrary = () => {
 		</TableCell>
 	);
 
+    // Converts a chemical formula string into JSX with subscripts and superscripts..
 	const renderFormula = (formula: string) => {
 		if (!formula) {
 			return <Typography variant="body2" color="text.secondary">No formula</Typography>;
 		}
+
 		// Regex: match {...} or (...) for superscript, or numbers for subscript
 		const regex = /\{([^}]+)\}|\(([^)]+)\)|(\d+)/g;
+        // Stores each piece of rendered formula text.
 		const parts: React.ReactNode[] = [];
+        // Tracks the end of the previous match so normal text can be preserved.
 		let lastIndex = 0;
+        // Counter used to give generated <sup> and <sub> elements unique keys.
 		let i = 0;
 		let match;
+
+        // Walk through the formula and split it into normal text, superscripts, and subscripts.
 		while ((match = regex.exec(formula)) !== null) {
+            // Add any normal text before the current matched token.
 			if (match.index > lastIndex) {
 				parts.push(formula.slice(lastIndex, match.index));
 			}
@@ -171,20 +201,28 @@ const MoleculeLibrary = () => {
 			}
 			lastIndex = regex.lastIndex;
 		}
+
+        // Add any remaining normal text after the last match.
 		if (lastIndex < formula.length) {
 			parts.push(formula.slice(lastIndex));
 		}
 		return <Typography variant="body2">{parts}</Typography>;
 	};
 
+    // Sorts the molecule table by the selected column.
 	const onSort = (column: keyof Structure) => {
+        // Toggle direction if the user clicks the currently sorted column.
 		const isAsc = orderBy === column && order === 'asc';
 		const newOrder = isAsc ? 'desc' : 'asc';
 		setOrder(newOrder);
 		setOrderBy(column);
+
+        // Sort a copied array so the existing state array is not mutated directly.
 		const sorted = [...libraryStructures].sort((a, b) => {
 			const aValue = a[column];
 			const bValue = b[column];
+
+            // Use localeCompare for string fields like name, formula, notes, and dates.
 			if (typeof aValue === 'string' && typeof bValue === 'string') {
 				return newOrder === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
 			}
@@ -192,6 +230,8 @@ const MoleculeLibrary = () => {
 			if (aValue === undefined && bValue === undefined) return 0;
 			if (aValue === undefined) return newOrder === 'asc' ? 1 : -1;
 			if (bValue === undefined) return newOrder === 'asc' ? -1 : 1;
+
+            // Fallback comparison for non-string values.
 			return newOrder === 'asc' ? (aValue < bValue ? -1 : 1) : (aValue > bValue ? -1 : 1);
 		});
 		setLibraryStructures(sorted);
@@ -199,6 +239,7 @@ const MoleculeLibrary = () => {
 
   	return (
 		<Box p={4} className="bg-stone-100 min-h-screen">
+            {/* Confirmation dialog shown before permanently deleting a structure. */}
 			<MolmakerConfirm
 				open={openConfirmDelete}
 				onClose={() => setOpenConfirmDelete(false)}
@@ -210,25 +251,39 @@ const MoleculeLibrary = () => {
 					setOpenConfirmDelete(false);
 				}}
 			/>
+
+            {/* Dialog for upploading a new molecule or structure to the library. */}
 			<MoleculeUpload
 				open={openAdd}
 				setOpen={setOpenAdd}
 				setLibraryStructures={setLibraryStructures}
 			/>
-			<MoleculeInfo open={open} setOpen={setOpen} selectedStructureId={selectedStructureId} />
+
+            {/* Dialog for viewing details about the selected structure. */}
+			<MoleculeInfo 
+                open={open} 
+                setOpen={setOpen} 
+                selectedStructureId={selectedStructureId} 
+            />
+
+            {/* Page heading and short description. */}
 			<MolmakerPageTitle
 				title="My Structure Library" 
 				subtitle="Upload and manage the structures in your library." 
 			/>
+            
 			<Grid container spacing={3} sx={{ marginTop: 3 }}>
 				<Grid size={12}>
 					<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50] }}>
+                        {/* Table toolbar containing the title and action buttons. */}
 						<Toolbar sx={{ justifyContent: 'space-between', borderTopLeftRadius: 5, borderTopRightRadius: 5 }}>
 							<Typography variant="h6" color={grey[800]} sx={{ display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: '1.1rem' }}>
 								<Pyramid style={{ marginRight: 10, color: blue[600] }} />
 								Structures
 							</Typography>
+
 							<Box sx={{ display: 'flex', alignItems: 'center'}}>
+                                {/* Action buttons for adding, viewing, and deleting structures. */}
 								<Box sx={{ borderRadius: 1, display: 'flex', alignItems: 'center', px: 2, bgcolor: grey[100], mr: 1 }}>
 									<Tooltip title="Add new structure">
 										<IconButton onClick={() => {
@@ -238,6 +293,7 @@ const MoleculeLibrary = () => {
 											<Add />
 										</IconButton>
 									</Tooltip>
+
 									<Tooltip title="View structure">
 										<IconButton disabled={!selectedStructureId} onClick={() => {
 											setOpen(true);
@@ -245,6 +301,7 @@ const MoleculeLibrary = () => {
 											<VisibilityOutlined />
 										</IconButton>
 									</Tooltip>
+
 									<Tooltip title="Delete structure">
 										<IconButton 
 											disabled={!selectedStructureId}
@@ -254,6 +311,8 @@ const MoleculeLibrary = () => {
 										</IconButton>
 									</Tooltip>
 								</Box>
+
+                                {/* Refresh button group. */}
 								<Box sx={{ borderRadius: 1, display: 'flex', alignItems: 'center', px: 2, bgcolor: grey[100] }}>
 									<Tooltip title="Refresh structures">
 										<IconButton onClick={handleRefresh}>
@@ -263,6 +322,8 @@ const MoleculeLibrary = () => {
 								</Box>
 							</Box>
 						</Toolbar>
+
+                        {/* Main structures table. */}
 						<TableContainer>
 							<Table>
 								<TableHead>
@@ -275,7 +336,9 @@ const MoleculeLibrary = () => {
 										{renderHeader('Uploaded At', 'uploaded_at')}
 									</TableRow>
 								</TableHead>
+
 								<TableBody>
+                                    {/* Empty-state row shown when the library has no structures. */}
 									{libraryStructures.length === 0 && (
 										<TableRow>
 											<TableCell colSpan={6} align="center">
@@ -294,6 +357,8 @@ const MoleculeLibrary = () => {
 											</TableCell>
 										</TableRow>
 									)}
+
+                                    {/* Render only the structures on the current pagination page. */}
 									{libraryStructures.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((molecule) => (
 										<TableRow 
 											key={molecule.structure_id} 
@@ -305,6 +370,7 @@ const MoleculeLibrary = () => {
 												cursor: 'pointer'
 											}}
 										>
+                                            {/* Molecule thumbnail image. */}
 											<TableCell>
 												<Avatar
 													variant="rounded"
@@ -313,9 +379,13 @@ const MoleculeLibrary = () => {
 													sx={{ width: 64, height: 64 }}
 												/>
 											</TableCell>
+                                            {/* Molecule display name. */}
 											<TableCell>{molecule.name}</TableCell>
+                                            {/* Chemical formula rendered with subscript and superscript formatting. */}
 											<TableCell>{renderFormula(molecule.formula)}</TableCell>
+                                            {/* Optional notes attached to the structure. */}
 											<TableCell>{molecule.notes}</TableCell>
+                                            {/* Tags shown as a comma-separated list, with a fallback if none exist. */}
 											<TableCell>
 												{molecule.tags.length > 0 ? (
 													molecule.tags.join(', ')
@@ -323,12 +393,16 @@ const MoleculeLibrary = () => {
 													<Typography variant="body2" color="text.secondary">No tags</Typography>
 												)}
 											</TableCell>
+
+                                            {/* Upload timestamp formatted for the user's locale. */}
 											<TableCell>{new Date(molecule.uploaded_at).toLocaleString()}</TableCell>
 										</TableRow>
 									))}
 								</TableBody>
 							</Table>
 						</TableContainer>
+
+                        {/* Pagination controls for navigating the structure table. */}
 						<TablePagination
 							component="div"
 							rowsPerPageOptions={[5, 10, 25]}

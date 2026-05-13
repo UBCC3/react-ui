@@ -28,6 +28,9 @@ import type { Job } from '../../../types';
 import { updateVisibility } from '../../../services/api';
 import { statusColors, statusIcons } from '../../../constants';
 
+/**
+ * Props for the JobsTable
+ */
 interface JobsTableProps {
   jobs: Job[];
   loading: boolean;
@@ -46,6 +49,16 @@ interface JobsTableProps {
   isGroupAdmin: boolean;
 }
 
+/**
+ * Displays a paginated, sortable table of group jobs.
+ * 
+ * The table supports:
+ * - dynamic column visibility through displayColumns,
+ * - sorting through the parent-provided onSort handler,
+ * - row selection through onRowClick,
+ * - loading and empty states,
+ * - admin-only visibility controls for making jobs public or private
+ */
 export default function GroupJobsTable({
   jobs,
   loading,
@@ -85,14 +98,23 @@ export default function GroupJobsTable({
     [order, orderBy]
   );
 
+  /**
+   * Creates a sorted copy of the jobs array.
+   */
   const sortedJobs = useMemo(() => [...jobs].sort(comparator), [jobs, comparator]);
 
+  /**
+   * Extracts only the jobs that should appear on the current page.
+   */
   const paginatedJobs = useMemo(
     () =>
       sortedJobs.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
     [sortedJobs, page, rowsPerPage]
   );
 
+  /**
+   * Updates whether a job is public or private.
+   */
   const toggleVisibility = async (jobId: string, makePublic: boolean) => {
     try {
       const token = await getAccessTokenSilently();
@@ -102,6 +124,9 @@ export default function GroupJobsTable({
     }
   };
 
+  /**
+   * Renders a sortable table header cell.
+   */
 	const renderHeader = (label: string, column: keyof Job) => (
 		<TableCell
 			sx={{ whiteSpace: 'nowrap', cursor: 'pointer' }}

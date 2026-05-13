@@ -23,6 +23,9 @@ import {Job, JobResult} from "../../types";
 import MolmakerLoading from "../custom/MolmakerLoading";
 import CalculatedQuantities from "./CalculatedQuantities";
 
+/**
+ * Props for the OptimizationViewer component.
+ */
 interface VibrationViewerProps {
 	job: Job,
 	jobResultFiles: JobResult;
@@ -34,14 +37,27 @@ enum expandableMenu {
 	optimization,
 }
 
+/**
+ * Represents one geometry optimization iteration parsed from the trajectory file.
+ */
 type OptimizationIteration = {
 	index: number;
 	energy: number;
 }
 
+// Width of the expanded result drawer in pixels.
 const fullWidth = 400;
+// Width of the collapsed result drawer in pixels.
 const miniWidth = 80;
 
+/**
+ * Displays the geometric optimization result viewer.
+ * 
+ * This component loads the optimization trajectory into a JSmol viewer,
+ * extracts optimization iterations and energies from the loaded models, and
+ * displays the trajectory frames in a selectable table. It also fetches the
+ * calculation result JSON and shows calculated quantities in the side drawer.
+ */
 const OptimizationViewer:React.FC<VibrationViewerProps> = ({
     job,
 	jobResultFiles,
@@ -71,6 +87,7 @@ const OptimizationViewer:React.FC<VibrationViewerProps> = ({
 		quantities: false
 	});
 
+    // fetch and normalize the result JSON for standard or workflow-style results
 	useEffect(() => {
 		fetchRawFileFromS3Url(resultURL, 'json').then((res) => {
 			// console.log(res);
@@ -90,6 +107,7 @@ const OptimizationViewer:React.FC<VibrationViewerProps> = ({
 
 	}, [resultURL]);
 
+    // update the JSmol viewer whenevr the selected optimization iteration changes
 	useEffect(() => {
 		if (iterations.length === 0) return;
 
@@ -108,6 +126,7 @@ const OptimizationViewer:React.FC<VibrationViewerProps> = ({
 		showVibrationMode();
 	}, [iterations, selectedIteration]);
 
+    // extract optimization iteration numbers and energies from loaded JSmol models
 	useEffect(() => {
 		if (!viewerObj) return;
 
@@ -137,6 +156,7 @@ const OptimizationViewer:React.FC<VibrationViewerProps> = ({
 		fetchOrbitals();
 	}, [viewerObj]);
 
+    // initialize the JSmol viewer after the result JSON has finished loading
 	useEffect(() => {
 		if (loading) return;
 
@@ -172,6 +192,7 @@ const OptimizationViewer:React.FC<VibrationViewerProps> = ({
 		}
 	}, [xyzFileUrl, viewerObjId, loading]);
 
+    // expand and collapse the result drawer
 	const toggle = () => {
 		if (open) {
 			setOpen(false);
@@ -186,6 +207,7 @@ const OptimizationViewer:React.FC<VibrationViewerProps> = ({
 		}
 	}
 
+    // update the expanded state of a drawer accordion
 	const handleAccordionChange = (panel: keyof typeof accordionOpen) => (_event: React.SyntheticEvent, isExpanded: boolean) => {
 		setAccordionOpen(prev => ({ ...prev, [panel]: isExpanded }));
 		if (isExpanded && !open) setOpen(true); // Open drawer if opening an accordion

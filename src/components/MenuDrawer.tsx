@@ -22,9 +22,17 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { upsertCurrentUser } from '../services/api';
 import { blue, grey } from '@mui/material/colors';
 
+// Opened drawer width in pixels
 const DRAWER_WIDTH  = 250;
+// Collapsed drawer width in pixels
 const CLOSED_WIDTH  = 56;
 
+/**
+ * Returns the styling user when the drawer is fully opened.
+ * 
+ * This expands the drawer to the normal drawer width and applies
+ * the opening transition animation from the Material UI theme.
+ */
 const openedMixin = (theme) => ({
 	width: DRAWER_WIDTH,
 	transition: theme.transitions.create('width', {
@@ -34,6 +42,12 @@ const openedMixin = (theme) => ({
 	overflowX: 'hidden',
 });
 
+/**
+ * Returns the styling used when the drawer is collapsed.
+ * 
+ * This shrinks the drawer to the compact icon-only width and applies
+ * the closing transition animation from the Material UI theme
+ */
 const closedMixin = (theme) => ({
 	width: CLOSED_WIDTH,
 	transition: theme.transitions.create('width', {
@@ -43,6 +57,12 @@ const closedMixin = (theme) => ({
 	overflowX: 'hidden',
 });
 
+/**
+ * Permanent Material UI drawer with custom open and closed styling.
+ * 
+ * The `open` prop is used only for styling and is not forwarded to the
+ * underlying DOM element. This prevents invalid HTML attributes from appearing.
+ */
 const PermanentDrawer = styled(Drawer, {
 	shouldForwardProp: (prop) => prop !== 'open',
 })(({ theme, open }) => ({
@@ -55,6 +75,12 @@ const PermanentDrawer = styled(Drawer, {
 	},
 }));
 
+/**
+ * Header section sinside the drawer.
+ * 
+ * This align the logo and drawer toggle button while also applying
+ * Material UI's toolbar spacing so the drawer header matches the app bar height.
+ */
 const DrawerHeader = styled('div')(({ theme }) => ({
 	display: 'flex',
 	alignItems: 'center',
@@ -63,6 +89,18 @@ const DrawerHeader = styled('div')(({ theme }) => ({
 	justifyContent: 'flex-end',
 }));
 
+/**
+ * Side navigation drawer for the application.
+ * 
+ * This component handles:
+ * - Opening and closing the drawer
+ * - Showing navigation links
+ * - Highlithing the current page
+ * - Fetching the current user's role and group id
+ * - Showing group-only navigation when the user belongs to a group
+ * - Showing admin-only navigation when the user has the admin rule
+ * - Expanding and collapsing the admin submenu
+ */
 export default function MenuDrawer() {
 	const { user, getAccessTokenSilently } = useAuth0();
 	const { open, toggle } = useDrawer();
@@ -73,6 +111,12 @@ export default function MenuDrawer() {
 	const [groupId, setGroupId] = React.useState('');
 	const [expanded, setExpanded] = React.useState(false);
 
+    /**
+     * Fethces the authenticated user's role and group id.
+     * 
+     * The role controls whether the admin navigation is displayed.
+     * The group id controls whethher the group navigation is displayed.
+     */
 	useEffect(() => {
 		const fetchUserRoleAndGroup = async () => {
 			if (user) {
@@ -87,6 +131,13 @@ export default function MenuDrawer() {
 		setExpanded(location.pathname === '/users');
 	}, [user]);
 
+    /**
+     * JSX content displayed inside the drawer.
+     * 
+     * The drawer changes layout depending on whether it is open:
+     * - Open drawer: shows logo, text labels, and submenu controls
+     * - Closed drawer: shows only icons
+     */
 	const drawerContent = (
 		<Box className="bg-slate-200 h-full">
 			<DrawerHeader sx={{ justifyContent: open ? 'space-between' : 'center', paddingLeft: open ? 2: 0, borderBottom: '1px solid', borderColor: 'divider', height: '65px' }}>

@@ -11,12 +11,31 @@ import { CloudUploadOutlined, AddPhotoAlternateOutlined, Close } from '@mui/icon
 import { AddAndUploadStructureToS3, getLibraryStructures, getStructuresTags, getChemicalFormula } from '../services/api' 
 import {Structure} from "../types";
 
+/**
+ * Props for the MoleculeUpload
+ */
 interface MoleculeUploadProps {
 	open: boolean,
 	setOpen: React.Dispatch<React.SetStateAction<boolean>>,
 	setLibraryStructures:  React.Dispatch<React.SetStateAction<Structure[]>>,
 }
 
+/**
+ * Drawer component for uploading a new molecule structure to the user's library.
+ * 
+ * This component handles:
+ * - Selecting and reading a `.xyz` molecule file
+ * - Previewing the molecule before upload
+ * - Automatically extracting the chemical formula from the uploaded file
+ * - Capturing the molecule preview image after user confirmation
+ * - Uploading the molecule file, metadata, tags, and preview image to S3/backend
+ * - Refreshing the molecule library after upload
+ * 
+ * Props:
+ * - `open` contrls whether the drawer is visible.
+ * - `setOpen` opens or closes the drawer from the parent component.
+ * - `setLibraryStructures` updates the parent library list after a successful upload.
+ */
 const MoleculeUpload: React.FC<MoleculeUploadProps> = ({
 	open,
 	setOpen,
@@ -40,6 +59,9 @@ const MoleculeUpload: React.FC<MoleculeUploadProps> = ({
 	const [openConfirmImage, setOpenConfirmImage] = useState<boolean>(false);
 	const [submitConfirmed, setSubmitConfirmed] = useState<boolean>(false);
 
+    /**
+     * Performs the upload after the preview image has been captured.
+     */
 	useEffect(() => {
 		const getStructureImageSubmit = async () => {
 			if (!submitConfirmed || structureImageData === '') return
@@ -51,6 +73,9 @@ const MoleculeUpload: React.FC<MoleculeUploadProps> = ({
 		getStructureImageSubmit();
 	}, [structureImageData]);
 
+    /**
+     * Fetches all existing structure tags when the component first mounts.
+     */
 	useEffect(() => {
 		const fetchTags = async () => {
 			try {
@@ -67,6 +92,9 @@ const MoleculeUpload: React.FC<MoleculeUploadProps> = ({
 		fetchTags();
 	}, [])
 
+    /**
+     * Resets the upload form whenever the drawer is opened.
+     */
 	useEffect(() => {
 		if (open) {
 			setStructureData('')
@@ -78,6 +106,16 @@ const MoleculeUpload: React.FC<MoleculeUploadProps> = ({
 		}
 	}, [open])
 
+    /**
+     * Uploads the selected molecule and its metadata to the backend.
+     * 
+     * This function:
+     * - Prevents duplpicate submissions
+     * - Validates that a file and molecule name exist
+     * - Uploads the file, chemical formula, notes, preview image, and tags
+     * - Refreshes the library list after a successful upload
+     * - Resets the form and closes the drawer
+     */
 	async function performUpload() {
 		// prevent multiple submissions and submission while loading
 		if (submitAttempted) return;
@@ -132,6 +170,9 @@ const MoleculeUpload: React.FC<MoleculeUploadProps> = ({
 		}
 	}
 
+    /**
+     * Handles the upload form submission.
+     */
 	const handleSubmit = (event: React.FormEvent<HTMLFormElement>):void => {
 		event.preventDefault();
 		setOpenConfirmImage(true);
@@ -139,6 +180,12 @@ const MoleculeUpload: React.FC<MoleculeUploadProps> = ({
 	
 	const { getAccessTokenSilently } = useAuth0()
 
+    /**
+     * Creates a drawer toggle handler for opening or closing the upload drawer.
+     * 
+     * The returned handler ignores Tab and Shift keydown events so normal keyboard
+     * navigation does not accidentally close the drawer.
+     */
 	const toggleDrawer = (anchor: 'right', open: boolean) => (event: React.KeyboardEvent | React.MouseEvent) => {
 		if (
 			event.type === 'keydown' &&
@@ -155,6 +202,15 @@ const MoleculeUpload: React.FC<MoleculeUploadProps> = ({
 		}
 	}
 
+    /**
+     * Handles molecule file selection from the hidden file input.
+     * 
+     * This function:
+     * - Stores the selected file
+     * - Reads the `.xyz` file as text for molecule preview
+     * - Sends the file to the backend to extract its chemical formula
+     * - Rejects non-`.xyz` files and clears the preview
+     */
 	const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
 		const files = event.target.files;
 		const selected = files && files[0];

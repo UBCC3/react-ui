@@ -16,16 +16,22 @@ import {
 } from "../components/JSmol";
 
 const ResultPage = () => {
+    // reads the job ID from the current route parameters
 	const { jobId } = useParams<{ jobId: string }>();
 	const { getAccessTokenSilently } = useAuth0();
 
+    // state for user experience
 	const [loading, setLoading] = useState<boolean>(true);
 	const [error, setError] = useState<string | null>(null);
 
+    // stores the selected job details returned from the backend.
 	const [job, setJob] = useState<Job | null>(null);
+    // stores presigned S3 URLs for the selected job's result files.
 	const [jobResultFiles, setJobResultFiles] = useState<JobResult | null>(null);
 
+    // Fetches the selected job and its result files when the page loads.
 	useEffect(() => {
+        // Stop early if the route does not include a job ID.
 		if (!jobId) {
 			setError("Job ID is required");
 			setLoading(false);
@@ -36,12 +42,17 @@ const ResultPage = () => {
 			setLoading(true);
 			try {
 				const token = await getAccessTokenSilently();
+
+                // Fetch the job details using the job ID from the URL.
 				const response = await getJobByJobID(jobId as string, token);
+
 				if (response.error) {
 					setError(response.error);
 					setLoading(false);
 					return;
 				}
+
+                // Store the job data so the correct viewer can be selected.
 				const jobData = response.data;
 				setJob(jobData);
 
@@ -54,6 +65,8 @@ const ResultPage = () => {
 						jobData.calculation_type,
 						jobData.status
 					);
+
+                    // Normalize the backend response into the JobResult shape used by viewer components.
 					jobResultFiles = {
 						jobId: jobFilesUrlsResp.data.job_id,
 						calculation: jobFilesUrlsResp.data.calculation,
@@ -61,6 +74,8 @@ const ResultPage = () => {
 						urls: jobFilesUrlsResp.data.urls
 					}
 					console.log(jobResultFiles);
+
+                    // Save the result file URLs for the selected viewer component.
 					setJobResultFiles(jobResultFiles);
 				}
 			} catch (err) {
@@ -74,12 +89,14 @@ const ResultPage = () => {
 		fetchJobAndFiles();
 	}, [jobId]);
 
+    // Show a loading screen while the job details and result file URLs are being fetched
 	if (loading) {
 		return (
 			<MolmakerLoading />
 		);
 	}
 
+    // Show a not-found page if the job could not bea loaded.
 	if (!job) {
 		return (
 			<NotFound subject="Job" />
@@ -88,6 +105,7 @@ const ResultPage = () => {
 
 	return (
 		<Box bgcolor="rgb(247, 249, 252)" p={4}>
+            {/* Display a page-level error alert if fetching or rendering fails. */}
 			{error && (
 				<MolmakerAlert
 					text={error}
@@ -96,6 +114,8 @@ const ResultPage = () => {
 					sx={{ mb: 4 }}
 				/>
 			)}
+
+            {/* Render the energy analysis viewer for energy calculation jobs. */}
 			{(job && job.calculation_type === "energy") && (
 				<EnergyViewer
 					job={job}
@@ -104,6 +124,8 @@ const ResultPage = () => {
 					setError={setError}
 				/>
 			)}
+
+            {/* Render the vibration viewer for frequency calculation jobs. */}
 			{(job && job.calculation_type === "frequency") && (
 				<VibrationViewer
 					job={job}
@@ -112,6 +134,8 @@ const ResultPage = () => {
 					setError={setError}
 				/>
 			)}
+
+            {/* Render the orbital viewer for molecular orbital calculation jobs. */}
 			{(job && job.calculation_type === "orbitals") && (
 				<OrbitalViewer
 					job={job}
@@ -120,6 +144,8 @@ const ResultPage = () => {
 					setError={setError}
 				/>
 			)}
+
+            {/* Render the optimization-style viewer for optimization, transition state, and IRC jobs. */}
 			{(job && (job.calculation_type === "optimization" || job.calculation_type === "transition" || job.calculation_type === "irc")) && (
 				<OptimizationViewer
 					job={job}
@@ -128,6 +154,8 @@ const ResultPage = () => {
 					setError={setError}
 				/>
 			)}
+
+            {/* Render the standard analysis viewer for standard calculation jobs. */}
 			{(job && job.calculation_type === "standard") && (
 				<StandardAnalysisViewer
 					job={job}

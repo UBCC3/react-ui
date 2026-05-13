@@ -48,10 +48,19 @@ import {
 } from '../services/api';
 import type { User, Job } from '../types';
 
+/**
+ * Props for the GroupPanel
+ */
 interface GroupPanelProps {
 	token: string;
 }
 
+/**
+ * Displays the current group and its members.
+ * 
+ * Group admins can add new members and remove existing members. Regular
+ * members can view the group member list but cannot modify membership.
+ */
 export default function GroupPanel({ token }: GroupPanelProps) {
 	const { user } = useAuth0();
 
@@ -109,6 +118,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 		loadData();
 	}, [token, user?.email, reload]);
 
+    // Status-to-colour lookup for job statuses.
 	const statusColors: Record<string, string> = {
 		pending: 'orange',
 		approved: 'green',
@@ -121,6 +131,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 		setReload(r => !r);
 	};
 
+    // Remove the selected user from the group and handle their jobs based on the selected policy.
 	const handleUserUpdate = async () => {
 		if (!selectedUser) return;
 		const userSub = selectedUser.user_sub;
@@ -141,6 +152,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 		setRemoveDialogOpen(false);
 	};
 
+    // Send a group-join request to the user matching the entered email.
   	const handleAddMember = async () => {
 		if (!newUserEmail) return;
 			const { data: foundUser, error } = await getUserByEmail(newUserEmail, token);
@@ -156,6 +168,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 		}
   	};
 
+    // Users displayed on the current table page.
 	const paginatedUsers = users.slice(
 		page * rowsPerPage,
 		page * rowsPerPage + rowsPerPage

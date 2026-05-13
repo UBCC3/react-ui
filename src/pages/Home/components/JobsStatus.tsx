@@ -10,6 +10,15 @@ import { JobStatus } from '../../../constants'
 import StatusCard from './StatusCard'
 import { capitalizeFirstLetter } from '../../../utils'
 
+/**
+ * Displays a summary of job counts grouped by status.
+ * 
+ * Each status is shown as a separate StatusCard:
+ * - Completed
+ * - Running
+ * - Pending
+ * - Failed
+ */
 const JobsStatus = ({ jobs }) => {
 	return (
 		<Grid container spacing={3} sx={{ mb: 4 }}>

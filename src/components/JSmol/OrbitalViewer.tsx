@@ -47,6 +47,9 @@ import {useAuth0} from "@auth0/auth0-react";
 import {MolmakerTextField} from "../custom";
 import {AddAndUploadStructureToS3} from "../../services/api";
 
+/**
+ * Props for the OrbitalViewer component
+ */
 interface OrbitalViewerProp {
 	job: Job;
 	jobResultFiles: JobResult;
@@ -54,9 +57,19 @@ interface OrbitalViewerProp {
 	setError: React.Dispatch<React.SetStateAction<string | null>>,
 }
 
+// Width of the expanded result drawer in pixels
 const fullWidth = 400;
+// Width of the collapsed result drawer in pixels
 const miniWidth = 80;
 
+/**
+ * Displays the molecule orbital result viewer
+ * 
+ * This component loads molecular orbital result files into JSmol, extracts
+ * orbital information for the orbital table, displays calculated quantities
+ * and partial charges, and allows users to save the currently viewed structure
+ * to their molecule library
+ */
 const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	job,
 	jobResultFiles,
@@ -105,6 +118,13 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	const [structureTags, setStructureTags] = useState<string[]>([]);
 	const [submitAttempted, setSubmitAttempted] = useState(false);
 
+    /**
+     * Save the currently displayed structure to the user's library
+     * 
+     * The current JSmol canvas is captured as a PNG preview image, and the
+     * current molecular structure is exported from JSmol as an XYZ file. Both
+     * are then uploaded with the structure metadata.
+     */
 	const handleSubmit = async () => {
 		setSubmitAttempted(true);
 		const canvas = viewerRef.current?.querySelector('canvas');
@@ -137,6 +157,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 		setSubmitAttempted(false);
 	}
 
+    // Fetch and normalize the result JSON for standard or workflow-style results
 	useEffect(() => {
 		fetchRawFileFromS3Url(resultURL, 'json').then((res) => {
 			const workflowKeys = ['geometric optimization', 'molecular orbitals', 'vibrational frequencies'];
@@ -167,22 +188,35 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	// 	window.Jmol.script(viewerObj, script);
 	// }, [selectAtom]);
 
+    /**
+     * Update the text input for the molecule name
+     */
 	const onMoleculeNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		setMoleculeName(event.target.value);
 	};
 
+    /**
+     * Update the text input for the chemical formula
+     */
 	const onChemicalFormulaChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		setChemicalFormula(event.target.value);
 	};
-
+    
+    /**
+     * Update the multiline notes field for the molecule
+     */
 	const onMoleculeNotesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		setMoleculeNotes(event.target.value);
 	};
 
+    /**
+     * Update the selected free-form structure tags
+     */
 	const onStructureTagsChange = (event: React.ChangeEvent<{}>, value: string[]) => {
 		setStructureTags(value);
 	};
-
+    
+    // Render the selected molecular orbital whenever the orbital or display mode changes
 	useEffect(() => {
 		if (!viewerObj || orbitals.length === 0 || selectedOrbital === null) return;
 
@@ -202,6 +236,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 		window.Jmol.script(viewerObj, script);
 	}, [orbitals, selectedOrbital, viewerObj, meshOrFill]);
 
+    // Extract molecular orbital metadata from the loaded JSmol model
 	useEffect(() => {
 		if (!viewerObj) return;
 
@@ -247,6 +282,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 		// }, 500)
 	}, [viewerObj]);
 
+    // Initialize the JSmol viewer with the Molden and ESP result files.
 	useEffect(() => {
 		const moldenFile = jobResultFiles.urls["molden"];
 		const espFile = jobResultFiles.urls["esp"];
@@ -278,10 +314,19 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 		}
 	}, [jobResultFiles, viewerObjId, loading]);
 
+    /**
+     * Update the current orbital table page
+     */
 	const handleChangePage = (_: any, newPage: number) => {
 		setPage(newPage);
 	};
 
+    /**
+     * Expand or collapse the result drawer.
+     *
+     * Collapsing the drawer also closes all accordions so only icons remain
+     * visible in the mini drawer state.
+     */
 	const toggle = () => {
 		if (open) {
 			setOpen(false);

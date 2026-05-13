@@ -44,7 +44,18 @@ import {
 } from './KeywordEditor'
 import { grey } from '@mui/material/colors'
 
+/**
+ * AdvancedAnalysis renders the advanced job submission page.
+ * 
+ * This page lets the user:
+ * - upload a molecule file or select one from the library,
+ * - configure calculation settings,
+ * - add optional calculation keywords,
+ * - optionally save an uploaded molecule to the library,
+ * - submit the advanced analysis job to the backend.
+ */
 const AdvancedAnalysis = () => {
+    // used to redirect the user after the job is successfully submitted
     const navigate = useNavigate();
     const { getAccessTokenSilently } = useAuth0();
 
@@ -56,25 +67,35 @@ const AdvancedAnalysis = () => {
     // state for structure preview
     const [structureData, setStructureData] = useState<string>('');
 
-    // state for form
+    // state for basic job information
     const [jobName, setJobName] = useState<string>('');
     const [jobNotes, setJobNotes] = useState<string>('');
     const [jobTags, setJobTags] = useState<string[]>([]);
+
+    // controls the source of the molecule
     const [source, setSource] = useState<'upload' | 'library'>('upload');  
+
+    // state for uploaded or selected molecule structure
     const [file, setFile] = useState<File | null>(null);
     const [uploadStructure, setUploadStructure] = useState<boolean>(false);
     const [structures, setStructures] = useState<Structure[]>([]);
     const [selectedStructure, setSelectedStructure] = useState<string>('');
+
+    // metadata used when saving an uploaded structure to the library
     const [structureName, setStructureName] = useState<string>('');
     const [chemicalFormula, setChemicalFormula] = useState<string>('');
     const [structureNotes, setStructureNotes] = useState<string>('');
     const [structureTags, setStructureTags] = useState<string[]>([]);
+
+    // state for calculation parameters
     const [charge, setCharge] = useState<number>(0);
     const [calculationType, setCalculationType] = useState<string>('energy');
     const [multiplicity, setMultiplicity] = useState<number>(1);
     const [theoryType, setTheoryType] = useState('wavefunction');
     const [theory, setTheory] = useState<string>('scf');
     const [basisSet, setBasisSet] = useState<string>('sto-3g');
+
+    // existing tag options shown in the tag autocomplete fields
     const [options, setOptions] = useState<string[]>([]);
 
     // dropdown options state
@@ -92,10 +113,16 @@ const AdvancedAnalysis = () => {
     // keywords (optional)
     const [keywords, setKeywords] = useState<Keyword[]>([]);
 
+    /**
+     * Updates the keyword list when the KeywordEditor changes.
+     */
     const handleKeywordsChange = (updatedKeywords: Keyword[]) => {
         setKeywords(updatedKeywords);
     }
 
+    /**
+     * Continues job submission after the molecule preview image has been captured.
+     */
     useEffect(() => {
         const getStructureImageSubmit = async () => {
             if (!submitConfirmed || structureImageData === '') return
@@ -150,6 +177,10 @@ const AdvancedAnalysis = () => {
                 setLoading(false);
             }
         }
+
+        /**
+         * Loads structures from the user's library for the molecule selector.
+         */
         const loadLibrary = async () => {
             try {
                 const token = await getAccessTokenSilently();
@@ -174,6 +205,9 @@ const AdvancedAnalysis = () => {
             }
         }
 
+        /**
+         * Fetches existing structure tags so the autocomplete can suggest them.
+         */
         const fetchTags = async () => {
             try {
                 const token = await getAccessTokenSilently()
@@ -233,6 +267,9 @@ const AdvancedAnalysis = () => {
         }
     };
 
+    /**
+     * Handles uploaded molecule files.
+     */
     const handleFileChange = async (data, file) => {
         setStructureData(data);
         setFile(file);
@@ -252,6 +289,18 @@ const AdvancedAnalysis = () => {
         }
     };
 
+    /**
+     * SUbmit sthe advanced analysis job.
+     * 
+     * This function:
+     * 1. validates all required fields,
+     * 2. prepares a file from either upload or library structure data,
+     * 3. creates an optional keywords JSON file,
+     * 4. submits the calculation request,
+     * 5. optionally saves the uploaded molecule to the library,
+     * 6. creates the job record in the app database,
+     * 7. redirects back to the jobs page.
+     */
     async function performSubmitJob(): Promise<void> {
         setSubmitAttempted(true);
         setError(null);
@@ -259,6 +308,7 @@ const AdvancedAnalysis = () => {
         let structureIdToUse = selectedStructure;
         let uploadFile = file;
 
+        // Validate required calculation and molecule fields.
         if (!jobName || !structureData || !theory || !calculationType || !basisSet || !multiplicity) {
             setError('Please fill in all required fields');
             return;
@@ -373,6 +423,9 @@ const AdvancedAnalysis = () => {
         }
     }
 
+    /**
+     * Handles the form submit event.
+     */
     const handleSubmitJob = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (uploadStructure && source === 'upload') {
@@ -383,6 +436,7 @@ const AdvancedAnalysis = () => {
         performSubmitJob();
     }
 
+    // Show the full loading screen while the page is fetching initial data or submitting.
     if (loading) {
 		return (
 			<MolmakerLoading />

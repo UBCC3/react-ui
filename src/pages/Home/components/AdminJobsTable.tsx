@@ -18,6 +18,17 @@ import { statusColors, statusIcons } from '../../../constants';
 import { blueGrey, grey } from '@mui/material/colors';
 import type { Job } from '../../../types';
 
+/**
+ * Props shared by job table components.
+ * 
+ * These props control:
+ * - Which jobs are displayed
+ * - Pagination state
+ * - Sorting state
+ * - Selected row highlighting
+ * - Parent callbacks for sorting and row selection
+ * - Column visibility for the regular jobs table
+ */
 interface JobsTableProps {
 	jobs: Job[];
 	page: number;
@@ -39,6 +50,12 @@ interface JobsTableProps {
 	};
 }
 
+/**
+ * Props for the admin jobs table.
+ * 
+ * This extends the regular jobs table props, but adds admin-only columns
+ * such as job id, user iemail, group id, and group name.
+ */
 interface AdminJobsTableProps extends JobsTableProps {
 	displayColumns: {
 		job_id: boolean;
@@ -56,6 +73,18 @@ interface AdminJobsTableProps extends JobsTableProps {
 	};
 }
 
+/**
+ * Admin table component for displaying analysis jobs.
+ * 
+ * This component handles:
+ * - Displaying admin-visible job information
+ * - Sorting jobs by the selected column
+ * - Showing sort direction indicators in table headers
+ * - Paginating the sorted job list
+ * - Highlighting the currently selected job row
+ * - Rendering optional columns based on `displayColumns`
+ * - Showing an empty-state message when no jobs exist
+ */
 export default function AdminJobsTable({
 	jobs,
 	page,
@@ -100,6 +129,9 @@ export default function AdminJobsTable({
 		page * rowsPerPage + rowsPerPage
 	);
 
+    /**
+     * Renders a clickable sortable table header cell.
+     */
 	const renderHeader = (label: string, column: keyof Job) => (
 		<TableCell
 			sx={{ whiteSpace: 'nowrap', cursor: 'pointer' }}

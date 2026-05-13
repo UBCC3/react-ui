@@ -25,6 +25,9 @@ import {
 } from '@mui/icons-material';
 import { blue, grey } from '@mui/material/colors';
 
+/**
+ * Props for the JobsToolbar
+ */
 interface JobsToolbarProps {
 	selectedJobId: string | null;
 	onViewDetails: () => void;
@@ -44,6 +47,19 @@ interface JobsToolbarProps {
 	isGroupAdmin?: boolean;
 }
 
+/**
+ * Displays the toolbar for the jobs history table.
+ * 
+ * This toolbar provides actions for:
+ * - creating standard or advanced jobs,
+ * - viewing details for the selected job,
+ * - viewing structures,
+ * - filtering jobs by structure,
+ * - downloading job archives,
+ * - cancelling or deleting jobs for group admins,
+ * - refreshing the jobs list,
+ * - selecting a structure filter from the dropdown.
+ */
 export default function JobsToolbar({
 	selectedJobId,
 	onViewDetails,
