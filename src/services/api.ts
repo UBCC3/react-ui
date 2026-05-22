@@ -10,7 +10,8 @@ export const createBackendAPI = (
 	token: any
 ) => {
 	return axios.create({
-		baseURL: import.meta.env.VITE_MODE === 'development' ? import.meta.env.VITE_STORAGE_API_URL : "https://ubchemica.com/ubchemica/api",
+		baseURL: import.meta.env.VITE_MODE === 'development' ? import.meta.env.VITE_API_URL : "https://ubchemica.com/ubchemica/api",
+		// baseURL: import.meta.env.VITE_MODE === 'development' ? import.meta.env.VITE_STORAGE_API_URL : "https://ubchemica.com/ubchemica/api",
 		headers: {
 			Authorization: `Bearer ${token}`,
 		},
@@ -25,7 +26,8 @@ export const createClusterAPI = (
 	token: any
 ) => {
 	return axios.create({
-		baseURL: import.meta.env.VITE_MODE === 'development' ? import.meta.env.VITE_API_URL : "https://ubchemica.com/ubchemica/api/cluster",
+		baseURL: import.meta.env.VITE_MODE === 'development' ? import.meta.env.VITE_CLUSTER_API_URL : "https://ubchemica.com/ubchemica/api/cluster",
+		// baseURL: import.meta.env.VITE_MODE === 'development' ? import.meta.env.VITE_API_URL : "https://ubchemica.com/ubchemica/api/cluster",
 		headers: {
 			Authorization: `Bearer ${token}`,
 		},
@@ -40,7 +42,8 @@ export const createStorageAPI = (
 	token: any
 ) => {
 	return axios.create({
-		baseURL: import.meta.env.VITE_MODE === 'development' ? import.meta.env.VITE_API_URL : "https://ubchemica.com/ubchemica/api/storage",
+		baseURL: import.meta.env.VITE_MODE === 'development' ? import.meta.env.VITE_STORAGE_API_URL : "https://ubchemica.com/ubchemica/api/storage",
+		// baseURL: import.meta.env.VITE_MODE === 'development' ? import.meta.env.VITE_API_URL : "https://ubchemica.com/ubchemica/api/storage",
 		headers: {
 			Authorization: `Bearer ${token}`,
 		},
@@ -710,6 +713,7 @@ export const fetchJobResultFiles = async (
 ):Promise<Response> => {
 	try {
 		const API = createStorageAPI(token);
+        // TODO: too much '/storage' directory
 		const res = await API.get(`/storage/files/${jobId}/${calculation}/${status}`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
