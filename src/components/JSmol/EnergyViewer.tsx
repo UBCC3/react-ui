@@ -204,7 +204,8 @@ const EnergyViewer: React.FC<EnergyViewerProps> = ({
 						</Typography>
 					</AccordionSummary>
 					<AccordionDetails sx={{ display: 'flex', flexDirection: 'column', p: 0 }}>
-						<CalculatedQuantities job={job} result={result} />
+                        {result && <CalculatedQuantities job={job} result={result} />}
+						{/* <CalculatedQuantities job={job} result={result} /> */}
 					</AccordionDetails>
 				</Accordion>
 				<Accordion
