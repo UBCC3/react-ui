@@ -703,7 +703,7 @@ export default function Home() {
 					rowsPerPageOptions={[5, 10, 25]}
 				/>
 			</Paper>
-            <Drawer
+            {/* <Drawer
                 anchor="right"
                 open={!!selectedJobId}
                 variant="persistent"
@@ -715,7 +715,7 @@ export default function Home() {
 					source={'library'}
 					sx={{ height: '100%' }}
 				/>
-            </Drawer>
+            </Drawer> */}
 		</Box>
 	);
 }
