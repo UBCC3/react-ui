@@ -16,7 +16,7 @@ import { Edit, Close, Save } from '@mui/icons-material'
  * - Switching between view mode and edit mode
  * - Saving edited structure information back to the backend
  */
-const MoleculeInfo = ({ open, setOpen, selectedStructureId }) => {
+const MoleculeInfo = ({ open, setOpen, selectedStructureId, onStructureUpdated }) => {
 	const [isEditing, setIsEditing] = useState<boolean>(false)
 	const [state, setState] = useState({
 		right: false,
@@ -154,6 +154,15 @@ const MoleculeInfo = ({ open, setOpen, selectedStructureId }) => {
 			}
 			setIsEditing(false)
 			setError(null)
+
+            // Handle structure table update without page refresh
+            onStructureUpdated?.({
+                structure_id: selectedStructureId,
+                name: structureName,
+                formula: chemicalFormula,
+                notes: structureNotes,
+                tags: tags
+            })
 		} catch (err) {
 			setError('Failed to save changes. Please try again.')
 			console.error("Failed to save changes:", err);

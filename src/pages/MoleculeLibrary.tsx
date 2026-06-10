@@ -264,6 +264,11 @@ const MoleculeLibrary = () => {
                 open={open} 
                 setOpen={setOpen} 
                 selectedStructureId={selectedStructureId} 
+                onStructureUpdated={(updated) => {
+                    setLibraryStructures(prev  => prev.map(s =>
+                        s.structure_id === updated.structure_id ? { ...s, ...updated} : s
+                    ))
+                }}
             />
 
             {/* Page heading and short description. */}
