@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from 'react'
 import { Box, Button, Drawer, Grid, Autocomplete, TextField } from '@mui/material'
-import { MolmakerMoleculePreview, MolmakerTextField, MolmakerSectionHeader } from '../components/custom'
+import { MolmakerMoleculePreview, MolmakerTextField, MolmakerSectionHeader, MolmakerConfirm } from '../components/custom'
 import { getStructureDataFromS3, getStructureById, updateStructure, getStructuresTags } from '../services/api'
 import { useAuth0 } from '@auth0/auth0-react'
 import { Edit, Close, Save } from '@mui/icons-material'
@@ -29,6 +29,11 @@ const MoleculeInfo = ({ open, setOpen, selectedStructureId }) => {
 	const [loading, setLoading] = useState<boolean>(false)
 	const [error, setError] = useState<string | null>(null)
 	const [options, setOptions] = useState<string[]>([])
+
+    // States to manage unsaved structure edits
+    const [showUnsavedDialog, setShowUnsavedDialog] = useState<boolean>(false)
+    const [originalValues, setOriginalValues] = useState({ name: '', formula: '', notes: '', tags: [] as string[] })
+
 	const { getAccessTokenSilently } = useAuth0()
 
     /**
@@ -78,6 +83,13 @@ const MoleculeInfo = ({ open, setOpen, selectedStructureId }) => {
 				setStructureNotes(response.data.notes || '')
 				setTags(response.data.tags || [])
 				setChemicalFormula(response.data.formula || '')
+
+                setOriginalValues({
+                    name: response.data.name || '',
+                    formula: response.data.formula || '',
+                    notes: response.data.notes || '',
+                    tags: response.data.tags || []
+                })
 			} catch (err) {
 				setError('Failed to load structure info. Please try again.')
 				console.error("Failed to load structure info:", err)
@@ -177,14 +189,42 @@ const MoleculeInfo = ({ open, setOpen, selectedStructureId }) => {
 		}
 	};
 
+    const hasUnsavedChanges = () => isEditing && (
+        structureName !== originalValues.name ||
+        chemicalFormula !== originalValues.formula ||
+        structureNotes !== originalValues.notes ||
+        JSON.stringify(tags) !== JSON.stringify(originalValues.tags)
+    )
+
+    const handleClose = () => {
+        if (hasUnsavedChanges()) {
+            setShowUnsavedDialog(true)
+        } else {
+            setIsEditing(false)
+            setOpen(false)
+        }
+    }
+
 	const anchor = 'right'
 
 	return (
 		<React.Fragment key={anchor}>
+            <MolmakerConfirm
+                open={showUnsavedDialog}
+                onClose={() => setShowUnsavedDialog(false)}
+                textToShow={"You have unsaved changes. Do you want to save before closing?"}
+                onConfirm={async () => {
+                    await handleSave()
+                    setShowUnsavedDialog(false)
+                    setIsEditing(false)
+                    setOpen(false)
+                }}
+            />
 			<Drawer
 				anchor={'right'}
 				open={open}
-				onClose={toggleDrawer(anchor, false)}
+				// onClose={toggleDrawer(anchor, false)}
+                onClose={handleClose}
 				sx={{
 					'& .MuiDrawer-paper': {
 						width: 450,
@@ -279,7 +319,8 @@ const MoleculeInfo = ({ open, setOpen, selectedStructureId }) => {
 								<Button
 									variant="outlined"
 									color="inherit"
-									onClick={() => setOpen(false)}
+									// onClick={() => setOpen(false)}
+                                    onClick={handleClose}
 									sx={{ textTransform: 'none', borderRadius: 2 }}
 									fullWidth
 									startIcon={<Close />}
