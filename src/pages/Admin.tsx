@@ -4,22 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import {
 	Box,
 	Paper,
-	Divider,
 	TablePagination,
 	Dialog,
 	Snackbar,
-	Button,
-	Typography,
-	Grid,
-	FormGroup,
-	Checkbox,
-	FormControlLabel,
-	Select,
-	MenuItem,
-	TextField,
-	IconButton,
-	Card,
-	CircularProgress
 } from '@mui/material';
 import { blueGrey, grey, blue } from '@mui/material/colors';
 import { 
@@ -42,7 +29,6 @@ import {
 	MolmakerConfirm
 } from '../components/custom';
 import type { Job, Structure } from '../types';
-import { DeleteOutlineOutlined, Add, ManageSearchOutlined } from '@mui/icons-material';
 import AdminJobsTable from './Home/components/AdminJobsTable';
 
 export default function Admin() {
@@ -643,184 +629,6 @@ export default function Admin() {
 				}
 			/>
 
-			<Grid container spacing={2} sx={{ mb: 4 }} size={12}>
-                {/* Left panel for selecting visible columns and building custom filters. */}
-				<Grid size={{ xs: 12, sm: 7 }}>
-					<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50] }}>
-						<Typography 
-							variant="h6" 
-							color={grey[800]}
-							sx={{ p: 2, display: 'flex', alignItems: 'center', borderTopLeftRadius: 5, borderTopRightRadius: 5, fontWeight: 'bold', fontSize: '1.1rem' }}
-						>
-							<ManageSearchOutlined sx={{ mr: 1, color: blue[600] }} />
-							Custom Query
-						</Typography>
-
-                        {/* Column visibility controls. */}
-						<Box sx={{ px: 2 }}>
-							<Typography variant="body2" color={grey[600]} sx={{ mb: 2, mt: 1, fontWeight: 'bold' }}>
-								Show columns
-							</Typography>
-							<FormGroup
-								sx={{
-									display: 'grid',
-									gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-									gap: 1,
-									mt: 1,
-								}}
-							>
-								{Object.keys(columnDisplayNames).map((col) => (
-									<FormControlLabel
-										key={col}
-										control={
-											<Checkbox
-												checked={displayColumns[col as keyof Job]}
-												onChange={(e) => {
-													setDisplayColumns(prev => ({
-														...prev,
-														[col as keyof Job]: e.target.checked
-													}));
-												}}
-												color="primary"
-												size="small"
-											/>
-										}
-										label={
-											<span className='text-xs text-gray-600 font-semibold'>
-												{columnDisplayNames[col as keyof Job].toUpperCase()}
-											</span>
-										}
-									/>
-								))}
-							</FormGroup>
-						</Box>
-
-                        {/* Custom filtering controls. */}
-						<Box sx={{ px: 2, py: 2 }}>
-							<Typography variant="body2" color={grey[600]} sx={{ mb: 2, fontWeight: 'bold' }}>
-								Filter
-							</Typography>
-							{/* Each filter row on its own line */}
-							<Box sx={{ bgcolor: grey[200], p: 3, borderRadius: 2 }}>
-								{filters.map((filter, index) => (
-                                    // One row represents one filter condition.
-									<Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-										<Select
-											value={filter.column}
-											size='small'
-											onChange={(e) => {
-												const newFilters = [...filters];
-												newFilters[index] = {
-													...newFilters[index],
-													column: e.target.value as keyof Job
-												};
-												setFilters(newFilters);
-											}}
-											sx={{ minWidth: 120, mr: 1 }}
-										>
-											{Object.keys(columnDisplayNames).map(col => (
-												<MenuItem key={col} value={col}>{columnDisplayNames[col as keyof Job]}</MenuItem>
-											))}
-										</Select>
-										<Select
-											value={filter.extent}
-											size='small'
-											onChange={(e) => {
-												const newFilters = [...filters];
-												newFilters[index] = {
-													...newFilters[index],
-													extent: e.target.value as 'contains' | 'equals' | 'startsWith'
-												};
-												setFilters(newFilters);
-											}}
-											sx={{ minWidth: 120, mr: 1 }}
-										>
-											<MenuItem value="contains">Contains</MenuItem>
-											<MenuItem value="equals">Equals</MenuItem>
-											<MenuItem value="startsWith">Starts With</MenuItem>
-										</Select>
-										<TextField
-											variant="outlined"
-											size="small"
-											value={filter.value}
-											onChange={(e) => {
-												const newFilters = [...filters];
-												newFilters[index] = {
-													...newFilters[index],
-													value: e.target.value
-												};
-												setFilters(newFilters);
-											}}
-											sx={{ flexGrow: 1, mr: 1 }}
-										/>
-										<IconButton
-											color="error"
-											onClick={() => {
-												const newFilters = [...filters];
-												newFilters.splice(index, 1);
-												setFilters(newFilters);
-											}}
-											sx={{ ml: 1 }}
-										>
-											<DeleteOutlineOutlined />
-										</IconButton>
-									</Box>
-								))}
-
-								{/* Add Filter button always directly below all filters */}
-								<Button
-									variant="outlined"
-									color="primary"
-									size="small"
-									startIcon={<Add />}
-									sx={{ mt: 1, textTransform: 'none' }}
-									onClick={() => {
-										setFilters([...filters, { column: 'job_name', value: '', extent: 'contains' }]);
-									}}
-								>
-									Add Filter
-								</Button>
-
-                                {/* Applies all custom filters to the table. */}
-								<Button
-									variant="contained"
-									color="primary"
-									onClick={handleFilterSubmit}
-									sx={{ mt: 2, textTransform: 'none', display: 'block', borderRadius: 2 }}
-									fullWidth
-								>
-									Apply Filters
-								</Button>
-							</Box>
-						</Box>
-					</Paper>
-				</Grid>
-
-                {/* Right panel for molecule preview. */}
-				<Grid size={{ xs: 12, sm: 5 }}>
-					{structureLoading ? (
-						<Card
-							sx={{
-								display: 'flex',
-								justifyContent: 'center',
-								alignItems: 'center',
-								backgroundColor: blueGrey[50],
-								height: '100%',
-							}}
-						>
-							<CircularProgress />
-						</Card>
-					) : (
-						<MolmakerMoleculePreview
-							data={previewData}
-							format='xyz'
-							source={'library'}
-							sx={{ maxHeight: '100%' }}
-						/>
-					)}
-				</Grid>
-			</Grid>
-
             {/* Main jobs table section. */}
 			<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50], mb: 4 }}>
 				<JobsToolbar
@@ -852,6 +660,15 @@ export default function Admin() {
 					onZipDownload={handleZipDownload}
 					downloadDisabled={downloadDisabled}
 					isGroupAdmin={true}
+
+                    displayColumns={displayColumns}
+                    columnDisplayNames={columnDisplayNames}
+                    onColumnToggle={(col, checked) =>
+                        setDisplayColumns(prev => ({ ...prev, [col]: checked}))
+                    }
+                    filters={filters}
+                    onFiltersChange={setFilters}
+                    onFilterSubmit={handleFilterSubmit}
 				/>
 
                 {/* Table containing the filtered, sorted, and selectable job rows. */}
