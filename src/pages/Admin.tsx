@@ -193,8 +193,9 @@ export default function Admin() {
 			for (const job of jobsRef.current) {
 			// skip terminal jobs
 			if (
-				[JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED]
-				.includes(job.status)
+				[JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED,
+                 JobStatus.OUT_OF_MEMORY, JobStatus.TIMEOUT]
+                .includes(job.status)
 			) {
 				continue;
 			}
@@ -450,8 +451,9 @@ export default function Admin() {
 		}
 
         // Completed, failed, and cancelled jobs cannot be cancelled again.
-		if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED].includes(jobToCancel.status)) {
-			return true
+		if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED,
+            JobStatus.OUT_OF_MEMORY, JobStatus.TIMEOUT].includes(jobToCancel.status)) {
+           return true
 		}
 
 		return false
@@ -468,9 +470,10 @@ export default function Admin() {
 		}
 
         // Only allow deletion for terminal jobs.
-		if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED].includes(jobToDelete.status)) {
-			return false;
-		}
+		if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED,
+            JobStatus.OUT_OF_MEMORY, JobStatus.TIMEOUT].includes(jobToDelete.status)) {
+           return false;
+       }
 		return true;
 	}
 
