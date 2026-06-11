@@ -793,7 +793,7 @@ export const createJob = async (
  */
 export const updateJobStatus = async (
 	jobId: string,
-	status: 'pending' | 'running' | 'completed' | 'failed',
+	status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | 'out_of_memory' | 'timeout',
 	token: string
 ): Promise<Response> => {
 	try {

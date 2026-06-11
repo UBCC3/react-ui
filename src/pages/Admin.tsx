@@ -556,8 +556,10 @@ export default function Admin() {
 		const jobToDownloadZip = jobs.find(j => j.job_id === selectedJobId);
 		if (!jobToDownloadZip) { return true; }
 
-        // Archives are not downloadable while jobs are active, pending, cancelled, or unknown.
-		if ([JobStatus.CANCELLED, JobStatus.PENDING, JobStatus.RUNNING, JobStatus.UNKNOWN].includes(jobToDownloadZip.status)) {
+        // Archives are not downloadable while jobs are active, pending, cancelled, unknown, out of memory, or timeout.
+		if ([JobStatus.CANCELLED, JobStatus.PENDING, JobStatus.RUNNING, 
+            JobStatus.UNKNOWN, JobStatus.OUT_OF_MEMORY, JobStatus.TIMEOUT]
+            .includes(jobToDownloadZip.status)) {
 			return true
 		}
 

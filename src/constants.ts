@@ -1,5 +1,5 @@
-import { green, blue, orange, red, grey } from '@mui/material/colors';
-import { CheckCircleOutlined, RunCircleOutlined, PendingOutlined, ErrorOutline, CancelOutlined, HelpOutlineOutlined } from '@mui/icons-material';
+import { green, blue, orange, red, grey, deepOrange } from '@mui/material/colors';
+import { CheckCircleOutlined, RunCircleOutlined, PendingOutlined, ErrorOutline, CancelOutlined, HelpOutlineOutlined, ReportOutlined, TimerOffOutlined } from '@mui/icons-material';
 
 export const JobStatus = {
 	PENDING: 'pending',
@@ -8,6 +8,8 @@ export const JobStatus = {
 	FAILED: 'failed',
 	CANCELLED: 'cancelled',
 	UNKNOWN: 'unknown',
+    OUT_OF_MEMORY: 'out_of_memory',
+    TIMEOUT: 'timeout'
 };
 
 export const statusColors = {
@@ -16,6 +18,8 @@ export const statusColors = {
 	'pending': orange[500],
 	'failed': red[500],
 	'cancelled': grey[500],
+    'out_of_memory': deepOrange[500],
+    'timeout': deepOrange[300]
 };
 
 export const statusIcons = {
@@ -25,4 +29,6 @@ export const statusIcons = {
 	'failed': ErrorOutline,
 	'cancelled': CancelOutlined,
 	'unknown': HelpOutlineOutlined,
+    'out_of_memory': ReportOutlined,
+    'timeout': TimerOffOutlined
 };
