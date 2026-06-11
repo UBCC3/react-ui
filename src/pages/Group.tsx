@@ -161,7 +161,8 @@ export default function Group() {
 
 				for (const j of jobsRef.current) {
                     // Skip jobs that are alreadiy in a final state.
-					if ([JobStatus.COMPLETED,JobStatus.FAILED,JobStatus.CANCELLED].includes(j.status)) continue;
+					if ([JobStatus.COMPLETED,JobStatus.FAILED,JobStatus.CANCELLED,
+                         JobStatus.OUT_OF_MEMORY, JobStatus.TIMEOUT].includes(j.status)) continue;
 
                     // Fetch the latest Slurm status for this job.
 					const r = await getJobStatusBySlurmID(j.slurm_id!, token);
@@ -374,7 +375,8 @@ export default function Group() {
 		}
 
         // Final-state jobs cannot be cancelled again.
-		if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED].includes(jobToCancel.status)) {
+		if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED,
+             JobStatus.OUT_OF_MEMORY, JobStatus.TIMEOUT].includes(jobToCancel.status)) {
 			return true
 		}
 
@@ -392,7 +394,8 @@ export default function Group() {
 		}
 
         // Only completed, failed, or cancelled jobs can be deleted.
-		if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED].includes(jobToDelete.status)) {
+		if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED,
+             JobStatus.OUT_OF_MEMORY, JobStatus.TIMEOUT].includes(jobToDelete.status)) {
 			return false;
 		}
 		return true;
