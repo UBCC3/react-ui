@@ -211,7 +211,8 @@ export default function Home() {
 			for (const job of jobsRef.current) {
 			// skip terminal jobs
 			if (
-				[JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED]
+				[JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED,
+                 JobStatus.OUT_OF_MEMORY, JobStatus.TIMEOUT]
 				.includes(job.status)
 			) {
 				continue;
@@ -517,7 +518,7 @@ export default function Home() {
 
 		const jobToDownloadZip = jobs.find(j => j.job_id === selectedJobId);
 		if (!jobToDownloadZip) { return true; }
-        
+
         // Archives are not downloadable while jobs are active, pending, cancelled, unknown, out of memory, or timeout.
 		if ([JobStatus.CANCELLED, JobStatus.PENDING, JobStatus.RUNNING, 
             JobStatus.UNKNOWN, JobStatus.OUT_OF_MEMORY, JobStatus.TIMEOUT]
@@ -540,7 +541,8 @@ export default function Home() {
 		if (!jobToCancel) {
 			return true;
 		}
-		if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED].includes(jobToCancel.status)) {
+		if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED,
+             JobStatus.OUT_OF_MEMORY, JobStatus.TIMEOUT].includes(jobToCancel.status)) {
 			return true
 		}
 
@@ -558,7 +560,8 @@ export default function Home() {
 		if (!jobToDelete) {
 			return true;
 		}
-		if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED].includes(jobToDelete.status)) {
+		if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED,
+             JobStatus.OUT_OF_MEMORY, JobStatus.TIMEOUT].includes(jobToDelete.status)) {
 			return false;
 		}
 		return true;
