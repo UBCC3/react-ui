@@ -22,7 +22,8 @@ import {
 	DeleteOutlineOutlined,
 	WorkHistoryOutlined,
 	ArchiveOutlined,
-    ManageSearchOutlined, 
+    ManageSearchOutlined,
+    InfoOutlined
 } from '@mui/icons-material';
 import { blue, grey } from '@mui/material/colors';
 
@@ -196,16 +197,26 @@ export default function JobsToolbar({
                             </IconButton>
                         </Tooltip>
                     </Box>
-                    <Select
-                        value={selectedStructure}
-                        size='small'
-                        onChange={(e) => onStructureChange(e.target.value as string)}
-                        sx={{ minWidth: 160, ml: 2 }}
-                    >
-                        {structures.map(({ structure_id, name }) => (
-                            <MenuItem key={structure_id} value={structure_id}>{name}</MenuItem>
-                        ))}
-                    </Select>
+                    <Box sx={{ display: 'flex', alignItems: 'center', ml: 2}}>
+                        <Tooltip title="Filter jobs by library structure. Select a structure to show only jobs that used it.">
+                            <InfoOutlined sx={{ fontSize: 16, color: grey[600], mr: 0}}/>
+                        </Tooltip>
+                        <FormControl size="small" sx={{ minWidth: 160, ml: 2 }}>
+                            <InputLabel shrink>Library Structure</InputLabel>
+                            <Select
+                                value={selectedStructure}
+                                label="Library Structure"
+                                displayEmpty
+                                notched
+                                onChange={(e) => onStructureChange(e.target.value as string)}
+                            >
+                                {structures.map(({ structure_id, name }) => (
+                                    <MenuItem key={structure_id} value={structure_id}>{name}</MenuItem>
+                                ))}
+
+                            </Select>
+                        </FormControl>
+                    </Box>
                 </Box>
             </Toolbar>
     

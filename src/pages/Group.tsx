@@ -139,7 +139,14 @@ export default function Group() {
 				setFilteredJobs(initial);
 				// Prep structure list
 				const sortedStructs = sr.data.sort((a,b) => a.name.localeCompare(b.name));
-				setStructures([{ structure_id:'', name:'All', user_sub:'', location:'', uploaded_at:'', notes:'' }, ...sortedStructs]);
+				setStructures([{ 
+                    structure_id:'', 
+                    name:'All', 
+                    user_sub:'', 
+                    location:'', 
+                    uploaded_at:'', 
+                    notes:'' 
+                }, ...sortedStructs]);
 			} catch (e) {
 				console.error(e);
 				setError('Failed to load data');
