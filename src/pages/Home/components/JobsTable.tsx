@@ -128,7 +128,7 @@ export default function JobsTable({
 						{displayColumns.job_notes && renderHeader('Notes', 'job_notes')}
 						{displayColumns.status && renderHeader('Status', 'status')}
 						{displayColumns.structures && renderHeader('Library Structure', 'structures')}
-						{displayColumns.tags && renderHeader('Tags', 'tags')}
+						{displayColumns.tags && renderHeader('Job Tags', 'tags')}
 						{displayColumns.runtime && renderHeader('Runtime', 'runtime')}
 						{displayColumns.submitted_at && renderHeader('Submitted At', 'submitted_at')}
 						{displayColumns.completed_at && renderHeader('Completed At', 'completed_at')}

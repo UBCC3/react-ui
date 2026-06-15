@@ -90,7 +90,7 @@ export default function Admin() {
 		job_notes: 'Job Notes',
 		status: 'Status',
 		structures: 'Library Structure',
-		tags: 'Tags',
+		tags: 'Job Tags',
 		runtime: 'Runtime',
 		submitted_at: 'Submitted At',
 		completed_at: 'Completed At',
