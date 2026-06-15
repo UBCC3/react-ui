@@ -35,10 +35,10 @@ import GroupJobsTable from './Home/components/GroupJobsTable';
 export default function Group() {
 	// map column name to display name
 	const columnDisplayNames: Record<any, string> = {
-		job_name: 'Job Name',
+		job_name: 'Name',
 		job_notes: 'Job Notes',
 		status: 'Status',
-		structures: 'Structures',
+		structures: 'Library Structure',
 		tags: 'Tags',
 		runtime: 'Runtime',
 		submitted_at: 'Submitted At',

@@ -83,13 +83,13 @@ export default function Admin() {
 	// map column name to display name
 	const columnDisplayNames: Record<any, string> = {
 		job_id: 'Job ID',
-		job_name: 'Job Name',
+		job_name: 'Name',
 		user_email: 'User Email',
 		group_id: 'Group ID',
 		group_name: 'Group Name',
 		job_notes: 'Job Notes',
 		status: 'Status',
-		structures: 'Structures',
+		structures: 'Library Structure',
 		tags: 'Tags',
 		runtime: 'Runtime',
 		submitted_at: 'Submitted At',

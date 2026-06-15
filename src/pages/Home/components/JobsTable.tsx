@@ -124,10 +124,10 @@ export default function JobsTable({
 			<Table>
 				<TableHead sx={{ bgcolor: grey[200] }}>
 					<TableRow>
-						{displayColumns.job_name && renderHeader('Job Name', 'job_name')}
+						{displayColumns.job_name && renderHeader('Name', 'job_name')}
 						{displayColumns.job_notes && renderHeader('Notes', 'job_notes')}
 						{displayColumns.status && renderHeader('Status', 'status')}
-						{displayColumns.structures && renderHeader('Structures', 'structures')}
+						{displayColumns.structures && renderHeader('Library Structure', 'structures')}
 						{displayColumns.tags && renderHeader('Tags', 'tags')}
 						{displayColumns.runtime && renderHeader('Runtime', 'runtime')}
 						{displayColumns.submitted_at && renderHeader('Submitted At', 'submitted_at')}
@@ -191,7 +191,7 @@ export default function JobsTable({
 													sx={{ mr: 0.5, mb: 0.5 }}
 												/>
 											)) : (
-												<Typography variant="caption" color="text.secondary">No structures</Typography>
+												<Typography variant="caption" color="text.secondary">Not in library</Typography>
 											)}
 									</TableCell>
 								)}

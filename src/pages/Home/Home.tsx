@@ -82,10 +82,10 @@ export default function Home() {
 
 	// map column name to display name
 	const columnDisplayNames: Record<any, string> = {
-		job_name: 'Job Name',
+		job_name: 'Name',
 		job_notes: 'Job Notes',
 		status: 'Status',
-		structures: 'Structures',
+		structures: 'Library Structure',
 		tags: 'Tags',
 		runtime: 'Runtime',
 		submitted_at: 'Submitted At',
@@ -635,6 +635,7 @@ export default function Home() {
             {/* Jobs history */}
 			<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50], mb: 4 }}>
 				<JobsToolbar
+                    title="My Jobs"
 					selectedJobId={selectedJobId}
 					onViewDetails={() => {
 						navigate(`/jobs/${selectedJobId}`);

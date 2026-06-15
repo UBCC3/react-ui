@@ -42,6 +42,7 @@ import type { Job } from '../../../types';
  * Props for the JobsToolbar
  */
 interface JobsToolbarProps {
+    title?: string;
 	selectedJobId: string | null;
 	onViewDetails: () => void;
 	onViewStructure: () => void;
@@ -91,6 +92,7 @@ interface JobsToolbarProps {
  * - selecting a structure filter from the dropdown.
  */
 export default function JobsToolbar({
+    title = "Jobs History",
 	selectedJobId,
 	onViewDetails,
 	onViewStructure,
@@ -122,7 +124,7 @@ export default function JobsToolbar({
             <Toolbar sx={{ justifyContent: 'space-between', borderTopLeftRadius: 5, borderTopRightRadius: 5 }}>
                 <Typography variant="h6" color={grey[800]} sx={{ display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: '1.1rem' }}>
                     <WorkHistoryOutlined sx={{ mr: 2, color: blue[600] }} />
-                    Jobs History
+                    {title}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     {/* Select Columns + Filter Rows toggles */}

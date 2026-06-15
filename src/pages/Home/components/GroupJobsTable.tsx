@@ -152,10 +152,10 @@ export default function GroupJobsTable({
 			<Table>
 				<TableHead sx={{ bgcolor: grey[200] }}>
 					<TableRow>
-						{displayColumns.job_name && renderHeader('Job Name', 'job_name')}
+						{displayColumns.job_name && renderHeader('Name', 'job_name')}
 						{displayColumns.job_notes && renderHeader('Notes', 'job_notes')}
 						{displayColumns.status && renderHeader('Status', 'status')}
-						{displayColumns.structures && renderHeader('Structures', 'structures')}
+						{displayColumns.structures && renderHeader('Library Structure', 'structures')}
 						{displayColumns.tags && renderHeader('Tags', 'tags')}
 						{displayColumns.runtime && renderHeader('Runtime', 'runtime')}
 						{displayColumns.submitted_at && renderHeader('Submitted At', 'submitted_at')}

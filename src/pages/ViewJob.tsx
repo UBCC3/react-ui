@@ -163,7 +163,7 @@ function ViewJob() {
 							<Grid size={12}>
 								<MolmakerTextField
 									fullWidth
-									label="Structures"
+									label="Library Structure"
 									value={job.structures.map((structure) => structure.name).join(', ')}
 									onChange={() => {}}
 									sx={{ mb: 2 }}

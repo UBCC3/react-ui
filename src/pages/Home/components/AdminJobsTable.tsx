@@ -158,13 +158,13 @@ export default function AdminJobsTable({
 				<TableHead sx={{ bgcolor: blueGrey[50] }}>
 					<TableRow>
 						{displayColumns.job_id && renderHeader('Job ID', 'job_id')}
-						{displayColumns.job_name && renderHeader('Job Name', 'job_name')}
+						{displayColumns.job_name && renderHeader('Name', 'job_name')}
 						{displayColumns.user_email && renderHeader('User Email', 'user_email')}
 						{displayColumns.group_id && renderHeader('Group ID', 'group_id')}
 						{displayColumns.group_name && renderHeader('Group Name', 'group_name')}
 						{displayColumns.job_notes && renderHeader('Notes', 'job_notes')}
 						{displayColumns.status && renderHeader('Status', 'status')}
-						{displayColumns.structures && renderHeader('Structures', 'structures')}
+						{displayColumns.structures && renderHeader('Library Structure', 'structures')}
 						{displayColumns.tags && renderHeader('Tags', 'tags')}
 						{displayColumns.runtime && renderHeader('Runtime', 'runtime')}
 						{displayColumns.submitted_at && renderHeader('Submitted At', 'submitted_at')}
