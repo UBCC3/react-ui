@@ -172,12 +172,12 @@ export default function MenuDrawer() {
 						path: '/'
 					},
 					{
-						text: 'Standard Analysis',
+						text: 'Submit Workflow Job',
 						icon: <AutoMode />,
 						path: '/submit'
 					},
 					{
-						text: 'Advanced Analysis', 
+						text: 'Submit Custom Job', 
 						icon: <TuneOutlined />,
 						path: '/advanced'
 					},
