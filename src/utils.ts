@@ -15,3 +15,6 @@ export const formatComplex = (c: ComplexNumber) =>  {
   const sign = imag >= 0 ? "+" : "-";
   return `${real.toFixed(2)} ${sign} ${Math.abs(imag).toFixed(2)}i`;
 }
+
+export const reverseMapping = (obj: Record<string, string>): Record<string, string> =>
+    Object.fromEntries(Object.entries(obj).map(([k, v]) => [v, k]));

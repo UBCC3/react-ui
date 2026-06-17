@@ -26,27 +26,35 @@ import { ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
 
 import type { Job } from '../../../types';
 import { updateVisibility } from '../../../services/api';
-import { statusColors, statusIcons } from '../../../constants';
+import { statusColors, statusIcons, calculationTypes } from '../../../constants';
+import { reverseMapping } from '../../../utils';
 
 /**
  * Props for the JobsTable
  */
 interface JobsTableProps {
-  jobs: Job[];
-  loading: boolean;
-  page: number;
-  rowsPerPage: number;
-  order: 'asc' | 'desc';
-  orderBy: keyof Job;
-  selectedJobId: string | null;
-  onSort: (column: keyof Job) => void;
-  onRowClick: (jobId: string) => void;
-  displayColumns: Record<
-    'job_name' | 'job_notes' | 'status' | 'structures' |
-    'tags' | 'runtime' | 'submitted_at' | 'completed_at' | 'is_public',
-    boolean
-  >;
-  isGroupAdmin: boolean;
+    jobs: Job[];
+    loading: boolean;
+    page: number;
+    rowsPerPage: number;
+    order: 'asc' | 'desc';
+    orderBy: keyof Job;
+    selectedJobId: string | null;
+    onSort: (column: keyof Job) => void;
+    onRowClick: (jobId: string) => void;
+    displayColumns: {
+        job_name: boolean;
+		job_notes: boolean;
+		status: boolean;
+        calculation_type: boolean;
+		structures: boolean;
+		tags: boolean;
+		runtime: boolean;
+		submitted_at: boolean;
+		completed_at: boolean;
+        is_public: boolean;
+    }
+    isGroupAdmin: boolean;
 }
 
 /**
@@ -113,6 +121,11 @@ export default function GroupJobsTable({
   );
 
   /**
+   * Reverse the calculation types mapping
+   */
+  const reversedCalculationTypes = reverseMapping(calculationTypes)
+
+  /**
    * Updates whether a job is public or private.
    */
   const toggleVisibility = async (jobId: string, makePublic: boolean) => {
@@ -155,6 +168,7 @@ export default function GroupJobsTable({
 						{displayColumns.job_name && renderHeader('Name', 'job_name')}
 						{displayColumns.job_notes && renderHeader('Notes', 'job_notes')}
 						{displayColumns.status && renderHeader('Status', 'status')}
+						{displayColumns.calculation_type && renderHeader('Calculation Type', 'structures')}
 						{displayColumns.structures && renderHeader('Library Structure', 'structures')}
 						{displayColumns.tags && renderHeader('Job Tags', 'tags')}
 						{displayColumns.runtime && renderHeader('Runtime', 'runtime')}
@@ -235,6 +249,16 @@ export default function GroupJobsTable({
 													/>
 												</TableCell>
 											)}
+                                            {displayColumns.calculation_type && (
+                                                <TableCell>
+                                                    <Chip
+                                                        label={reversedCalculationTypes[job.calculation_type]}
+                                                        variant="outlined"
+                                                        size="small"
+                                                        sx={{ mr: 0.5, mb: 0.5 }}
+                                                    />
+                                                </TableCell>
+                                            )}
 											{displayColumns.structures && (
 												<TableCell>
 													{job.structures.length ? (

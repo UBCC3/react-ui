@@ -32,3 +32,13 @@ export const statusIcons = {
     'out_of_memory': ReportOutlined,
     'timeout': TimerOffOutlined
 };
+
+export const calculationTypes = {
+    'Molecular Energy': 'energy',
+	'Geometric Optimization': 'optimization',
+	'Vibrational Frequency': 'frequency',
+	'Molecular Orbitals': 'orbitals',
+    'Standard Analysis': 'standard',
+    'Transition State Optimization': 'transition',
+    'Intrinsic Reaction Coordinate': 'irc',
+}

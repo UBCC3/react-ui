@@ -13,10 +13,11 @@ import {
 	Grid
 } from '@mui/material';
 import { AutoMode, TuneOutlined } from '@mui/icons-material';
-import { statusColors, statusIcons } from '../../../constants';
+import { statusColors, statusIcons, calculationTypes } from '../../../constants';
 import { grey } from '@mui/material/colors';
 import { ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
 import type { Job } from '../../../types';
+import { reverseMapping } from '../../../utils';
 
 /**
  * Props for the JobsTable
@@ -34,6 +35,7 @@ interface JobsTableProps {
 		job_name: boolean;
 		job_notes: boolean;
 		status: boolean;
+        calculation_type: boolean;
 		structures: boolean;
 		tags: boolean;
 		runtime: boolean;
@@ -96,6 +98,9 @@ export default function JobsTable({
 		page * rowsPerPage + rowsPerPage
 	);
 
+    // Reverse the calculation types mapping
+    const reversedCalculationTypes = reverseMapping(calculationTypes)
+
     /**
      * Renders a sortable table header cell.
      */
@@ -127,6 +132,7 @@ export default function JobsTable({
 						{displayColumns.job_name && renderHeader('Name', 'job_name')}
 						{displayColumns.job_notes && renderHeader('Notes', 'job_notes')}
 						{displayColumns.status && renderHeader('Status', 'status')}
+                        {displayColumns.calculation_type && renderHeader('Calculation Type', 'calculation_type')}
 						{displayColumns.structures && renderHeader('Library Structure', 'structures')}
 						{displayColumns.tags && renderHeader('Job Tags', 'tags')}
 						{displayColumns.runtime && renderHeader('Runtime', 'runtime')}
@@ -179,6 +185,16 @@ export default function JobsTable({
 										/>
 									</TableCell>
 								)}
+                                {displayColumns.calculation_type && (
+                                    <TableCell>
+                                        <Chip
+                                            label={reversedCalculationTypes[job.calculation_type]}
+                                            variant="outlined"
+                                            size="small"
+                                            sx={{ mr: 0.5, mb: 0.5 }}
+                                        />
+                                    </TableCell>
+                                )}
 								{displayColumns.structures && (
 									<TableCell>
 										{job.structures.length ? job.structures
