@@ -22,7 +22,7 @@ import {
 	upsertCurrentUser,
 	getZipPresignedUrl
 } from '../../services/api';
-import { JobStatus } from '../../constants';
+import { calculationTypes, JobStatus } from '../../constants';
 import JobsStatus from './components/JobsStatus';
 import JobsToolbar from './components/JobsToolbar';
 import JobsTable from './components/JobsTable';
@@ -34,6 +34,7 @@ import {
 	MolmakerConfirm
 } from '../../components/custom';
 import type { Job, Structure } from '../../types';
+import { reverseMapping } from '../../utils';
 
 export default function Home() {
 	const navigate = useNavigate();
@@ -110,6 +111,9 @@ export default function Home() {
 	const jobsRef = useRef<Job[]>([]);
 	useEffect(() => { jobsRef.current = jobs; }, [jobs]);
 
+    // Reverse the calculation types mapping
+    const reversedCalculationTypes = reverseMapping(calculationTypes);
+
     /**
      * Applies all custom filters to the current jobs list.
      * 
@@ -131,7 +135,9 @@ export default function Home() {
 					let jobValue = '';
 					if (filter.column === 'structures') {
 						jobValue = job.structures.map(s => s.name).join(', ').toLowerCase();
-					} else {
+					} else if (filter.column === 'calculation_type') {
+                        jobValue = (reversedCalculationTypes[job.calculation_type] ?? job.calculation_type).toLocaleLowerCase();
+                    } else {
 						jobValue = String(job[filter.column] ?? '').toLowerCase();
 					}
 					const filterValue = filter.value.toLowerCase();

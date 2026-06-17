@@ -20,7 +20,7 @@ import {
 	upsertCurrentUser,
 	getZipPresignedUrl
 } from '../services/api';
-import { JobStatus } from '../constants';
+import { calculationTypes, JobStatus } from '../constants';
 import JobsToolbar from './Home/components/JobsToolbar';
 import {
 	MolmakerPageTitle,
@@ -31,6 +31,7 @@ import {
 import type { Job, Structure } from '../types';
 import GroupPanel from '../components/GroupPanel';
 import GroupJobsTable from './Home/components/GroupJobsTable';
+import { reverseMapping } from '../utils';
 
 export default function Group() {
 	// map column name to display name
@@ -211,6 +212,9 @@ export default function Group() {
 		return () => clearInterval(id);
 	}, [getAccessTokenSilently]);
 
+    // Reverse the calculation types mapping
+    const reversedCalculationTypes = reverseMapping(calculationTypes);
+
 	// Apply custom filters
 	const handleFilterSubmit = useCallback(() => {
 		setLoading(true);
@@ -223,7 +227,9 @@ export default function Group() {
                     // Structures need special handling because they are stored as an array.
 					const raw = f.column === 'structures'
 						? job.structures.map(s=>s.name).join(',').toLowerCase()
-						: String(job[f.column] ?? '').toLowerCase();
+						: String(job[f.column] ?? '').toLowerCase()
+                            ? (reversedCalculationTypes[job.calculation_type] ?? job.calculation_type).toLowerCase()
+                            : String(job[f.column] ?? '').toLowerCase();
 
                     // Tags and structures may contain multiple comma-separated values.
 					if (['tags','structures'].includes(f.column)) {
