@@ -30,7 +30,7 @@ import {
 } from '../components/custom';
 import type { Job, Structure } from '../types';
 import AdminJobsTable from './Home/components/AdminJobsTable';
-import { reverseMapping } from '../utils';
+import { filterJobs, reverseMapping } from '../utils';
 
 export default function Admin() {
     // used to redirect the user after the job is successfully submitted
@@ -124,65 +124,11 @@ export default function Admin() {
 		getAccessTokenSilently().then(setAdminPanelToken).catch(() => setAdminPanelToken(null));
 	}, [getAccessTokenSilently]);
 
-    // Reverse the calculation types mapping
-    const reversedCalculationTypes = reverseMapping(calculationTypes);
-
-    // Applies all custom filters to the current jobs list.
-	const handleFilterSubmit = () => {
-		setLoading(true);
-		try {
-			let filtered = jobsRef.current;
-
-			// Apply each filter
-			for (const filter of filters) {
-				filtered = filtered.filter(job => {
-					let jobValue = '';
-					if (filter.column === 'structures') {
-						jobValue = job.structures.map(s => s.name).join(', ').toLowerCase();
-					} else if (filter.column === 'calculation_type') {
-                        jobValue = (reversedCalculationTypes[job.calculation_type] ?? job.calculation_type).toLocaleLowerCase();
-                    } else {
-						jobValue = String(job[filter.column] ?? '').toLowerCase();
-					}
-					const filterValue = filter.value.toLowerCase();
-
-					switch (filter.extent) {
-						case 'contains':
-							if (filter.column === 'tags' || filter.column === 'structures') {
-								console.log(job[filter.column], filterValue);
-								// Special handling for tags and structures
-								console.log("Filtering by tags or structures:", jobValue, filterValue);
-								return jobValue.split(',').some(tag => tag.trim().toLowerCase().includes(filterValue));
-							}
-							// Default contains behavior
-							return jobValue.includes(filterValue);
-						case 'equals':
-							if (filter.column === 'tags' || filter.column === 'structures') {
-								// Special handling for tags and structures
-								return jobValue.split(',').some(tag => tag.trim().toLowerCase() === filterValue);
-							}
-							return jobValue === filterValue;
-						case 'startsWith':
-							if (filter.column === 'tags' || filter.column === 'structures') {
-								// Special handling for tags and structures
-								return jobValue.split(',').some(tag => tag.trim().toLowerCase().startsWith(filterValue));
-							}
-							return jobValue.startsWith(filterValue);
-						default:
-							return true; // no filter applied
-					}
-				});
-			}
-
-			setFilteredJobs(filtered);
-			setPage(0); // reset to first page
-		} catch (err) {
-			setError('Failed to apply filters');
-			console.error('Failed to apply filters:', err);
-		} finally {
-			setLoading(false);
-		}
-	}
+    // applying the filter to the jobs
+    const handleFilterSubmit = () => {
+        setFilteredJobs(filterJobs(jobsRef.current, filters));
+        setPage(0);
+    }
 
 	// poll statuses every 5s
 	useEffect(() => {

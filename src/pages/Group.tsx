@@ -31,7 +31,7 @@ import {
 import type { Job, Structure } from '../types';
 import GroupPanel from '../components/GroupPanel';
 import GroupJobsTable from './Home/components/GroupJobsTable';
-import { reverseMapping } from '../utils';
+import { filterJobs, reverseMapping } from '../utils';
 
 export default function Group() {
 	// map column name to display name
@@ -215,48 +215,11 @@ export default function Group() {
     // Reverse the calculation types mapping
     const reversedCalculationTypes = reverseMapping(calculationTypes);
 
-	// Apply custom filters
-	const handleFilterSubmit = useCallback(() => {
-		setLoading(true);
-		try {
-            // Start from the latest jobs stored in the ref.
-			let res = [...jobsRef.current];
-			filters.forEach(f => {
-				const val = f.value.toLowerCase();
-				res = res.filter(job => {
-                    // Structures need special handling because they are stored as an array.
-					const raw = f.column === 'structures'
-						? job.structures.map(s=>s.name).join(',').toLowerCase()
-						: String(job[f.column] ?? '').toLowerCase()
-                            ? (reversedCalculationTypes[job.calculation_type] ?? job.calculation_type).toLowerCase()
-                            : String(job[f.column] ?? '').toLowerCase();
-
-                    // Tags and structures may contain multiple comma-separated values.
-					if (['tags','structures'].includes(f.column)) {
-						const arr = raw.split(',').map(x=>x.trim());
-						return arr.some(x =>
-							f.extent==='contains' ? x.includes(val) :
-							f.extent==='equals'   ? x===val :
-							x.startsWith(val)
-						);
-					}
-                    
-                    // Apply the selected comparison mode to normal text fields.
-					return f.extent==='contains' ? raw.includes(val) :
-						f.extent==='equals'   ? raw===val :
-						raw.startsWith(val);
-				});
-			});
-
-            // Update the table and return to the first page.
-			setFilteredJobs(res);
-			setPage(0);
-		} catch {
-			setError('Failed to apply filters');
-		} finally {
-			setLoading(false);
-		}
-	}, [filters]);
+    // applying the filter to the jobs
+    const handleFilterSubmit = () => {
+        setFilteredJobs(filterJobs(jobsRef.current, filters));
+        setPage(0);
+    }
 
     // Loads molecule structure data from S3 and displays it in the preview component.
 	const openMoleculeViewer = async (structureId: string) => {
