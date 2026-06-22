@@ -304,7 +304,7 @@ export default function JobsToolbar({
                                                     updated[index] = { ...updated[index], value: e.target.value };
                                                     onFiltersChange(updated);
                                                 }}
-                                                sx={{ mr: 1 }}
+                                                sx={{ flexGrow: 1, mr: 1 }}
                                                 InputLabelProps={{ shrink: true }}
                                             />
                                             {filter.extent === 'between' && (
@@ -337,7 +337,7 @@ export default function JobsToolbar({
                                                     updated[index] = { ...updated[index], value: e.target.value };
                                                     onFiltersChange(updated);
                                                 }}
-                                                sx={{ flexGrow: kind === 'runtime' && filter.extent === 'between' ? 0 : 1, mr: 1 }}
+                                                sx={{ flexGrow: 1, mr: 1 }}
                                             />
                                             {kind === 'runtime' && filter.extent === 'between' && (
                                                 <TextField
