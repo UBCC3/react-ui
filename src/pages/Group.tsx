@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -118,6 +118,17 @@ export default function Group() {
 			setUserRole(ud.role || '');
 		})();
 	}, [getAccessTokenSilently, user?.email]);
+
+    // memoized the list of all tags inside the jobs history table
+    const availableTags = useMemo(() => {
+        const tagSet = new Set<string>();
+        for (const job of jobs) {
+            for (const tag of job.tags ?? []) {
+                tagSet.add(tag);
+            }
+        }
+        return Array.from(tagSet).sort((a, b) => a.localeCompare(b));
+    }, [jobs]);
 
 	// Load jobs & structures (and apply structure filter immediately)
 	useEffect(() => {
@@ -557,6 +568,7 @@ export default function Group() {
                     filters={filters}
                     onFiltersChange={setFilters}
                     onFilterSubmit={handleFilterSubmit}
+                    availableTags={availableTags}
 				/>
 
                 {/* Group jobs table with sorting, pagination, selection, and column visibility. */}

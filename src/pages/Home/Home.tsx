@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -114,6 +114,17 @@ export default function Home() {
         setFilteredJobs(filterJobs(jobsRef.current, filters));
         setPage(0);
     }
+
+    // memoized the list of all tags inside the jobs history table
+    const availableTags = useMemo(() => {
+        const tagSet = new Set<string>();
+        for (const job of jobs) {
+            for (const tag of job.tags ?? []) {
+                tagSet.add(tag);
+            }
+        }
+        return Array.from(tagSet).sort((a, b) => a.localeCompare(b));
+    }, [jobs]);
 
     /**
      * Syncs the Auth0 user with the app database.
@@ -616,6 +627,7 @@ export default function Home() {
                     filters={filters}
                     onFiltersChange={setFilters}
                     onFilterSubmit={handleFilterSubmit}
+                    availableTags={availableTags}
 				/>
                 {/* Jobs history table */}
 				<JobsTable

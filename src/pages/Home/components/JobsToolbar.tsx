@@ -69,6 +69,7 @@ interface JobsToolbarProps {
     filters: Filter[];
     onFiltersChange: (filters: Filter[]) => void;
     onFilterSubmit: () => void;
+    availableTags: string[];
 }
 
 /**
@@ -108,6 +109,7 @@ export default function JobsToolbar({
     filters,
     onFiltersChange,
     onFilterSubmit,
+    availableTags,
 }: JobsToolbarProps) {
     const [selectColumnsOpen, setSelectColumnsOpen] = React.useState(false);
     const [filterRowsOpen, setFilterRowsOpen] = React.useState(false);
@@ -268,6 +270,95 @@ export default function JobsToolbar({
                             const kind = columnKinds[filter.column] ?? 'string';
                             const validExtents = extentsByKind[kind];
 
+                            const renderValueInput = () => {
+                                if (filter.column === 'tags') {
+                                    return (
+                                        <Select
+                                            value={filter.value}
+                                            size="small"
+                                            displayEmpty
+                                            onChange={(e) => {
+                                                const updated = [...filters];
+                                                updated[index] = { ...updated[index], value: e.target.value as string };
+                                                onFiltersChange(updated);
+                                            }}
+                                            sx={{ flexGrow: 1, mr: 1}}
+                                        >
+                                            <MenuItem value="">
+                                                <span style={{ color: grey[500] }}>Select a tag</span>
+                                            </MenuItem>
+                                            {availableTags.map(tag => (
+                                                <MenuItem key={tag} value={tag}>{tag}</MenuItem>
+                                            ))}
+                                        </Select>
+                                    );
+                                } else if (kind === 'date') {
+                                    return (
+                                        <>
+                                            <TextField
+                                                type="date"
+                                                size="small"
+                                                value={filter.value}
+                                                onChange={(e) => {
+                                                    const updated = [...filters];
+                                                    updated[index] = { ...updated[index], value: e.target.value };
+                                                    onFiltersChange(updated);
+                                                }}
+                                                sx={{ mr: 1 }}
+                                                InputLabelProps={{ shrink: true }}
+                                            />
+                                            {filter.extent === 'between' && (
+                                                <TextField
+                                                    type="date"
+                                                    size="small"
+                                                    value={filter.value2 ?? ''}
+                                                    onChange={(e) => {
+                                                        const updated = [...filters];
+                                                        updated[index] = { ...updated[index], value2: e.target.value};
+                                                        onFiltersChange(updated);
+                                                    }}
+                                                    sx={{ flexGrow: 1, mr: 1 }}
+                                                    InputLabelProps={{ shrink: true }}
+                                                />
+                                            )}
+                                        </>
+                                    );
+                                } else {
+                                    return (
+                                        <>
+                                            <TextField
+                                                variant="outlined"
+                                                size="small"
+                                                type={kind === 'runtime' ? 'number' : 'text'}
+                                                placeholder={kind === 'runtime' ? 'seconds' : undefined}
+                                                value={filter.value}
+                                                onChange={(e) => {
+                                                    const updated = [...filters];
+                                                    updated[index] = { ...updated[index], value: e.target.value };
+                                                    onFiltersChange(updated);
+                                                }}
+                                                sx={{ flexGrow: kind === 'runtime' && filter.extent === 'between' ? 0 : 1, mr: 1 }}
+                                            />
+                                            {kind === 'runtime' && filter.extent === 'between' && (
+                                                <TextField
+                                                    variant="outlined"
+                                                    size="small"
+                                                    type="number"
+                                                    placeholder="seconds"
+                                                    value={filter.value2 ?? ''}
+                                                    onChange={(e) => {
+                                                        const updated = [...filters];
+                                                        updated[index] = { ...updated[index], value2: e.target.value};
+                                                        onFiltersChange(updated);
+                                                    }}
+                                                    sx={{ flexGrow: 1, mr: 1 }}
+                                                />
+                                            )}
+                                        </>
+                                    )
+                                }
+                            }
+
                             return (
                                 <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                                     <Select
@@ -300,67 +391,7 @@ export default function JobsToolbar({
                                         ))}
                                     </Select>
 
-                                    {kind === 'date' ? (
-                                        <>
-                                            <TextField
-                                                type="date"
-                                                size="small"
-                                                value={filter.value}
-                                                onChange={(e) => {
-                                                    const updated = [...filters];
-                                                    updated[index] = { ...updated[index], value: e.target.value };
-                                                    onFiltersChange(updated);
-                                                }}
-                                                sx={{ mr: 1 }}
-                                                InputLabelProps={{ shrink: true }}
-                                            />
-                                            {filter.extent === 'between' && (
-                                                <TextField
-                                                    type="date"
-                                                    size="small"
-                                                    value={filter.value2 ?? ''}
-                                                    onChange={(e) => {
-                                                        const updated = [...filters];
-                                                        updated[index] = { ...updated[index], value2: e.target.value};
-                                                        onFiltersChange(updated);
-                                                    }}
-                                                    sx={{ flexGrow: 1, mr: 1 }}
-                                                    InputLabelProps={{ shrink: true }}
-                                                />
-                                            )}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <TextField
-                                                variant="outlined"
-                                                size="small"
-                                                type={kind === 'runtime' ? 'number' : 'text'}
-                                                placeholder={kind === 'runtime' ? 'seconds' : undefined}
-                                                value={filter.value}
-                                                onChange={(e) => {
-                                                    const updated = [...filters];
-                                                    updated[index] = { ...updated[index], value: e.target.value };
-                                                    onFiltersChange(updated);
-                                                }}
-                                                sx={{ flexGrow: kind === 'runtime' && filter.extent === 'between' ? 0 : 1, mr: 1 }}
-                                            />
-                                            {kind === 'runtime' && filter.extent === 'between' && (
-                                                <TextField
-                                                    variant="outlined"
-                                                    size="small"
-                                                    type="number"
-                                                    placeholder="seconds"
-                                                    value={filter.value2 ?? ''}
-                                                    onChange={(e) => {
-                                                        const updated = [...filters];
-                                                        updated[index] = { ...updated[index], value2: e.target.value};
-                                                        onFiltersChange(updated);
-                                                    }}
-                                                    sx={{ flexGrow: 1, mr: 1 }}
-                                                />
-                                            )}
-                                        </>
-                                    )}
+                                    {renderValueInput()}
 
                                     <IconButton
                                         color="error"
