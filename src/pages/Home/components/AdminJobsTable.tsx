@@ -14,9 +14,10 @@ import {
 } from '@mui/material';
 import { AutoMode, TuneOutlined } from '@mui/icons-material';
 import { ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
-import { statusColors, statusIcons } from '../../../constants';
+import { calculationTypes, statusColors, statusIcons } from '../../../constants';
 import { blueGrey, grey } from '@mui/material/colors';
 import type { Job } from '../../../types';
+import { reverseMapping } from '../../../utils';
 
 /**
  * Props shared by job table components.
@@ -65,6 +66,7 @@ interface AdminJobsTableProps extends JobsTableProps {
 		group_name: boolean;
 		job_notes: boolean;
 		status: boolean;
+        calculation_type: boolean;
 		structures: boolean;
 		tags: boolean;
 		runtime: boolean;
@@ -129,6 +131,9 @@ export default function AdminJobsTable({
 		page * rowsPerPage + rowsPerPage
 	);
 
+    // Reverse the calculation types mapping
+    const reversedCalculationTypes = reverseMapping(calculationTypes)
+
     /**
      * Renders a clickable sortable table header cell.
      */
@@ -158,14 +163,15 @@ export default function AdminJobsTable({
 				<TableHead sx={{ bgcolor: blueGrey[50] }}>
 					<TableRow>
 						{displayColumns.job_id && renderHeader('Job ID', 'job_id')}
-						{displayColumns.job_name && renderHeader('Job Name', 'job_name')}
+						{displayColumns.job_name && renderHeader('Name', 'job_name')}
 						{displayColumns.user_email && renderHeader('User Email', 'user_email')}
 						{displayColumns.group_id && renderHeader('Group ID', 'group_id')}
 						{displayColumns.group_name && renderHeader('Group Name', 'group_name')}
 						{displayColumns.job_notes && renderHeader('Notes', 'job_notes')}
 						{displayColumns.status && renderHeader('Status', 'status')}
-						{displayColumns.structures && renderHeader('Structures', 'structures')}
-						{displayColumns.tags && renderHeader('Tags', 'tags')}
+						{displayColumns.calculation_type && renderHeader('Calculation Type', 'structures')}
+						{displayColumns.structures && renderHeader('Library Structure', 'structures')}
+						{displayColumns.tags && renderHeader('Job Tags', 'tags')}
 						{displayColumns.runtime && renderHeader('Runtime', 'runtime')}
 						{displayColumns.submitted_at && renderHeader('Submitted At', 'submitted_at')}
 						{displayColumns.completed_at && renderHeader('Completed At', 'completed_at')}
@@ -257,6 +263,16 @@ export default function AdminJobsTable({
 										/>
 									</TableCell>
 								)}
+                                {displayColumns.calculation_type && (
+                                                <TableCell>
+                                                    <Chip
+                                                        label={reversedCalculationTypes[job.calculation_type]}
+                                                        variant="outlined"
+                                                        size="small"
+                                                        sx={{ mr: 0.5, mb: 0.5 }}
+                                                    />
+                                                </TableCell>
+                                            )}
 								{displayColumns.structures && (
 									<TableCell>
 										{job.structures.length ? job.structures

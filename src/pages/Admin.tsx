@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -19,7 +19,7 @@ import {
 	deleteJob,
 	getZipPresignedUrl,
 } from '../services/api';
-import { JobStatus } from '../constants';
+import { calculationTypes, JobStatus } from '../constants';
 import JobsToolbar from './Home/components/JobsToolbar';
 import {
 	MolmakerPageTitle,
@@ -28,8 +28,9 @@ import {
 	MolmakerAlert,
 	MolmakerConfirm
 } from '../components/custom';
-import type { Job, Structure } from '../types';
+import type { Job, Structure, Filter } from '../types';
 import AdminJobsTable from './Home/components/AdminJobsTable';
+import { filterJobs } from '../utils';
 
 export default function Admin() {
     // used to redirect the user after the job is successfully submitted
@@ -70,11 +71,9 @@ export default function Admin() {
 	const [alertSeverity, setAlertSeverity] = useState<'success' | 'error' | 'info' | 'warning'>('info');
 
     // stores all custom table filters created by the user.
-	const [filters, setFilters] = useState<Array<{
-		column: keyof Job;
-		value: string;
-		extent: 'contains' | 'equals' | 'startsWith';
-	}>>([{ column: 'job_name', value: '', extent: 'contains' }]);
+    const [filters, setFilters] = useState<Filter[]>(
+        [{ column: 'job_name', value: '', extent: 'contains' }]
+    )
 
     // stores the Auth0 access token passed down to admin-related child components.
 	const [adminPanelToken, setAdminPanelToken] = useState<string | null>(null);
@@ -83,14 +82,15 @@ export default function Admin() {
 	// map column name to display name
 	const columnDisplayNames: Record<any, string> = {
 		job_id: 'Job ID',
-		job_name: 'Job Name',
+		job_name: 'Name',
 		user_email: 'User Email',
 		group_id: 'Group ID',
 		group_name: 'Group Name',
 		job_notes: 'Job Notes',
 		status: 'Status',
-		structures: 'Structures',
-		tags: 'Tags',
+        calculation_type: 'Calculation Type',
+		structures: 'Library Structure',
+		tags: 'Job Tags',
 		runtime: 'Runtime',
 		submitted_at: 'Submitted At',
 		completed_at: 'Completed At',
@@ -105,6 +105,7 @@ export default function Admin() {
 		group_name: true,
 		job_notes: true,
 		status: true,
+        calculation_type: true,
 		structures: true,
 		tags: true,
 		runtime: true,
@@ -121,60 +122,22 @@ export default function Admin() {
 		getAccessTokenSilently().then(setAdminPanelToken).catch(() => setAdminPanelToken(null));
 	}, [getAccessTokenSilently]);
 
-    // Applies all custom filters to the current jobs list.
-	const handleFilterSubmit = () => {
-		setLoading(true);
-		try {
-			let filtered = jobsRef.current;
+    // applying the filter to the jobs
+    const handleFilterSubmit = () => {
+        setFilteredJobs(filterJobs(jobsRef.current, filters));
+        setPage(0);
+    }
 
-			// Apply each filter
-			for (const filter of filters) {
-				filtered = filtered.filter(job => {
-					let jobValue = '';
-					if (filter.column === 'structures') {
-						jobValue = job.structures.map(s => s.name).join(', ').toLowerCase();
-					} else {
-						jobValue = String(job[filter.column] ?? '').toLowerCase();
-					}
-					const filterValue = filter.value.toLowerCase();
-
-					switch (filter.extent) {
-						case 'contains':
-							if (filter.column === 'tags' || filter.column === 'structures') {
-								console.log(job[filter.column], filterValue);
-								// Special handling for tags and structures
-								console.log("Filtering by tags or structures:", jobValue, filterValue);
-								return jobValue.split(',').some(tag => tag.trim().toLowerCase().includes(filterValue));
-							}
-							// Default contains behavior
-							return jobValue.includes(filterValue);
-						case 'equals':
-							if (filter.column === 'tags' || filter.column === 'structures') {
-								// Special handling for tags and structures
-								return jobValue.split(',').some(tag => tag.trim().toLowerCase() === filterValue);
-							}
-							return jobValue === filterValue;
-						case 'startsWith':
-							if (filter.column === 'tags' || filter.column === 'structures') {
-								// Special handling for tags and structures
-								return jobValue.split(',').some(tag => tag.trim().toLowerCase().startsWith(filterValue));
-							}
-							return jobValue.startsWith(filterValue);
-						default:
-							return true; // no filter applied
-					}
-				});
-			}
-
-			setFilteredJobs(filtered);
-			setPage(0); // reset to first page
-		} catch (err) {
-			setError('Failed to apply filters');
-			console.error('Failed to apply filters:', err);
-		} finally {
-			setLoading(false);
-		}
-	}
+    // memoized the list of all tags inside the jobs history table
+    const availableTags = useMemo(() => {
+        const tagSet = new Set<string>();
+        for (const job of jobs) {
+            for (const tag of job.tags ?? []) {
+                tagSet.add(tag);
+            }
+        }
+        return Array.from(tagSet).sort((a, b) => a.localeCompare(b));
+    }, [jobs]);
 
 	// poll statuses every 5s
 	useEffect(() => {
@@ -672,6 +635,7 @@ export default function Admin() {
                     filters={filters}
                     onFiltersChange={setFilters}
                     onFilterSubmit={handleFilterSubmit}
+                    availableTags={availableTags}
 				/>
 
                 {/* Table containing the filtered, sorted, and selectable job rows. */}

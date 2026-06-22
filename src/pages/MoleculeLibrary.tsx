@@ -337,7 +337,7 @@ const MoleculeLibrary = () => {
 										{renderHeader('Name', 'name')}
 										{renderHeader('Chemical Formula', 'formula')}
 										{renderHeader('Notes', 'notes')}
-										{renderHeader('Tags', 'tags')}
+										{renderHeader('Job Tags', 'tags')}
 										{renderHeader('Uploaded At', 'uploaded_at')}
 									</TableRow>
 								</TableHead>

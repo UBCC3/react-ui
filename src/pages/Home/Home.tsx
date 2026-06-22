@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -22,7 +22,7 @@ import {
 	upsertCurrentUser,
 	getZipPresignedUrl
 } from '../../services/api';
-import { JobStatus } from '../../constants';
+import { calculationTypes, JobStatus } from '../../constants';
 import JobsStatus from './components/JobsStatus';
 import JobsToolbar from './components/JobsToolbar';
 import JobsTable from './components/JobsTable';
@@ -33,7 +33,8 @@ import {
 	MolmakerAlert,
 	MolmakerConfirm
 } from '../../components/custom';
-import type { Job, Structure } from '../../types';
+import type { Filter, Job, Structure } from '../../types';
+import { filterJobs, reverseMapping } from '../../utils';
 
 export default function Home() {
 	const navigate = useNavigate();
@@ -74,19 +75,18 @@ export default function Home() {
 	const [alertSeverity, setAlertSeverity] = useState<'success' | 'error' | 'info' | 'warning'>('info');
 
     // stores custom table filters entered by the user
-	const [filters, setFilters] = useState<Array<{
-		column: keyof Job;
-		value: string;
-		extent: 'contains' | 'equals' | 'startsWith';
-	}>>([{ column: 'job_name', value: '', extent: 'contains' }]);
+	const [filters, setFilters] = useState<Filter[]>([{
+        column: 'job_name', value: '', extent: 'contains'
+    }]);
 
 	// map column name to display name
 	const columnDisplayNames: Record<any, string> = {
-		job_name: 'Job Name',
+		job_name: 'Name',
 		job_notes: 'Job Notes',
 		status: 'Status',
-		structures: 'Structures',
-		tags: 'Tags',
+        calculation_type: 'Calculation Type',
+		structures: 'Library Structure',
+		tags: 'Job Tags',
 		runtime: 'Runtime',
 		submitted_at: 'Submitted At',
 		completed_at: 'Completed At',
@@ -97,6 +97,7 @@ export default function Home() {
 		job_name: true,
 		job_notes: true,
 		status: true,
+        calculation_type: true,
 		structures: true,
 		tags: true,
 		runtime: true,
@@ -108,69 +109,22 @@ export default function Home() {
 	const jobsRef = useRef<Job[]>([]);
 	useEffect(() => { jobsRef.current = jobs; }, [jobs]);
 
-    /**
-     * Applies all custom filters to the current jobs list.
-     * 
-     * Each filter checks one selected column using one of three matching modes:
-     * - contains,
-     * - equals,
-     * - startsWith.
-     * 
-     * Tags and structures are handled specially because they contain multiple values.
-     */
-	const handleFilterSubmit = () => {
-		setLoading(true);
-		try {
-			let filtered = jobsRef.current;
+    // applying the filter to the jobs
+    const handleFilterSubmit = () => {
+        setFilteredJobs(filterJobs(jobsRef.current, filters));
+        setPage(0);
+    }
 
-			// Apply each filter
-			for (const filter of filters) {
-				filtered = filtered.filter(job => {
-					let jobValue = '';
-					if (filter.column === 'structures') {
-						jobValue = job.structures.map(s => s.name).join(', ').toLowerCase();
-					} else {
-						jobValue = String(job[filter.column] ?? '').toLowerCase();
-					}
-					const filterValue = filter.value.toLowerCase();
-
-					switch (filter.extent) {
-						case 'contains':
-							if (filter.column === 'tags' || filter.column === 'structures') {
-								console.log(job[filter.column], filterValue);
-								// Special handling for tags and structures
-								console.log("Filtering by tags or structures:", jobValue, filterValue);
-								return jobValue.split(',').some(tag => tag.trim().toLowerCase().includes(filterValue));
-							}
-							// Default contains behavior
-							return jobValue.includes(filterValue);
-						case 'equals':
-							if (filter.column === 'tags' || filter.column === 'structures') {
-								// Special handling for tags and structures
-								return jobValue.split(',').some(tag => tag.trim().toLowerCase() === filterValue);
-							}
-							return jobValue === filterValue;
-						case 'startsWith':
-							if (filter.column === 'tags' || filter.column === 'structures') {
-								// Special handling for tags and structures
-								return jobValue.split(',').some(tag => tag.trim().toLowerCase().startsWith(filterValue));
-							}
-							return jobValue.startsWith(filterValue);
-						default:
-							return true; // no filter applied
-					}
-				});
-			}
-
-			setFilteredJobs(filtered);
-			setPage(0); // reset to first page
-		} catch (err) {
-			setError('Failed to apply filters');
-			console.error('Failed to apply filters:', err);
-		} finally {
-			setLoading(false);
-		}
-	}
+    // memoized the list of all tags inside the jobs history table
+    const availableTags = useMemo(() => {
+        const tagSet = new Set<string>();
+        for (const job of jobs) {
+            for (const tag of job.tags ?? []) {
+                tagSet.add(tag);
+            }
+        }
+        return Array.from(tagSet).sort((a, b) => a.localeCompare(b));
+    }, [jobs]);
 
     /**
      * Syncs the Auth0 user with the app database.
@@ -635,6 +589,7 @@ export default function Home() {
             {/* Jobs history */}
 			<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50], mb: 4 }}>
 				<JobsToolbar
+                    title="My Jobs"
 					selectedJobId={selectedJobId}
 					onViewDetails={() => {
 						navigate(`/jobs/${selectedJobId}`);
@@ -672,6 +627,7 @@ export default function Home() {
                     filters={filters}
                     onFiltersChange={setFilters}
                     onFilterSubmit={handleFilterSubmit}
+                    availableTags={availableTags}
 				/>
                 {/* Jobs history table */}
 				<JobsTable

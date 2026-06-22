@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -20,7 +20,7 @@ import {
 	upsertCurrentUser,
 	getZipPresignedUrl
 } from '../services/api';
-import { JobStatus } from '../constants';
+import { calculationTypes, JobStatus } from '../constants';
 import JobsToolbar from './Home/components/JobsToolbar';
 import {
 	MolmakerPageTitle,
@@ -28,18 +28,20 @@ import {
 	MolmakerAlert,
 	MolmakerConfirm
 } from '../components/custom';
-import type { Job, Structure } from '../types';
+import type { Filter, Job, Structure } from '../types';
 import GroupPanel from '../components/GroupPanel';
 import GroupJobsTable from './Home/components/GroupJobsTable';
+import { filterJobs, reverseMapping } from '../utils';
 
 export default function Group() {
 	// map column name to display name
 	const columnDisplayNames: Record<any, string> = {
-		job_name: 'Job Name',
+		job_name: 'Name',
 		job_notes: 'Job Notes',
 		status: 'Status',
-		structures: 'Structures',
-		tags: 'Tags',
+        calculation_type: 'Calculation Type',
+		structures: 'Library Structure',
+		tags: 'Job Tags',
 		runtime: 'Runtime',
 		submitted_at: 'Submitted At',
 		completed_at: 'Completed At',
@@ -51,6 +53,7 @@ export default function Group() {
 		job_name: true,
 		job_notes: true,
 		status: true,
+        calculation_type: true,
 		structures: true,
 		tags: true,
 		runtime: true,
@@ -85,7 +88,7 @@ export default function Group() {
 
 	// Filters
 	const [filterStructureId, setFilterStructureId] = useState<string>('');
-	const [filters, setFilters] = useState<Array<{ column: keyof Job; value: string; extent: 'contains' | 'equals' | 'startsWith' }>>([
+	const [filters, setFilters] = useState<Filter[]>([
 		{ column: 'job_name', value: '', extent: 'contains' }
 	]);
 
@@ -116,6 +119,17 @@ export default function Group() {
 		})();
 	}, [getAccessTokenSilently, user?.email]);
 
+    // memoized the list of all tags inside the jobs history table
+    const availableTags = useMemo(() => {
+        const tagSet = new Set<string>();
+        for (const job of jobs) {
+            for (const tag of job.tags ?? []) {
+                tagSet.add(tag);
+            }
+        }
+        return Array.from(tagSet).sort((a, b) => a.localeCompare(b));
+    }, [jobs]);
+
 	// Load jobs & structures (and apply structure filter immediately)
 	useEffect(() => {
 		setLoading(true);
@@ -139,7 +153,14 @@ export default function Group() {
 				setFilteredJobs(initial);
 				// Prep structure list
 				const sortedStructs = sr.data.sort((a,b) => a.name.localeCompare(b.name));
-				setStructures([{ structure_id:'', name:'All', user_sub:'', location:'', uploaded_at:'', notes:'' }, ...sortedStructs]);
+				setStructures([{ 
+                    structure_id:'', 
+                    name:'All', 
+                    user_sub:'', 
+                    location:'', 
+                    uploaded_at:'', 
+                    notes:'' 
+                }, ...sortedStructs]);
 			} catch (e) {
 				console.error(e);
 				setError('Failed to load data');
@@ -202,46 +223,11 @@ export default function Group() {
 		return () => clearInterval(id);
 	}, [getAccessTokenSilently]);
 
-	// Apply custom filters
-	const handleFilterSubmit = useCallback(() => {
-		setLoading(true);
-		try {
-            // Start from the latest jobs stored in the ref.
-			let res = [...jobsRef.current];
-			filters.forEach(f => {
-				const val = f.value.toLowerCase();
-				res = res.filter(job => {
-                    // Structures need special handling because they are stored as an array.
-					const raw = f.column === 'structures'
-						? job.structures.map(s=>s.name).join(',').toLowerCase()
-						: String(job[f.column] ?? '').toLowerCase();
-
-                    // Tags and structures may contain multiple comma-separated values.
-					if (['tags','structures'].includes(f.column)) {
-						const arr = raw.split(',').map(x=>x.trim());
-						return arr.some(x =>
-							f.extent==='contains' ? x.includes(val) :
-							f.extent==='equals'   ? x===val :
-							x.startsWith(val)
-						);
-					}
-                    
-                    // Apply the selected comparison mode to normal text fields.
-					return f.extent==='contains' ? raw.includes(val) :
-						f.extent==='equals'   ? raw===val :
-						raw.startsWith(val);
-				});
-			});
-
-            // Update the table and return to the first page.
-			setFilteredJobs(res);
-			setPage(0);
-		} catch {
-			setError('Failed to apply filters');
-		} finally {
-			setLoading(false);
-		}
-	}, [filters]);
+    // applying the filter to the jobs
+    const handleFilterSubmit = () => {
+        setFilteredJobs(filterJobs(jobsRef.current, filters));
+        setPage(0);
+    }
 
     // Loads molecule structure data from S3 and displays it in the preview component.
 	const openMoleculeViewer = async (structureId: string) => {
@@ -582,6 +568,7 @@ export default function Group() {
                     filters={filters}
                     onFiltersChange={setFilters}
                     onFilterSubmit={handleFilterSubmit}
+                    availableTags={availableTags}
 				/>
 
                 {/* Group jobs table with sorting, pagination, selection, and column visibility. */}
