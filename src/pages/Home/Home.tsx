@@ -33,7 +33,7 @@ import {
 	MolmakerAlert,
 	MolmakerConfirm
 } from '../../components/custom';
-import type { Job, Structure } from '../../types';
+import type { Filter, Job, Structure } from '../../types';
 import { filterJobs, reverseMapping } from '../../utils';
 
 export default function Home() {
@@ -75,11 +75,9 @@ export default function Home() {
 	const [alertSeverity, setAlertSeverity] = useState<'success' | 'error' | 'info' | 'warning'>('info');
 
     // stores custom table filters entered by the user
-	const [filters, setFilters] = useState<Array<{
-		column: keyof Job;
-		value: string;
-		extent: 'contains' | 'equals' | 'startsWith';
-	}>>([{ column: 'job_name', value: '', extent: 'contains' }]);
+	const [filters, setFilters] = useState<Filter[]>([{
+        column: 'job_name', value: '', extent: 'contains'
+    }]);
 
 	// map column name to display name
 	const columnDisplayNames: Record<any, string> = {

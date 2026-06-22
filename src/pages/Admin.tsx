@@ -28,9 +28,9 @@ import {
 	MolmakerAlert,
 	MolmakerConfirm
 } from '../components/custom';
-import type { Job, Structure } from '../types';
+import type { Job, Structure, Filter } from '../types';
 import AdminJobsTable from './Home/components/AdminJobsTable';
-import { filterJobs, reverseMapping } from '../utils';
+import { filterJobs } from '../utils';
 
 export default function Admin() {
     // used to redirect the user after the job is successfully submitted
@@ -71,11 +71,9 @@ export default function Admin() {
 	const [alertSeverity, setAlertSeverity] = useState<'success' | 'error' | 'info' | 'warning'>('info');
 
     // stores all custom table filters created by the user.
-	const [filters, setFilters] = useState<Array<{
-		column: keyof Job;
-		value: string;
-		extent: 'contains' | 'equals' | 'startsWith';
-	}>>([{ column: 'job_name', value: '', extent: 'contains' }]);
+    const [filters, setFilters] = useState<Filter[]>(
+        [{ column: 'job_name', value: '', extent: 'contains' }]
+    )
 
     // stores the Auth0 access token passed down to admin-related child components.
 	const [adminPanelToken, setAdminPanelToken] = useState<string | null>(null);

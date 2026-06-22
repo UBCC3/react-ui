@@ -9,7 +9,7 @@ import {
 } from "./JSmol";
 import User from './User';
 import Group from './Group';
-
+import Filter from './Filter';
 
 export {
 	Job,
@@ -20,5 +20,6 @@ export {
 	VibrationMode,
 	ComplexNumber,
 	User,
-	Group
+	Group,
+    Filter
 }

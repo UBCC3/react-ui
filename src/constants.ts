@@ -1,5 +1,6 @@
 import { green, blue, orange, red, grey, deepOrange } from '@mui/material/colors';
 import { CheckCircleOutlined, RunCircleOutlined, PendingOutlined, ErrorOutline, CancelOutlined, HelpOutlineOutlined, ReportOutlined, TimerOffOutlined } from '@mui/icons-material';
+import type { FilterExtent } from './types/Filter';
 
 export const JobStatus = {
 	PENDING: 'pending',
@@ -42,3 +43,36 @@ export const calculationTypes = {
     'Transition State Optimization': 'transition',
     'Intrinsic Reaction Coordinate': 'irc',
 }
+
+export type ColumnKind = 'string' | 'date' | 'runtime';
+
+export const columnKinds: Record<string, ColumnKind> = {
+    job_id: 'string',
+    job_name: 'string',
+    user_email: 'string',
+    group_id: 'string',
+    group_name: 'string',
+    job_notes: 'string',
+    status: 'string',
+    calculation_type: 'string',
+    structures: 'string',
+    tags: 'string',
+    runtime: 'runtime',
+    submitted_at: 'date',
+    completed_at: 'date'
+};
+
+export const extentsByKind: Record<ColumnKind, FilterExtent[]> = {
+    string: ['contains', 'equals', 'startsWith'],
+    date: ['before', 'after', 'between'],
+    runtime: ['before', 'after', 'between']
+};
+
+export const extentDisplayNames: Record<FilterExtent, string> = {
+    contains: 'Contains',
+    equals: 'Equals',
+    startsWith: 'Starts With',
+    before: 'Before',
+    after: 'After',
+    between: 'Between'
+};

@@ -28,7 +28,7 @@ import {
 	MolmakerAlert,
 	MolmakerConfirm
 } from '../components/custom';
-import type { Job, Structure } from '../types';
+import type { Filter, Job, Structure } from '../types';
 import GroupPanel from '../components/GroupPanel';
 import GroupJobsTable from './Home/components/GroupJobsTable';
 import { filterJobs, reverseMapping } from '../utils';
@@ -88,7 +88,7 @@ export default function Group() {
 
 	// Filters
 	const [filterStructureId, setFilterStructureId] = useState<string>('');
-	const [filters, setFilters] = useState<Array<{ column: keyof Job; value: string; extent: 'contains' | 'equals' | 'startsWith' }>>([
+	const [filters, setFilters] = useState<Filter[]>([
 		{ column: 'job_name', value: '', extent: 'contains' }
 	]);
 
@@ -211,9 +211,6 @@ export default function Group() {
         // Stop polling when the component unmounts.
 		return () => clearInterval(id);
 	}, [getAccessTokenSilently]);
-
-    // Reverse the calculation types mapping
-    const reversedCalculationTypes = reverseMapping(calculationTypes);
 
     // applying the filter to the jobs
     const handleFilterSubmit = () => {
