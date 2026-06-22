@@ -107,6 +107,7 @@ const matchesStringFilter = (job: Job, filter: Filter, reversedCalculationTypes:
         if (filter.column === 'tags' || filter.column === 'structures') {
             return jobValue.split(',').some(tag => tag.trim().toLowerCase().startsWith(filterValue));
         }
+        return jobValue.startsWith(filterValue);
     } else {
         console.warn(`Unsupported extent"${filter.extent}" for string column "${filter.column}"`);
         return true;
