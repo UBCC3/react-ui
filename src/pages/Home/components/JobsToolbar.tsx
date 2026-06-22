@@ -160,13 +160,13 @@ export default function JobsToolbar({
                                 </IconButton>
                             </span>
                         </Tooltip>
-                        <Tooltip title="View structures">
+                        {/* <Tooltip title="View structures">
                             <span>
                                 <IconButton disabled={viewStructureDisabled} onClick={onViewStructure}>
                                     <PhotoOutlined />
                                 </IconButton>
                             </span>
-                        </Tooltip>
+                        </Tooltip> */}
                         <Tooltip title="Filter jobs with same structure">
                             <span>
                                 <IconButton disabled={!selectedJobId} onClick={onFilterByStructure}>
