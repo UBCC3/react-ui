@@ -36,7 +36,7 @@ import {fetchRawFileFromS3Url} from "./util"
 import MolmakerLoading from "../custom/MolmakerLoading";
 import CalculatedQuantities from "./CalculatedQuantities";
 import IRSpectrumPlot from "../IRSpectrumPlot";
-import {formatComplex} from "../../utils";
+import {formatComplex, formatSymmetryLabel} from "../../utils";
 
 /**
  * Generate accessibility props for a Material UI Tab.
@@ -415,7 +415,7 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 											}}
 										>
 											<TableCell>{mode.index}</TableCell>
-											<TableCell>{mode.symmetry}</TableCell>
+											<TableCell>{formatSymmetryLabel(mode.symmetry)}</TableCell>
 											<TableCell>{formatComplex(mode.frequencyCM)}</TableCell>
 											<TableCell>{mode.irIntensity.toFixed(2)}</TableCell>
 											<TableCell>{mode.forceConstant.toFixed(2)}</TableCell>

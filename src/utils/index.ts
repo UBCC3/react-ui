@@ -5,7 +5,6 @@ export const capitalizeFirstLetter = (str: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-
 export const formatComplex = (c: ComplexNumber) =>  {
   const { real, imag } = c;
 
@@ -15,6 +14,22 @@ export const formatComplex = (c: ComplexNumber) =>  {
 
   const sign = imag >= 0 ? "+" : "-";
   return `${real.toFixed(2)} ${sign} ${Math.abs(imag).toFixed(2)}i`;
+}
+
+/**
+ * Convert Psi4's ASCII-safe symmetry labels (e.g. "Ap", "App") into their
+ * proper typographic form (e.g. "A'", "A"") for display.
+ */
+export const formatSymmetryLabel = (label: string): string => {
+    if (label === "None") {
+        return label;
+    } else if (label.endsWith("pp")) {
+        return `${label.slice(0, -2)}"`;
+    } else if (label.endsWith("p")) {
+        return `${label.slice(0, -1)}'`;
+    } else {
+        return label;
+    }
 }
 
 // Reversing the mapping of a dict object
