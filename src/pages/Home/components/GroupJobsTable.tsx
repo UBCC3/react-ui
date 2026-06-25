@@ -192,30 +192,8 @@ export default function GroupJobsTable({
 								<TableRow>
 									<TableCell colSpan={9} align="center">
 										<Typography variant="body2" color="text.secondary">
-											No jobs added yet.
+                                            Nothing here yet — run your first analysis from the sidebar.
 										</Typography>
-										<Grid container spacing={2} justifyContent="center" sx={{ mt: 2 }}>
-											<Grid>
-												<Button
-													variant="contained"
-													startIcon={<AutoMode />}
-													onClick={() => (window.location.href = '/submit')}
-													sx={{ textTransform: 'none' }}
-												>
-													Run Standard Analysis
-												</Button>
-											</Grid>
-											<Grid>
-												<Button
-													variant="outlined"
-													startIcon={<TuneOutlined />}
-													onClick={() => (window.location.href = '/advanced')}
-													sx={{ textTransform: 'none' }}
-												>
-													Run Advanced Analysis
-												</Button>
-											</Grid>
-										</Grid>
 									</TableCell>
 								</TableRow>
 							) : (
