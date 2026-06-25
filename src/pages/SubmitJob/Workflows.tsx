@@ -48,7 +48,7 @@ const WORKFLOWS: WorkflowOption[] = [
             'orbital analysis. This can be performed on a ground state structure ' +
             'or a candidate transition state structure. The results of this ' +
             'analysis contain optimized bond lengths and angles, vibrational ' +
-            'frequencies, predicted infrared spectra, thermodynammic quantities, ' +
+            'frequencies, predicted infrared spectra, thermodynamic quantities, ' +
             'molecular orbital energies and other electronic properties.',
         path: '/workflows/standard-analysis',
         enabled: true,
