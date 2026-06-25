@@ -461,8 +461,8 @@ const AdvancedAnalysis = () => {
                 }}
             />
             <MolmakerPageTitle
-                title="Advanced Analysis"
-                subtitle="Submit a molecule for advanced analysis"
+                title="Custom Job"
+                subtitle="Submit a custom job for a molecule"
             />
             <Grid container spacing={3}>
                 <Grid size={{ xs: 12, md: 6 }}>
@@ -706,7 +706,7 @@ const AdvancedAnalysis = () => {
                                         fullWidth
                                         sx={{ flexGrow: 1, textTransform: 'none', borderRadius: 2 }}
                                     >
-                                        Run Advanced Analysis
+                                        Run Custom Job
                                     </Button>
                                 </Grid>
                             </Grid>

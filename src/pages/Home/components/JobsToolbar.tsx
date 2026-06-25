@@ -22,10 +22,10 @@ import {
 	DeleteOutlineOutlined,
 	WorkHistoryOutlined,
 	ArchiveOutlined,
-    ManageSearchOutlined, 
+    ManageSearchOutlined,
+    InfoOutlined
 } from '@mui/icons-material';
 import { blue, grey } from '@mui/material/colors';
-
 import ViewColumnIcon from '@mui/icons-material/ViewColumn';
 import {
     Collapse,
@@ -36,12 +36,14 @@ import {
     TextField,
 } from '@mui/material';
 import { Add } from '@mui/icons-material';
-import type { Job } from '../../../types';
+import type { Job, Filter } from '../../../types';
+import { columnKinds, extentDisplayNames, extentsByKind } from '../../../constants';
 
 /**
  * Props for the JobsToolbar
  */
 interface JobsToolbarProps {
+    title?: string;
 	selectedJobId: string | null;
 	onViewDetails: () => void;
 	onViewStructure: () => void;
@@ -64,17 +66,10 @@ interface JobsToolbarProps {
     columnDisplayNames: Record<string, string>;
     onColumnToggle: (col: string, checked: boolean) => void;
     // Filter Rows
-    filters: Array<{
-        column: keyof Job;
-        value: string;
-        extent: 'contains' | 'equals' | 'startsWith';
-    }>;
-    onFiltersChange: (filters: Array<{
-        column: keyof Job;
-        value: string;
-        extent: 'contains' | 'equals' | 'startsWith';
-    }>) => void;
+    filters: Filter[];
+    onFiltersChange: (filters: Filter[]) => void;
     onFilterSubmit: () => void;
+    availableTags: string[];
 }
 
 /**
@@ -91,6 +86,7 @@ interface JobsToolbarProps {
  * - selecting a structure filter from the dropdown.
  */
 export default function JobsToolbar({
+    title = "Jobs History",
 	selectedJobId,
 	onViewDetails,
 	onViewStructure,
@@ -113,16 +109,33 @@ export default function JobsToolbar({
     filters,
     onFiltersChange,
     onFilterSubmit,
+    availableTags,
 }: JobsToolbarProps) {
     const [selectColumnsOpen, setSelectColumnsOpen] = React.useState(false);
     const [filterRowsOpen, setFilterRowsOpen] = React.useState(false);
+
+    const handleColumnChange = (index: number, newColumn: keyof Job) => {
+        const updated = [...filters];
+        const newKind = columnKinds[newColumn] ?? 'string';
+        const validExtents = extentsByKind[newKind];
+        const currentExtent = updated[index].extent;
+
+        updated[index] = {
+            ...updated[index],
+            column: newColumn,
+            extent: validExtents.includes(currentExtent) ? currentExtent : validExtents[0],
+            value: '',
+            value2: undefined,
+        };
+        onFiltersChange(updated);
+    }
 
 	return (
         <Box>
             <Toolbar sx={{ justifyContent: 'space-between', borderTopLeftRadius: 5, borderTopRightRadius: 5 }}>
                 <Typography variant="h6" color={grey[800]} sx={{ display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: '1.1rem' }}>
                     <WorkHistoryOutlined sx={{ mr: 2, color: blue[600] }} />
-                    Jobs History
+                    {title}
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     {/* Select Columns + Filter Rows toggles */}
@@ -147,13 +160,13 @@ export default function JobsToolbar({
                                 </IconButton>
                             </span>
                         </Tooltip>
-                        <Tooltip title="View structures">
+                        {/* <Tooltip title="View structures">
                             <span>
                                 <IconButton disabled={viewStructureDisabled} onClick={onViewStructure}>
                                     <PhotoOutlined />
                                 </IconButton>
                             </span>
-                        </Tooltip>
+                        </Tooltip> */}
                         <Tooltip title="Filter jobs with same structure">
                             <span>
                                 <IconButton disabled={!selectedJobId} onClick={onFilterByStructure}>
@@ -194,16 +207,26 @@ export default function JobsToolbar({
                             </IconButton>
                         </Tooltip>
                     </Box>
-                    <Select
-                        value={selectedStructure}
-                        size='small'
-                        onChange={(e) => onStructureChange(e.target.value as string)}
-                        sx={{ minWidth: 160, ml: 2 }}
-                    >
-                        {structures.map(({ structure_id, name }) => (
-                            <MenuItem key={structure_id} value={structure_id}>{name}</MenuItem>
-                        ))}
-                    </Select>
+                    <Box sx={{ display: 'flex', alignItems: 'center', ml: 2}}>
+                        <Tooltip title="Filter jobs by library structure. Select a structure to show only jobs that used it.">
+                            <InfoOutlined sx={{ fontSize: 16, color: grey[600], mr: 0}}/>
+                        </Tooltip>
+                        <FormControl size="small" sx={{ minWidth: 160, ml: 2 }}>
+                            <InputLabel shrink>Library Structure</InputLabel>
+                            <Select
+                                value={selectedStructure}
+                                label="Library Structure"
+                                displayEmpty
+                                notched
+                                onChange={(e) => onStructureChange(e.target.value as string)}
+                            >
+                                {structures.map(({ structure_id, name }) => (
+                                    <MenuItem key={structure_id} value={structure_id}>{name}</MenuItem>
+                                ))}
+
+                            </Select>
+                        </FormControl>
+                    </Box>
                 </Box>
             </Toolbar>
     
@@ -243,59 +266,146 @@ export default function JobsToolbar({
                         Add one or more filters to search within jobs
                     </Typography>
                     <Box sx={{ bgcolor: grey[200], p: 3, borderRadius: 2 }}>
-                        {filters.map((filter, index) => (
-                            <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                <Select
-                                    value={filter.column}
-                                    size='small'
-                                    onChange={(e) => {
-                                        const updated = [...filters];
-                                        updated[index] = { ...updated[index], column: e.target.value as keyof Job };
-                                        onFiltersChange(updated);
-                                    }}
-                                    sx={{ minWidth: 120, mr: 1 }}
-                                >
-                                    {Object.keys(columnDisplayNames).map(col => (
-                                        <MenuItem key={col} value={col}>{columnDisplayNames[col]}</MenuItem>
-                                    ))}
-                                </Select>
-                                <Select
-                                    value={filter.extent}
-                                    size='small'
-                                    onChange={(e) => {
-                                        const updated = [...filters];
-                                        updated[index] = { ...updated[index], extent: e.target.value as 'contains' | 'equals' | 'startsWith' };
-                                        onFiltersChange(updated);
-                                    }}
-                                    sx={{ minWidth: 120, mr: 1 }}
-                                >
-                                    <MenuItem value="contains">Contains</MenuItem>
-                                    <MenuItem value="equals">Equals</MenuItem>
-                                    <MenuItem value="startsWith">Starts With</MenuItem>
-                                </Select>
-                                <TextField
-                                    variant="outlined"
-                                    size="small"
-                                    value={filter.value}
-                                    onChange={(e) => {
-                                        const updated = [...filters];
-                                        updated[index] = { ...updated[index], value: e.target.value };
-                                        onFiltersChange(updated);
-                                    }}
-                                    sx={{ flexGrow: 1, mr: 1 }}
-                                />
-                                <IconButton
-                                    color="error"
-                                    onClick={() => {
-                                        const updated = [...filters];
-                                        updated.splice(index, 1);
-                                        onFiltersChange(updated);
-                                    }}
-                                >
-                                    <DeleteOutlineOutlined />
-                                </IconButton>
-                            </Box>
-                        ))}
+                        {filters.map((filter, index) => {
+                            const kind = columnKinds[filter.column] ?? 'string';
+                            const validExtents = extentsByKind[kind];
+
+                            const renderValueInput = () => {
+                                if (filter.column === 'tags') {
+                                    return (
+                                        <Select
+                                            value={filter.value}
+                                            size="small"
+                                            displayEmpty
+                                            onChange={(e) => {
+                                                const updated = [...filters];
+                                                updated[index] = { ...updated[index], value: e.target.value as string };
+                                                onFiltersChange(updated);
+                                            }}
+                                            sx={{ flexGrow: 1, mr: 1}}
+                                        >
+                                            <MenuItem value="">
+                                                <span style={{ color: grey[500] }}>Select a tag</span>
+                                            </MenuItem>
+                                            {availableTags.map(tag => (
+                                                <MenuItem key={tag} value={tag}>{tag}</MenuItem>
+                                            ))}
+                                        </Select>
+                                    );
+                                } else if (kind === 'date') {
+                                    return (
+                                        <>
+                                            <TextField
+                                                type="date"
+                                                size="small"
+                                                value={filter.value}
+                                                onChange={(e) => {
+                                                    const updated = [...filters];
+                                                    updated[index] = { ...updated[index], value: e.target.value };
+                                                    onFiltersChange(updated);
+                                                }}
+                                                sx={{ flexGrow: 1, mr: 1 }}
+                                                InputLabelProps={{ shrink: true }}
+                                            />
+                                            {filter.extent === 'between' && (
+                                                <TextField
+                                                    type="date"
+                                                    size="small"
+                                                    value={filter.value2 ?? ''}
+                                                    onChange={(e) => {
+                                                        const updated = [...filters];
+                                                        updated[index] = { ...updated[index], value2: e.target.value};
+                                                        onFiltersChange(updated);
+                                                    }}
+                                                    sx={{ flexGrow: 1, mr: 1 }}
+                                                    InputLabelProps={{ shrink: true }}
+                                                />
+                                            )}
+                                        </>
+                                    );
+                                } else {
+                                    return (
+                                        <>
+                                            <TextField
+                                                variant="outlined"
+                                                size="small"
+                                                type={kind === 'runtime' ? 'number' : 'text'}
+                                                placeholder={kind === 'runtime' ? 'seconds' : undefined}
+                                                value={filter.value}
+                                                onChange={(e) => {
+                                                    const updated = [...filters];
+                                                    updated[index] = { ...updated[index], value: e.target.value };
+                                                    onFiltersChange(updated);
+                                                }}
+                                                sx={{ flexGrow: 1, mr: 1 }}
+                                            />
+                                            {kind === 'runtime' && filter.extent === 'between' && (
+                                                <TextField
+                                                    variant="outlined"
+                                                    size="small"
+                                                    type="number"
+                                                    placeholder="seconds"
+                                                    value={filter.value2 ?? ''}
+                                                    onChange={(e) => {
+                                                        const updated = [...filters];
+                                                        updated[index] = { ...updated[index], value2: e.target.value};
+                                                        onFiltersChange(updated);
+                                                    }}
+                                                    sx={{ flexGrow: 1, mr: 1 }}
+                                                />
+                                            )}
+                                        </>
+                                    )
+                                }
+                            }
+
+                            return (
+                                <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                    <Select
+                                        value={filter.column}
+                                        size='small'
+                                        onChange={(e) => handleColumnChange(index, e.target.value as keyof Job)}
+                                        sx={{ minWidth: 120, mr: 1 }}
+                                    >
+                                        {Object.keys(columnDisplayNames).map(col => (
+                                            <MenuItem key={col} value={col}>{columnDisplayNames[col]}</MenuItem>
+                                        ))}
+                                    </Select>
+
+                                    <Select
+                                        value={filter.extent}
+                                        size='small'
+                                        onChange={(e) => {
+                                            const updated = [...filters];
+                                            updated[index] = {
+                                                ...updated[index],
+                                                extent: e.target.value as Filter['extent'],
+                                                value2: e.target.value === 'between' ? updated[index].value2 : undefined,
+                                            };
+                                            onFiltersChange(updated);
+                                        }}   
+                                        sx={{ minWidth: 120, mr: 1 }}
+                                    >
+                                        {validExtents.map(ext => (
+                                            <MenuItem key={ext} value={ext}>{extentDisplayNames[ext]}</MenuItem>
+                                        ))}
+                                    </Select>
+
+                                    {renderValueInput()}
+
+                                    <IconButton
+                                        color="error"
+                                        onClick={() => {
+                                            const updated = [...filters];
+                                            updated.splice(index, 1);
+                                            onFiltersChange(updated);
+                                        }}
+                                    >
+                                        <DeleteOutlineOutlined />
+                                    </IconButton>
+                                </Box>
+                            )
+                        })}
                         <Button
                             variant="outlined"
                             color="primary"
