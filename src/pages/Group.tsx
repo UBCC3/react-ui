@@ -533,6 +533,7 @@ export default function Group() {
             {/* Main group jobs table section. */}
 			<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50], mb: 4 }}>
 				<JobsToolbar
+                    title = "Group Jobs"
 					selectedJobId={selectedJobId}
 					onViewDetails={() => navigate(`/jobs/${selectedJobId}`)}
 					onViewStructure={() => {
