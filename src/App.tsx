@@ -17,6 +17,7 @@ import JobFail from "./pages/JobFail";
 import { Box, CssBaseline, Typography } from '@mui/material';
 import { useAuth0 } from '@auth0/auth0-react';
 import Users from './pages/Users';
+import Workflows from './pages/SubmitJob/Workflows';
 
 function App() {
 	const { user } = useAuth0();
@@ -42,8 +43,12 @@ function App() {
 								path="/fail/:jobId"
 								element={<RequireAuth><JobFail /></RequireAuth>}
 							/>
+                            <Route
+                                path="/workflows"
+                                element={<RequireAuth><Workflows /></RequireAuth>}
+                            />
 							<Route
-								path="/submit"
+								path="/workflows/standard-analysis"
 								element={<RequireAuth><StandardAnalysis /></RequireAuth>}
 							/>
 							<Route

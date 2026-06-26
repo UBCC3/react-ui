@@ -174,7 +174,7 @@ export default function MenuDrawer() {
 					{
 						text: 'Submit Workflow Job',
 						icon: <AutoMode />,
-						path: '/submit'
+						path: '/workflows'
 					},
 					{
 						text: 'Submit Custom Job', 
