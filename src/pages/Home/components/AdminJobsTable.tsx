@@ -182,31 +182,8 @@ export default function AdminJobsTable({
 						<TableRow>
 							<TableCell colSpan={8} align="center">
 								<Typography variant="body2" color="text.secondary">
-									No jobs added yet.
+                                    Nothing here yet — run your first analysis from the sidebar.
 								</Typography>
-								<Grid container sx={{ mt: 2, justifyContent: 'center' }} spacing={2}>
-									<Grid>
-										<Button
-											variant="contained"
-											color="primary"
-											sx={{ textTransform: 'none' }}
-											startIcon={<AutoMode />}
-											onClick={() => window.location.href = '/submit'}
-										>
-											Run Standard Analysis
-										</Button>
-									</Grid>
-									<Grid>
-										<Button
-											variant="outlined"
-											sx={{ textTransform: 'none' }}
-											startIcon={<TuneOutlined />}
-											onClick={() => window.location.href = '/advanced'}
-										>
-											Run Advanced Analysis
-										</Button>
-									</Grid>
-								</Grid>
 							</TableCell>
 						</TableRow>
 					) : (
