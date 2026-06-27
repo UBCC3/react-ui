@@ -528,11 +528,12 @@ export default function Group() {
 			/>
 
             {/* Show the group admin panel only after an access token is available. */}
-			{adminPanelToken && <GroupPanel token={adminPanelToken} />}
+			{adminPanelToken && userRole === 'group_admin' && <GroupPanel token={adminPanelToken} />}
 
             {/* Main group jobs table section. */}
 			<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50], mb: 4 }}>
 				<JobsToolbar
+                    title = "Group Jobs"
 					selectedJobId={selectedJobId}
 					onViewDetails={() => navigate(`/jobs/${selectedJobId}`)}
 					onViewStructure={() => {
