@@ -37,6 +37,7 @@ import MolmakerLoading from "../custom/MolmakerLoading";
 import CalculatedQuantities from "./CalculatedQuantities";
 import IRSpectrumPlot from "../IRSpectrumPlot";
 import {formatComplex, formatSymmetryLabel} from "../../utils";
+import { APP_BAR_HEIGHT } from "../../constants";
 
 /**
  * Generate accessibility props for a Material UI Tab.
@@ -350,9 +351,12 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 					fullWidth:miniWidth, 
 					flexShrink: 0,
 					'& .MuiDrawer-paper': {
+                        top: `${APP_BAR_HEIGHT}px`,
+                        height: `calc(100% - ${APP_BAR_HEIGHT}px)`,
 						width: open ? fullWidth : miniWidth,
 						boxSizing: 'border-box',
 						overflowX: 'hidden',
+                        overflowY: 'auto',
 						backgroundColor: grey['A100'],
 					},
 				}}

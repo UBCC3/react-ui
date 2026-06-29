@@ -22,6 +22,7 @@ import {fetchRawFileFromS3Url} from "./util";
 import {Job, JobResult} from "../../types";
 import MolmakerLoading from "../custom/MolmakerLoading";
 import CalculatedQuantities from "./CalculatedQuantities";
+import { APP_BAR_HEIGHT } from "../../constants";
 
 /**
  * Props for the OptimizationViewer component.
@@ -245,9 +246,12 @@ const OptimizationViewer:React.FC<VibrationViewerProps> = ({
 						fullWidth:miniWidth,
 					flexShrink: 0,
 					'& .MuiDrawer-paper': {
+                        top: `${APP_BAR_HEIGHT}px`,
+                        height: `calc(100% - ${APP_BAR_HEIGHT}px)`,
 						width: open ? fullWidth : miniWidth,
 						boxSizing: 'border-box',
 						overflowX: 'hidden',
+                        overflowY: 'auto',
 						backgroundColor: grey['A100'],
 					},
 				}}

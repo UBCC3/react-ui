@@ -46,6 +46,7 @@ import PartialCharge from "./PartialCharge";
 import {useAuth0} from "@auth0/auth0-react";
 import {MolmakerTextField} from "../custom";
 import {AddAndUploadStructureToS3} from "../../services/api";
+import { APP_BAR_HEIGHT } from "../../constants";
 
 /**
  * Props for the OrbitalViewer component
@@ -386,10 +387,13 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 						fullWidth:miniWidth,
 						flexShrink: 0,
 						'& .MuiDrawer-paper': {
-							width: open ? fullWidth : miniWidth,
-							boxSizing: 'border-box',
-							overflowX: 'hidden',
-							backgroundColor: grey['A100'],
+							top: `${APP_BAR_HEIGHT}px`,
+                            height: `calc(100% - ${APP_BAR_HEIGHT}px)`,
+                            width: open ? fullWidth : miniWidth,
+                            boxSizing: 'border-box',
+                            overflowX: 'hidden',
+                            overflowY: 'auto',
+                            backgroundColor: grey['A100'],
 						},
 					}}
 					open

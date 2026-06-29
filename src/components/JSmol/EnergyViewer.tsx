@@ -17,6 +17,7 @@ import {CalculateOutlined, ContrastOutlined, ExpandMore, Fullscreen, FullscreenE
 import { grey } from "@mui/material/colors";
 import CalculatedQuantities from "./CalculatedQuantities";
 import PartialCharge from "./PartialCharge";
+import { APP_BAR_HEIGHT } from "../../constants";
 
 
 // Width of the expanded result drawer in pixels.
@@ -165,9 +166,12 @@ const EnergyViewer: React.FC<EnergyViewerProps> = ({
 						fullWidth:miniWidth,
 					flexShrink: 0,
 					'& .MuiDrawer-paper': {
+                        top: `${APP_BAR_HEIGHT}px`,
+                        height: `calc(100% - ${APP_BAR_HEIGHT}px)`,
 						width: open ? fullWidth : miniWidth,
 						boxSizing: 'border-box',
 						overflowX: 'hidden',
+                        overflowY: 'auto',
 						backgroundColor: grey['A100'],
 					},
 				}}

@@ -39,6 +39,7 @@ import {
 	deleteRequest,
 } from '../services/api';
 import { grey } from '@mui/material/colors';
+import { APP_BAR_HEIGHT } from '../constants';
 
 // Height used to calculate the maximum visible height of the requests menu.
 const ITEM_HEIGHT = 48;
@@ -172,6 +173,7 @@ export default function MenuAppBar() {
 				position="fixed"
 				elevation={2}
 				sx={{
+                    height: `${APP_BAR_HEIGHT}px`,
 					width: { sm: `calc(100% - ${width}px)` },
 					ml: { sm: `${width}px` },
 					bgcolor:'inherit',
