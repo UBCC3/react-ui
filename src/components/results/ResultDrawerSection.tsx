@@ -52,13 +52,13 @@ export function ResultDrawerSection({
             }}
         >
             <AccordionSummary
-                expandIcon={expanded && <ExpandMore />}
+                expandIcon={<ExpandMore />}
                 aria-controls={`${ariaId}-content`}
                 id={`${ariaId}-header`}
-                sx={{ color: grey[900], px: expanded ? 2 : 1 }}
+                sx={{ color: grey[900], px: 1.5 }}
             >
                 <Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center' }}>
-                    {React.cloneElement(icon, { sx: open ? { mr: 1 } : {ml: 2 } })}
+                    {React.cloneElement(icon, { sx: open ? { mr: 1 } : { ml: 2 } })}
                     {open && <span>{label}</span>}
                 </Typography>
             </AccordionSummary>
