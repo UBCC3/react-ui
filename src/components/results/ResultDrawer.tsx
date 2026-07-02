@@ -1,18 +1,11 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Drawer, Toolbar, IconButton, Box } from "@mui/material";
 import { Fullscreen, FullscreenExit } from '@mui/icons-material';
 import { grey } from '@mui/material/colors';
-import { APP_BAR_HEIGHT } from "../../constants";
+import { APP_BAR_HEIGHT, DRAWER_FULL_WIDTH, DRAWER_MINI_WIDTH } from "../../constants";
 import { useResizableWidth } from "../../hooks/UseResizableWidth";
+import { useDrawerWidth } from "../../contexts/DrawerWidthContext";
 
-/** 
- * Default width of the expanded result drawer in pixels.
- */
-export const DRAWER_FULL_WIDTH = 400;
-/**
- * Width of the collapsed result drawer in pixels.
- */
-export const DRAWER_MINI_WIDTH = 80;
 /**
  * Narrowest the drawer can be dragged to while expanded.
  */
@@ -20,7 +13,7 @@ const DRAWER_MIN_WIDTH = 320;
 /**
  * Widest the drawer can be dragged to while expanded.
  */
-const DRAWER_MAX_WIDTH = 720;
+const DRAWER_MAX_WIDTH = 560;
 
 interface ResultDrawerProps {
     open: boolean;
@@ -41,6 +34,10 @@ interface ResultDrawerProps {
 export function ResultDrawer({ open, onToggle, children }: ResultDrawerProps) {
     const { width, startResizing } = useResizableWidth(DRAWER_FULL_WIDTH, DRAWER_MIN_WIDTH, DRAWER_MAX_WIDTH);
     const drawerWidth = open ? width : DRAWER_MINI_WIDTH;
+    const { setDrawerWidth } = useDrawerWidth();
+    useEffect(() => {
+        setDrawerWidth(drawerWidth);
+    }, [drawerWidth, setDrawerWidth]);
 
     return (
         <Drawer

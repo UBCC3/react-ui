@@ -15,6 +15,8 @@ import MolmakerLoading from "../custom/MolmakerLoading";
 import {MolmakerPageTitle} from "../custom";
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
 import { grey } from "@mui/material/colors";
+import ViewerTipsCard from "./ViewerTipsCard";
+import { useDrawerWidth } from "../../contexts/DrawerWidthContext";
 
 // Lazy-load result viewer components so the standard analysis page only loads
 // each heavy JSmol viewer when its tab is rendered.
@@ -112,6 +114,8 @@ const StandardAnalysisViewer: React.FC<StandardAnalysisViewerProp> = ({
 
     const [notesOpen, setNotesOpen] = useState(false);
 
+    const { drawerWidth } = useDrawerWidth();
+
     // Fetch the standard analysis result JSON when the result URL changes.
 	useEffect(() => {
 		fetchRawFileFromS3Url(resultURL, 'json').then((res) => {
@@ -180,53 +184,64 @@ const StandardAnalysisViewer: React.FC<StandardAnalysisViewerProp> = ({
 
 	return (
 		<Box>
-			<Box>
-				<MolmakerPageTitle 
-                    title={job.job_name} 
-                    subtitle={renderCalculationType(job.calculation_type)} 
-                    removeBottomPadding={true}
-                />
+            <Box sx={{
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                gap: 3,
+                pr: `${drawerWidth}px`,
+            }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <MolmakerPageTitle 
+                        title={job.job_name} 
+                        subtitle={renderCalculationType(job.calculation_type)} 
+                        removeBottomPadding={true}
+                    />
 
-				{job.tags.length > 0 && (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1.5 }}>
-                        {job.tags.map((tag, index) => (
-                            <Chip
-                                key={`tag-${index}`}
-                                label={tag}
-                                size="small"
-                                variant="outlined"
-                            />
-                        ))}
-                    </Box>
-                )}
-                {job.job_notes && (
-                    <Box sx={{ mt: job.tags.length > 0 ? 1.5 : 1.5 }}>
-                        <Box
-                            onClick={() => setNotesOpen(!notesOpen)}
-                            sx={{ 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                cursor: 'pointer', 
-                                color: 'text.secondary',
-                                px: 1,
-                                py: 0.5,
-                                borderRadius: 1,
-                                '&:hover': { backgroundColor: grey[100] },
-                            }}
-                        >
-                            <Typography variant="body2" sx={{ mr: 0.5, fontWeight: 500 }}>
-                                {notesOpen ? 'Hide notes' : 'Show notes'}
-                            </Typography>
-                            {notesOpen ? <ExpandLess fontSize="small"/> : <ExpandMore fontSize="small"/>}
+                    {job.tags.length > 0 && (
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1.5 }}>
+                            {job.tags.map((tag, index) => (
+                                <Chip
+                                    key={`tag-${index}`}
+                                    label={tag}
+                                    size="small"
+                                    variant="outlined"
+                                />
+                            ))}
                         </Box>
-                        <Collapse in={notesOpen}>
-                            <Typography variant="body2" sx={{ mt: 1, p: 1.5, bgcolor: grey[100], borderRadius: 1, maxWidth: 600 }}>
-                                {job.job_notes}
-                            </Typography>
-                        </Collapse>
-                    </Box>
-                )}
-			</Box>
+                    )}
+                    {job.job_notes && (
+                        <Box sx={{ mt: job.tags.length > 0 ? 1.5 : 1.5 }}>
+                            <Box
+                                onClick={() => setNotesOpen(!notesOpen)}
+                                sx={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    cursor: 'pointer', 
+                                    color: 'text.secondary',
+                                    px: 1,
+                                    py: 0.5,
+                                    borderRadius: 1,
+                                    '&:hover': { backgroundColor: grey[100] },
+                                }}
+                            >
+                                <Typography variant="body2" sx={{ mr: 0.5, fontWeight: 500 }}>
+                                    {notesOpen ? 'Hide notes' : 'Show notes'}
+                                </Typography>
+                                {notesOpen ? <ExpandLess fontSize="small"/> : <ExpandMore fontSize="small"/>}
+                            </Box>
+                            <Collapse in={notesOpen}>
+                                <Typography variant="body2" sx={{ mt: 1, p: 1.5, bgcolor: grey[100], borderRadius: 1, maxWidth: 600 }}>
+                                    {job.job_notes}
+                                </Typography>
+                            </Collapse>
+                        </Box>
+                    )}
+                </Box>
+                <Box sx={{ width: 320, flexShrink: 0 }}>
+                    <ViewerTipsCard />
+                </Box>
+            </Box>
 			<Box sx={{ borderBottom: 1, borderColor: 'divider', m: 0, p: 0 }}>
 				<Tabs
 					value={currentTab}
