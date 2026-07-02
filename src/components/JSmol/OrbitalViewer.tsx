@@ -83,7 +83,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
     });
 
     const { open, accordionOpen, toggle, handleAccordionChange } = useResultDrawer({
-        orbitals: true,
+        orbitals: false,
         properties: false,
         quantities: false,
         charges: false,

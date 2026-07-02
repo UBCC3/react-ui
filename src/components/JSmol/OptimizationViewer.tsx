@@ -74,7 +74,7 @@ const OptimizationViewer:React.FC<VibrationViewerProps> = ({
     });
 
     const { open, accordionOpen, toggle, handleAccordionChange } = useResultDrawer({
-        modes: true,
+        modes: false,
         options: false,
         quantities: false,
     });

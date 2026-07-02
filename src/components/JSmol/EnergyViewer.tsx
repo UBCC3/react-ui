@@ -48,7 +48,7 @@ const EnergyViewer: React.FC<EnergyViewerProps> = ({
     });
 
     const { open, accordionOpen, toggle, handleAccordionChange } = useResultDrawer({
-        quantities: true,
+        quantities: false,
         charges: false,
     });
 
