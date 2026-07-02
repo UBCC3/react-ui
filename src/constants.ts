@@ -2,6 +2,9 @@ import { green, blue, orange, red, grey, deepOrange } from '@mui/material/colors
 import { CheckCircleOutlined, RunCircleOutlined, PendingOutlined, ErrorOutline, CancelOutlined, HelpOutlineOutlined, ReportOutlined, TimerOffOutlined } from '@mui/icons-material';
 import type { FilterExtent } from './types/Filter';
 
+// The constant height of the toolbar and the menu drawer header
+export const APP_BAR_HEIGHT = 64;
+
 export const JobStatus = {
 	PENDING: 'pending',
 	RUNNING: 'running',

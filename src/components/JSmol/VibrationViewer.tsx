@@ -1,47 +1,43 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {useEffect, useState} from "react";
 import {
-	Accordion,
-	AccordionDetails,
-	AccordionSummary,
 	Box,
 	Checkbox,
 	Divider,
-	Drawer,
 	FormControlLabel,
 	FormGroup,
 	Grid,
-	IconButton,
-	Paper, Slider, Tab,
+	Paper,
+    Slider,
+    Tab,
 	Table,
 	TableBody,
 	TableCell,
 	TableContainer,
 	TableHead,
 	TablePagination,
-	TableRow, Tabs,
-	Toolbar,
+	TableRow,
+    Tabs,
 	Typography
 } from "@mui/material";
-import {blueGrey, grey} from "@mui/material/colors";
+import { blueGrey, grey } from "@mui/material/colors";
 import {
 	AdjustOutlined,
 	CalculateOutlined,
 	DataObjectOutlined,
-	ExpandMore,
-	Fullscreen,
-	FullscreenExit
 } from "@mui/icons-material";
-import {Job, JobResult, VibrationMode, ComplexNumber} from "../../types";
-import {fetchRawFileFromS3Url} from "./util"
+import { Job, JobResult, VibrationMode, ComplexNumber } from "../../types";
 import MolmakerLoading from "../custom/MolmakerLoading";
 import CalculatedQuantities from "./CalculatedQuantities";
 import IRSpectrumPlot from "../IRSpectrumPlot";
-import {formatComplex} from "../../utils";
+import { formatComplex } from "../../utils";
+import { useResultDrawer } from "../../hooks/UseResultDrawer";
+import { useJsmolViewer } from "../../hooks/UseJsmolViewer";
+import { useJobResult } from "../../hooks/UseJobResult";
+import { ResultDrawer } from "../results/ResultDrawer";
+import { ResultDrawerSection } from "../results/ResultDrawerSection";
 
 /**
  * Generate accessibility props for a Material UI Tab.
- * 
- * The returned IDs connect each tab with its corresponding tab panel.
  */
 function a11yProps(index: number) {
 	return {
@@ -58,11 +54,6 @@ enum viewerTab {
 	graph,
 }
 
-// Width of the expanded result drawer in pixels.
-const fullWidth = 400;
-// Width of the collapsed result drawer in pixels.
-const miniWidth = 80;
-
 /**
  * Props for the VibrationViewer component.
  */
@@ -76,10 +67,10 @@ interface VibrationViewerProps {
 /**
  * Displays the vibrational frequency analysis result viewer.
  * 
- * This component loads vibrational trajectory data into JSmol, extracts
- * vibration modes from the result JSON, displays vibration mode information
- * in a table, and renders an IR specturm graph from the calculated real
- * frequencies and intensities.
+ * Loads vibrational trajectory data into JSmol, extracts vibration modes
+ * from the result JSON, displays vibration mode information in a table, and
+ * renders an IR specturm graph from the calculated real frequencies and
+ * intensities.
  */
 const VibrationViewer: React.FC<VibrationViewerProps> = ({
 	job,
@@ -87,143 +78,68 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 	viewerObjId,
 	setError
 }) => {
-    // DOM container where JSmol injects the molecular viewer.
-	const viewerRef = useRef<HTMLDivElement>(null);
-
-    // Stores the active JSmol applet so it can be stopped/cleared when switching tabs.
-	const appletRef = useRef<any>(null);
-
-    // JSmol viewer object used to run scripts from React controls.
-	const [viewerObj, setViewerObj] = useState<any>(null);
-
-    // Tracks whether result JSON and viewer setup are still loading.
-	const [loading, setLoading] = useState<boolean>(true);
-
-    // URL to the vibration structure/trajectory file
 	const xyzFileUrl = jobResultFiles.urls["vib"];
-
-    // URL to the calculation result JSON.
 	const resultURL = jobResultFiles.urls["result"];
 
-    // Parsed vibration result JSON.
-	const [result, setResult] = useState<any | null>(null);
+    const { result, loading } = useJobResult(resultURL, "vibrational frequencies", setError);
+
+    // structure viewer & graph viewer tab
+    const [value, setValue] = useState<viewerTab>(viewerTab.structure);
+    const handleChange = (_event: React.SyntheticEvent, newValue: number) => setValue(newValue)
+
+    const { viewerRef, viewerObj, appletRef } = useJsmolViewer({
+        viewerObjId,
+        src: xyzFileUrl,
+        loadScript: `load async "${xyzFileUrl}";`,
+        onReadyScript: `reset; zoom 50;`,
+        skip: loading || value !== viewerTab.structure,
+        cleanupOnChange: true,
+    });
+
+    const { open, accordionOpen, toggle, handleAccordionChange } = useResultDrawer({
+        modes: false,
+        options: false,
+        spectrum: false,
+        quantities: false,
+    });
 
     // Parsed vibration modes displayed in the mode table.
-	const [modes, setModes] = useState<VibrationMode[]>([]);
+    const [modes, setModes] = useState<VibrationMode[]>([]);
 
     // Pagination state for the vibration mode table.
-	const rowsPerPage = 25;
-	const [page, setPage] = useState(0);
+    const rowsPerPage = 25;
+    const [page, setPage] = useState(0);
 
-    // Currently selected vibraiton mode shown in the JSmol viewer.
-	const [selectedMode, setSelectedMode] = useState<VibrationMode | null>(null);
+    // Currently selected vibration mode shown in the JSmol viewer.
+    const [selectedMode, setSelectedMode] = useState<VibrationMode | null>(null);
 
     // JSmol display toggles for vibration animation and displacement vectors.
-	const [vibrationOn, setVibrationOn] = useState(true);
-	const [vectorOn, setVectorOn] = useState(true);
-
-    // Controls whether the right-side result drawer is expanded or collapsed.
-	const [open, setOpen] = useState(true);
-
-    // Controls which drawer accordions are expanded.
-	const [accordionOpen, setAccordionOpen] = useState({ 
-		modes: true, 
-		options: false,
-		spectrum: false,
-		quantities: false
-	});
-
-	// structure viewer & graph viewer tab
-	const [value, setValue] = React.useState<viewerTab>(viewerTab.structure);
-	const handleChange = (event: React.SyntheticEvent, newValue: number) => {
-		setValue(newValue);
-	};
+    const [vibrationOn, setVibrationOn] = useState(true);
+    const [vectorOn, setVectorOn] = useState(true);
 
 	// IR Spectra Graph
 	const [graphData, setGraphData] = useState<{freq: number, intensity: number}[]>([]);
 	const [width, setWidth] = useState(15);
 	const [shape, setShape] = useState<'gaussian' | 'lorentzian'>('gaussian');
 
-    // Fetch and normalize the vibration result JSON.
-	useEffect(() => {
-		setLoading(true);
-		fetchRawFileFromS3Url(resultURL, 'json').then((res) => {
-			const workflowKeys = ['geometric optimization', 'molecular orbitals', 'vibrational frequencies'];
-			const isWorkflowSchema = Object.keys(res).some(k => workflowKeys.includes(k));
-			const resultJson = isWorkflowSchema ? ((res as any)["vibrational frequencies"]) : res;
-			setResult(resultJson);
-		}).catch((err) => {
-			setError("Failed to fetch job details or results");
-			console.error("Failed to fetch job details or results", err);
-		}).finally(() => {
-			setLoading(false);
-		})
-
-	}, [resultURL]);
-
-	// Initialize Jmol viewer
-	useEffect(() => {
-		if (loading) return;
-		if (value !== viewerTab.structure) return;
-		if (!viewerRef.current) return;
-
-		const jsmolIsReady = (obj: any) => {
-			appletRef.current = obj;
-			window.Jmol.script(obj, `reset; zoom 50;`);
-			setViewerObj(obj);
-		};
-
-		const Info = {
-			color: "#FFFFFF",
-			width: "100%",
-			height: "100%",
-			use: "HTML5",
-			j2sPath: "/ubchemica/jsmol/j2s",
-			src: xyzFileUrl,
-			serverURL: "https://chemapps.stolaf.edu/jmol/jsmol/php/jsmol.php",
-			script: `load async "${xyzFileUrl}";`,
-			disableInitialConsole: true,
-			addSelectionOptions: false,
-			debug: false,
-			readyFunction: jsmolIsReady,
-		};
-
-		// create and mount
-		window.Jmol.getApplet(viewerObjId, Info);
-		viewerRef.current.innerHTML = window.Jmol.getAppletHtml(viewerObjId, Info);
-
-		// cleanup on unmount or when xyzFileUrl/viewer changes
-		return () => {
-			try {
-				if (appletRef.current) {
-					window.Jmol.script(appletRef.current, `!exit; spin off; animation off; set refreshing off;`);
-				}
-			} catch {}
-			if (viewerRef.current) viewerRef.current.innerHTML = "";
-			appletRef.current = null;
-			setViewerObj(null);
-		};
-	}, [xyzFileUrl, viewerObjId, loading, value]);
-
-	// when switching away from structure, stop and clear immediately
+	// When switching away from structure, stop and clear the applet
+    // immediately rather than waiting for useJsmolViewer's own cleanup
+    // (which only fires once `skip` flips true on the next render).
 	useEffect(() => {
 		if (value === viewerTab.structure) return;
 		try {
 			if (appletRef.current) {
-				window.Jmol.script(appletRef.current, `!exit;`); // immediate stop
+				window.Jmol.script(appletRef.current, `!exit;`);
 			}
 		} catch {}
 		if (viewerRef.current) viewerRef.current.innerHTML = "";
 		appletRef.current = null;
-		setViewerObj(null);
 	}, [value]);
 
 
 	// Fetch vibration modes
 	useEffect(() => {
-		if (!viewerObj) return;
-		if (!result) return;
-		if (value !== viewerTab.structure) return;
+		if (!viewerObj || !result || value !== viewerTab.structure) return;
 
 		const charTemp: number[] = result.extras.Psi4.char_temp;
 		const forceConstant: number[] = result.extras.Psi4.force_constant;
@@ -233,7 +149,7 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 		const realIrIntensity: number[] = result.extras.Psi4.real_ir_intensity;
 		const symmetry: string[] = result.extras.Psi4.symmetry;
 
-		const modes: VibrationMode[] = frequency.map((freq: ComplexNumber, idx: number) => {
+		const parsedModes: VibrationMode[] = frequency.map((freq: ComplexNumber, idx: number) => {
 			return {
 				index: idx + 1,
 				frequencyCM: freq,
@@ -243,63 +159,29 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 				charTemp: charTemp[idx],
 			}
 		})
-		setModes(modes);
-		const graphData: {freq: number, intensity: number}[] = realFrequency.map((freq: number, idx: number) => {
-			return {
-				freq: freq,
-				intensity: realIrIntensity[idx]
-			}
-		})
-		setGraphData(graphData);
+		setModes(parsedModes);
+
+		const parsedGraphData = realFrequency.map((freq: number, idx: number) => ({
+			freq: freq,
+			intensity: realIrIntensity[idx]
+		}))
+		setGraphData(parsedGraphData);
 	}, [viewerObj, result]);
 
 	// Update display on selection or toggles
 	useEffect(() => {
-		if (!viewerObj || selectedMode === null) return;
-		if (value !== viewerTab.structure) return;
+		if (!viewerObj || selectedMode === null || value !== viewerTab.structure) return;
 
 		let script = `model ${selectedMode.index}; vibration ${vibrationOn ? 'ON' : 'OFF'}; vector ${vectorOn ? 'ON' : 'OFF'};`;
 		if (vectorOn) script += ` color vectors yellow; vector 19;`;
 		window.Jmol.script(viewerObj, script);
 	}, [viewerObj, selectedMode, vibrationOn, vectorOn]);
 
-    /**
-     * Expand or collapse the result drawer.
-     * 
-     * Collapsing the drawer also closes all accordions so only icons remain
-     * visible in the mini drawer state.
-     */
-	const toggle = () => {
-		if (open) {
-			setOpen(false);
-			setAccordionOpen({
-				modes: false,
-				options: false,
-				spectrum: false,
-				quantities: false
-			});
-		}
-		else {
-			setOpen(true);
-		}
-	}
-
-    /**
-     * Updaate the expanded state of a drawer accordion.
-     * 
-     * If the user opens an accordion while the drawer is collapsed, the drawer
-     * automatically expands so the accordion content is visible.
-     */
-	const handleAccordionChange = (panel: keyof typeof accordionOpen) => (_event: React.SyntheticEvent, isExpanded: boolean) => {
-		setAccordionOpen(prev => ({ ...prev, [panel]: isExpanded }));
-		if (isExpanded && !open) setOpen(true); // Open drawer if opening an accordion
-	};
-
 	if (loading) { return (<MolmakerLoading />); }
 
 	return (
 		<Grid container spacing={2} sx={{ width: '100%' }}>
-			{ (job.calculation_type !== "standard") && (
+			{(job.calculation_type !== "standard") && (
 				<Grid size={12} sx={{ display: 'flex', flexDirection: 'column' }}>
 					<Typography variant="h5">
 						Vibration Analysis Result
@@ -319,10 +201,10 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 						ref={viewerRef}
 						sx={{
 							width: '100%',
-							height: '70vh',
+                            aspectRatio: '1 / 1',
+							height: 'auto',
 							boxSizing: 'border-box',
 							borderRadius: 2
-							// zIndex removed
 						}}
 						elevation={3}
 					/>
@@ -331,7 +213,8 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 					<Paper
 						sx={{
 							width: '100%',
-							height: '70vh',
+                            aspectRatio: '1 / 1',
+							height: 'auto',
 							boxSizing: 'border-box',
 							borderRadius: 2,
 							p: 4,
@@ -342,240 +225,240 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 					</Paper>
 				)}
 			</Grid>
-			<Drawer
-				variant="persistent"
-				anchor="right"
-				sx={{ 
-					width: open? 
-					fullWidth:miniWidth, 
-					flexShrink: 0,
-					'& .MuiDrawer-paper': {
-						width: open ? fullWidth : miniWidth,
-						boxSizing: 'border-box',
-						overflowX: 'hidden',
-						backgroundColor: grey['A100'],
-					},
-				}}
-				open
-			>
-				<Toolbar sx={{ justifyContent:'flex-start', display: 'flex', alignItems: 'center' }}>
-					<IconButton onClick={toggle} size="small" sx={{ color: grey[500], mr: 2 }}>
-						{open ? <FullscreenExit /> : <Fullscreen/>}
-					</IconButton>
-				</Toolbar>
-				<Accordion
-					expanded={accordionOpen.modes}
-					onChange={handleAccordionChange('modes')}
-					sx={{
-						backgroundColor: accordionOpen.modes ? grey[300] : grey[100],
-						borderRadius: 0,
-						boxShadow: 'none',
-						mb: 0,
-						transition: 'background-color 0.3s ease',
-					}}
-				>
-					<AccordionSummary 
-						expandIcon={accordionOpen.modes && <ExpandMore />}
-						aria-controls="panel1-content"
-						id="panel1-header"
-						sx={{ color: grey[900], px: accordionOpen.modes ? 2 : 1 }}
-					>
-						<Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center' }}>
-							<AdjustOutlined sx={open ? { mr: 1 } : { ml: 2 }} />
-							{open && (<span>Vibration Modes</span>)}
-						</Typography>
-					</AccordionSummary>
-					<AccordionDetails sx={{ display: 'flex', flexDirection: 'column', p: 0 }}>
-						<TableContainer sx={{ flex: 1 }}>
-							<Table>
-								<TableHead>
-									<TableRow sx={{ bgcolor: grey[200] }}>
-										<TableCell>Mode</TableCell>
-										<TableCell>Symmetry</TableCell>
-										<TableCell>Frequency (cm<sup>-1</sup>)</TableCell>
-										<TableCell>IR Intensity</TableCell>
-										<TableCell>Force Constant (mDyne/A)</TableCell>
-										<TableCell>Char Temp (K)</TableCell>
-									</TableRow>
-								</TableHead>
-								<TableBody>
-									{modes.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((mode) => (
-										<TableRow
-											key={mode.index}
-											onClick={() => {
-												if (value !== viewerTab.structure) { setValue(viewerTab.structure); }
-												setSelectedMode(mode);
-											}}
-											sx={{ 
-												cursor: 'pointer',
-												bgcolor: grey[50],
-												'&:hover': {
-													backgroundColor: blueGrey[50],
-												},
-											}}
-										>
-											<TableCell>{mode.index}</TableCell>
-											<TableCell>{mode.symmetry}</TableCell>
-											<TableCell>{formatComplex(mode.frequencyCM)}</TableCell>
-											<TableCell>{mode.irIntensity.toFixed(2)}</TableCell>
-											<TableCell>{mode.forceConstant.toFixed(2)}</TableCell>
-											<TableCell>{mode.charTemp.toFixed(2)}</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</TableContainer>
-						<TablePagination
-							component="div"
-							count={modes.length}
-							page={page}
-							onPageChange={(_e, newPage) => setPage(newPage)}
-							rowsPerPage={rowsPerPage}
-							rowsPerPageOptions={[]}
-							showFirstButton
-							showLastButton
-						/>
-					</AccordionDetails>
-				</Accordion>
-				<Accordion
-					expanded={accordionOpen.options}
-					onChange={handleAccordionChange('options')}
-					sx={{ 
-						backgroundColor: accordionOpen.options ? grey[300] : grey[100],
-						borderRadius: 0, 
-						boxShadow: 'none', 
-						mb: 0, 
-						transition: 'background-color 0.3s ease' 
-					}}
-				>
-					<AccordionSummary
-						expandIcon={accordionOpen.options && <ExpandMore />}
-						aria-controls="panel2-content"
-						id="panel2-header"
-						sx={{ color: grey[900], px: accordionOpen.options ? 2 : 1 }}
-					>
-						<Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center' }}>
-							<DataObjectOutlined sx={open ? { mr: 1 } : { ml: 2 }}  />
-							{open && <span>Vibration Properties</span>}
-						</Typography>
-					</AccordionSummary>
-					<AccordionDetails sx={{ display: 'flex', flexDirection: 'column', p: 0 }}>
-						<Grid container sx={{ width: '100%', height: '100%', bgcolor: grey[50], display: 'flex', flexDirection: 'row' }}>
-							<Grid size={{ xs: 12 }} sx={{ display: 'flex', flexDirection: 'column', px: 2, pb: 2, flexGrow: 1, mt: 0, pt: 0 }}>
-								<FormControlLabel
-									control={<Checkbox checked={vibrationOn} onChange={e => setVibrationOn(e.target.checked)} />}
-									label="Vibration ON"
-								/>
-								<FormControlLabel
-									control={<Checkbox checked={vectorOn} onChange={e => setVectorOn(e.target.checked)} />}
-									label="Vector ON"
-								/>
-							</Grid>
-						</Grid>
-					</AccordionDetails>
-				</Accordion>
-				<Accordion
-					expanded={accordionOpen.spectrum}
-					onChange={handleAccordionChange('spectrum')}
-					sx={{
-						backgroundColor: accordionOpen.spectrum ? grey[300] : grey[100],
-						borderRadius: 0,
-						boxShadow: 'none',
-						mb: 0,
-						transition: 'background-color 0.3s ease'
-					}}
-				>
-					<AccordionSummary
-						expandIcon={accordionOpen.spectrum && <ExpandMore />}
-						aria-controls="panel2-content"
-						id="panel2-header"
-						sx={{ color: grey[900], px: accordionOpen.spectrum ? 2 : 1 }}
-					>
-						<Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center' }}>
-							<DataObjectOutlined sx={open ? { mr: 1 } : { ml: 2 }}  />
-							{open && <span>IR Intensity</span>}
-						</Typography>
-					</AccordionSummary>
-					<AccordionDetails sx={{ display: 'flex', flexDirection: 'column', p: 0, borderBottom: '1px solid', borderColor: grey[300] }}>
-						<Grid container sx={{ width: '100%', height: '100%', bgcolor: grey[50], display: 'flex', flexDirection: 'row' }}>
-							<Grid size={{ xs: 12 }} sx={{ display: 'flex', flexDirection: 'column', px: 2, pb: 2,flexGrow: 1, mt: 0, pt: 2 }}>
-								<Box sx={{ border: '1px solid', borderRadius: 2, p: 1, borderColor: 'divider' }}>
-									<Typography variant="caption" sx={{ mb: 1, color: 'text.secondary' }}>
-										Function
-									</Typography>
-									<FormGroup sx={{ display: 'flex', flexDirection: 'row', gap: 1 }}>
-										<FormControlLabel
-											control={<Checkbox checked={shape==="gaussian"} onChange={(_, checked) => {
-												if (value !== viewerTab.graph) { setValue(viewerTab.graph); }
-												setShape("gaussian");
-											}} />}
-											label="Gaussian"
-										/>
-										<FormControlLabel
-											control={<Checkbox checked={shape==="lorentzian"} onChange={(_, checked) => {
-												if (value !== viewerTab.graph) { setValue(viewerTab.graph); }
-												setShape("lorentzian");
-											}} />}
-											label="Lorentzian"
-										/>
-									</FormGroup>
-								</Box>
-							</Grid>
-							<Grid size={{ xs: 12 }} sx={{ display: 'flex', flexDirection: 'column', px: 2, pb: 2,flexGrow: 1, mt: 0 }}>
-								<Box sx={{ border: '1px solid', borderRadius: 2, p: 1, borderColor: 'divider' }}>
-									<Typography variant="caption" sx={{ mb: 1, color: 'text.secondary' }}>
-										Width
-									</Typography>
-									<FormGroup>
-										<Slider
-											value={width}
-											min={0}
-											max={150}
-											step={1}
-											marks={[{ value: 0, label: '0' }, { value: 150, label: '150' }]}
-											valueLabelDisplay="auto"
-											onChange={(_, newValue) => {
-												if (value !== viewerTab.graph) { setValue(viewerTab.graph); }
-												setWidth(newValue as number);
-											}}
-											sx={{ width: '80%', alignSelf: 'center', my: 2 }}
-										/>
-									</FormGroup>
-								</Box>
-							</Grid>
-						</Grid>
-					</AccordionDetails>
-				</Accordion>
-				<Accordion
-					expanded={accordionOpen.quantities}
-					onChange={handleAccordionChange('quantities')}
-					sx={{ 
-						backgroundColor: accordionOpen.quantities ? grey[300] : grey[100],
-						borderRadius: 0, 
-						boxShadow: 'none', 
-						mb: 0, 
-						transition: 'background-color 0.3s ease' 
-					}}
-				>
-					<AccordionSummary
-						expandIcon={accordionOpen.quantities && <ExpandMore />}
-						aria-controls="panel3-content"
-						id="panel3-header"
-						sx={{ 
-							color: grey[900],
-							px: accordionOpen.quantities ? 2 : 1 
-						}}
-					>
-						<Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center' }}>
-							<CalculateOutlined sx={open ? { mr: 1 } : { ml: 2 }}  />
-							{open && <span>Calculated Quantities</span>}
-						</Typography>
-					</AccordionSummary>
-					<AccordionDetails sx={{ display: 'flex', flexDirection: 'column', p: 0 }}>
-						<CalculatedQuantities job={job} result={result} />
-					</AccordionDetails>
-				</Accordion>
-			</Drawer>
+			<ResultDrawer open={open} onToggle={toggle}>
+                <ResultDrawerSection
+                    open={open}
+                    expanded={accordionOpen.modes}
+                    onChange={handleAccordionChange('modes')}
+                    icon={<AdjustOutlined />}
+                    label="Vibration Modes"
+                    ariaId="panel1"
+                >
+                    <TableContainer sx={{ flex: 1 }}>
+                        <Table>
+                            <TableHead>
+                                <TableRow sx={{ bgcolor: grey[200] }}>
+                                    <TableCell>Mode</TableCell>
+                                    <TableCell>Symmetry</TableCell>
+                                    <TableCell>Frequency (cm<sup>-1</sup>)</TableCell>
+                                    <TableCell>IR Intensity</TableCell>
+                                    <TableCell>Force Constant (mDyne/A)</TableCell>
+                                    <TableCell>Char Temp (K)</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {modes.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((mode) =>(
+                                    <TableRow
+                                        key={mode.index}
+                                        onClick={() => {
+                                            if (value !== viewerTab.structure) setValue(viewerTab.structure);
+                                            setSelectedMode(mode);
+                                        }}
+                                        sx={{
+                                            cursor: 'pointer',
+                                            bgcolor: grey[50],
+                                            '&:hover': { backgroundColor: blueGrey[50] },
+                                        }}
+                                    >
+                                        <TableCell>{mode.index}</TableCell>
+                                        <TableCell>{mode.symmetry}</TableCell>
+                                        <TableCell>{formatComplex(mode.frequencyCM)}</TableCell>
+                                        <TableCell>{mode.irIntensity.toFixed(2)}</TableCell>
+                                        <TableCell>{mode.forceConstant.toFixed(2)}</TableCell>
+                                        <TableCell>{mode.charTemp.toFixed(2)}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                    <TablePagination
+                        component="div"
+                        count={modes.length}
+                        page={page}
+                        onPageChange={(_e, newPage) => setPage(newPage)}
+                        rowsPerPage={rowsPerPage}
+                        rowsPerPageOptions={[]}
+                        showFirstButton
+                        showLastButton
+                    />
+                </ResultDrawerSection>
+                <ResultDrawerSection
+                    open={open}
+                    expanded={accordionOpen.options}
+                    onChange={handleAccordionChange('options')}
+                    icon={<DataObjectOutlined />}
+                    label="Vibration Properties"
+                    ariaId="panel2"
+                >
+                    <Grid 
+                        container
+                        sx={{
+                            width: '100%',
+                            height: '100%',
+                            bgcolor: grey[50],
+                            display: 'flex',
+                            flexDirection: 'row'
+                        }}
+                    >
+                        <Grid
+                            size={{ xs: 12 }}
+                            sx={{
+                                dislay: 'flex',
+                                flexDirection: 'column',
+                                px: 2,
+                                pb: 2,
+                                flexGrow: 1,
+                                mt: 0,
+                                pt: 0
+                            }}
+                        >
+                            <FormControlLabel
+                                control={<Checkbox checked={vibrationOn} onChange={e => setVibrationOn(e.target.checked)} />}
+                                label="Vibration ON"
+                            />
+                            <FormControlLabel
+                                control={<Checkbox checked={vectorOn} onChange={e => setVectorOn(e.target.checked)} />}
+                                label="Vector ON"
+                            />
+                        </Grid>
+                    </Grid>
+                </ResultDrawerSection>
+                <ResultDrawerSection
+                    open={open}
+                    expanded={accordionOpen.spectrum}
+                    onChange={handleAccordionChange('spectrum')}
+                    icon={<DataObjectOutlined />}
+                    label="IR Intensity"
+                    ariaId="panel2b"
+                    detailsSx={{ borderBottom: '1px solid', borderColor: grey[300] }}
+                >
+                    <Grid
+                        container
+                        sx={{
+                            width: '100%',
+                            height: '100%',
+                            bgcolor: grey[50],
+                            display: 'flex',
+                            flexDirection: 'row'
+                        }}
+                    >
+                        <Grid
+                            size={{ xs: 12 }}
+                            sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                px: 2,
+                                pb: 2,
+                                flexGrow: 1,
+                                mt: 0,
+                                pt: 2
+                            }}
+                        >
+                            <Box
+                                sx={{
+                                    border: '1px solid',
+                                    borderRadius: 2,
+                                    p: 1,
+                                    borderColor: 'divider',
+                                }}
+                            >
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        mb: 1,
+                                        color: 'text.secondary'
+                                    }}
+                                >
+                                    Function
+                                </Typography>
+                                <FormGroup
+                                    sx={{
+                                        display: 'flex',
+                                        flexDirection: 'row',
+                                        gap: 1,
+                                    }}
+                                >
+                                    <FormControlLabel
+                                        control={<Checkbox checked={shape === "gaussian"}
+                                        onChange={() => {
+                                            if (value !== viewerTab.graph) setValue(viewerTab.graph);
+                                            setShape("gaussian");
+                                        }} />}
+                                        label="Gaussian"
+                                    />
+                                    <FormControlLabel
+                                        control={<Checkbox checked={shape === "lorentzian"}
+                                        onChange={() => {
+                                            if (value !== viewerTab.graph) setValue(viewerTab.graph);
+                                            setShape("lorentzian");
+                                        }} />}
+                                        label="Lorentzian"
+                                    />
+                                </FormGroup>
+                            </Box>
+                        </Grid>
+                        <Grid
+                            size={{ xs: 12 }}
+                            sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                px: 2,
+                                pb: 2,
+                                flexGrow: 1,
+                                mt: 0,
+                            }}
+                        >
+                            <Box
+                                sx={{
+                                    border: '1px solid',
+                                    borderRadius: 2,
+                                    p: 1,
+                                    borderColor: 'divider'
+                                }}
+                            >
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        mb: 1,
+                                        color: 'text.secondary'
+                                    }}
+                                >
+                                    Width
+                                </Typography>
+                                <FormGroup>
+                                    <Slider
+                                        value={width}
+                                        min={0}
+                                        max={150}
+                                        step={1}
+                                        marks={[{ value: 0, label: '0'}, { value: 150, label: '150' }]}
+                                        valueLabelDisplay="auto"
+                                        onChange={(_, newValue) => {
+                                            if (value !== viewerTab.graph) setValue(viewerTab.graph);
+                                            setWidth(newValue as number);
+                                        }}
+                                        sx={{
+                                            width: '80%',
+                                            alignSelf: 'center',
+                                            my: 2,
+                                        }}
+                                    />
+                                </FormGroup>
+                            </Box>
+                        </Grid>
+                    </Grid>
+                </ResultDrawerSection>
+                <ResultDrawerSection
+                    open={open}
+                    expanded={accordionOpen.quantities}
+                    onChange={handleAccordionChange('quantities')}
+                    icon={<CalculateOutlined />}
+                    label="Calculated Quantities"
+                    ariaId="panel3"
+                >
+                    <CalculatedQuantities job={job} result={result} />
+                </ResultDrawerSection>
+            </ResultDrawer>
 		</Grid>
 	);
 };

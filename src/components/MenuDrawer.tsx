@@ -21,6 +21,7 @@ import { useDrawer } from './DrawerContext';
 import { useAuth0 } from '@auth0/auth0-react';
 import { upsertCurrentUser } from '../services/api';
 import { blue, grey } from '@mui/material/colors';
+import { APP_BAR_HEIGHT } from '../constants';
 
 // Opened drawer width in pixels
 const DRAWER_WIDTH  = 250;
@@ -140,7 +141,7 @@ export default function MenuDrawer() {
      */
 	const drawerContent = (
 		<Box className="bg-slate-200 h-full">
-			<DrawerHeader sx={{ justifyContent: open ? 'space-between' : 'center', paddingLeft: open ? 2: 0, borderBottom: '1px solid', borderColor: 'divider', height: '65px' }}>
+			<DrawerHeader sx={{ justifyContent: open ? 'space-between' : 'center', paddingLeft: open ? 2: 0, borderBottom: '1px solid', borderColor: 'divider', height: `{{APP_BAR_HEIGHT}}px` }}>
 				{open && (
 					<Typography
 						variant="h6"
