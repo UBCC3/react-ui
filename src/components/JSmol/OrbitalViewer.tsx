@@ -263,7 +263,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {orbitals.slice(page * 5, page * 5).map(orbital => (
+                                    {orbitals.slice(page * 5, page * 5 + 5).map(orbital => (
                                         <TableRow
                                             key={orbital.index}
                                             onClick={() => setSelectedOrbital(orbital)}
@@ -313,10 +313,10 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
                     </ResultDrawerSection>
                     <ResultDrawerSection
                         open={open}
-                        expanded={accordionOpen.charges}
-                        onChange={handleAccordionChange('charges')}
-                        icon={<ContrastOutlined />}
-                        label="Calculated Charges"
+                        expanded={accordionOpen.quantities}
+                        onChange={handleAccordionChange('quantities')}
+                        icon={<CalculateOutlined />}
+                        label="Calculated Quantities"
                         ariaId="panel3"
                     >
                         <CalculatedQuantities job={job} result={result} />
