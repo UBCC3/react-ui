@@ -69,7 +69,8 @@ const EnergyViewer: React.FC<EnergyViewerProps> = ({
 					ref={viewerRef}
 					sx={{
 						width: '100%',
-						height: '70vh',
+                        aspectRatio: '1 / 1',
+						height: 'auto',
 						boxSizing: 'border-box',
 						borderRadius: 2
 					}}
