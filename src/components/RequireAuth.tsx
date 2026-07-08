@@ -22,7 +22,9 @@ const RequireAuth = ({ children }) => {
 	}
 
 	if (!isAuthenticated) {
-		loginWithRedirect();
+		loginWithRedirect({
+            appState: { returnTo: window.location.pathname }
+        });
 		return null;
 	}
 
