@@ -164,30 +164,20 @@ npm ci
 ```bash
 npm run build
 ```
-8. The built files will be in the `dist` directory. Navigate to the `dist` directory:
+If it fails or takes too long, run this instead:
+```bash
+NODE_OPTIONS=--max-old-space-size=4096 npm run build
+```
+8. Deploy the entire build output, replacing everything under `/var/www/html/ubchemica/`. Do not hand-copy individual files or hand-edit `index.html`.
 ```bash
 cd dist
+cp -r . /var/www/html/ubchemica/
 ```
-9. Copy the js file from `./assets` to the `/var/www/html/ubchemica/assets` directory:
-```bash
-cp ./assets/index_[some hash].js /var/www/html/ubchemica/assets/
-```
-10. If any stylesheets are changed, copy them as well:
-```bash
-cp ./assets/index_[some hash].css /var/www/html/ubchemica/assets/
-```
-11. Now open the `/var/www/html/ubchemica/index.html` file in a text editor:
-```bash
-nano /var/www/html/ubchemica/index.html
-```
-12. Update the `<script type="module" crossorigin src="assets/index-[hash].js"></script>` tag to point to the new js file you copied in step 10.
-13. Also update the `<link rel="stylesheet" crossorigin href="assets/index-[hash].css">` tag to point to the new css file you copied in step 11.
-14. Save the changes and exit the text editor.
-15. Restart the web server to apply the changes:
+9. Restart the web server to apply the changes (Optional! Only needed if you change nginx's own config):
 ```bash
 sudo systemctl restart nginx
 ```
-16. Open your browser and navigate to `https://www.ubchemica.com` to see the updated app.
+10. Open your browser and navigate to `https://www.ubchemica.com` to see the updated app.
 ---
 
 ## Onboarding New Developers
