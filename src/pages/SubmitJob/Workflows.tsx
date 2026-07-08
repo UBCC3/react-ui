@@ -60,7 +60,7 @@ export default function Workflows() {
 
     // Tracks which workflow card is currently expanded. Only one card
     // is expanded at a time; null means all cards are collapsed.
-    const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [expandedId, setExpandedId] = useState<string | null>('standard-analysis');
 
     // Toggles a card open/closed. Disabled workflows never expand.
     const handleToggleExpand = (workflow: WorkflowOption) => {
