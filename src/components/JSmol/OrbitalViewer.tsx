@@ -9,7 +9,6 @@ import {
 	TableHead,
 	TablePagination,
 	TableRow,
-	Typography,
 	Divider,
 	Button,
 	GlobalStyles,
@@ -223,14 +222,6 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 				},
 			}} />
 			<Grid container spacing={2} sx={{ width: '100%' }}>
-				{(job.calculation_type !== "standard") && (
-					<Grid size={12} sx={{ display: 'flex', flexDirection: 'column', flex: '1 0 auto' }}>
-						<Typography variant="h5">
-							Molecular Orbital Result
-						</Typography>
-						<Divider sx={{ mt: 3, width: '100%' }} />
-					</Grid>
-				)}
 				<Grid sx={{ display: 'flex', flexDirection: 'column', flex: '1 0 auto', position: 'relative' }}>
 					<Paper
 						ref={viewerRef}

@@ -17,6 +17,7 @@ import {
 } from "../components/JSmol";
 import { DrawerWidthProvider, useDrawerWidth } from "../contexts/DrawerWidthContext";
 import { useJobResult } from "../hooks/UseJobResult";
+import JobResultHeader from "../components/JSmol/JobResultHeader";
 
 const ResultPage = () => {
     // reads the job ID from the current route parameters
@@ -134,42 +135,54 @@ const ResultPageContent = ({ job, error, jobResultFiles, setError }: {
 
             {/* Render the energy analysis viewer for energy calculation jobs. */}
             {(job && job.calculation_type === "energy") && (
-                <EnergyViewer
-                    job={job}
-                    jobResultFiles={jobResultFiles!}
-                    viewerObjId={"JSmolApplet1"}
-                    setError={setError}
-                />
+                <>
+                    <JobResultHeader job={job} />
+                    <EnergyViewer
+                        job={job}
+                        jobResultFiles={jobResultFiles!}
+                        viewerObjId={"JSmolApplet1"}
+                        setError={setError}
+                    />
+                </>
             )}
 
             {/* Render the vibration viewer for frequency calculation jobs. */}
             {(job && job.calculation_type === "frequency") && (
-                <VibrationViewer
-                    job={job}
-                    jobResultFiles={jobResultFiles!}
-                    viewerObjId={"JSmolApplet1"}
-                    setError={setError}
-                />
+                <>
+                    <JobResultHeader job={job} />
+                    <VibrationViewer
+                        job={job}
+                        jobResultFiles={jobResultFiles!}
+                        viewerObjId={"JSmolApplet1"}
+                        setError={setError}
+                    />
+                </>
             )}
 
             {/* Render the orbital viewer for molecular orbital calculation jobs. */}
             {(job && job.calculation_type === "orbitals") && (
-                <OrbitalViewer
-                    job={job}
-                    jobResultFiles={jobResultFiles!}
-                    viewerObjId={"JSmolOrbitalViewer"}
-                    setError={setError}
-                />
+                <>
+                    <JobResultHeader job={job} />
+                    <OrbitalViewer
+                        job={job}
+                        jobResultFiles={jobResultFiles!}
+                        viewerObjId={"JSmolOrbitalViewer"}
+                        setError={setError}
+                    />
+                </>
             )}
 
             {/* Render the optimization-style viewer for optimization, transition state, and IRC jobs. */}
             {(job && (job.calculation_type === "optimization" || job.calculation_type === "transition" || job.calculation_type === "irc")) && (
-                <OptimizationViewer
-                    job={job}
-                    jobResultFiles={jobResultFiles!}
-                    viewerObjId={"JSmolOptimizationViewer"}
-                    setError={setError}
-                />
+                <>
+                    <JobResultHeader job={job} />
+                    <OptimizationViewer
+                        job={job}
+                        jobResultFiles={jobResultFiles!}
+                        viewerObjId={"JSmolOptimizationViewer"}
+                        setError={setError}
+                    />
+                </>
             )}
 
             {/* Render the standard analysis viewer for standard calculation jobs. */}

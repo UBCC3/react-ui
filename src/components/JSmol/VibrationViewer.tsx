@@ -2,7 +2,6 @@ import React, {useEffect, useState} from "react";
 import {
 	Box,
 	Checkbox,
-	Divider,
 	FormControlLabel,
 	FormGroup,
 	Grid,
@@ -181,14 +180,6 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 
 	return (
 		<Grid container spacing={2} sx={{ width: '100%' }}>
-			{(job.calculation_type !== "standard") && (
-				<Grid size={12} sx={{ display: 'flex', flexDirection: 'column' }}>
-					<Typography variant="h5">
-						Vibration Analysis Result
-					</Typography>
-					<Divider sx={{ mt: 3, width: '100%' }} />
-				</Grid>
-			)}
 			<Grid sx={{ display: 'flex', flexDirection: 'column', flex: '1 0 auto', position: 'relative' }}>
 				<Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
 					<Tabs value={value} onChange={handleChange} aria-label="basic tabs example">

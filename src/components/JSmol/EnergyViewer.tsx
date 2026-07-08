@@ -1,7 +1,7 @@
 import {Job, JobResult} from "../../types";
 import React from "react";
 import MolmakerLoading from "../custom/MolmakerLoading";
-import { Divider, Grid, Paper, Typography } from "@mui/material";
+import { Grid, Paper } from "@mui/material";
 import { CalculateOutlined, ContrastOutlined, ExpandMore } from "@mui/icons-material";
 import CalculatedQuantities from "./CalculatedQuantities";
 import PartialCharge from "./PartialCharge";
@@ -56,14 +56,6 @@ const EnergyViewer: React.FC<EnergyViewerProps> = ({
 
 	return (
 		<Grid container spacing={2} sx={{width: '100%'}}>
-			{(job.calculation_type !== "standard") && (
-				<Grid size={12} sx={{ display: 'flex', flexDirection: 'column' }}>
-					<Typography variant="h5" >
-						Molecular Energy Result
-					</Typography>
-					<Divider sx={{ mt: 3, width: '100%' }} />
-				</Grid>
-			)}
 			<Grid sx={{ display: 'flex', flexDirection: 'column', flex: '1 0 auto', position: 'relative' }}>
 				<Paper
 					ref={viewerRef}
