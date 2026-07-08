@@ -1,6 +1,7 @@
 import React from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import MolmakerLoading from "./custom/MolmakerLoading";
+import { useLocation } from "react-router-dom";
 
 /**
  * Protects routes that should only be accessible to authenticated users.
@@ -15,6 +16,7 @@ import MolmakerLoading from "./custom/MolmakerLoading";
  */
 const RequireAuth = ({ children }) => {
 	const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0();
+    const location = useLocation();
 
 	if (isLoading) {
 		return (
@@ -24,7 +26,7 @@ const RequireAuth = ({ children }) => {
 
 	if (!isAuthenticated) {
 		loginWithRedirect({
-            appState: { returnTo: window.location.pathname }
+            appState: { returnTo: location.pathname + location.search }
         });
 		return null;
 	}
