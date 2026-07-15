@@ -77,7 +77,7 @@ export function ResultDrawer({ open, onToggle, children }: ResultDrawerProps) {
                     }}
                 />
             )}
-            <Toolbar sx={{ justifyContent: 'flex-start', displa: 'flex', alignItems: 'center' }}>
+            <Toolbar sx={{ justifyContent: 'flex-start', display: 'flex', alignItems: 'center' }}>
                 <IconButton onClick={onToggle} size="small" sx={{ color: grey[500], mr: 2 }}>
                     {open ? <FullscreenExit /> : <Fullscreen />}
                 </IconButton>

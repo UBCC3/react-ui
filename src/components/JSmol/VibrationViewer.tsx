@@ -294,7 +294,7 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
                         <Grid
                             size={{ xs: 12 }}
                             sx={{
-                                dislay: 'flex',
+                                display: 'flex',
                                 flexDirection: 'column',
                                 px: 2,
                                 pb: 2,

@@ -141,7 +141,7 @@ export default function MenuDrawer() {
      */
 	const drawerContent = (
 		<Box className="bg-slate-200 h-full">
-			<DrawerHeader sx={{ justifyContent: open ? 'space-between' : 'center', paddingLeft: open ? 2: 0, borderBottom: '1px solid', borderColor: 'divider', height: `{{APP_BAR_HEIGHT}}px` }}>
+			<DrawerHeader sx={{ justifyContent: open ? 'space-between' : 'center', paddingLeft: open ? 2: 0, borderBottom: '1px solid', borderColor: 'divider', height: `${APP_BAR_HEIGHT}px` }}>
 				{open && (
 					<Typography
 						variant="h6"
