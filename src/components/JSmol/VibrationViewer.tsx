@@ -28,7 +28,7 @@ import { Job, JobResult, VibrationMode, ComplexNumber } from "../../types";
 import MolmakerLoading from "../custom/MolmakerLoading";
 import CalculatedQuantities from "./CalculatedQuantities";
 import IRSpectrumPlot from "../IRSpectrumPlot";
-import { formatComplex } from "../../utils";
+import { formatComplex, formatSymmetryLabel } from "../../utils";
 import { useResultDrawer } from "../../hooks/UseResultDrawer";
 import { useJsmolViewer } from "../../hooks/UseJsmolViewer";
 import { useJobResult } from "../../hooks/UseJobResult";
@@ -252,7 +252,7 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
                                         }}
                                     >
                                         <TableCell>{mode.index}</TableCell>
-                                        <TableCell>{mode.symmetry}</TableCell>
+                                        <TableCell>{formatSymmetryLabel(mode.symmetry)}</TableCell>
                                         <TableCell>{formatComplex(mode.frequencyCM)}</TableCell>
                                         <TableCell>{mode.irIntensity.toFixed(2)}</TableCell>
                                         <TableCell>{mode.forceConstant.toFixed(2)}</TableCell>
