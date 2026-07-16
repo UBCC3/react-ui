@@ -1,4 +1,3 @@
-import React from 'react';
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, useNavigate } from 'react-router-dom';
@@ -10,7 +9,7 @@ const Auth0ProviderWithNavigate = ({ children }) => {
     const navigate = useNavigate();
 
     const onRedirectCallback = (appState) => {
-        navigate(appState?.returnTo || '/');
+        navigate(appState?.returnTo || "/", { replace: true });
     };
 
     return (
