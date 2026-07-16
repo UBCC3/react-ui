@@ -6,16 +6,13 @@ import {
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import {Job, JobResult} from "../../types";
-import React, {lazy, Suspense, useEffect, useState} from "react";
+import React, {useEffect, useState} from "react";
 import {fetchRawFileFromS3Url} from "./util";
 import MolmakerLoading from "../custom/MolmakerLoading";
 import JobResultHeader from "./JobResultHeader";
-
-// Lazy-load result viewer components so the standard analysis page only loads
-// each heavy JSmol viewer when its tab is rendered.
-const OptimizationViewer = lazy(() => import('./OptimizationViewer'));
-const VibrationViewer = lazy(() => import('./VibrationViewer'));
-const OrbitalViewer = lazy(() => import('./OrbitalViewer'));
+import OptimizationViewer from "./OptimizationViewer";
+import VibrationViewer from "./VibrationViewer";
+import OrbitalViewer from "./OrbitalViewer";
 
 /**
  * Generate accessibility props for a Material UI Tab.
@@ -196,34 +193,28 @@ const StandardAnalysisViewer: React.FC<StandardAnalysisViewerProp> = ({
 				</Tabs>
 			</Box>
 			<CustomTabPanel value={currentTab} index={ResultTab.optimization}>
-				<Suspense fallback={<MolmakerLoading />}>
-					<OptimizationViewer
-						job={job}
-						jobResultFiles={jobResultFiles}
-						setError={setError}
-						viewerObjId={"JSmolSAOptimizationViewer"}
-					/>
-				</Suspense>
+				<OptimizationViewer
+					job={job}
+					jobResultFiles={jobResultFiles}
+					setError={setError}
+					viewerObjId={"JSmolSAOptimizationViewer"}
+				/>
 			</CustomTabPanel>
 			<CustomTabPanel value={currentTab} index={ResultTab.frequency}>
-				<Suspense fallback={<MolmakerLoading />}>
-					<VibrationViewer
-						job={job}
-						jobResultFiles={jobResultFiles}
-						setError={setError}
-						viewerObjId={"JSmolSAVibrationViewer"}
-					/>
-				</Suspense>
+				<VibrationViewer
+					job={job}
+					jobResultFiles={jobResultFiles}
+					setError={setError}
+					viewerObjId={"JSmolSAVibrationViewer"}
+				/>
 			</CustomTabPanel>
 			<CustomTabPanel value={currentTab} index={ResultTab.orbitals}>
-				<Suspense fallback={<MolmakerLoading />}>
-					<OrbitalViewer
-						job={job}
-						jobResultFiles={jobResultFiles}
-						setError={setError}
-						viewerObjId={"JSmolSAVibrationViewer"}
-					/>
-				</Suspense>
+				<OrbitalViewer
+					job={job}
+					jobResultFiles={jobResultFiles}
+					setError={setError}
+					viewerObjId={"JSmolSAVibrationViewer"}
+				/>
 			</CustomTabPanel>
 		</Box>
 	);
