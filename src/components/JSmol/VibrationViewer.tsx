@@ -447,7 +447,7 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
                     label="Calculated Quantities"
                     ariaId="panel3"
                 >
-                    <CalculatedQuantities job={job} result={result} />
+                    {result && <CalculatedQuantities job={job} result={result} />}
                 </ResultDrawerSection>
             </ResultDrawer>
 		</Grid>
