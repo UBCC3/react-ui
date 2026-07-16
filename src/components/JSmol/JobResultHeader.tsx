@@ -108,7 +108,7 @@ const JobResultHeader: React.FC<JobResultHeaderProps> = ({ job }) => {
                     </Box>
                 )}
             </Box>
-            <Box sx={{ width: 320, flexShrink: 0 }}>
+            <Box sx={{ width: { xs: '100%', lg: 320 }, flexShrink: 0 }}>
                 <ViewerTipsCard />
             </Box>
         </Box>
