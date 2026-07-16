@@ -1,5 +1,5 @@
-import { Box, Toolbar } from '@mui/material';
-import { useDrawer } from './DrawerContext';
+import { Box, Toolbar } from "@mui/material";
+import { useDrawer } from "./DrawerContext";
 
 /**
  * Layout wrapper for the main page content.
@@ -14,10 +14,10 @@ export default function MainContent({ children }) {
 				flexGrow: 1,
 				ml: `${width}px`,
 				transition: (theme) =>
-				theme.transitions.create('margin-left', {
-					easing  : theme.transitions.easing.sharp,
-					duration: theme.transitions.duration.standard,
-				}),
+					theme.transitions.create("margin-left", {
+						easing: theme.transitions.easing.sharp,
+						duration: theme.transitions.duration.standard,
+					}),
 			}}
 			className="bg-stone-100"
 		>

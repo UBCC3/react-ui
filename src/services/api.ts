@@ -1,16 +1,17 @@
-import axios from 'axios';
-import { Response } from '../types'
+import axios from "axios";
+import { Response } from "../types";
 
 /**
  * Creates an Axios instance for the main backend API.
  * Uses the development URL from environment variables when running locally,
  * otherwise uses the production backend URL.
  */
-export const createBackendAPI = (
-	token: any
-) => {
+export const createBackendAPI = (token: any) => {
 	return axios.create({
-		baseURL: import.meta.env.VITE_MODE === 'development' ? import.meta.env.VITE_API_URL : "https://ubchemica.com/ubchemica/api",
+		baseURL:
+			import.meta.env.VITE_MODE === "development"
+				? import.meta.env.VITE_API_URL
+				: "https://ubchemica.com/ubchemica/api",
 		headers: {
 			Authorization: `Bearer ${token}`,
 		},
@@ -21,11 +22,12 @@ export const createBackendAPI = (
  * Creates an Axios instance for cluster-related API calls.
  * This is used for operations such as submitting, cancelling, and checking jobs.
  */
-export const createClusterAPI = (
-	token: any
-) => {
+export const createClusterAPI = (token: any) => {
 	return axios.create({
-		baseURL: import.meta.env.VITE_MODE === 'development' ? import.meta.env.VITE_CLUSTER_API_URL : "https://ubchemica.com/ubchemica/api/cluster",
+		baseURL:
+			import.meta.env.VITE_MODE === "development"
+				? import.meta.env.VITE_CLUSTER_API_URL
+				: "https://ubchemica.com/ubchemica/api/cluster",
 		headers: {
 			Authorization: `Bearer ${token}`,
 		},
@@ -36,11 +38,12 @@ export const createClusterAPI = (
  * Creates an Axios instance for storage-related API calls.
  * This is used for downloading files, archives, and presigned URLs.
  */
-export const createStorageAPI = (
-	token: any
-) => {
+export const createStorageAPI = (token: any) => {
 	return axios.create({
-		baseURL: import.meta.env.VITE_MODE === 'development' ? import.meta.env.VITE_STORAGE_API_URL : "https://ubchemica.com/ubchemica/api/storage",
+		baseURL:
+			import.meta.env.VITE_MODE === "development"
+				? import.meta.env.VITE_STORAGE_API_URL
+				: "https://ubchemica.com/ubchemica/api/storage",
 		headers: {
 			Authorization: `Bearer ${token}`,
 		},
@@ -50,18 +53,16 @@ export const createStorageAPI = (
 /**
  * Fetches all jobs that belong to the current user's group.
  */
-export const getCurrentUserGroupJobs = async (
-	token: any
-): Promise<Response> => {
+export const getCurrentUserGroupJobs = async (token: any): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get('/group/jobs/');
+		const res = await API.get("/group/jobs/");
 		return {
 			status: res.status,
-			data: res.data
+			data: res.data,
 		};
 	} catch (error: any) {
-		console.error('Failed to fetch jobs', error);
+		console.error("Failed to fetch jobs", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -72,18 +73,16 @@ export const getCurrentUserGroupJobs = async (
 /**
  * Fetches all members in the current user's group.
  */
-export const getCurrentUserMembers = async (
-	token: any
-): Promise<Response> => {
+export const getCurrentUserMembers = async (token: any): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get('/group/users/');
+		const res = await API.get("/group/users/");
 		return {
 			status: res.status,
-			data: res.data
+			data: res.data,
 		};
 	} catch (error: any) {
-		console.error('Failed to fetch members', error);
+		console.error("Failed to fetch members", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -95,18 +94,15 @@ export const getCurrentUserMembers = async (
  * Creates or updates the currently authenticated user in the backend database.
  * The user's email is sent as form data.
  */
-export const upsertCurrentUser = async (
-	token: any,
-	email: string
-): Promise<Response> => {
+export const upsertCurrentUser = async (token: any, email: string): Promise<Response> => {
 	const formData = new FormData();
-	formData.append('email', email);
+	formData.append("email", email);
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.post('/users/me/', formData);
+		const res = await API.post("/users/me/", formData);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to sync user to our database:', error);
+		console.error("Failed to sync user to our database:", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -120,13 +116,13 @@ export const upsertCurrentUser = async (
 export const getAllGroups = async (token: any): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get('/admin/groups/');
+		const res = await API.get("/admin/groups/");
 		for (const group of res.data) {
 			const members = group.members || [];
 		}
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to fetch groups', error);
+		console.error("Failed to fetch groups", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -143,7 +139,7 @@ export const getGroupById = async (groupId: string, token: any): Promise<Respons
 		const res = await API.get(`/group/${groupId}`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to fetch group by ID', error);
+		console.error("Failed to fetch group by ID", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -154,7 +150,11 @@ export const getGroupById = async (groupId: string, token: any): Promise<Respons
 /**
  * Updates the name of an existing group.
  */
-export const updateGroupName = async (groupId: string, newName: string, token: any): Promise<Response> => {
+export const updateGroupName = async (
+	groupId: string,
+	newName: string,
+	token: any,
+): Promise<Response> => {
 	const formData = new FormData();
 	formData.append("group_name", newName);
 	try {
@@ -162,7 +162,7 @@ export const updateGroupName = async (groupId: string, newName: string, token: a
 		const res = await API.patch(`/group/${groupId}`, formData);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to update group name', error);
+		console.error("Failed to update group name", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -178,10 +178,10 @@ export const createGroup = async (name: string, token: any): Promise<Response> =
 	formData.append("name", name);
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.post('/admin/groups/', formData);
+		const res = await API.post("/admin/groups/", formData);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to create group', error);
+		console.error("Failed to create group", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -198,7 +198,7 @@ export const deleteGroup = async (token: any, groupId: string): Promise<Response
 		const res = await API.delete(`/group/${groupId}`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to delete group', error);
+		console.error("Failed to delete group", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -212,10 +212,10 @@ export const deleteGroup = async (token: any, groupId: string): Promise<Response
 export const getAllUsers = async (token: any): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get('/admin/users/');
+		const res = await API.get("/admin/users/");
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to fetch users', error);
+		console.error("Failed to fetch users", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -226,16 +226,13 @@ export const getAllUsers = async (token: any): Promise<Response> => {
 /**
  * Fetches a user record using the user's email address.
  */
-export const getUserByEmail = async (
-	email: string,
-	token: any
-): Promise<Response> => {
+export const getUserByEmail = async (email: string, token: any): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
 		const res = await API.get(`/users/${email}`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to fetch user by email', error);
+		console.error("Failed to fetch user by email", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -252,7 +249,7 @@ export const deleteUser = async (token: any, userSub: string): Promise<Response>
 		const res = await API.delete(`/users/${userSub}`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to delete user', error);
+		console.error("Failed to delete user", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -267,19 +264,19 @@ export const deleteUser = async (token: any, userSub: string): Promise<Response>
 export const updateUser = async (
 	token: any,
 	userSub: string,
-	role?: string, 
+	role?: string,
 	group_id?: string,
 ): Promise<Response> => {
 	const formData = new FormData();
 	if (role) formData.append("role", role);
 	if (group_id) formData.append("group_id", group_id);
 	try {
-		console.log('Updating user:', { userSub, role, group_id });
+		console.log("Updating user:", { userSub, role, group_id });
 		const API = createBackendAPI(token);
 		const res = await API.put(`/admin/users/${userSub}`, formData);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to update user', error);
+		console.error("Failed to update user", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -293,13 +290,13 @@ export const updateUser = async (
 export const adminGetAllJobs = async (token: any): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get('/admin/jobs/');
-		return { 
-			status: res.status, 
-			data: res.data 
+		const res = await API.get("/admin/jobs/");
+		return {
+			status: res.status,
+			data: res.data,
 		};
 	} catch (error: any) {
-		console.error('Failed to fetch jobs', error);
+		console.error("Failed to fetch jobs", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -310,10 +307,7 @@ export const adminGetAllJobs = async (token: any): Promise<Response> => {
 /**
  * Cancels a running or queued cluster job using its SLURM ID.
  */
-export const cancelJobBySlurmID = async (
-	slurmId: string,
-	token: any
-): Promise<Response> => {
+export const cancelJobBySlurmID = async (slurmId: string, token: any): Promise<Response> => {
 	try {
 		const API = createClusterAPI(token);
 		const response = await API.post(`/cancel/${slurmId}`);
@@ -332,15 +326,12 @@ export const cancelJobBySlurmID = async (
 			error: `Failed to cancel the job: ${error.message}`,
 		};
 	}
-}
+};
 
 /**
  * Fetches the latest SLURM status for a job and normalizes the state to lowercase.
  */
-export const getJobStatusBySlurmID = async (
-	slurmId: string,
-	token: any
-): Promise<Response> => {
+export const getJobStatusBySlurmID = async (slurmId: string, token: any): Promise<Response> => {
 	try {
 		const API = createClusterAPI(token);
 		const response = await API.get(`/status/${slurmId}`);
@@ -423,7 +414,7 @@ export const submitStandardAnalysis = async (
 	multiplicity: number,
 	structure_id: string,
 	token: any,
-	opt_type? : 'ts' | 'ground',
+	opt_type?: "ts" | "ground",
 ): Promise<Response> => {
 	const formData = new FormData();
 	formData.append("file", file);
@@ -432,7 +423,7 @@ export const submitStandardAnalysis = async (
 	formData.append("multiplicity", multiplicity.toString());
 	// formData.append("structure_id", structure_id);
 
-	if (opt_type !== undefined && opt_type === 'ts') {
+	if (opt_type !== undefined && opt_type === "ts") {
 		formData.append("opt_type", opt_type);
 	}
 	try {
@@ -456,7 +447,7 @@ export const submitStandardAnalysis = async (
  * This is used to upload generated structure images as normal files.
  */
 function dataURLToBlob(dataURL) {
-	const parts = dataURL.split(',');
+	const parts = dataURL.split(",");
 	const mime = parts[0].match(/:(.*?);/)[1];
 	const binary = atob(parts[1]);
 	let array = new Uint8Array(binary.length);
@@ -479,7 +470,7 @@ export const AddAndUploadStructureToS3 = async (
 	token: any,
 	tags: string[] = [],
 ): Promise<Response> => {
-	console.log('Adding and uploading structure to S3:', { name, formula, notes, tags });
+	console.log("Adding and uploading structure to S3:", { name, formula, notes, tags });
 	const imageBlob = dataURLToBlob(image);
 	const formData = new FormData();
 	formData.append("file", file);
@@ -487,25 +478,25 @@ export const AddAndUploadStructureToS3 = async (
 	formData.append("formula", formula);
 	formData.append("notes", notes);
 	if (tags && tags.length > 0) {
-		tags.forEach(tag => formData.append("tags", tag));
+		tags.forEach((tag) => formData.append("tags", tag));
 	}
 	formData.append("image", imageBlob, `image.png`);
-	console.log('Form data prepared for structure upload:', formData);
-	console.log('Token for API:', token);
+	console.log("Form data prepared for structure upload:", formData);
+	console.log("Token for API:", token);
 	try {
 		const API = createBackendAPI(token);
-		console.log('Uploading structure to S3 here');
+		console.log("Uploading structure to S3 here");
 		const response = await API.post("/structures/", formData);
 		return {
 			status: response.status,
 			data: response.data,
-		}
+		};
 	} catch (error) {
 		console.error("Structure submission failed", error);
 		return {
 			status: 500,
 			error: `Failed to submit structure: ${error.message}`,
-		}
+		};
 	}
 };
 
@@ -528,29 +519,27 @@ export const getStructureDataFromS3 = async (
 		return {
 			status: fileRes.status,
 			data: text,
-		}
+		};
 	} catch (error) {
 		console.error("Failed to fetch structure from S3", error);
 		return {
 			status: 500,
 			error: `Failed to fetch structure from S3: ${error.message}`,
-		}
+		};
 	}
 };
 
 /**
  * Fetches all structures available in the current user's library.
  */
-export const getLibraryStructures = async (
-	token: any,
-): Promise<Response> => {
+export const getLibraryStructures = async (token: any): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
 		const res = await API.get("/structures/");
 		return {
 			status: res.status,
 			data: res.data,
-		}
+		};
 	} catch (error) {
 		console.error("Failed to fetch structures", error);
 		return {
@@ -558,22 +547,19 @@ export const getLibraryStructures = async (
 			error: `Failed to fetch structures: ${error.message}`,
 		};
 	}
-}
+};
 
 /**
  * Fetches metadata/details ffor one structure by structure ID.
  */
-export const getStructureById = async (
-	structureId: string,
-	token: any,
-): Promise<Response> => {
+export const getStructureById = async (structureId: string, token: any): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
 		const res = await API.get(`/structures/${structureId}`);
 		return {
 			status: res.status,
 			data: res.data,
-		}
+		};
 	} catch (error) {
 		console.error("Failed to fetch structure details", error);
 		return {
@@ -599,7 +585,7 @@ export const updateStructure = async (
 	formData.append("formula", formula);
 	formData.append("notes", notes);
 	if (tags && tags.length > 0) {
-		tags.forEach(tag => formData.append("tags", tag));
+		tags.forEach((tag) => formData.append("tags", tag));
 	}
 
 	try {
@@ -621,10 +607,7 @@ export const updateStructure = async (
 /**
  * Fetches job details using the job ID.
  */
-export const getJobByJobID = async (
-	jobId: string, 
-	token: any,
-): Promise<Response> => {
+export const getJobByJobID = async (jobId: string, token: any): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
 		const response = await API.get(`/jobs/${jobId}`);
@@ -639,7 +622,7 @@ export const getJobByJobID = async (
 			error: `Failed to fetch job details: ${error.message}`,
 		};
 	}
-}
+};
 
 // API endpoints for job-related operations
 /**
@@ -648,10 +631,10 @@ export const getJobByJobID = async (
 export const getAllJobs = async (token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get('/jobs/');
+		const res = await API.get("/jobs/");
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to fetch jobs', error);
+		console.error("Failed to fetch jobs", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -662,36 +645,30 @@ export const getAllJobs = async (token: string): Promise<Response> => {
 /**
  * Fetches details for a single job by job ID.
  */
-export const getJobById = async (
-	jobId: string,
-	token: string
-): Promise<Response> => {
-  try {
-    const API = createBackendAPI(token);
-    const res = await API.get(`/jobs/${jobId}`);
-    return { status: res.status, data: res.data };
-  } catch (error: any) {
-    console.error('Failed to fetch job details', error);
-    return {
-      	status: error.response?.status || 500,
-      	error: error.response?.data?.detail || error.message,
-    };
-  }
+export const getJobById = async (jobId: string, token: string): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.get(`/jobs/${jobId}`);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error("Failed to fetch job details", error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
 };
 
 /**
  * Fetches computed result metadata for a completed cluster job.
  */
-export const fetchJobResults = async (
-	jobId: string,
-	token: string
-): Promise<Response> => {
+export const fetchJobResults = async (jobId: string, token: string): Promise<Response> => {
 	try {
 		const API = createClusterAPI(token);
 		const res = await API.get(`/result/${jobId}`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to fetch job results', error);
+		console.error("Failed to fetch job results", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -706,34 +683,31 @@ export const fetchJobResultFiles = async (
 	token: string,
 	jobId: string,
 	calculation: string,
-	status: string
-):Promise<Response> => {
+	status: string,
+): Promise<Response> => {
 	try {
 		const API = createStorageAPI(token);
 		const res = await API.get(`/files/${jobId}/${calculation}/${status}`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to fetch presigned job file urls', error);
+		console.error("Failed to fetch presigned job file urls", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
 		};
 	}
-}
+};
 
 /**
  * Fetches error output for a failed or problematic cluster job.
  */
-export const fetchJobError = async (
-	jobId: string,
-	token: string
-): Promise<Response> => {
+export const fetchJobError = async (jobId: string, token: string): Promise<Response> => {
 	try {
 		const API = createClusterAPI(token);
 		const res = await API.get(`/error/${jobId}`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to fetch job error', error);
+		console.error("Failed to fetch job error", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -759,28 +733,28 @@ export const createJob = async (
 	structureId: string | null,
 	slurmId: string | null,
 	token: string,
-	tags: string[] = []
+	tags: string[] = [],
 ): Promise<Response> => {
 	const formData = new FormData();
-	formData.append('file', file);
-	formData.append('job_id', jobId);
-	formData.append('job_name', jobName);
-	formData.append('method', method);
-	formData.append('basis_set', basisSet);
-	formData.append('calculation_type', calculationType);
-	formData.append('charge', charge.toString());
-	formData.append('multiplicity', multiplicity.toString());
-	if (structureId) formData.append('structure_id', structureId);
-	if (slurmId) formData.append('slurm_id', slurmId);
-	if (jobNotes) formData.append('job_notes', jobNotes);
-	tags.forEach(tag => formData.append('tags', tag));
+	formData.append("file", file);
+	formData.append("job_id", jobId);
+	formData.append("job_name", jobName);
+	formData.append("method", method);
+	formData.append("basis_set", basisSet);
+	formData.append("calculation_type", calculationType);
+	formData.append("charge", charge.toString());
+	formData.append("multiplicity", multiplicity.toString());
+	if (structureId) formData.append("structure_id", structureId);
+	if (slurmId) formData.append("slurm_id", slurmId);
+	if (jobNotes) formData.append("job_notes", jobNotes);
+	tags.forEach((tag) => formData.append("tags", tag));
 
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.post('/jobs/', formData);
+		const res = await API.post("/jobs/", formData);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Job submission failed', error);
+		console.error("Job submission failed", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -793,17 +767,18 @@ export const createJob = async (
  */
 export const updateJobStatus = async (
 	jobId: string,
-	status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | 'out_of_memory' | 'timeout',
-	token: string
+	status:
+		"pending" | "running" | "completed" | "failed" | "cancelled" | "out_of_memory" | "timeout",
+	token: string,
 ): Promise<Response> => {
 	try {
-		console.log('Updating job status:', { jobId, status });
+		console.log("Updating job status:", { jobId, status });
 		const API = createBackendAPI(token);
 		const res = await API.patch(`/jobs/${jobId}/${status}`);
-		console.log('Job status updated successfully', res);
+		console.log("Job status updated successfully", res);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to update job status', error);
+		console.error("Failed to update job status", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -812,25 +787,22 @@ export const updateJobStatus = async (
 };
 
 interface UpdateJobResponse {
-  job_id: string;
-  runtime: string;    // if you’re using INTERVAL it’ll come back as "HH:MM:SS"
-  state: string;
-  message?: string;
+	job_id: string;
+	runtime: string; // if you’re using INTERVAL it’ll come back as "HH:MM:SS"
+	state: string;
+	message?: string;
 }
 
 /**
  * Deletes a ob record by job ID.
  */
-export const deleteJob = async (
-	jobId: string,
-	token: string
-): Promise<Response> => {
+export const deleteJob = async (jobId: string, token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
 		const res = await API.delete(`/jobs/${jobId}`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to delete job', error);
+		console.error("Failed to delete job", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -841,16 +813,13 @@ export const deleteJob = async (
 /**
  * Deletes a structure record by structure ID.
  */
-export const deleteStructure = async (
-	structureId: string,
-	token: string
-): Promise<Response> => {
+export const deleteStructure = async (structureId: string, token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
 		const res = await API.delete(`/structures/${structureId}`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to delete structure', error);
+		console.error("Failed to delete structure", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -867,13 +836,13 @@ export const updateJob = async (
 	state: string,
 	runtime: string,
 	userSub: string,
-	token: string
+	token: string,
 ): Promise<UpdateJobResponse> => {
-	console.log('Updating job:', { jobId, state, runtime });
+	console.log("Updating job:", { jobId, state, runtime });
 	const formData = new FormData();
-	formData.append('state', state);
-	formData.append('runtime', runtime);
-	formData.append('user_sub', userSub);
+	formData.append("state", state);
+	formData.append("runtime", runtime);
+	formData.append("user_sub", userSub);
 	try {
 		const API = createBackendAPI(token);
 		const res = await API.patch(`/jobs/${jobId}`, formData);
@@ -881,11 +850,10 @@ export const updateJob = async (
 			job_id: res.data.job_id,
 			runtime: res.data.runtime,
 			state: res.data.state,
-			message: res.data.message || '',
+			message: res.data.message || "",
 		};
-	}
-	catch (error: any) {
-		console.error('Failed to update job', error);
+	} catch (error: any) {
+		console.error("Failed to update job", error);
 		throw {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -899,16 +867,16 @@ export const updateJob = async (
 export const updateVisibility = async (
 	jobId: string,
 	isPublic: boolean,
-	token: string
+	token: string,
 ): Promise<Response> => {
 	try {
 		const formData = new FormData();
-		formData.append('is_public', isPublic.toString());
+		formData.append("is_public", isPublic.toString());
 		const API = createBackendAPI(token);
 		const res = await API.patch(`/jobs/${jobId}/visibility/`, formData);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to update job visibility', error);
+		console.error("Failed to update job visibility", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -922,14 +890,14 @@ export const updateVisibility = async (
 export const updateJobRuntime = async (
 	jobId: string,
 	runtime: string,
-	token: string
+	token: string,
 ): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
 		const res = await API.patch(`/jobs/${jobId}/${runtime}`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to update job runtime', error);
+		console.error("Failed to update job runtime", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -943,16 +911,16 @@ export const updateJobRuntime = async (
 export const getCalculationTypes = async (token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get('/enums/calculation_types/');
+		const res = await API.get("/enums/calculation_types/");
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to fetch calculation types', error);
+		console.error("Failed to fetch calculation types", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
 		};
 	}
-}
+};
 
 /**
  * Fetches the list of supported wavefunction theory methods.
@@ -960,16 +928,16 @@ export const getCalculationTypes = async (token: string): Promise<Response> => {
 export const getWavefunctionMethods = async (token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get('/enums/wave_functional_theories/');
+		const res = await API.get("/enums/wave_functional_theories/");
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to fetch wavefunction methods', error);
+		console.error("Failed to fetch wavefunction methods", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
 		};
 	}
-}
+};
 
 /**
  * Fetches the list of supported density functional theory methods.
@@ -977,16 +945,16 @@ export const getWavefunctionMethods = async (token: string): Promise<Response> =
 export const getDensityFunctionalMethods = async (token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get('/enums/density_functional_theories/');
+		const res = await API.get("/enums/density_functional_theories/");
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to fetch density functional methods', error);
+		console.error("Failed to fetch density functional methods", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
 		};
 	}
-}
+};
 
 /**
  * Fetches the list of supported basis sets.
@@ -994,16 +962,16 @@ export const getDensityFunctionalMethods = async (token: string): Promise<Respon
 export const getBasisSets = async (token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get('/enums/basis_sets/');
+		const res = await API.get("/enums/basis_sets/");
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to fetch basis sets', error);
+		console.error("Failed to fetch basis sets", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
 		};
 	}
-}
+};
 
 /**
  * Fetches the list of supported spin multiplicities.
@@ -1011,16 +979,16 @@ export const getBasisSets = async (token: string): Promise<Response> => {
 export const getMultiplicities = async (token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get('/enums/multiplicities/');
+		const res = await API.get("/enums/multiplicities/");
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to fetch multiplicities', error);
+		console.error("Failed to fetch multiplicities", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
 		};
 	}
-}
+};
 
 /**
  * Fetches all tags that are currently used by structures.
@@ -1029,11 +997,10 @@ export const getMultiplicities = async (token: string): Promise<Response> => {
 export const getStructuresTags = async (token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get('/structures/tags/');
+		const res = await API.get("/structures/tags/");
 		return { status: res.status, data: res.data };
-	}
-	catch (error: any) {
-		console.error('Failed to fetch structures tags', error);
+	} catch (error: any) {
+		console.error("Failed to fetch structures tags", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -1045,19 +1012,16 @@ export const getStructuresTags = async (token: string): Promise<Response> => {
  * Uploads a molecular structure file and asks the backend to extract or calculate
  * its chemical formula.
  */
-export const getChemicalFormula = async (
-	file: File | Blob,
-	token: string
-): Promise<Response> => {
+export const getChemicalFormula = async (file: File | Blob, token: string): Promise<Response> => {
 	const formData = new FormData();
-	formData.append('file', file);
+	formData.append("file", file);
 
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.post('/structures/formula/', formData);
+		const res = await API.post("/structures/formula/", formData);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to fetch chemical formula', error);
+		console.error("Failed to fetch chemical formula", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -1069,42 +1033,36 @@ export const getChemicalFormula = async (
  * Requests a presigned URL for downloading a zipped archive of all result files
  * associated with a specific job.
  */
-export const getZipPresignedUrl= async (
-	jobId: string,
-	token: string,
-): Promise<Response> => {
+export const getZipPresignedUrl = async (jobId: string, token: string): Promise<Response> => {
 	try {
 		const API = createStorageAPI(token);
 		const res = await API.get(`/download/archive/${jobId}`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to fetch presigned job file urls', error);
+		console.error("Failed to fetch presigned job file urls", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
 		};
 	}
-}
+};
 
 /**
  * Fetches all incoming group-related requests for the given user.
  */
-export const getRequests = async (
-	userSub: string,
-	token: string
-): Promise<Response> => {
+export const getRequests = async (userSub: string, token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
 		const res = await API.get(`/request/${userSub}/`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to fetch requests', error);
+		console.error("Failed to fetch requests", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
 		};
 	}
-}
+};
 
 /**
  * Fetches the list of supported optimization types from the backend enum endpoint.
@@ -1112,30 +1070,27 @@ export const getRequests = async (
 export const getOptimizationTypes = async (token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get('/enums/optimization_types/');
+		const res = await API.get("/enums/optimization_types/");
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to fetch optimization types', error);
+		console.error("Failed to fetch optimization types", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
 		};
 	}
-}
+};
 
 /**
  * Fetches all group-related requests sent by the given user.
  */
-export const getSentRequests = async (
-	userSub: string,
-	token: string
-): Promise<Response> => {
+export const getSentRequests = async (userSub: string, token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
 		const res = await API.get(`/request/sent/${userSub}/`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to fetch sent requests', error);
+		console.error("Failed to fetch sent requests", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -1152,13 +1107,13 @@ export const sendRequest = async (
 	token: string,
 ): Promise<Response> => {
 	const formData = new FormData();
-	formData.append('group_id', groupId);
+	formData.append("group_id", groupId);
 	try {
 		const API = createBackendAPI(token);
 		const res = await API.post(`/request/${userSub}/`, formData);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to send request', error);
+		console.error("Failed to send request", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -1169,16 +1124,13 @@ export const sendRequest = async (
 /**
  * Approves an incoming request by request ID.
  */
-export const approveRequest = async (
-	requestId: string,
-	token: string
-): Promise<Response> => {
+export const approveRequest = async (requestId: string, token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
 		const res = await API.put(`/request/${requestId}/approve/`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to approve request', error);
+		console.error("Failed to approve request", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -1189,16 +1141,13 @@ export const approveRequest = async (
 /**
  * Rejects an incoming request by request ID.
  */
-export const rejectRequest = async (
-	requestId: string,
-	token: string
-): Promise<Response> => {
+export const rejectRequest = async (requestId: string, token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
 		const res = await API.put(`/request/${requestId}/reject/`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to reject request', error);
+		console.error("Failed to reject request", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
@@ -1209,16 +1158,13 @@ export const rejectRequest = async (
 /**
  * Deletes a request by request ID.
  */
-export const deleteRequest = async (
-	requestId: string,
-	token: string
-): Promise<Response> => {
+export const deleteRequest = async (requestId: string, token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
 		const res = await API.delete(`/request/${requestId}/`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error('Failed to delete request', error);
+		console.error("Failed to delete request", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,

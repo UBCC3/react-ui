@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import {
 	Box,
 	Paper,
@@ -26,14 +26,14 @@ import {
 	RadioGroup,
 	CircularProgress,
 	Grid,
-} from '@mui/material';
-import { blue, blueGrey, grey } from '@mui/material/colors';
+} from "@mui/material";
+import { blue, blueGrey, grey } from "@mui/material/colors";
 import {
 	GroupOutlined,
 	RemoveCircleOutlineOutlined,
 	CheckCircleOutlineOutlined,
-} from '@mui/icons-material';
-import { useAuth0 } from '@auth0/auth0-react';
+} from "@mui/icons-material";
+import { useAuth0 } from "@auth0/auth0-react";
 import {
 	updateGroupName,
 	getCurrentUserMembers,
@@ -45,8 +45,8 @@ import {
 	updateJob,
 	deleteJob,
 	sendRequest,
-} from '../services/api';
-import type { User, Job } from '../types';
+} from "../services/api";
+import type { User, Job } from "../types";
 
 /**
  * Props for the GroupPanel
@@ -57,7 +57,7 @@ interface GroupPanelProps {
 
 /**
  * Displays the current group and its members.
- * 
+ *
  * Group admins can add new members and remove existing members. Regular
  * members can view the group member list but cannot modify membership.
  */
@@ -67,12 +67,12 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 	const [users, setUsers] = useState<User[]>([]);
 	const [jobs, setJobs] = useState<Job[]>([]);
 
-	const [groupName, setGroupName] = useState('');
-	const [groupId, setGroupId] = useState('');
-	const [userRole, setUserRole] = useState('');
+	const [groupName, setGroupName] = useState("");
+	const [groupId, setGroupId] = useState("");
+	const [userRole, setUserRole] = useState("");
 
-	const [newUserEmail, setNewUserEmail] = useState('');
-	const [newUserError, setNewUserError] = useState('');
+	const [newUserEmail, setNewUserEmail] = useState("");
+	const [newUserError, setNewUserError] = useState("");
 
 	const [reload, setReload] = useState(false);
 	const [page, setPage] = useState(0);
@@ -82,10 +82,10 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 	const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
 
 	const [selectedUser, setSelectedUser] = useState<User | null>(null);
-	const [removalPolicy, setRemovalPolicy] = useState<'0' | '1' | '2'>('0');
+	const [removalPolicy, setRemovalPolicy] = useState<"0" | "1" | "2">("0");
 
 	const [loading, setLoading] = useState(true);
-	const [loadingMessage, setLoadingMessage] = useState('Loading...');
+	const [loadingMessage, setLoadingMessage] = useState("Loading...");
 
 	// Fetch and load data sequentially with loading messages
 	useEffect(() => {
@@ -93,22 +93,22 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 			if (!user?.email) return;
 			setLoading(true);
 
-			setLoadingMessage('Loading users...');
+			setLoadingMessage("Loading users...");
 			const membersResp = await getCurrentUserMembers(token);
 			setUsers(membersResp.data || []);
 
-			setLoadingMessage('Loading current user...');
+			setLoadingMessage("Loading current user...");
 			const upsertResp = await upsertCurrentUser(token, user.email);
-			setUserRole(upsertResp.data.role || '');
+			setUserRole(upsertResp.data.role || "");
 
-			setLoadingMessage('Loading group info...');
+			setLoadingMessage("Loading group info...");
 			if (upsertResp.data.group_id) {
 				setGroupId(upsertResp.data.group_id);
 				const grp = await getGroupById(upsertResp.data.group_id, token);
 				if (grp.data) setGroupName(grp.data.name);
 			}
 
-			setLoadingMessage('Loading jobs...');
+			setLoadingMessage("Loading jobs...");
 			const jobsResp = await getCurrentUserGroupJobs(token);
 			setJobs(jobsResp.data || []);
 
@@ -118,83 +118,95 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 		loadData();
 	}, [token, user?.email, reload]);
 
-    // Status-to-colour lookup for job statuses.
+	// Status-to-colour lookup for job statuses.
 	const statusColors: Record<string, string> = {
-		pending: 'orange',
-		approved: 'green',
-		rejected: 'red',
+		pending: "orange",
+		approved: "green",
+		rejected: "red",
 	};
 
 	// Handlers
 	const handleGroupUpdate = async () => {
 		await updateGroupName(groupId, groupName, token);
-		setReload(r => !r);
+		setReload((r) => !r);
 	};
 
-    // Remove the selected user from the group and handle their jobs based on the selected policy.
+	// Remove the selected user from the group and handle their jobs based on the selected policy.
 	const handleUserUpdate = async () => {
 		if (!selectedUser) return;
 		const userSub = selectedUser.user_sub;
-		const userJobs = jobs.filter(j => j.user_sub === userSub);
+		const userJobs = jobs.filter((j) => j.user_sub === userSub);
 
-		if (removalPolicy === '0') {
-			await Promise.all(userJobs.map(j => deleteJob(j.job_id, token)));
-		} else if (removalPolicy === '1') {
+		if (removalPolicy === "0") {
+			await Promise.all(userJobs.map((j) => deleteJob(j.job_id, token)));
+		} else if (removalPolicy === "1") {
 			await Promise.all(
-				userJobs.map(j =>
-					updateJob(j.job_id, j.status || '', j.runtime || '', user?.sub || '', token)
-				)
+				userJobs.map((j) =>
+					updateJob(j.job_id, j.status || "", j.runtime || "", user?.sub || "", token),
+				),
 			);
 		}
 
-		await updateUser(token, userSub, selectedUser.role, '');
-		setReload(r => !r);
+		await updateUser(token, userSub, selectedUser.role, "");
+		setReload((r) => !r);
 		setRemoveDialogOpen(false);
 	};
 
-    // Send a group-join request to the user matching the entered email.
-  	const handleAddMember = async () => {
+	// Send a group-join request to the user matching the entered email.
+	const handleAddMember = async () => {
 		if (!newUserEmail) return;
-			const { data: foundUser, error } = await getUserByEmail(newUserEmail, token);
+		const { data: foundUser, error } = await getUserByEmail(newUserEmail, token);
 		if (error) {
 			setNewUserError(error);
 			return;
 		}
 		if (foundUser) {
 			await sendRequest(foundUser.user_sub, groupId, token);
-			setNewUserEmail('');
-			setReload(r => !r);
+			setNewUserEmail("");
+			setReload((r) => !r);
 			setAddMemberDialogOpen(false);
 		}
-  	};
+	};
 
-    // Users displayed on the current table page.
-	const paginatedUsers = users.slice(
-		page * rowsPerPage,
-		page * rowsPerPage + rowsPerPage
-	);
+	// Users displayed on the current table page.
+	const paginatedUsers = users.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
-  	return (
+	return (
 		<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50], mb: 4 }}>
 			{/* Header */}
 			<Typography
 				variant="h6"
 				color={grey[800]}
-				sx={{ p: 2, display: 'flex', alignItems: 'center', borderTopLeftRadius: 5, borderTopRightRadius: 5, fontWeight: 'bold', fontSize: '1.1rem' }}
+				sx={{
+					p: 2,
+					display: "flex",
+					alignItems: "center",
+					borderTopLeftRadius: 5,
+					borderTopRightRadius: 5,
+					fontWeight: "bold",
+					fontSize: "1.1rem",
+				}}
 			>
 				<GroupOutlined sx={{ mr: 1, color: blue[600] }} />
 				Group Management
 			</Typography>
 			{loading ? (
-				<Box sx={{ mb: 4, p: 4, bgcolor: grey[50], borderRadius: 2 }} display="flex" alignItems="center" justifyContent="center">
+				<Box
+					sx={{ mb: 4, p: 4, bgcolor: grey[50], borderRadius: 2 }}
+					display="flex"
+					alignItems="center"
+					justifyContent="center"
+				>
 					<CircularProgress />
-					<Typography variant="body2" sx={{ ml: 2 }}>{loadingMessage}</Typography>
+					<Typography variant="body2" sx={{ ml: 2 }}>
+						{loadingMessage}
+					</Typography>
 				</Box>
 			) : (
 				<>
 					{/* Group Info and Add Member */}
-					<Typography variant="body2" sx={{ px: 2, mb: 2, fontWeight: 'bold', color: grey[600] }}>
-						{userRole === 'group_admin' ? 'Manage Group' : 'Group Information'}
+					<Typography variant="body2" sx={{ px: 2, mb: 2, fontWeight: "bold", color: grey[600] }}>
+						{userRole === "group_admin" ? "Manage Group" : "Group Information"}
 					</Typography>
 
 					<Grid container spacing={2} sx={{ px: 2 }}>
@@ -202,23 +214,23 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 							{/* Group Name */}
 							<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2 }}>
 								<Typography variant="body2" color={grey[800]} sx={{ mb: 2 }}>
-									{userRole === 'group_admin' ? 'Update Group Name' : 'Group Name'}
+									{userRole === "group_admin" ? "Update Group Name" : "Group Name"}
 								</Typography>
 								<Box display="flex" gap={2}>
 									<TextField
 										label="Group Name"
 										value={groupName}
-										onChange={e => setGroupName(e.target.value)}
+										onChange={(e) => setGroupName(e.target.value)}
 										size="small"
-										disabled={userRole !== 'group_admin'}
+										disabled={userRole !== "group_admin"}
 									/>
-									{userRole === 'group_admin' && (
+									{userRole === "group_admin" && (
 										<Button
 											variant="contained"
 											onClick={handleGroupUpdate}
 											size="small"
 											disabled={!groupName}
-											sx={{ textTransform: 'none' }}
+											sx={{ textTransform: "none" }}
 										>
 											Update
 										</Button>
@@ -228,9 +240,13 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 						</Grid>
 						<Grid size={{ xs: 12, md: 6 }}>
 							{/* Add Member */}
-							{userRole === 'group_admin' && (
+							{userRole === "group_admin" && (
 								<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2 }}>
-									{newUserError && <Alert severity="error" sx={{ mb: 2 }}>{newUserError}</Alert>}
+									{newUserError && (
+										<Alert severity="error" sx={{ mb: 2 }}>
+											{newUserError}
+										</Alert>
+									)}
 									<Typography variant="body2" color={grey[800]} sx={{ mb: 2 }}>
 										Add User to Group
 									</Typography>
@@ -238,7 +254,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 										<TextField
 											label="User Email"
 											value={newUserEmail}
-											onChange={e => setNewUserEmail(e.target.value)}
+											onChange={(e) => setNewUserEmail(e.target.value)}
 											size="small"
 										/>
 										<Button
@@ -246,7 +262,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 											onClick={() => setAddMemberDialogOpen(true)}
 											size="small"
 											disabled={!newUserEmail}
-											sx={{ textTransform: 'none' }}
+											sx={{ textTransform: "none" }}
 										>
 											Add
 										</Button>
@@ -255,28 +271,54 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 							)}
 						</Grid>
 					</Grid>
-					
 
 					{/* User Table */}
-					<Typography variant="body2" sx={{ px: 2, my: 2, fontWeight: 'bold', color: grey[600] }}>
-						{userRole === 'group_admin' ? 'Manage Group Members' : 'Your Group Members'}
+					<Typography variant="body2" sx={{ px: 2, my: 2, fontWeight: "bold", color: grey[600] }}>
+						{userRole === "group_admin" ? "Manage Group Members" : "Your Group Members"}
 					</Typography>
 					<Table>
 						<TableHead sx={{ bgcolor: grey[200] }}>
 							<TableRow>
 								<TableCell>
-									<Box sx={{ display: 'flex', alignItems: 'center', width: '100%', fontSize: '0.7rem', fontWeight: 'bold', color: grey[700] }}>
+									<Box
+										sx={{
+											display: "flex",
+											alignItems: "center",
+											width: "100%",
+											fontSize: "0.7rem",
+											fontWeight: "bold",
+											color: grey[700],
+										}}
+									>
 										EMAIL
 									</Box>
 								</TableCell>
 								<TableCell>
-									<Box sx={{ display: 'flex', alignItems: 'center', width: '100%', fontSize: '0.7rem', fontWeight: 'bold', color: grey[700] }}>
+									<Box
+										sx={{
+											display: "flex",
+											alignItems: "center",
+											width: "100%",
+											fontSize: "0.7rem",
+											fontWeight: "bold",
+											color: grey[700],
+										}}
+									>
 										ROLE
 									</Box>
 								</TableCell>
-								{userRole === 'group_admin' && (
+								{userRole === "group_admin" && (
 									<TableCell>
-										<Box sx={{ display: 'flex', alignItems: 'center', width: '100%', fontSize: '0.7rem', fontWeight: 'bold', color: grey[700] }}>
+										<Box
+											sx={{
+												display: "flex",
+												alignItems: "center",
+												width: "100%",
+												fontSize: "0.7rem",
+												fontWeight: "bold",
+												color: grey[700],
+											}}
+										>
 											REMOVE
 										</Box>
 									</TableCell>
@@ -284,34 +326,34 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 							</TableRow>
 						</TableHead>
 						<TableBody>
-						{paginatedUsers.map(u => (
-							<TableRow key={u.user_sub}>
-							<TableCell>{u.email}</TableCell>
-							<TableCell>
-								<FormControl fullWidth size="small">
-									<InputLabel id={`role-${u.user_sub}`}>Role</InputLabel>
-									<Select labelId={`role-${u.user_sub}`} label="Role" value={u.role} disabled>
-										<MenuItem value="group_admin">Group Admin</MenuItem>
-										<MenuItem value="member">Member</MenuItem>
-									</Select>
-								</FormControl>
-							</TableCell>
-							{userRole === 'group_admin' && (
-								<TableCell>
-								<IconButton
-									size="small"
-									color="warning"
-									onClick={() => {
-									setSelectedUser(u);
-									setRemoveDialogOpen(true);
-									}}
-								>
-									<RemoveCircleOutlineOutlined />
-								</IconButton>
-								</TableCell>
-							)}
-							</TableRow>
-						))}
+							{paginatedUsers.map((u) => (
+								<TableRow key={u.user_sub}>
+									<TableCell>{u.email}</TableCell>
+									<TableCell>
+										<FormControl fullWidth size="small">
+											<InputLabel id={`role-${u.user_sub}`}>Role</InputLabel>
+											<Select labelId={`role-${u.user_sub}`} label="Role" value={u.role} disabled>
+												<MenuItem value="group_admin">Group Admin</MenuItem>
+												<MenuItem value="member">Member</MenuItem>
+											</Select>
+										</FormControl>
+									</TableCell>
+									{userRole === "group_admin" && (
+										<TableCell>
+											<IconButton
+												size="small"
+												color="warning"
+												onClick={() => {
+													setSelectedUser(u);
+													setRemoveDialogOpen(true);
+												}}
+											>
+												<RemoveCircleOutlineOutlined />
+											</IconButton>
+										</TableCell>
+									)}
+								</TableRow>
+							))}
 						</TableBody>
 					</Table>
 					<TablePagination
@@ -320,82 +362,105 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 						page={page}
 						rowsPerPage={rowsPerPage}
 						onPageChange={(_, newPage) => setPage(newPage)}
-						onRowsPerPageChange={e => { setRowsPerPage(+e.target.value); setPage(0); }}
+						onRowsPerPageChange={(e) => {
+							setRowsPerPage(+e.target.value);
+							setPage(0);
+						}}
 						rowsPerPageOptions={[5, 10, 25]}
 					/>
 					{/* Remove User Dialog */}
 					<Dialog open={removeDialogOpen} onClose={() => setRemoveDialogOpen(false)} fullWidth>
 						<DialogTitle>Remove User</DialogTitle>
 						<DialogContent>
-						<Typography variant="body2" color="text.secondary">
-							Are you sure you want to remove this user from the group? This action cannot be undone.
-						</Typography>
-						<Box sx={{ border: 1, borderColor: 'divider', p: 3, mt: 2, borderRadius: 2 }}>
 							<Typography variant="body2" color="text.secondary">
-							As a group admin, you can choose what happens to the user's jobs they ran while they were part of your group.
+								Are you sure you want to remove this user from the group? This action cannot be
+								undone.
 							</Typography>
-							<FormControl>
-							<RadioGroup
-								name="removal-policy"
-								value={removalPolicy}
-								onChange={e => setRemovalPolicy(e.target.value as '0'|'1'|'2')}
-							>
-								<FormControlLabel value="0" control={<Radio />} label="Delete all user's jobs" />
-								<FormControlLabel value="1" control={<Radio />} label="Transfer ownership to me" />
-								<FormControlLabel value="2" control={<Radio />} label="Let user retain their jobs" />
-							</RadioGroup>
-							</FormControl>
-						</Box>
+							<Box sx={{ border: 1, borderColor: "divider", p: 3, mt: 2, borderRadius: 2 }}>
+								<Typography variant="body2" color="text.secondary">
+									As a group admin, you can choose what happens to the user's jobs they ran while
+									they were part of your group.
+								</Typography>
+								<FormControl>
+									<RadioGroup
+										name="removal-policy"
+										value={removalPolicy}
+										onChange={(e) => setRemovalPolicy(e.target.value as "0" | "1" | "2")}
+									>
+										<FormControlLabel
+											value="0"
+											control={<Radio />}
+											label="Delete all user's jobs"
+										/>
+										<FormControlLabel
+											value="1"
+											control={<Radio />}
+											label="Transfer ownership to me"
+										/>
+										<FormControlLabel
+											value="2"
+											control={<Radio />}
+											label="Let user retain their jobs"
+										/>
+									</RadioGroup>
+								</FormControl>
+							</Box>
 						</DialogContent>
 						<DialogActions>
-						<Button
-							onClick={() => setRemoveDialogOpen(false)}
-							variant="outlined"
-							sx={{ textTransform: 'none', color: grey[600], borderColor: grey[400] }}
-						>
-							Cancel
-						</Button>
-						<Button
-							onClick={handleUserUpdate}
-							color="error"
-							variant="contained"
-							startIcon={<RemoveCircleOutlineOutlined />}
-							sx={{ textTransform: 'none' }}
-						>
-							Remove
-						</Button>
+							<Button
+								onClick={() => setRemoveDialogOpen(false)}
+								variant="outlined"
+								sx={{ textTransform: "none", color: grey[600], borderColor: grey[400] }}
+							>
+								Cancel
+							</Button>
+							<Button
+								onClick={handleUserUpdate}
+								color="error"
+								variant="contained"
+								startIcon={<RemoveCircleOutlineOutlined />}
+								sx={{ textTransform: "none" }}
+							>
+								Remove
+							</Button>
 						</DialogActions>
 					</Dialog>
 
 					{/* Add Member Dialog */}
-					<Dialog open={addMemberDialogOpen} onClose={() => setAddMemberDialogOpen(false)} fullWidth>
+					<Dialog
+						open={addMemberDialogOpen}
+						onClose={() => setAddMemberDialogOpen(false)}
+						fullWidth
+					>
 						<DialogTitle>Confirm Add</DialogTitle>
 						<DialogContent>
-						<Typography variant="body2" color="text.secondary">
-							Are you sure you want to add <strong style={{ color: '#1565c0' }}>{newUserEmail}</strong> to the group? They will have access to all group resources.
-						</Typography>
+							<Typography variant="body2" color="text.secondary">
+								Are you sure you want to add{" "}
+								<strong style={{ color: "#1565c0" }}>{newUserEmail}</strong> to the group? They will
+								have access to all group resources.
+							</Typography>
 						</DialogContent>
 						<DialogActions>
-						<Button
-							onClick={() => setAddMemberDialogOpen(false)}
-							variant="outlined"
-							sx={{ textTransform: 'none', color: grey[600], borderColor: grey[400] }}
-						>
-							Cancel
-						</Button>
-						<Button
-							onClick={handleAddMember}
-							color="primary"
-							variant="contained"
-							startIcon={<CheckCircleOutlineOutlined />}
-							sx={{ textTransform: 'none' }}
-						>
-							Confirm
-						</Button>
+							<Button
+								onClick={() => setAddMemberDialogOpen(false)}
+								variant="outlined"
+								sx={{ textTransform: "none", color: grey[600], borderColor: grey[400] }}
+							>
+								Cancel
+							</Button>
+							<Button
+								onClick={handleAddMember}
+								color="primary"
+								variant="contained"
+								startIcon={<CheckCircleOutlineOutlined />}
+								sx={{ textTransform: "none" }}
+							>
+								Confirm
+							</Button>
 						</DialogActions>
 					</Dialog>
 				</>
 			)}
 		</Paper>
-  	);
+	);
 }

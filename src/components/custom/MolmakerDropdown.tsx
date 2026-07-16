@@ -1,12 +1,6 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import {
-	FormControl,
-	InputLabel,
-	Select,
-	MenuItem,
-	FormHelperText
-} from '@mui/material';
+import React from "react";
+import PropTypes from "prop-types";
+import { FormControl, InputLabel, Select, MenuItem, FormHelperText } from "@mui/material";
 
 /**
  * Generic dropdown selector for MolMaker.
@@ -30,34 +24,22 @@ const MolmakerDropdown = ({
 	options,
 	required = false,
 	error = false,
-	helperText = '',
+	helperText = "",
 	disabled = false,
 	fullWidth = true,
-	sx = {}
+	sx = {},
 }) => (
-	<FormControl
-		required={required}
-		error={error}
-		disabled={disabled}
-		fullWidth={fullWidth}
-		sx={sx}
-	>
+	<FormControl required={required} error={error} disabled={disabled} fullWidth={fullWidth} sx={sx}>
 		<InputLabel>{label}</InputLabel>
-		<Select
-		value={value}
-		label={label}
-		onChange={onChange}
-		>
+		<Select value={value} label={label} onChange={onChange}>
 			{options.map(({ value: optValue, label: optLabel }) => (
 				<MenuItem key={optValue} value={optValue}>
 					{optLabel}
 				</MenuItem>
 			))}
 		</Select>
-		{helperText && (
-			<FormHelperText>{helperText}</FormHelperText>
-		)}
-  	</FormControl>
+		{helperText && <FormHelperText>{helperText}</FormHelperText>}
+	</FormControl>
 );
 
 /**
@@ -70,15 +52,15 @@ MolmakerDropdown.propTypes = {
 	options: PropTypes.arrayOf(
 		PropTypes.shape({
 			value: PropTypes.any.isRequired,
-			label: PropTypes.string.isRequired
-		})
+			label: PropTypes.string.isRequired,
+		}),
 	).isRequired,
 	required: PropTypes.bool,
 	error: PropTypes.bool,
 	helperText: PropTypes.string,
 	disabled: PropTypes.bool,
 	fullWidth: PropTypes.bool,
-	sx: PropTypes.object
+	sx: PropTypes.object,
 };
 
 export default MolmakerDropdown;

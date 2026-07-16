@@ -1,12 +1,6 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import {
-	FormControl,
-	RadioGroup,
-	FormControlLabel,
-	Radio,
-	FormHelperText
-} from '@mui/material';
+import React from "react";
+import PropTypes from "prop-types";
+import { FormControl, RadioGroup, FormControlLabel, Radio, FormHelperText } from "@mui/material";
 
 /**
  * Generic radio-group selector for Molecule Maker app.
@@ -31,35 +25,24 @@ const MolmakerRadioGroup = ({
 	row = false,
 	required = false,
 	error = false,
-	helperText = '',
+	helperText = "",
 	disabled = false,
-  sx = {}
+	sx = {},
 }) => (
-	<FormControl
-		component="fieldset"
-		required={required}
-		error={error}
-		disabled={disabled}
-		sx={sx}
-	>
-		<RadioGroup
-			row={row}
-			name={name}
-			value={value}
-			onChange={onChange}
-		>
-      	{options.map(({ value: optVal, label: optLabel, disabled: optDisabled }) => (
-			<FormControlLabel
-				key={optVal}
-				value={optVal}
-				control={<Radio />}
-				label={optLabel}
-				disabled={optDisabled}
-			/>
-		))}
-    </RadioGroup>
-    {helperText && <FormHelperText>{helperText}</FormHelperText>}
-  </FormControl>
+	<FormControl component="fieldset" required={required} error={error} disabled={disabled} sx={sx}>
+		<RadioGroup row={row} name={name} value={value} onChange={onChange}>
+			{options.map(({ value: optVal, label: optLabel, disabled: optDisabled }) => (
+				<FormControlLabel
+					key={optVal}
+					value={optVal}
+					control={<Radio />}
+					label={optLabel}
+					disabled={optDisabled}
+				/>
+			))}
+		</RadioGroup>
+		{helperText && <FormHelperText>{helperText}</FormHelperText>}
+	</FormControl>
 );
 
 /**
@@ -73,15 +56,15 @@ MolmakerRadioGroup.propTypes = {
 		PropTypes.shape({
 			value: PropTypes.any.isRequired,
 			label: PropTypes.string.isRequired,
-			disabled: PropTypes.bool
-		})
+			disabled: PropTypes.bool,
+		}),
 	).isRequired,
 	row: PropTypes.bool,
 	required: PropTypes.bool,
 	error: PropTypes.bool,
 	helperText: PropTypes.string,
 	disabled: PropTypes.bool,
-	sx: PropTypes.object
+	sx: PropTypes.object,
 };
 
 export default MolmakerRadioGroup;

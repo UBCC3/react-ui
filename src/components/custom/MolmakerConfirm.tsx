@@ -4,44 +4,40 @@ import {
 	DialogContent,
 	DialogContentText,
 	DialogActions,
-	Button
-} from '@mui/material'
+	Button,
+} from "@mui/material";
 
 /**
  * Renders a reusable Confirmation dialog.
- * 
+ *
  * Props:
  * - open: whether the dialog opens or not
  * - onClose: actions taken after closing the dialog
  * - textToShow: written text on the dialog
  * - onConfirm: actions taken after confirming the prompt
  */
-const MolmakerConfirm = ({ 
-	open,
-	onClose,
-	textToShow,
-	onConfirm 
-}) => {
+const MolmakerConfirm = ({ open, onClose, textToShow, onConfirm }) => {
 	return (
 		<Dialog open={open} onClose={onClose}>
-			<DialogTitle>
-				Confirm
-			</DialogTitle>
+			<DialogTitle>Confirm</DialogTitle>
 			<DialogContent>
-				<DialogContentText>
-					{textToShow}
-				</DialogContentText>
+				<DialogContentText>{textToShow}</DialogContentText>
 			</DialogContent>
 			<DialogActions>
-				<Button onClick={onConfirm} variant="contained" color="error" sx={{ textTransform: 'none' }}>
+				<Button
+					onClick={onConfirm}
+					variant="contained"
+					color="error"
+					sx={{ textTransform: "none" }}
+				>
 					Confirm
 				</Button>
-				<Button onClick={onClose} variant="outlined" sx={{ textTransform: 'none' }}>
+				<Button onClick={onClose} variant="outlined" sx={{ textTransform: "none" }}>
 					Cancel
 				</Button>
 			</DialogActions>
 		</Dialog>
-	)
-}
+	);
+};
 
-export default MolmakerConfirm
+export default MolmakerConfirm;

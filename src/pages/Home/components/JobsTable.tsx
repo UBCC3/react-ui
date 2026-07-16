@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
 	TableContainer,
 	Table,
@@ -10,14 +10,14 @@ import {
 	Box,
 	Typography,
 	Button,
-	Grid
-} from '@mui/material';
-import { AutoMode, TuneOutlined } from '@mui/icons-material';
-import { statusColors, statusIcons, calculationTypes } from '../../../constants';
-import { grey } from '@mui/material/colors';
-import { ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
-import type { Job } from '../../../types';
-import { reverseMapping } from '../../../utils';
+	Grid,
+} from "@mui/material";
+import { AutoMode, TuneOutlined } from "@mui/icons-material";
+import { statusColors, statusIcons, calculationTypes } from "../../../constants";
+import { grey } from "@mui/material/colors";
+import { ArrowDownAZ, ArrowUpAZ } from "lucide-react";
+import type { Job } from "../../../types";
+import { reverseMapping } from "../../../utils";
 
 /**
  * Props for the JobsTable
@@ -26,7 +26,7 @@ interface JobsTableProps {
 	jobs: Job[];
 	page: number;
 	rowsPerPage: number;
-	order: 'asc' | 'desc';
+	order: "asc" | "desc";
 	orderBy: keyof Job;
 	selectedJobId: string | null;
 	onSort: (column: keyof Job) => void;
@@ -35,7 +35,7 @@ interface JobsTableProps {
 		job_name: boolean;
 		job_notes: boolean;
 		status: boolean;
-        calculation_type: boolean;
+		calculation_type: boolean;
 		structures: boolean;
 		tags: boolean;
 		runtime: boolean;
@@ -46,7 +46,7 @@ interface JobsTableProps {
 
 /**
  * Displays a sortable and paginated  table of jobs.
- * 
+ *
  * The component supports:
  * - sorting by clicking column headers,
  * - selecting a row,
@@ -63,57 +63,63 @@ export default function JobsTable({
 	selectedJobId,
 	onSort,
 	onRowClick,
-	displayColumns
+	displayColumns,
 }: JobsTableProps) {
 	// Comparator that handles strings, dates, and structures-length
-	const comparator = React.useCallback((a: Job, b: Job): number => {
-		let aVal: string | number = a[orderBy] as any;
-		let bVal: string | number = b[orderBy] as any;
+	const comparator = React.useCallback(
+		(a: Job, b: Job): number => {
+			let aVal: string | number = a[orderBy] as any;
+			let bVal: string | number = b[orderBy] as any;
 
-		if (orderBy === 'submitted_at') {
-			aVal = new Date(a.submitted_at).getTime();
-			bVal = new Date(b.submitted_at).getTime();
-		} else if (orderBy === 'structures') {
-			aVal = a.structures.length;
-			bVal = b.structures.length;
-		} else {
-			// coerce to lowercase for string compare
-			aVal = String(aVal).toLowerCase();
-			bVal = String(bVal).toLowerCase();
-		}
+			if (orderBy === "submitted_at") {
+				aVal = new Date(a.submitted_at).getTime();
+				bVal = new Date(b.submitted_at).getTime();
+			} else if (orderBy === "structures") {
+				aVal = a.structures.length;
+				bVal = b.structures.length;
+			} else {
+				// coerce to lowercase for string compare
+				aVal = String(aVal).toLowerCase();
+				bVal = String(bVal).toLowerCase();
+			}
 
-		if (aVal < bVal) return order === 'asc' ? -1 : 1;
-		if (aVal > bVal) return order === 'asc' ? 1 : -1;
-		return 0;
-	}, [order, orderBy]);
+			if (aVal < bVal) return order === "asc" ? -1 : 1;
+			if (aVal > bVal) return order === "asc" ? 1 : -1;
+			return 0;
+		},
+		[order, orderBy],
+	);
 
 	// Memoize sorted list
 	const sortedJobs = React.useMemo(() => {
 		return [...jobs].sort(comparator);
 	}, [jobs, comparator]);
 
-  	// Then slice for pagination
-	const paginatedJobs = sortedJobs.slice(
-		page * rowsPerPage,
-		page * rowsPerPage + rowsPerPage
-	);
+	// Then slice for pagination
+	const paginatedJobs = sortedJobs.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
-    // Reverse the calculation types mapping
-    const reversedCalculationTypes = reverseMapping(calculationTypes)
+	// Reverse the calculation types mapping
+	const reversedCalculationTypes = reverseMapping(calculationTypes);
 
-    /**
-     * Renders a sortable table header cell.
-     */
+	/**
+	 * Renders a sortable table header cell.
+	 */
 	const renderHeader = (label: string, column: keyof Job) => (
-		<TableCell
-			sx={{ whiteSpace: 'nowrap', cursor: 'pointer' }}
-			onClick={() => onSort(column)}
-		>
-			<Box sx={{ display: 'flex', alignItems: 'center', width: '100%', fontSize: '0.7rem', fontWeight: 'bold', color: grey[700] }}>
+		<TableCell sx={{ whiteSpace: "nowrap", cursor: "pointer" }} onClick={() => onSort(column)}>
+			<Box
+				sx={{
+					display: "flex",
+					alignItems: "center",
+					width: "100%",
+					fontSize: "0.7rem",
+					fontWeight: "bold",
+					color: grey[700],
+				}}
+			>
 				{label.toUpperCase()}
 				{orderBy === column && (
 					<Box sx={{ ml: 1 }}>
-						{order === 'asc' ? (
+						{order === "asc" ? (
 							<ArrowUpAZ style={{ width: 18, height: 18 }} />
 						) : (
 							<ArrowDownAZ style={{ width: 18, height: 18 }} />
@@ -124,20 +130,21 @@ export default function JobsTable({
 		</TableCell>
 	);
 
-  	return (
+	return (
 		<TableContainer>
 			<Table>
 				<TableHead sx={{ bgcolor: grey[200] }}>
 					<TableRow>
-						{displayColumns.job_name && renderHeader('Name', 'job_name')}
-						{displayColumns.job_notes && renderHeader('Notes', 'job_notes')}
-						{displayColumns.status && renderHeader('Status', 'status')}
-                        {displayColumns.calculation_type && renderHeader('Calculation Type', 'calculation_type')}
-						{displayColumns.structures && renderHeader('Library Structure', 'structures')}
-						{displayColumns.tags && renderHeader('Job Tags', 'tags')}
-						{displayColumns.runtime && renderHeader('Runtime', 'runtime')}
-						{displayColumns.submitted_at && renderHeader('Submitted At', 'submitted_at')}
-						{displayColumns.completed_at && renderHeader('Completed At', 'completed_at')}
+						{displayColumns.job_name && renderHeader("Name", "job_name")}
+						{displayColumns.job_notes && renderHeader("Notes", "job_notes")}
+						{displayColumns.status && renderHeader("Status", "status")}
+						{displayColumns.calculation_type &&
+							renderHeader("Calculation Type", "calculation_type")}
+						{displayColumns.structures && renderHeader("Library Structure", "structures")}
+						{displayColumns.tags && renderHeader("Job Tags", "tags")}
+						{displayColumns.runtime && renderHeader("Runtime", "runtime")}
+						{displayColumns.submitted_at && renderHeader("Submitted At", "submitted_at")}
+						{displayColumns.completed_at && renderHeader("Completed At", "completed_at")}
 					</TableRow>
 				</TableHead>
 				<TableBody>
@@ -145,7 +152,7 @@ export default function JobsTable({
 						<TableRow>
 							<TableCell colSpan={8} align="center">
 								<Typography variant="body2" color="text.secondary">
-                                    Nothing here yet — run your first analysis from the sidebar.
+									Nothing here yet — run your first analysis from the sidebar.
 								</Typography>
 							</TableCell>
 						</TableRow>
@@ -155,20 +162,20 @@ export default function JobsTable({
 								key={job.job_id}
 								onClick={() => onRowClick(job.job_id)}
 								sx={{
-								backgroundColor:
-									job.job_id === selectedJobId ? 'rgba(0,0,0,0.08)' : 'transparent',
-								cursor: 'pointer'
+									backgroundColor:
+										job.job_id === selectedJobId ? "rgba(0,0,0,0.08)" : "transparent",
+									cursor: "pointer",
 								}}
 							>
-								{displayColumns.job_name && (
-									<TableCell>
-										{job.job_name}
-									</TableCell>
-								)}
+								{displayColumns.job_name && <TableCell>{job.job_name}</TableCell>}
 								{displayColumns.job_notes && (
-									<TableCell>{job.job_notes || (
-										<Typography variant="caption" color="text.secondary">No notes</Typography>
-									)}</TableCell>
+									<TableCell>
+										{job.job_notes || (
+											<Typography variant="caption" color="text.secondary">
+												No notes
+											</Typography>
+										)}
+									</TableCell>
 								)}
 								{displayColumns.status && (
 									<TableCell>
@@ -177,28 +184,34 @@ export default function JobsTable({
 											size="small"
 											sx={{
 												bgcolor: statusColors[job.status] ?? grey[300],
-												color: 'white',
-												textTransform: 'capitalize',
-												fontSize: '0.65rem',
+												color: "white",
+												textTransform: "capitalize",
+												fontSize: "0.65rem",
 											}}
-											icon={statusIcons[job.status] ? React.createElement(statusIcons[job.status], { style: { color: 'white', width: 16, height: 16 } }) : undefined}
+											icon={
+												statusIcons[job.status]
+													? React.createElement(statusIcons[job.status], {
+															style: { color: "white", width: 16, height: 16 },
+														})
+													: undefined
+											}
 										/>
 									</TableCell>
 								)}
-                                {displayColumns.calculation_type && (
-                                    <TableCell>
-                                        <Chip
-                                            label={reversedCalculationTypes[job.calculation_type]}
-                                            variant="outlined"
-                                            size="small"
-                                            sx={{ mr: 0.5, mb: 0.5 }}
-                                        />
-                                    </TableCell>
-                                )}
+								{displayColumns.calculation_type && (
+									<TableCell>
+										<Chip
+											label={reversedCalculationTypes[job.calculation_type]}
+											variant="outlined"
+											size="small"
+											sx={{ mr: 0.5, mb: 0.5 }}
+										/>
+									</TableCell>
+								)}
 								{displayColumns.structures && (
 									<TableCell>
-										{job.structures.length ? job.structures
-											.map((s) => (
+										{job.structures.length ? (
+											job.structures.map((s) => (
 												<Chip
 													key={s.structure_id}
 													label={s.name}
@@ -206,36 +219,47 @@ export default function JobsTable({
 													size="small"
 													sx={{ mr: 0.5, mb: 0.5 }}
 												/>
-											)) : (
-												<Typography variant="caption" color="text.secondary">Not in library</Typography>
-											)}
+											))
+										) : (
+											<Typography variant="caption" color="text.secondary">
+												Not in library
+											</Typography>
+										)}
 									</TableCell>
 								)}
 								{displayColumns.tags && (
 									<TableCell>
 										{job.tags.length > 0 ? (
-											job.tags.join(', ')
+											job.tags.join(", ")
 										) : (
-											<Typography variant="caption" color="text.secondary">No tags</Typography>
+											<Typography variant="caption" color="text.secondary">
+												No tags
+											</Typography>
 										)}
 									</TableCell>
 								)}
 								{displayColumns.runtime && (
 									<TableCell>
-										{job.runtime ? job.runtime : (
-											<Typography variant="caption" color="text.secondary">N/A</Typography>
+										{job.runtime ? (
+											job.runtime
+										) : (
+											<Typography variant="caption" color="text.secondary">
+												N/A
+											</Typography>
 										)}
 									</TableCell>
 								)}
 								{displayColumns.submitted_at && (
-									<TableCell>
-										{new Date(job.submitted_at).toLocaleString()}
-									</TableCell>
+									<TableCell>{new Date(job.submitted_at).toLocaleString()}</TableCell>
 								)}
 								{displayColumns.completed_at && (
 									<TableCell>
-										{job.completed_at ? new Date(job.completed_at).toLocaleString() : (
-											<Typography variant="caption" color="text.secondary">N/A</Typography>
+										{job.completed_at ? (
+											new Date(job.completed_at).toLocaleString()
+										) : (
+											<Typography variant="caption" color="text.secondary">
+												N/A
+											</Typography>
 										)}
 									</TableCell>
 								)}
@@ -243,7 +267,7 @@ export default function JobsTable({
 						))
 					)}
 				</TableBody>
-	  		</Table>
+			</Table>
 		</TableContainer>
-  	);
+	);
 }

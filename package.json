@@ -9,8 +9,8 @@
 		"lint": "eslint .",
 		"type-check": "tsc --noEmit",
 		"preview": "vite preview",
-        "format": "prettier --write .",
-        "format:check": "prettier --check ."
+		"format": "prettier --write .",
+		"format:check": "prettier --check ."
 	},
 	"dependencies": {
 		"@auth0/auth0-react": "^2.3.0",
