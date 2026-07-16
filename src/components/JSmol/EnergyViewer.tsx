@@ -2,7 +2,7 @@ import {Job, JobResult} from "../../types";
 import React from "react";
 import MolmakerLoading from "../custom/MolmakerLoading";
 import { Grid, Paper } from "@mui/material";
-import { CalculateOutlined, ContrastOutlined, ExpandMore } from "@mui/icons-material";
+import { CalculateOutlined, ContrastOutlined } from "@mui/icons-material";
 import CalculatedQuantities from "./CalculatedQuantities";
 import PartialCharge from "./PartialCharge";
 import { useResultDrawer } from "../../hooks/UseResultDrawer";

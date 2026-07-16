@@ -7,7 +7,6 @@ import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftOutlinedIcon from '@mui/icons-material/ChevronLeftOutlined';
 import {
 	Collapse,
-	Divider, 
 	List, 
 	ListItemButton, 
 	ListItemIcon,
@@ -34,7 +33,7 @@ const CLOSED_WIDTH  = 56;
  * This expands the drawer to the normal drawer width and applies
  * the opening transition animation from the Material UI theme.
  */
-const openedMixin = (theme) => ({
+const openedMixin = (theme: any) => ({
 	width: DRAWER_WIDTH,
 	transition: theme.transitions.create('width', {
 		easing  : theme.transitions.easing.sharp,
@@ -49,7 +48,7 @@ const openedMixin = (theme) => ({
  * This shrinks the drawer to the compact icon-only width and applies
  * the closing transition animation from the Material UI theme
  */
-const closedMixin = (theme) => ({
+const closedMixin = (theme: any) => ({
 	width: CLOSED_WIDTH,
 	transition: theme.transitions.create('width', {
 		easing  : theme.transitions.easing.sharp,
