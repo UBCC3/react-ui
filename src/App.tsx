@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
 import Home from './pages/Home/Home';
 import StandardAnalysis from './pages/SubmitJob/StandardAnalysis';
 import ViewJob from './pages/ViewJob';
@@ -23,67 +24,65 @@ function App() {
 	const { user } = useAuth0();
 
 	return (
-		<BrowserRouter basename={import.meta.env.VITE_MODE === 'development' ? '' : '/ubchemica'}>
-			<DrawerProvider>
-				<Box sx={{ display: 'flex' }}>
-					<CssBaseline />
-					<MenuDrawer />
-					<MenuAppBar />
-					<MainContent>
-						<Routes>
-							<Route
-								path="/"
-								element={<RequireAuth><Home /></RequireAuth>}
-							/>
-							<Route
-								path="/result/:jobId"
-								element={<RequireAuth><ResultPage /></RequireAuth>}
-							/>
-							<Route
-								path="/fail/:jobId"
-								element={<RequireAuth><JobFail /></RequireAuth>}
-							/>
-                            <Route
-                                path="/workflows"
-                                element={<RequireAuth><Workflows /></RequireAuth>}
-                            />
-							<Route
-								path="/workflows/standard-analysis"
-								element={<RequireAuth><StandardAnalysis /></RequireAuth>}
-							/>
-							<Route
-								path="/library"
-								element={<RequireAuth><MoleculeLibrary /></RequireAuth>}
-							/>
-							<Route
-								path="/jobs/:jobId"
-								element={<RequireAuth><ViewJob /></RequireAuth>}
-							/>
-							<Route
-								path="/advanced"
-								element={<RequireAuth><AdvancedAnalysis /></RequireAuth>}
-							/>
-							<Route
-								path="/admin"
-								element={<RequireAuth><Admin /></RequireAuth>}
-							/>
-							<Route
-								path="/users"
-								element={<RequireAuth><Users /></RequireAuth>}
-							/>
-							<Route
-								path="/group"
-								element={<RequireAuth><Group /></RequireAuth>}
-							/>
-							<Route
-								path="*"
-								element={<RequireAuth><NotFound /></RequireAuth>}
-							/>
-						</Routes>
-					</MainContent>
-				</Box>
-			</DrawerProvider>
-		</BrowserRouter>
+		<DrawerProvider>
+			<Box sx={{ display: 'flex' }}>
+				<CssBaseline />
+				<MenuDrawer />
+				<MenuAppBar />
+				<MainContent>
+					<Routes>
+						<Route
+							path="/"
+							element={<RequireAuth><Home /></RequireAuth>}
+						/>
+						<Route
+							path="/result/:jobId"
+							element={<RequireAuth><ResultPage /></RequireAuth>}
+						/>
+						<Route
+							path="/fail/:jobId"
+							element={<RequireAuth><JobFail /></RequireAuth>}
+						/>
+                        <Route
+                            path="/workflows"
+                            element={<RequireAuth><Workflows /></RequireAuth>}
+                        />
+						<Route
+							path="/workflows/standard-analysis"
+							element={<RequireAuth><StandardAnalysis /></RequireAuth>}
+						/>
+						<Route
+							path="/library"
+							element={<RequireAuth><MoleculeLibrary /></RequireAuth>}
+						/>
+						<Route
+							path="/jobs/:jobId"
+							element={<RequireAuth><ViewJob /></RequireAuth>}
+						/>
+						<Route
+							path="/advanced"
+							element={<RequireAuth><AdvancedAnalysis /></RequireAuth>}
+						/>
+						<Route
+							path="/admin"
+							element={<RequireAuth><Admin /></RequireAuth>}
+						/>
+						<Route
+							path="/users"
+							element={<RequireAuth><Users /></RequireAuth>}
+						/>
+						<Route
+							path="/group"
+							element={<RequireAuth><Group /></RequireAuth>}
+						/>
+						<Route
+							path="*"
+							element={<RequireAuth><NotFound /></RequireAuth>}
+						/>
+					</Routes>
+				</MainContent>
+			</Box>
+		</DrawerProvider>
 	);
 }
 

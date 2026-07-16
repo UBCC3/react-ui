@@ -4,13 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import {
 	Box,
 	Paper,
-	Divider,
 	TablePagination,
 	Dialog,
 	Snackbar,
-    Drawer
 } from '@mui/material';
-import { blue, blueGrey, grey } from '@mui/material/colors';
+import { grey } from '@mui/material/colors';
 import { 
 	cancelJobBySlurmID,
 	getAllJobs,
@@ -22,19 +20,17 @@ import {
 	upsertCurrentUser,
 	getZipPresignedUrl
 } from '../../services/api';
-import { calculationTypes, JobStatus } from '../../constants';
-import JobsStatus from './components/JobsStatus';
+import { JobStatus } from '../../constants';
 import JobsToolbar from './components/JobsToolbar';
 import JobsTable from './components/JobsTable';
 import {
-	MolmakerPageTitle,
 	MolmakerMoleculePreview, 
 	MolmakerLoading, 
 	MolmakerAlert,
 	MolmakerConfirm
 } from '../../components/custom';
 import type { Filter, Job, Structure } from '../../types';
-import { filterJobs, reverseMapping } from '../../utils';
+import { filterJobs } from '../../utils';
 
 export default function Home() {
 	const navigate = useNavigate();
@@ -151,85 +147,94 @@ export default function Home() {
 
 	// poll statuses every 5s
 	useEffect(() => {
+        let stopped = false;
+        let id: ReturnType<typeof setInterval>;
+
 		const tick = async () => {
-		try {
-			const token = await getAccessTokenSilently();
+            if (stopped) return;
+            try {
+                const token = await getAccessTokenSilently();
 
-			// Gather all the changes we need to apply
-			const toUpdate: Array<{
-				jobId: string;
-				newStatus?: string;
-				newRuntime?: string;
-			}> = [];
+                // Gather all the changes we need to apply
+                const toUpdate: Array<{
+                    jobId: string;
+                    newStatus?: string;
+                    newRuntime?: string;
+                }> = [];
 
-			for (const job of jobsRef.current) {
-			// skip terminal jobs
-			if (
-				[JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED,
-                 JobStatus.OUT_OF_MEMORY, JobStatus.TIMEOUT]
-				.includes(job.status)
-			) {
-				continue;
-			}
+                for (const job of jobsRef.current) {
+                // skip terminal jobs
+                if (
+                    [JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED,
+                    JobStatus.OUT_OF_MEMORY, JobStatus.TIMEOUT]
+                    .includes(job.status)
+                ) {
+                    continue;
+                }
 
-			// fetch latest from backend
-			const resp = await getJobStatusBySlurmID(job.slurm_id!, token);
-			if (resp.error) {
-				console.warn(`Failed to fetch status for job ${job.job_id}:`, resp.error);
-				continue; // skip this job if there's an error
-			}
-			const fetchedStatus = resp.data.state;
-			const fetchedRuntime = resp.data.elapsed;
+                // fetch latest from backend
+                const resp = await getJobStatusBySlurmID(job.slurm_id!, token);
+                if (resp.error) {
+                    console.warn(`Failed to fetch status for job ${job.job_id}:`, resp.error);
+                    continue; // skip this job if there's an error
+                }
+                const fetchedStatus = resp.data.state;
+                const fetchedRuntime = resp.data.elapsed;
 
-			// if anything changed, queue it up
-			if (
-				fetchedStatus !== job.status ||
-				fetchedRuntime !== job.runtime
-			) {
-				toUpdate.push({
-					jobId: job.job_id,
-					newStatus: fetchedStatus,
-					newRuntime: fetchedRuntime,
-				});
-			}
-			}
+                // if anything changed, queue it up
+                if (
+                    fetchedStatus !== job.status ||
+                    fetchedRuntime !== job.runtime
+                ) {
+                    toUpdate.push({
+                        jobId: job.job_id,
+                        newStatus: fetchedStatus,
+                        newRuntime: fetchedRuntime,
+                    });
+                }
+                }
 
-			if (toUpdate.length === 0) {
-				return; // nothing to do
-			}
+                if (toUpdate.length === 0) {
+                    return; // nothing to do
+                }
 
-			// Apply updates on the server one by one (or you could Promise.all)
-			await Promise.all(
-				toUpdate.map(({ jobId, newStatus, newRuntime }) =>
-					updateJob(jobId ?? '', newStatus ?? '', newRuntime ?? '', user?.sub ?? '', token)
-				)
-			);
+                // Apply updates on the server one by one (or you could Promise.all)
+                await Promise.all(
+                    toUpdate.map(({ jobId, newStatus, newRuntime }) =>
+                        updateJob(jobId ?? '', newStatus ?? '', newRuntime ?? '', user?.sub ?? '', token)
+                    )
+                );
 
-			// And mirror them in local state
-			setJobs((prev) =>
-			prev.map((j) => {
-				const upd = toUpdate.find((u) => u.jobId === j.job_id);
-				return upd
-				? {
-					...j,
-					status:  upd.newStatus  ?? j.status,
-					runtime: upd.newRuntime ?? j.runtime,
-					}
-				: j;
-			})
-			);
-		} catch (err: any) {
-			console.error("Polling error:", err);
-			setError("Failed to refresh job statuses.");
-		}
+                // And mirror them in local state
+                setJobs((prev) =>
+                prev.map((j) => {
+                    const upd = toUpdate.find((u) => u.jobId === j.job_id);
+                    return upd
+                    ? {
+                        ...j,
+                        status:  upd.newStatus  ?? j.status,
+                        runtime: upd.newRuntime ?? j.runtime,
+                        }
+                    : j;
+                })
+                );
+            } catch (err: any) {
+                console.error("Polling error:", err);
+                if (err?.error === 'login_required' || err?.error === 'consent_required') {
+                    stopped = true;
+                    clearInterval(id);
+                    return;
+                }
+                setError("Failed to refresh job statuses.");
+            }
 		};
 
-		// start pool
-		const id = setInterval(tick, 5000);
+		// start poll
+		id = setInterval(tick, 5000);
 		// run immediately once
 		tick();
 
-		return () => clearInterval(id);
+		return () => {stopped = true; clearInterval(id); };
 	}, [getAccessTokenSilently]);
 
 	// load jobs & structures

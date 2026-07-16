@@ -1,32 +1,63 @@
+import { ReactNode, useEffect, useRef } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import MolmakerLoading from "./custom/MolmakerLoading";
+import { useLocation } from "react-router-dom";
+
+type RequireAuthProps = {
+    children: ReactNode;
+};
 
 /**
- * Protects routes that should only be accessible to authenticated users.
- * 
- * This component checks the Auth0 authentication state before rendering
- * the protected page content.
- * 
- * Behaviour:
- * - Shows a loading screen while Auth0 is still checking the session
- * - Redirects unauthenticated users to the Auth0 login page
- * - Renders the protected child components once the user is authenticated
+ * Protects pages that require an authenticated user.
+ *
+ * While Auth0 checks the session, a loading screen is displayed.
+ * Unauthenticated users are redirected to Auth0 and returned to
+ * their original page after signing in.
  */
-const RequireAuth = ({ children }) => {
-	const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0();
+const RequireAuth = ({ children }: RequireAuthProps) => {
+    const {
+        isAuthenticated,
+        isLoading,
+        loginWithRedirect,
+    } = useAuth0();
 
-	if (isLoading) {
-		return (
-			<MolmakerLoading />
-		);
-	}
+    const location = useLocation();
+    const redirectStarted = useRef(false);
 
-	if (!isAuthenticated) {
-		loginWithRedirect();
-		return null;
-	}
+    const returnTo = location.pathname + location.search;
 
-	return children;
+    useEffect(() => {
+        if (
+            isLoading ||
+            isAuthenticated ||
+            redirectStarted.current
+        ) {
+            return;
+        }
+
+        redirectStarted.current = true;
+
+        void loginWithRedirect({
+            appState: {
+                returnTo,
+            },
+        }).catch((error) => {
+            // Allow another attempt if starting the Auth0 redirect failed.
+            redirectStarted.current = false;
+            console.error("Unable to start Auth0 login redirect", error);
+        });
+    }, [
+        isLoading,
+        isAuthenticated,
+        loginWithRedirect,
+        returnTo,
+    ]);
+
+    if (isLoading || !isAuthenticated) {
+        return <MolmakerLoading />;
+    }
+
+    return children;
 };
 
 export default RequireAuth;
