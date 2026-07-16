@@ -15,7 +15,7 @@ import MainContent from './components/MainContent';
 import { DrawerProvider } from './components/DrawerContext';
 import ResultPage from "./pages/ResultPage";
 import JobFail from "./pages/JobFail";
-import { Box, CssBaseline, Typography } from '@mui/material';
+import { Box, CssBaseline } from '@mui/material';
 import { useAuth0 } from '@auth0/auth0-react';
 import Users from './pages/Users';
 import Workflows from './pages/SubmitJob/Workflows';

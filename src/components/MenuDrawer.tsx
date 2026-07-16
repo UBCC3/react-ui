@@ -7,7 +7,6 @@ import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftOutlinedIcon from '@mui/icons-material/ChevronLeftOutlined';
 import {
 	Collapse,
-	Divider, 
 	List, 
 	ListItemButton, 
 	ListItemIcon,
@@ -21,6 +20,7 @@ import { useDrawer } from './DrawerContext';
 import { useAuth0 } from '@auth0/auth0-react';
 import { upsertCurrentUser } from '../services/api';
 import { blue, grey } from '@mui/material/colors';
+import { APP_BAR_HEIGHT } from '../constants';
 
 // Opened drawer width in pixels
 const DRAWER_WIDTH  = 250;
@@ -33,7 +33,7 @@ const CLOSED_WIDTH  = 56;
  * This expands the drawer to the normal drawer width and applies
  * the opening transition animation from the Material UI theme.
  */
-const openedMixin = (theme) => ({
+const openedMixin = (theme: any) => ({
 	width: DRAWER_WIDTH,
 	transition: theme.transitions.create('width', {
 		easing  : theme.transitions.easing.sharp,
@@ -48,7 +48,7 @@ const openedMixin = (theme) => ({
  * This shrinks the drawer to the compact icon-only width and applies
  * the closing transition animation from the Material UI theme
  */
-const closedMixin = (theme) => ({
+const closedMixin = (theme: any) => ({
 	width: CLOSED_WIDTH,
 	transition: theme.transitions.create('width', {
 		easing  : theme.transitions.easing.sharp,
@@ -140,7 +140,7 @@ export default function MenuDrawer() {
      */
 	const drawerContent = (
 		<Box className="bg-slate-200 h-full">
-			<DrawerHeader sx={{ justifyContent: open ? 'space-between' : 'center', paddingLeft: open ? 2: 0, borderBottom: '1px solid', borderColor: 'divider', height: '65px' }}>
+			<DrawerHeader sx={{ justifyContent: open ? 'space-between' : 'center', paddingLeft: open ? 2: 0, borderBottom: '1px solid', borderColor: 'divider', height: `${APP_BAR_HEIGHT}px` }}>
 				{open && (
 					<Typography
 						variant="h6"

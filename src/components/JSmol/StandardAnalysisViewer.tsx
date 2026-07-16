@@ -1,22 +1,18 @@
 import {
-	Box, Chip,
-	Grid,
+	Box,
 	Tab,
 	Tabs,
 } from "@mui/material";
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import {Job, JobResult} from "../../types";
-import React, {lazy, Suspense, useEffect, useState} from "react";
+import React, {useEffect, useState} from "react";
 import {fetchRawFileFromS3Url} from "./util";
 import MolmakerLoading from "../custom/MolmakerLoading";
-import {MolmakerPageTitle} from "../custom";
-
-// Lazy-load result viewer components so the standard analysis page only loads
-// each heavy JSmol viewer when its tab is rendered.
-const OptimizationViewer = lazy(() => import('./OptimizationViewer'));
-const VibrationViewer = lazy(() => import('./VibrationViewer'));
-const OrbitalViewer = lazy(() => import('./OrbitalViewer'));
+import JobResultHeader from "./JobResultHeader";
+import OptimizationViewer from "./OptimizationViewer";
+import VibrationViewer from "./VibrationViewer";
+import OrbitalViewer from "./OrbitalViewer";
 
 /**
  * Generate accessibility props for a Material UI Tab.
@@ -151,39 +147,11 @@ const StandardAnalysisViewer: React.FC<StandardAnalysisViewerProp> = ({
 		}
 	}
 
-    /**
-     * Convert the backend calculation type value into a user-facing label.
-     */
-	const renderCalculationType = (type: string) => {
-		switch (type) {
-			case "standard":
-				return "Standard Analysis";
-			case "optimization":
-				return "Geometric Optimization";
-			case "frequency":
-				return "Vibration Frequency";
-			case "orbitals":
-				return "Molecular Orbital";
-			case "energy":
-				return "Molecular Energy";
-		}
-
-	}
-
 	if (loading) { return (<MolmakerLoading />); }
 
 	return (
 		<Box>
-			<Box>
-				<MolmakerPageTitle title={job.job_name} subtitle={renderCalculationType(job.calculation_type)} removeBottomPadding={true} />
-				{job.tags.map((tag, index) => (
-					<Chip
-						key={`simple-tab-${index}`}
-						label={tag}
-						variant="outlined"
-					/>
-				))}
-			</Box>
+            <JobResultHeader job={job} />
 			<Box sx={{ borderBottom: 1, borderColor: 'divider', m: 0, p: 0 }}>
 				<Tabs
 					value={currentTab}
@@ -225,34 +193,28 @@ const StandardAnalysisViewer: React.FC<StandardAnalysisViewerProp> = ({
 				</Tabs>
 			</Box>
 			<CustomTabPanel value={currentTab} index={ResultTab.optimization}>
-				<Suspense fallback={<MolmakerLoading />}>
-					<OptimizationViewer
-						job={job}
-						jobResultFiles={jobResultFiles}
-						setError={setError}
-						viewerObjId={"JSmolSAOptimizationViewer"}
-					/>
-				</Suspense>
+				<OptimizationViewer
+					job={job}
+					jobResultFiles={jobResultFiles}
+					setError={setError}
+					viewerObjId={"JSmolSAOptimizationViewer"}
+				/>
 			</CustomTabPanel>
 			<CustomTabPanel value={currentTab} index={ResultTab.frequency}>
-				<Suspense fallback={<MolmakerLoading />}>
-					<VibrationViewer
-						job={job}
-						jobResultFiles={jobResultFiles}
-						setError={setError}
-						viewerObjId={"JSmolSAVibrationViewer"}
-					/>
-				</Suspense>
+				<VibrationViewer
+					job={job}
+					jobResultFiles={jobResultFiles}
+					setError={setError}
+					viewerObjId={"JSmolSAVibrationViewer"}
+				/>
 			</CustomTabPanel>
 			<CustomTabPanel value={currentTab} index={ResultTab.orbitals}>
-				<Suspense fallback={<MolmakerLoading />}>
-					<OrbitalViewer
-						job={job}
-						jobResultFiles={jobResultFiles}
-						setError={setError}
-						viewerObjId={"JSmolSAVibrationViewer"}
-					/>
-				</Suspense>
+				<OrbitalViewer
+					job={job}
+					jobResultFiles={jobResultFiles}
+					setError={setError}
+					viewerObjId={"JSmolSAVibrationViewer"}
+				/>
 			</CustomTabPanel>
 		</Box>
 	);
