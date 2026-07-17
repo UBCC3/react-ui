@@ -1,4 +1,4 @@
-import React, { use } from "react";
+import React from "react";
 import {
 	TableContainer,
 	Table,
@@ -6,21 +6,10 @@ import {
 	TableRow,
 	TableCell,
 	TableBody,
-	Chip,
-	Box,
-	Typography,
 	Button,
-	Grid,
 } from "@mui/material";
-import {
-	ArrowDropUpOutlined,
-	ArrowDropDownOutlined,
-	AutoMode,
-	TuneOutlined,
-} from "@mui/icons-material";
-import { statusColors } from "../../../constants";
 import { blueGrey } from "@mui/material/colors";
-import type { Job, User } from "../../../types";
+import type { User } from "../../../types";
 import { getAllUsers } from "../../../services/api";
 import { useEffect } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
@@ -34,7 +23,7 @@ import { useAuth0 } from "@auth0/auth0-react";
  * - Displaying user account information in a table
  * - Showing placeholder action buttons for editing and deleting users
  */
-export default function AdminUsersTable({}) {
+export default function AdminUsersTable() {
 	const { getAccessTokenSilently } = useAuth0();
 	const [users, setUsers] = React.useState<User[]>([]);
 

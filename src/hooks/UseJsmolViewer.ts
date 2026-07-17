@@ -89,7 +89,9 @@ export function useJsmolViewer({
 						`!exit; spin off; animation off; set refreshing off;`,
 					);
 				}
-			} catch {}
+			} catch {
+                // Ignore Jmol script errors during cleanup; teardown below runs regardless.
+            }
 			if (viewerRef.current) viewerRef.current.innerHTML = "";
 			appletRef.current = null;
 			setViewerObj(null);

@@ -86,7 +86,6 @@ function CustomTabPanel(props: TabPanelProps) {
 const StandardAnalysisViewer: React.FC<StandardAnalysisViewerProp> = ({
 	job,
 	jobResultFiles,
-	viewerObjId,
 	setError,
 }) => {
 	const [loading, setLoading] = useState<boolean>(true);

@@ -117,9 +117,6 @@ export const getAllGroups = async (token: any): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
 		const res = await API.get("/admin/groups/");
-		for (const group of res.data) {
-			const members = group.members || [];
-		}
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error("Failed to fetch groups", error);
@@ -450,7 +447,7 @@ function dataURLToBlob(dataURL) {
 	const parts = dataURL.split(",");
 	const mime = parts[0].match(/:(.*?);/)[1];
 	const binary = atob(parts[1]);
-	let array = new Uint8Array(binary.length);
+	const array = new Uint8Array(binary.length);
 	for (let i = 0; i < binary.length; i++) {
 		array[i] = binary.charCodeAt(i);
 	}

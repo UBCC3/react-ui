@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { Paper, Typography, Divider, Box, Skeleton, SxProps, Theme } from "@mui/material";
-import { blue, blueGrey, grey } from "@mui/material/colors";
+import { blue, grey } from "@mui/material/colors";
 import { Atom } from "lucide-react";
 import { BorderTopRounded } from "@mui/icons-material";
 

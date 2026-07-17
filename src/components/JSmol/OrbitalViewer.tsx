@@ -100,7 +100,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 
 	// add-to-library dialog state
 	const [addDialogOpen, setAddDialogOpen] = useState(false);
-	const [options, setOptions] = useState<string[]>([]);
+    const options: string[] = [];
 	const [moleculeName, setMoleculeName] = useState("");
 	const [chemicalFormula, setChemicalFormula] = useState("");
 	const [moleculeNotes, setMoleculeNotes] = useState("");
@@ -164,13 +164,6 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	 */
 	const onMoleculeNotesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		setMoleculeNotes(event.target.value);
-	};
-
-	/**
-	 * Update the selected free-form structure tags
-	 */
-	const onStructureTagsChange = (event: React.ChangeEvent<{}>, value: string[]) => {
-		setStructureTags(value);
 	};
 
 	// Render the selected molecular orbital whenever the orbital or display mode changes

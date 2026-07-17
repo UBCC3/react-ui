@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { Scatter } from "react-chartjs-2";
 import {
 	Chart as ChartJS,

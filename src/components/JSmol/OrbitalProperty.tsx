@@ -12,7 +12,7 @@ import {
 	RadioGroup,
 	Radio,
 } from "@mui/material";
-import { blue, blueGrey, grey } from "@mui/material/colors";
+import { blueGrey, grey } from "@mui/material/colors";
 import React, { useEffect, useState } from "react";
 import { Orbital } from "../../types";
 
@@ -53,9 +53,10 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({
 	setShowIsosurface,
 }) => {
 	const [propertyOption, setPropertyOption] = useState<false | propertiesOptions>(false);
-	const [cutoff, setCutoff] = useState<number>(0.02);
-	const [translucent, setTranslucent] = useState<number>(0.5);
 	const [showMolecule, setShowMolecule] = useState(true);
+    // TODO: possibly convert to useState to allow user value adjustment
+    const cutoff = 0.02;
+    const translucent = 0.5;
 
 	// slice plane
 	const [sliceShow, setSliceShow] = useState<boolean>(false);
@@ -217,7 +218,7 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({
 							control={
 								<Radio
 									checked={meshOrFill === "fill"}
-									onChange={(_, checked) => setMeshOrFill("fill")}
+									onChange={() => setMeshOrFill("fill")}
 								/>
 							}
 							label="Orbital Shape: Fill"
@@ -226,7 +227,7 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({
 							control={
 								<Radio
 									checked={meshOrFill === "mesh"}
-									onChange={(_, checked) => setMeshOrFill("mesh")}
+									onChange={() => setMeshOrFill("mesh")}
 								/>
 							}
 							label="Mesh"

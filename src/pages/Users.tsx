@@ -42,7 +42,6 @@ import {
 	Typography,
 } from "@mui/material";
 import {
-	CancelOutlined,
 	DeleteOutlined,
 	EditOutlined,
 	ExpandMore,
@@ -53,8 +52,8 @@ import {
 	ManageAccountsOutlined,
 } from "@mui/icons-material";
 import { MolmakerPageTitle } from "../components/custom";
-import { Group, Job, User } from "../types";
-import { green, red, blue, blueGrey, grey } from "@mui/material/colors";
+import { Group, User } from "../types";
+import { green, red, blue, grey } from "@mui/material/colors";
 import { UserRound, UserRoundPen, UserRoundX, UsersRound } from "lucide-react";
 
 /**
@@ -150,8 +149,6 @@ const Users = () => {
 	const [users, setUsers] = useState<User[]>([]);
 	// Stores all groups returned from the backend.
 	const [groups, setGroups] = useState<Group[]>([]);
-	// Stores all jobs, used to calculate each user's job count.
-	const [jobs, setJobs] = useState<Job[]>([]);
 
 	// Stores the current search keyword for filtering users.
 	const [keyword, setKeyword] = useState("");
@@ -196,9 +193,8 @@ const Users = () => {
 				// Fetch all users and jobs for the management view.
 				const userResponse = await getAllUsers(token);
 				const jobResponse = await getAllJobs(token);
-				setJobs(jobResponse.data);
 
-				// Add derived fields to each user for easier rendering.
+                // Add derived fields to each user for easier rendering.
 				setUsers(
 					userResponse.data.map((user) => ({
 						...user,

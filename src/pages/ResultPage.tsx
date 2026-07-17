@@ -16,7 +16,6 @@ import {
 	EnergyViewer,
 } from "../components/JSmol";
 import { DrawerWidthProvider, useDrawerWidth } from "../contexts/DrawerWidthContext";
-import { useJobResult } from "../hooks/UseJobResult";
 import JobResultHeader from "../components/JSmol/JobResultHeader";
 
 const ResultPage = () => {

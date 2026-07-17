@@ -1,4 +1,3 @@
-import React from "react";
 import { Grid, Typography, Box } from "@mui/material";
 
 /**
@@ -13,7 +12,7 @@ const MolmakerPageTitle = ({ title, subtitle, removeBottomPadding = false }) => 
 	return (
 		<Box
 			sx={{
-				mb: 3,
+				mb: removeBottomPadding ? 0 : 3,
 			}}
 		>
 			<Grid

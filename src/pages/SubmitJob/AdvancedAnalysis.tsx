@@ -38,7 +38,6 @@ import {
 	createJob,
 	AddAndUploadStructureToS3,
 	getStructuresTags,
-	getOptimizationTypes,
 } from "../../services/api";
 import { Structure } from "../../types";
 import { submitAdvancedAnalysis, getChemicalFormula } from "../../services/api";

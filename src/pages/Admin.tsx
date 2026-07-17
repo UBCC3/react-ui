@@ -1,23 +1,21 @@
-import React, { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate } from "react-router-dom";
 import { Box, Paper, TablePagination, Dialog, Snackbar } from "@mui/material";
-import { blueGrey, grey, blue } from "@mui/material/colors";
+import { grey } from "@mui/material/colors";
 import {
 	cancelJobBySlurmID,
 	adminGetAllJobs,
 	getJobStatusBySlurmID,
 	getLibraryStructures,
-	getStructureDataFromS3,
 	updateJob,
 	deleteJob,
 	getZipPresignedUrl,
 } from "../services/api";
-import { calculationTypes, JobStatus } from "../constants";
+import { JobStatus } from "../constants";
 import JobsToolbar from "./Home/components/JobsToolbar";
 import {
 	MolmakerPageTitle,
-	MolmakerMoleculePreview,
 	MolmakerLoading,
 	MolmakerAlert,
 	MolmakerConfirm,
@@ -29,7 +27,7 @@ import { filterJobs } from "../utils";
 export default function Admin() {
 	// used to redirect the user after the job is successfully submitted
 	const navigate = useNavigate();
-	const { user, getAccessTokenSilently } = useAuth0();
+	const { getAccessTokenSilently } = useAuth0();
 
 	// confirm delete job
 	const [openConfirmDelete, setOpenConfirmDelete] = useState<boolean>(false);
@@ -41,18 +39,13 @@ export default function Admin() {
 
 	// UI state
 	const [error, setError] = useState<string | null>(null);
-	const [open, setOpen] = useState<boolean>(false);
 	const [page, setPage] = useState<number>(0);
 	const [rowsPerPage, setRowsPerPage] = useState<number>(5);
 	const [loading, setLoading] = useState<boolean>(true);
-	const [structureLoading, setStructureLoading] = useState<boolean>(false);
 
 	// selection
 	const [selectedJobId, setSelectedJobId] = useState<string>("");
 	const [filterStructureId, setFilterStructureId] = useState<string>("");
-
-	// preview state
-	const [previewData, setPreviewData] = useState<string>("");
 
 	// sorting
 	const [order, setOrder] = useState<"asc" | "desc">("desc");
@@ -70,9 +63,6 @@ export default function Admin() {
 	const [filters, setFilters] = useState<Filter[]>([
 		{ column: "job_name", value: "", extent: "contains" },
 	]);
-
-	// stores the Auth0 access token passed down to admin-related child components.
-	const [adminPanelToken, setAdminPanelToken] = useState<string | null>(null);
 
 	// map column name to display name
 	const columnDisplayNames: Record<any, string> = {
@@ -113,13 +103,6 @@ export default function Admin() {
 	useEffect(() => {
 		jobsRef.current = jobs;
 	}, [jobs]);
-
-	// Store token for AdminGroupPanel
-	useEffect(() => {
-		getAccessTokenSilently()
-			.then(setAdminPanelToken)
-			.catch(() => setAdminPanelToken(null));
-	}, [getAccessTokenSilently]);
 
 	// applying the filter to the jobs
 	const handleFilterSubmit = () => {
@@ -286,34 +269,6 @@ export default function Admin() {
 			setLoading(false);
 		}
 	}, [filterStructureId, jobs]);
-
-	// Loads molecule data for a selected structure and displays it in the preview area.
-	const openMoleculeViewer = async (structureId: string) => {
-		console.log("Opening molecule viewer for structure ID:", structureId);
-		setStructureLoading(true);
-		setError(null);
-
-		try {
-			const token = await getAccessTokenSilently();
-
-			// Fetch the structure file contents from S3 through the backend.
-			const response = await getStructureDataFromS3(structureId, token);
-			if (response.error) {
-				setError("Failed to load molecule structure. Please try again.");
-				return;
-			}
-
-			// Store the molecule data so MolmakerMoleculePreview can render it.
-			setPreviewData(response.data);
-			setError(null);
-			// setOpen(true);
-		} catch (err) {
-			setError("Failed to load molecule structure. Please try again.");
-			console.error("Failed to load molecule structure:", err);
-		} finally {
-			setStructureLoading(false);
-		}
-	};
 
 	// Refreshes jobs from the backend and clears the active structure filter.
 	const handleRefresh = async () => {
@@ -558,19 +513,6 @@ export default function Admin() {
 			{/* Show a page-level error alert when a general error exists. */}
 			{error && <MolmakerAlert text={error} severity="error" outline="error" sx={{ mb: 4 }} />}
 
-			{/* Structure Preview Dialog */}
-			<Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
-				<Box sx={{ width: "100%", height: 400 }}>
-					<MolmakerMoleculePreview
-						data={previewData}
-						format="xyz"
-						source="library"
-						title="Structure Preview"
-						sx={{ width: "100%", height: "100%" }}
-					/>
-				</Box>
-			</Dialog>
-
 			{/* Confirmation dialog shown before permanently deleting a job */}
 			<MolmakerConfirm
 				open={openConfirmDelete}
@@ -615,13 +557,6 @@ export default function Admin() {
 				<JobsToolbar
 					selectedJobId={selectedJobId}
 					onViewDetails={() => navigate(`/jobs/${selectedJobId}`)}
-					onViewStructure={() => {
-						// Preview the first structure attached to the selected job.
-						const job = filteredJobs.find((j) => j.job_id === selectedJobId);
-						if (job?.structures.length) {
-							openMoleculeViewer(job.structures[0].structure_id);
-						}
-					}}
 					onFilterByStructure={() => {
 						// Filter the table by the first structure attached to the selected job.
 						const job = filteredJobs.find((j) => j.job_id === selectedJobId);
@@ -629,10 +564,6 @@ export default function Admin() {
 							setFilterStructureId(job.structures[0].structure_id);
 						}
 					}}
-					viewStructureDisabled={
-						!selectedJobId ||
-						!filteredJobs.find((j) => j.job_id === selectedJobId)?.structures.length
-					}
 					cancelDisabled={cancelDisabled}
 					deleteDisabled={deleteDisabled}
 					onCancelJob={handleCancel}

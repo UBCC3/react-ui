@@ -21,7 +21,7 @@ import {
 } from "@mui/material";
 import { Refresh, VisibilityOutlined, DeleteOutlineOutlined, Add } from "@mui/icons-material";
 import { ArrowUpAZ, ArrowDownAZ } from "lucide-react";
-import { blueGrey, grey, blue } from "@mui/material/colors";
+import { grey, blue } from "@mui/material/colors";
 import { MolmakerPageTitle, MolmakerLoading, MolmakerConfirm } from "../components/custom";
 import { getLibraryStructures, deleteStructure } from "../services/api";
 import type { Structure } from "../types";
@@ -39,7 +39,6 @@ const MoleculeLibrary = () => {
 	const [openConfirmDelete, setOpenConfirmDelete] = useState<boolean>(false);
 
 	// state for user experience
-	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState<boolean>(true);
 	const [order, setOrder] = useState<"asc" | "desc">("desc");
 	const [orderBy, setOrderBy] = useState<keyof Structure>("uploaded_at");
@@ -58,9 +57,7 @@ const MoleculeLibrary = () => {
 			const response = await getLibraryStructures(token);
 			setLibraryStructures(response.data);
 			setSelectedStructureId("");
-			setError(null);
 		} catch (err) {
-			setError("Failed to refresh molecules. Please try again later.");
 			console.error("Failed to refresh jobs", err);
 		} finally {
 			setLoading(false);
@@ -85,11 +82,7 @@ const MoleculeLibrary = () => {
 
 			// Clear the selection after deletion.
 			setSelectedStructureId("");
-
-			// Clear any old error message once deletion succeeds.
-			setError(null);
 		} catch (err) {
-			setError("Failed to delete molecule. Please try again later.");
 			console.error("Failed to delete molecule", err);
 		}
 	};
@@ -118,7 +111,6 @@ const MoleculeLibrary = () => {
 					})),
 				);
 			} catch (err) {
-				setError("Failed to fetch molecules. Please try again later.");
 				console.error("Failed to fetch jobs", err);
 			} finally {
 				setLoading(false);

@@ -5,7 +5,6 @@ import {
 	Box,
 	IconButton,
 	Tooltip,
-	Divider,
 	FormControl,
 	InputLabel,
 	Select,
@@ -14,11 +13,8 @@ import {
 import {
 	Refresh,
 	VisibilityOutlined,
-	PhotoOutlined,
 	FilterList,
 	Block,
-	AutoMode,
-	TuneOutlined,
 	DeleteOutlineOutlined,
 	WorkHistoryOutlined,
 	ArchiveOutlined,
@@ -39,9 +35,7 @@ interface JobsToolbarProps {
 	title?: string;
 	selectedJobId: string | null;
 	onViewDetails: () => void;
-	onViewStructure: () => void;
 	onFilterByStructure: () => void;
-	viewStructureDisabled: boolean;
 	cancelDisabled: (selectedJobId: string | null) => boolean;
 	deleteDisabled: (selectedJobId: string | null) => boolean;
 	onCancelJob: () => void;
@@ -82,9 +76,7 @@ export default function JobsToolbar({
 	title = "Jobs History",
 	selectedJobId,
 	onViewDetails,
-	onViewStructure,
 	onFilterByStructure,
-	viewStructureDisabled,
 	cancelDisabled,
 	deleteDisabled,
 	onCancelJob,
@@ -177,13 +169,6 @@ export default function JobsToolbar({
 								</IconButton>
 							</span>
 						</Tooltip>
-						{/* <Tooltip title="View structures">
-                            <span>
-                                <IconButton disabled={viewStructureDisabled} onClick={onViewStructure}>
-                                    <PhotoOutlined />
-                                </IconButton>
-                            </span>
-                        </Tooltip> */}
 						<Tooltip title="Filter jobs with same structure">
 							<span>
 								<IconButton disabled={!selectedJobId} onClick={onFilterByStructure}>

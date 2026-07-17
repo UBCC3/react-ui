@@ -1,4 +1,3 @@
-import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Home from "./pages/Home/Home";
 import StandardAnalysis from "./pages/SubmitJob/StandardAnalysis";
@@ -16,13 +15,10 @@ import { DrawerProvider } from "./components/DrawerContext";
 import ResultPage from "./pages/ResultPage";
 import JobFail from "./pages/JobFail";
 import { Box, CssBaseline } from "@mui/material";
-import { useAuth0 } from "@auth0/auth0-react";
 import Users from "./pages/Users";
 import Workflows from "./pages/SubmitJob/Workflows";
 
 function App() {
-	const { user } = useAuth0();
-
 	return (
 		<DrawerProvider>
 			<Box sx={{ display: "flex" }}>

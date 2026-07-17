@@ -28,9 +28,6 @@ import { Edit, Close, Save } from "@mui/icons-material";
  */
 const MoleculeInfo = ({ open, setOpen, selectedStructureId, onStructureUpdated }) => {
 	const [isEditing, setIsEditing] = useState<boolean>(false);
-	const [state, setState] = useState({
-		right: false,
-	});
 	const [structureData, setStructureData] = useState<string>("");
 	const [structureName, setStructureName] = useState<string>("");
 	const [chemicalFormula, setChemicalFormula] = useState<string>("");
@@ -120,32 +117,6 @@ const MoleculeInfo = ({ open, setOpen, selectedStructureId, onStructureUpdated }
 			setStructureData("");
 		}
 	}, [selectedStructureId]);
-
-	/**
-	 * Creates a drawer toggle handler for opening or closing the molecule info drawer.
-	 *
-	 * The returned handler ignores Tab and Shift keydown events so keyboard navigation
-	 * does not accidentally close or open the drawer.
-	 *
-	 * When the drawer opens or closes, edit mode is also reset to false.
-	 */
-	const toggleDrawer =
-		(anchor: "right", open: boolean) => (event: React.KeyboardEvent | React.MouseEvent) => {
-			if (
-				(event.type === "keydown" && (event as React.KeyboardEvent).key === "Tab") ||
-				(event as React.KeyboardEvent).key === "Shift"
-			) {
-				return;
-			}
-			setOpen(open);
-			if (open) {
-				setState({ ...state, [anchor]: true });
-				setIsEditing(false);
-			} else {
-				setState({ ...state, [anchor]: false });
-				setIsEditing(false);
-			}
-		};
 
 	/**
 	 * Saves the edited structure information to the backend

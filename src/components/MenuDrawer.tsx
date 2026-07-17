@@ -116,7 +116,6 @@ export default function MenuDrawer() {
 	const { open, toggle } = useDrawer();
 	const navigate = useNavigate();
 	const location = useLocation();
-	const [selectedIndex, setSelectedIndex] = React.useState(0);
 	const [role, setRole] = React.useState("");
 	const [groupId, setGroupId] = React.useState("");
 	const [expanded, setExpanded] = React.useState(false);
@@ -202,12 +201,11 @@ export default function MenuDrawer() {
 						icon: <CollectionsOutlined />,
 						path: "/library",
 					},
-				].map(({ text, icon, path }, idx) => (
+				].map(({ text, icon, path }) => (
 					<ListItemButton
 						key={text}
 						selected={location.pathname === path}
 						onClick={() => {
-							setSelectedIndex(idx);
 							navigate(path);
 						}}
 						sx={{
@@ -233,7 +231,6 @@ export default function MenuDrawer() {
 							key={"my-group"}
 							selected={location.pathname === "/group"}
 							onClick={() => {
-								setSelectedIndex(4);
 								navigate("/group");
 							}}
 							sx={{
@@ -260,7 +257,6 @@ export default function MenuDrawer() {
 							key={"admin-panel"}
 							selected={location.pathname === "/admin"}
 							onClick={() => {
-								setSelectedIndex(5);
 								navigate("/admin");
 							}}
 							sx={{
@@ -304,7 +300,6 @@ export default function MenuDrawer() {
 										key={"admin-panel"}
 										selected={location.pathname === "/users"}
 										onClick={() => {
-											setSelectedIndex(6);
 											navigate("/users");
 										}}
 										sx={{

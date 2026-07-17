@@ -1,31 +1,29 @@
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate } from "react-router-dom";
-import { Box, Paper, Divider, TablePagination, Snackbar } from "@mui/material";
-import { blue, blueGrey, grey } from "@mui/material/colors";
+import { Box, Paper, TablePagination, Snackbar } from "@mui/material";
+import { grey } from "@mui/material/colors";
 import {
 	cancelJobBySlurmID,
 	getJobStatusBySlurmID,
 	getLibraryStructures,
-	getStructureDataFromS3,
 	updateJob,
 	deleteJob,
 	getCurrentUserGroupJobs,
 	upsertCurrentUser,
 	getZipPresignedUrl,
 } from "../services/api";
-import { calculationTypes, JobStatus } from "../constants";
+import { JobStatus } from "../constants";
 import JobsToolbar from "./Home/components/JobsToolbar";
 import {
 	MolmakerPageTitle,
-	MolmakerMoleculePreview,
 	MolmakerAlert,
 	MolmakerConfirm,
 } from "../components/custom";
 import type { Filter, Job, Structure } from "../types";
 import GroupPanel from "../components/GroupPanel";
 import GroupJobsTable from "./Home/components/GroupJobsTable";
-import { filterJobs, reverseMapping } from "../utils";
+import { filterJobs } from "../utils";
 
 export default function Group() {
 	// map column name to display name
@@ -71,14 +69,12 @@ export default function Group() {
 
 	// UI states
 	const [loading, setLoading] = useState(true);
-	const [structureLoading, setStructureLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [page, setPage] = useState(0);
 	const [rowsPerPage, setRowsPerPage] = useState(5);
 
 	// Selection & preview
 	const [selectedJobId, setSelectedJobId] = useState<string>("");
-	const [previewData, setPreviewData] = useState<string>("");
 
 	// Filters
 	const [filterStructureId, setFilterStructureId] = useState<string>("");
@@ -173,7 +169,6 @@ export default function Group() {
 
 	// Poll job statuses every 5s
 	useEffect(() => {
-		let id: ReturnType<typeof setInterval>;
 		const tick = async () => {
 			try {
 				const token = await getAccessTokenSilently();
@@ -238,7 +233,7 @@ export default function Group() {
 
 		// Run immediately, then continue polling every 5 seconds.
 		tick();
-		id = setInterval(tick, 5000);
+		const id = setInterval(tick, 5000);
 
 		// Stop polling when the component unmounts.
 		return () => clearInterval(id);
@@ -248,33 +243,6 @@ export default function Group() {
 	const handleFilterSubmit = () => {
 		setFilteredJobs(filterJobs(jobsRef.current, filters));
 		setPage(0);
-	};
-
-	// Loads molecule structure data from S3 and displays it in the preview component.
-	const openMoleculeViewer = async (structureId: string) => {
-		console.log("Opening molecule viewer for structure ID:", structureId);
-		setStructureLoading(true);
-		setError(null);
-
-		try {
-			const token = await getAccessTokenSilently();
-
-			// Retrieve the molecule file data through the backend
-			const response = await getStructureDataFromS3(structureId, token);
-			if (response.error) {
-				setError("Failed to load molecule structure. Please try again.");
-				return;
-			}
-
-			// Store the molecule data so the preview component can render it.
-			setPreviewData(response.data);
-			setError(null);
-		} catch (err) {
-			setError("Failed to load molecule structure. Please try again.");
-			console.error("Failed to load molecule structure:", err);
-		} finally {
-			setStructureLoading(false);
-		}
 	};
 
 	// Refreshes group jobs from the backend and clears the active structure filter
@@ -511,13 +479,6 @@ export default function Group() {
 		return false;
 	};
 
-	// Confirmation & alert helpers
-	const showAlert = (msg: string, sev: typeof alertSeverity) => {
-		setAlertMsg(msg);
-		setAlertSeverity(sev);
-		setAlertShow(true);
-	};
-
 	// Opens the delete confirmation dialog.
 	const confirmDelete = () => setConfirmDeleteOpen(true);
 
@@ -575,22 +536,12 @@ export default function Group() {
 				<JobsToolbar
 					selectedJobId={selectedJobId}
 					onViewDetails={() => navigate(`/jobs/${selectedJobId}`)}
-					onViewStructure={() => {
-						const job = filteredJobs.find((j) => j.job_id === selectedJobId);
-						if (job?.structures.length) {
-							openMoleculeViewer(job.structures[0].structure_id);
-						}
-					}}
 					onFilterByStructure={() => {
 						const job = filteredJobs.find((j) => j.job_id === selectedJobId);
 						if (job?.structures.length) {
 							setFilterStructureId(job.structures[0].structure_id);
 						}
 					}}
-					viewStructureDisabled={
-						!selectedJobId ||
-						!filteredJobs.find((j) => j.job_id === selectedJobId)?.structures.length
-					}
 					cancelDisabled={cancelDisabled}
 					deleteDisabled={deleteDisabled}
 					onCancelJob={handleCancel}

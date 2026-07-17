@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import { Box, Paper, Grid } from "@mui/material";
-import { fetchJobError, fetchJobResults, getJobByJobID } from "../services/api";
+import { fetchJobError, getJobByJobID } from "../services/api";
 import { MolmakerPageTitle, MolmakerTextField, MolmakerAlert } from "../components/custom";
 import MolmakerLoading from "../components/custom/MolmakerLoading";
 import NotFound from "./NotFound";

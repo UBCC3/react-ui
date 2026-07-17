@@ -27,7 +27,7 @@ import {
 	CircularProgress,
 	Grid,
 } from "@mui/material";
-import { blue, blueGrey, grey } from "@mui/material/colors";
+import { blue, grey } from "@mui/material/colors";
 import {
 	GroupOutlined,
 	RemoveCircleOutlineOutlined,
@@ -117,13 +117,6 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 
 		loadData();
 	}, [token, user?.email, reload]);
-
-	// Status-to-colour lookup for job statuses.
-	const statusColors: Record<string, string> = {
-		pending: "orange",
-		approved: "green",
-		rejected: "red",
-	};
 
 	// Handlers
 	const handleGroupUpdate = async () => {

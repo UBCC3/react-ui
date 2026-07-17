@@ -8,7 +8,6 @@ import {
 	getAllJobs,
 	getJobStatusBySlurmID,
 	getLibraryStructures,
-	getStructureDataFromS3,
 	updateJob,
 	deleteJob,
 	upsertCurrentUser,
@@ -18,7 +17,6 @@ import { JobStatus } from "../../constants";
 import JobsToolbar from "./components/JobsToolbar";
 import JobsTable from "./components/JobsTable";
 import {
-	MolmakerMoleculePreview,
 	MolmakerLoading,
 	MolmakerAlert,
 	MolmakerConfirm,
@@ -40,19 +38,13 @@ export default function Home() {
 
 	// UI state
 	const [error, setError] = useState<string | null>(null);
-	const [open, setOpen] = useState<boolean>(false);
 	const [page, setPage] = useState<number>(0);
 	const [rowsPerPage, setRowsPerPage] = useState<number>(5);
 	const [loading, setLoading] = useState<boolean>(true);
-	const [structureLoading, setStructureLoading] = useState<boolean>(false);
-	const [userRole, setUserRole] = useState<string>("");
 
 	// selection
 	const [selectedJobId, setSelectedJobId] = useState<string>("");
 	const [filterStructureId, setFilterStructureId] = useState<string>("");
-
-	// preview state
-	const [previewData, setPreviewData] = useState<string>("");
 
 	// sorting
 	const [order, setOrder] = useState<"asc" | "desc">("desc");
@@ -135,11 +127,9 @@ export default function Home() {
 				const token = await getAccessTokenSilently();
 				const result = await upsertCurrentUser(token, user.email || "");
 
-				if (result.status === 200 && result.data) {
-					setUserRole(result.data.role || "");
-				} else {
-					console.warn("Upsert returned", result.status, result.error);
-				}
+				if (result.status !== 200 || !result.data) {
+                    console.warn("Upsert returned", result.status, result.error);
+                }
 			} catch (err) {
 				console.error("Failed to sync user to our database:", err);
 			}
@@ -150,7 +140,6 @@ export default function Home() {
 	// poll statuses every 5s
 	useEffect(() => {
 		let stopped = false;
-		let id: ReturnType<typeof setInterval>;
 
 		const tick = async () => {
 			if (stopped) return;
@@ -233,7 +222,7 @@ export default function Home() {
 		};
 
 		// start poll
-		id = setInterval(tick, 5000);
+		const id = setInterval(tick, 5000);
 		// run immediately once
 		tick();
 
@@ -300,32 +289,6 @@ export default function Home() {
 	}, [filterStructureId, jobs]);
 
 	/**
-	 * Loads molecule structure data from S3 and sends it to the preview component.
-	 */
-	const openMoleculeViewer = async (structureId: string) => {
-		console.log("Opening molecule viewer for structure ID:", structureId);
-		setStructureLoading(true);
-		setError(null);
-
-		try {
-			const token = await getAccessTokenSilently();
-			const response = await getStructureDataFromS3(structureId, token);
-			if (response.error) {
-				setError("Failed to load molecule structure. Please try again.");
-				return;
-			}
-			setPreviewData(response.data);
-			setError(null);
-			// setOpen(true);
-		} catch (err) {
-			setError("Failed to load molecule structure. Please try again.");
-			console.error("Failed to load molecule structure:", err);
-		} finally {
-			setStructureLoading(false);
-		}
-	};
-
-	/**
 	 * Reloads all jobs from the backend and clears the structure filter.
 	 */
 	const handleRefresh = async () => {
@@ -363,7 +326,7 @@ export default function Home() {
 				setLoading(false);
 				return;
 			}
-			jobs.find((job: Job, idx: number) => job.job_id === selectedJobId)!.status =
+			jobs.find((job: Job) => job.job_id === selectedJobId)!.status =
 				JobStatus.CANCELLED;
 			if (!jobToCancel.slurm_id) {
 				setAlertMsg("Job Slurm ID is missing.");
@@ -571,18 +534,6 @@ export default function Home() {
 	return (
 		<Box p={4} sx={{ minHeight: `calc(100vh - 64px)` }} className="bg-stone-100">
 			{error && <MolmakerAlert text={error} severity="error" outline="error" sx={{ mb: 4 }} />}
-			{/* Structure Preview Dialog */}
-			<Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
-				<Box sx={{ width: "100%", height: 400 }}>
-					<MolmakerMoleculePreview
-						data={previewData}
-						format="xyz"
-						source="library"
-						title="Structure Preview"
-						sx={{ width: "100%", height: "100%" }}
-					/>
-				</Box>
-			</Dialog>
 			<MolmakerConfirm
 				open={openConfirmDelete}
 				onClose={() => setOpenConfirmDelete(false)}
@@ -625,22 +576,12 @@ export default function Home() {
 					onViewDetails={() => {
 						navigate(`/jobs/${selectedJobId}`);
 					}}
-					onViewStructure={() => {
-						const job = filteredJobs.find((j) => j.job_id === selectedJobId);
-						if (job?.structures.length) {
-							openMoleculeViewer(job.structures[0].structure_id);
-						}
-					}}
 					onFilterByStructure={() => {
 						const job = filteredJobs.find((j) => j.job_id === selectedJobId);
 						if (job?.structures.length) {
 							setFilterStructureId(job.structures[0].structure_id);
 						}
 					}}
-					viewStructureDisabled={
-						!selectedJobId ||
-						!filteredJobs.find((j) => j.job_id === selectedJobId)?.structures.length
-					}
 					cancelDisabled={cancelDisabled}
 					deleteDisabled={deleteDisabled}
 					onCancelJob={handleCancel}
@@ -703,19 +644,6 @@ export default function Home() {
 					rowsPerPageOptions={[5, 10, 25]}
 				/>
 			</Paper>
-			{/* <Drawer
-                anchor="right"
-                open={!!selectedJobId}
-                variant="persistent"
-                sx={{ width: 350, '& .MuiDrawer-paper': {width: 350, top: 64}}}
-            >
-                <MolmakerMoleculePreview
-					data={previewData}
-					format='xyz'
-					source={'library'}
-					sx={{ height: '100%' }}
-				/>
-            </Drawer> */}
 		</Box>
 	);
 }

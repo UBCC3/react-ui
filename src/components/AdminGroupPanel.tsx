@@ -47,10 +47,6 @@ export default function AdminGroupPanel({ token }: { token: string }) {
 	// Toggle used to re-fetch group/users after create/update actions.
 	const [reload, setReload] = useState(false);
 
-	// Pagination state.
-	const [page, setPage] = useState(0);
-	const [rowsPerPage, setRowsPerPage] = useState(5);
-
 	// Fetch groups and users whenever the auth token changes or data is reloaded.
 	useEffect(() => {
 		const fetchData = async () => {
