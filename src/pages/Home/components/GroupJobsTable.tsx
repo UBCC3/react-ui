@@ -9,14 +9,10 @@ import {
 	Chip,
 	Box,
 	Typography,
-	Button,
-	Grid,
 	IconButton,
 	Tooltip,
 } from "@mui/material";
 import {
-	AutoMode,
-	TuneOutlined,
 	VisibilityOutlined,
 	VisibilityOffOutlined,
 } from "@mui/icons-material";

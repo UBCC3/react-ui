@@ -241,7 +241,7 @@ export default function StandardAnalysis() {
 	};
 
 	// Handles uploading a molecule file from the user's computer
-	const handleFileChange = async (data, file) => {
+	const handleFileChange = async (data: string, file: File | null) => {
 		setStructureData(data);
 		setFile(file);
 
@@ -457,7 +457,7 @@ export default function StandardAnalysis() {
 										id="tags-input"
 										options={options}
 										value={jobTags}
-										onChange={(e, newValue) => {
+										onChange={(_, newValue) => {
 											setJobTags(newValue.filter((tag) => tag.trim() !== ""));
 										}}
 										renderInput={(params) => (
@@ -497,7 +497,7 @@ export default function StandardAnalysis() {
 									}
 									submitAttempted={submitAttempted}
 									structureTags={structureTags}
-									onStructureTagsChange={(e, newValue) => {
+									onStructureTagsChange={(_: unknown, newValue: string[]) => {
 										setStructureTags(newValue.filter((tag) => tag.trim() !== ""));
 									}}
 								/>
@@ -544,7 +544,7 @@ export default function StandardAnalysis() {
 												label="Optimization Type"
 												value={optimizationType}
 												onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-													setOptimizationType(e.target.value)
+													setOptimizationType(e.target.value as "ground" | "ts")
 												}
 												options={Object.entries(optimizationOptions).map(([key, value]) => ({
 													label: key,

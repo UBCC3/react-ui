@@ -1,8 +1,7 @@
 import React, { useEffect, useRef } from "react";
-import { Paper, Typography, Divider, Box, Skeleton, SxProps, Theme } from "@mui/material";
+import { Paper, Typography, Box, Skeleton, SxProps, Theme } from "@mui/material";
 import { blue, grey } from "@mui/material/colors";
 import { Atom } from "lucide-react";
-import { BorderTopRounded } from "@mui/icons-material";
 
 // Extend the Window interface to include the $3Dmol global
 declare global {

@@ -1,10 +1,11 @@
 import { Box, Toolbar } from "@mui/material";
 import { useDrawer } from "./DrawerContext";
+import { PropsWithChildren } from "react";
 
 /**
  * Layout wrapper for the main page content.
  */
-export default function MainContent({ children }) {
+export default function MainContent({ children }: PropsWithChildren) {
 	const { width } = useDrawer();
 
 	return (

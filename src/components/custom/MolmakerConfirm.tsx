@@ -6,6 +6,14 @@ import {
 	DialogActions,
 	Button,
 } from "@mui/material";
+import { ReactNode } from "react";
+
+interface MolmakerConfirmProps {
+    open: boolean;
+    onClose: () => void;
+    textToShow: ReactNode;
+    onConfirm: () => void;
+}
 
 /**
  * Renders a reusable Confirmation dialog.
@@ -16,7 +24,7 @@ import {
  * - textToShow: written text on the dialog
  * - onConfirm: actions taken after confirming the prompt
  */
-const MolmakerConfirm = ({ open, onClose, textToShow, onConfirm }) => {
+const MolmakerConfirm = ({ open, onClose, textToShow, onConfirm }: MolmakerConfirmProps) => {
 	return (
 		<Dialog open={open} onClose={onClose}>
 			<DialogTitle>Confirm</DialogTitle>

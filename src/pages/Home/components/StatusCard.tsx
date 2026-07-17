@@ -1,4 +1,13 @@
 import { Typography, Card, CardContent, Box } from "@mui/material";
+import type { ReactNode } from "react";
+
+interface StatusCardProps {
+    status: string;
+    count: number;
+    bgColor: string;
+    fgColor: string;
+    icon: ReactNode;
+}
 
 /**
  * Displays a single status summary card.
@@ -9,7 +18,7 @@ import { Typography, Card, CardContent, Box } from "@mui/material";
  * - a matching icon,
  * - custom background and foreground colors.
  */
-const StatusCard = ({ status, count, bgColor, fgColor, icon }) => {
+const StatusCard = ({ status, count, bgColor, fgColor, icon }: StatusCardProps) => {
 	return (
 		<Card sx={{ backgroundColor: bgColor, color: fgColor }}>
 			<CardContent>

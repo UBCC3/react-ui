@@ -1,4 +1,10 @@
-import React, { useEffect, useState } from "react";
+import { 
+    useEffect, 
+    useState, 
+    type ChangeEvent, 
+    type ChangeEventHandler, 
+    type SyntheticEvent 
+} from "react";
 import PropTypes from "prop-types";
 import {
 	Box,
@@ -18,6 +24,34 @@ import MolmakerSectionHeader from "./MolmakerSectionHeader";
 import { getStructuresTags } from "../../services/api";
 import { useAuth0 } from "@auth0/auth0-react";
 import { grey } from "@mui/material/colors";
+
+interface StructureOption {
+    structure_id: string;
+    name: string;
+}
+
+type MoleculeSource = "upload" | "library";
+
+interface MolmakerMoleculeSelectorProps {
+    source: string;
+    onSourceChange: (source: MoleculeSource) => void;
+    structures: StructureOption[];
+    selectedStructure: string;
+    onLibrarySelect: (id: string) => void;
+    file: File | null;
+    onFileChange: (data: string, file: File) => void;
+    uploadStructure: boolean;
+    onUploadStructureChange: (value: boolean) => void;
+    moleculeName: string;
+    onMoleculeNameChange: ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement>;
+    chemicalFormula: string;
+    onChemicalFormulaChange: ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement>;
+    moleculeNotes: string;
+    onMoleculeNotesChange: ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement>;
+    submitAttempted: boolean;
+    structureTags: string[];
+    onStructureTagsChange: (event: SyntheticEvent, value: string[]) => void;
+}
 
 /**
  * Unified molecule source selector, combining upload & library options.
@@ -57,7 +91,7 @@ const MolmakerMoleculeSelector = ({
 	submitAttempted,
 	structureTags,
 	onStructureTagsChange,
-}) => {
+}: MolmakerMoleculeSelectorProps) => {
 	const [options, setOptions] = useState<string[]>([]);
 	const { getAccessTokenSilently } = useAuth0();
 
@@ -96,7 +130,7 @@ const MolmakerMoleculeSelector = ({
 					<MolmakerRadioGroup
 						name="source"
 						value={source}
-						onChange={(_, newVal) => onSourceChange(newVal)}
+						onChange={(_, newVal) => onSourceChange(newVal as MoleculeSource)}
 						options={[
 							{ value: "upload", label: "Upload File" },
 							{ value: "library", label: "Select from Library" },
@@ -112,7 +146,7 @@ const MolmakerMoleculeSelector = ({
 							fullWidth
 							label="Select Molecule"
 							value={selectedStructure}
-							onChange={(e) => onLibrarySelect(e.target.value)}
+							onChange={(e: ChangeEvent<HTMLInputElement>) => onLibrarySelect(e.target.value)}
 							options={structures.map((s) => ({ value: s.structure_id, label: s.name }))}
 							required
 							error={submitAttempted && !selectedStructure}
@@ -138,7 +172,7 @@ const MolmakerMoleculeSelector = ({
 										const f = e.target.files?.[0];
 										if (!f) return;
 										const reader = new FileReader();
-										reader.onload = (ev) => onFileChange(ev.target?.result, f);
+										reader.onload = (ev) => onFileChange(ev.target?.result as string, f);
 										reader.readAsText(f);
 									}}
 								/>

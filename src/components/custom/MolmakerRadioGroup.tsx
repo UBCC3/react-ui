@@ -1,6 +1,33 @@
-import React from "react";
 import PropTypes from "prop-types";
-import { FormControl, RadioGroup, FormControlLabel, Radio, FormHelperText } from "@mui/material";
+import { 
+    FormControl, 
+    RadioGroup, 
+    FormControlLabel, 
+    Radio, 
+    FormHelperText,
+    type SxProps,
+    type Theme,
+} from "@mui/material";
+import type { ChangeEvent } from "react";
+
+interface RadioOption {
+    value: string;
+    label: string;
+    disabled?: boolean;
+}
+
+interface MolmakerRadioGroupProps {
+    name: string;
+    value: string;
+    onChange: (event: ChangeEvent<HTMLInputElement>, value: string) => void;
+    options: RadioOption[];
+    row?: boolean;
+    required?: boolean;
+    error?: boolean;
+    helperText?: string;
+    disabled?: boolean;
+    sx?: SxProps<Theme>;
+}
 
 /**
  * Generic radio-group selector for Molecule Maker app.
@@ -28,7 +55,7 @@ const MolmakerRadioGroup = ({
 	helperText = "",
 	disabled = false,
 	sx = {},
-}) => (
+}: MolmakerRadioGroupProps) => (
 	<FormControl component="fieldset" required={required} error={error} disabled={disabled} sx={sx}>
 		<RadioGroup row={row} name={name} value={value} onChange={onChange}>
 			{options.map(({ value: optVal, label: optLabel, disabled: optDisabled }) => (

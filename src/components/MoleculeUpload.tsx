@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Box, Button, Drawer, Grid, Autocomplete, Chip, TextField } from "@mui/material";
+import { Box, Button, Drawer, Grid, Autocomplete, TextField } from "@mui/material";
 import {
 	MolmakerMoleculePreview,
 	MolmakerTextField,
@@ -341,7 +341,7 @@ const MoleculeUpload: React.FC<MoleculeUploadProps> = ({ open, setOpen, setLibra
 						id="tags-input"
 						options={options}
 						value={tags}
-						onChange={(e, newValue) => {
+						onChange={(_event, newValue) => {
 							setTags(newValue.filter((tag) => tag.trim() !== ""));
 						}}
 						renderInput={(params) => (

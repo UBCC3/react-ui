@@ -116,7 +116,7 @@ const StandardAnalysisViewer: React.FC<StandardAnalysisViewerProp> = ({
 	/**
 	 * Update the currently selected result tab.
 	 */
-	const handleCurrentTabChange = (event: React.SyntheticEvent, newValue: number) => {
+	const handleCurrentTabChange = (_event: React.SyntheticEvent, newValue: number) => {
 		setCurrentTab(newValue);
 	};
 

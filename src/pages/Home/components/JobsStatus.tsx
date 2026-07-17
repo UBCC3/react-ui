@@ -9,6 +9,11 @@ import { green, blue, orange, red } from "@mui/material/colors";
 import { JobStatus } from "../../../constants";
 import StatusCard from "./StatusCard";
 import { capitalizeFirstLetter } from "../../../utils";
+import { Job } from "../../../types";
+
+interface JobsStatusProps {
+    jobs: Job[];
+}
 
 /**
  * Displays a summary of job counts grouped by status.
@@ -19,7 +24,7 @@ import { capitalizeFirstLetter } from "../../../utils";
  * - Pending
  * - Failed
  */
-const JobsStatus = ({ jobs }) => {
+const JobsStatus = ({ jobs }: JobsStatusProps) => {
 	return (
 		<Grid container spacing={3} sx={{ mb: 4 }}>
 			<Grid size={{ xs: 12, md: 3 }}>

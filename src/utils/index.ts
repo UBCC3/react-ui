@@ -1,4 +1,4 @@
-import { ComplexNumber, Job } from "../types";
+import { ComplexNumber } from "../types";
 import { filterJobs } from "./filterJobs";
 
 export const capitalizeFirstLetter = (str: string) => {

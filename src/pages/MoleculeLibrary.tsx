@@ -3,7 +3,6 @@ import { useAuth0 } from "@auth0/auth0-react";
 import {
 	Paper,
 	Typography,
-	Divider,
 	Box,
 	Grid,
 	Button,
@@ -254,7 +253,7 @@ const MoleculeLibrary = () => {
 				open={open}
 				setOpen={setOpen}
 				selectedStructureId={selectedStructureId}
-				onStructureUpdated={(updated) => {
+				onStructureUpdated={(updated: Partial<Structure>) => {
 					setLibraryStructures((prev) =>
 						prev.map((s) => (s.structure_id === updated.structure_id ? { ...s, ...updated } : s)),
 					);

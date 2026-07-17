@@ -11,6 +11,7 @@ import {
 	LineController,
 	ChartData,
 	ChartOptions,
+    ChartDataset,
 } from "chart.js";
 
 // Register the Chart.js components needed for scatter and line charts.
@@ -60,7 +61,7 @@ const IRSpectrumPlot: React.FC<Props> = ({ data, width, shape }) => {
 				backgroundColor: "black",
 			},
 			{
-				type: "line" as const,
+				type: "line",
 				label: `${shape} profile`,
 				data: profile,
 				borderColor: "red",
@@ -68,7 +69,7 @@ const IRSpectrumPlot: React.FC<Props> = ({ data, width, shape }) => {
 				fill: false,
 				pointRadius: 0,
 				parsing: false,
-			},
+			} as unknown as ChartDataset<"scatter">,
 		],
 	};
 

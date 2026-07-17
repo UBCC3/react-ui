@@ -9,10 +9,7 @@ import {
 	Chip,
 	Box,
 	Typography,
-	Button,
-	Grid,
 } from "@mui/material";
-import { AutoMode, TuneOutlined } from "@mui/icons-material";
 import { ArrowDownAZ, ArrowUpAZ } from "lucide-react";
 import { calculationTypes, statusColors, statusIcons } from "../../../constants";
 import { blueGrey, grey } from "@mui/material/colors";

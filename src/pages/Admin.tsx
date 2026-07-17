@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate } from "react-router-dom";
-import { Box, Paper, TablePagination, Dialog, Snackbar } from "@mui/material";
+import { Box, Paper, TablePagination, Snackbar } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import {
 	cancelJobBySlurmID,
@@ -221,11 +221,11 @@ export default function Admin() {
 				]);
 
 				// Store jobs, excluding pending jobs from the main jobs list.
-				setJobs(jobsResponse.data.filter((job) => job.is !== JobStatus.PENDING));
+				setJobs(jobsResponse.data);
 				setFilteredJobs(jobsResponse.data);
 
 				// Sort structures alphabetically for easier dropdown navigation.
-				const sortedStructures = structuresResponse.data.sort((a, b) =>
+				const sortedStructures = structuresResponse.data.sort((a: Structure, b: Structure) =>
 					a.name.localeCompare(b.name),
 				);
 

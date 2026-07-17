@@ -1,6 +1,10 @@
 import axios from "axios";
 import { Response } from "../types";
 
+function getErrorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
+}
+
 /**
  * Creates an Axios instance for the main backend API.
  * Uses the development URL from environment variables when running locally,
@@ -320,7 +324,7 @@ export const cancelJobBySlurmID = async (slurmId: string, token: any): Promise<R
 		console.error("Failed to cancel the job", error);
 		return {
 			status: 500,
-			error: `Failed to cancel the job: ${error.message}`,
+			error: `Failed to cancel the job: ${getErrorMessage(error)}`,
 		};
 	}
 };
@@ -354,7 +358,7 @@ export const getJobStatusBySlurmID = async (slurmId: string, token: any): Promis
 		console.error("Failed to fetch job status", error);
 		return {
 			status: 500,
-			error: `Failed to fetch job status: ${error.message}`,
+			error: `Failed to fetch job status: ${getErrorMessage(error)}`,
 		};
 	}
 };
@@ -395,7 +399,7 @@ export const submitAdvancedAnalysis = async (
 		console.error("Advanced analysis submission failed", error);
 		return {
 			status: 500,
-			error: `Failed to submit advanced analysis: ${error.message}`,
+			error: `Failed to submit advanced analysis: ${getErrorMessage(error)}`,
 		};
 	}
 };
@@ -405,11 +409,11 @@ export const submitAdvancedAnalysis = async (
  * If the optimization type is transition state, the opt_type field is included.
  */
 export const submitStandardAnalysis = async (
-	jobName: string,
+	_jobName: string,
 	file: File | Blob,
 	charge: number,
 	multiplicity: number,
-	structure_id: string,
+	_structure_id: string,
 	token: any,
 	opt_type?: "ts" | "ground",
 ): Promise<Response> => {
@@ -434,7 +438,7 @@ export const submitStandardAnalysis = async (
 		console.error("Standard analysis submission failed", error);
 		return {
 			status: 500,
-			error: `Failed to submit job: ${error.message}`,
+			error: `Failed to submit job: ${getErrorMessage(error)}`,
 		};
 	}
 };
@@ -443,9 +447,9 @@ export const submitStandardAnalysis = async (
  * Converts a base64 data URL into a Blob object.
  * This is used to upload generated structure images as normal files.
  */
-function dataURLToBlob(dataURL) {
+function dataURLToBlob(dataURL: string) {
 	const parts = dataURL.split(",");
-	const mime = parts[0].match(/:(.*?);/)[1];
+	const mime = parts[0].match(/:(.*?);/)?.[1] ?? "image/png";
 	const binary = atob(parts[1]);
 	const array = new Uint8Array(binary.length);
 	for (let i = 0; i < binary.length; i++) {
@@ -492,7 +496,7 @@ export const AddAndUploadStructureToS3 = async (
 		console.error("Structure submission failed", error);
 		return {
 			status: 500,
-			error: `Failed to submit structure: ${error.message}`,
+			error: `Failed to submit structure: ${getErrorMessage(error)}`,
 		};
 	}
 };
@@ -521,7 +525,7 @@ export const getStructureDataFromS3 = async (
 		console.error("Failed to fetch structure from S3", error);
 		return {
 			status: 500,
-			error: `Failed to fetch structure from S3: ${error.message}`,
+			error: `Failed to fetch structure from S3: ${getErrorMessage(error)}`,
 		};
 	}
 };
@@ -541,7 +545,7 @@ export const getLibraryStructures = async (token: any): Promise<Response> => {
 		console.error("Failed to fetch structures", error);
 		return {
 			status: 500,
-			error: `Failed to fetch structures: ${error.message}`,
+			error: `Failed to fetch structures: ${getErrorMessage(error)}`,
 		};
 	}
 };
@@ -561,7 +565,7 @@ export const getStructureById = async (structureId: string, token: any): Promise
 		console.error("Failed to fetch structure details", error);
 		return {
 			status: 500,
-			error: `Failed to fetch structure details: ${error.message}`,
+			error: `Failed to fetch structure details: ${getErrorMessage(error)}`,
 		};
 	}
 };
@@ -596,7 +600,7 @@ export const updateStructure = async (
 		console.error("Failed to update structure", error);
 		return {
 			status: 500,
-			error: `Failed to update structure: ${error.message}`,
+			error: `Failed to update structure: ${getErrorMessage(error)}`,
 		};
 	}
 };
@@ -616,7 +620,7 @@ export const getJobByJobID = async (jobId: string, token: any): Promise<Response
 		console.error("Failed to fetch job details", error);
 		return {
 			status: 500,
-			error: `Failed to fetch job details: ${error.message}`,
+			error: `Failed to fetch job details: ${getErrorMessage(error)}`,
 		};
 	}
 };

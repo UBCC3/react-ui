@@ -8,6 +8,7 @@ import {
 	HelpOutlineOutlined,
 	ReportOutlined,
 	TimerOffOutlined,
+    SvgIconComponent,
 } from "@mui/icons-material";
 import type { FilterExtent } from "./types/Filter";
 
@@ -29,7 +30,7 @@ export const JobStatus = {
 	TIMEOUT: "timeout",
 };
 
-export const statusColors = {
+export const statusColors: Record<string, string> = {
 	completed: green[500],
 	running: blue[500],
 	pending: orange[500],
@@ -39,7 +40,7 @@ export const statusColors = {
 	timeout: deepOrange[300],
 };
 
-export const statusIcons = {
+export const statusIcons: Record<string, SvgIconComponent> = {
 	completed: CheckCircleOutlined,
 	running: RunCircleOutlined,
 	pending: PendingOutlined,

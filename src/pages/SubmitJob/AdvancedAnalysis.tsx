@@ -273,7 +273,7 @@ const AdvancedAnalysis = () => {
 	/**
 	 * Handles uploaded molecule files.
 	 */
-	const handleFileChange = async (data, file) => {
+	const handleFileChange = async (data: string, file: File | null) => {
 		setStructureData(data);
 		setFile(file);
 
@@ -348,7 +348,7 @@ const AdvancedAnalysis = () => {
 
 		let keywordsJsonFile: File | undefined = undefined;
 		if (keywords.length > 0) {
-			const payload: Record<string, any> = keywords.reduce((obj, { key, value }) => {
+			const payload = keywords.reduce<Record<string, any>>((obj, { key, value }) => {
 				obj[key] = value;
 				return obj;
 			}, {});
@@ -503,7 +503,7 @@ const AdvancedAnalysis = () => {
 										id="tags-input"
 										options={options}
 										value={jobTags}
-										onChange={(e, newValue) => {
+										onChange={(_event, newValue) => {
 											setJobTags(newValue.filter((tag) => tag.trim() !== ""));
 										}}
 										renderInput={(params) => (
@@ -545,7 +545,7 @@ const AdvancedAnalysis = () => {
 									}
 									submitAttempted={submitAttempted}
 									structureTags={structureTags}
-									onStructureTagsChange={(e, newValue) => {
+									onStructureTagsChange={(_event: unknown, newValue: string[]) => {
 										setStructureTags(newValue.filter((tag) => tag.trim() !== ""));
 									}}
 								/>
@@ -559,7 +559,7 @@ const AdvancedAnalysis = () => {
 										<MolmakerRadioGroup
 											name="theoryType"
 											value={theoryType}
-											onChange={(event: unknown, theory: string) => {
+											onChange={(_event: unknown, theory: string) => {
 												setTheoryType(theory);
 												if (theory === "density") {
 													setTheory(densityTheory[0].toLowerCase());

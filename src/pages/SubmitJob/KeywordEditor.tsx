@@ -11,6 +11,11 @@ export interface Keyword {
 	value: any;
 }
 
+interface KeywordEditorProps {
+    maxEntries?: number;
+    onChange?: (keywords: Keyword[]) => void;
+}
+
 // Available value types that the user can choose for each keyword.
 const KEYWORD_VALUE_TYPE = [
 	{ label: "String", value: "string" },
@@ -34,18 +39,18 @@ const keywordBlankRow: Keyword = { key: "", type: "string", value: "" };
  *
  * The parent component receives only valid rows where the keyword key is not empty.
  */
-export function KeywordEditor({ maxEntries = 20, onChange }) {
+export function KeywordEditor({ maxEntries = 20, onChange }: KeywordEditorProps) {
 	// Stores all keyword rows currently shown in the editor.
-	const [keywords, setKeywords] = useState([]);
+	const [keywords, setKeywords] = useState<Keyword[]>([]);
 
 	/**
 	 * Renders the correct input field based on the selected keyword value type.
 	 */
-	const renderValueField = (row, idx) => {
+	const renderValueField = (row: Keyword, idx: number) => {
 		const commonProps = {
 			fullWidth: true,
 			value: row.value,
-			onChange: (e) => updateKeywordRow(idx, "value", e.target.value),
+			onChange: (e: React.ChangeEvent<HTMLInputElement>) => updateKeywordRow(idx, "value", e.target.value),
 		};
 
 		switch (row.type) {
@@ -102,9 +107,9 @@ export function KeywordEditor({ maxEntries = 20, onChange }) {
 	 * After updating local state, the parent onChange callback is called with
 	 * only rows that have a non-emmpty keyword key.
 	 */
-	const updateKeywordRow = (rowIndexToUpdate, field, newVal) => {
+	const updateKeywordRow = (rowIndexToUpdate: number, field: keyof Keyword, newVal: string | number) => {
 		const updatedKeywords = keywords.map((r, i) =>
-			i === rowIndexToUpdate ? { ...r, [field]: newVal } : r,
+			i === rowIndexToUpdate ? ({ ...r, [field]: newVal } as Keyword) : r,
 		);
 		setKeywords(updatedKeywords);
 		onChange?.(updatedKeywords.filter((r) => r.key.trim() !== ""));

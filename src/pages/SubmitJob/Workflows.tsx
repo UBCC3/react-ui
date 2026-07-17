@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Box, Paper, Collapse, Grid, Button, IconButton } from "@mui/material";
 import { ExpandMore, ExpandLess, ArrowForward, AutoMode } from "@mui/icons-material";

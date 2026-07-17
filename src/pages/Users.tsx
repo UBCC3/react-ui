@@ -52,7 +52,7 @@ import {
 	ManageAccountsOutlined,
 } from "@mui/icons-material";
 import { MolmakerPageTitle } from "../components/custom";
-import { Group, User } from "../types";
+import { Group, Job, User } from "../types";
 import { green, red, blue, grey } from "@mui/material/colors";
 import { UserRound, UserRoundPen, UserRoundX, UsersRound } from "lucide-react";
 
@@ -196,12 +196,12 @@ const Users = () => {
 
                 // Add derived fields to each user for easier rendering.
 				setUsers(
-					userResponse.data.map((user) => ({
+					userResponse.data.map((user: User) => ({
 						...user,
 						group:
-							groupResponse.data.find((group) => group.group_id === user.group_id)?.name ||
+							groupResponse.data.find((group: Group) => group.group_id === user.group_id)?.name ||
 							"No Group",
-						jobCount: jobResponse.data.filter((job) => job.user_sub === user.user_sub).length,
+						jobCount: jobResponse.data.filter((job: Job) => job.user_sub === user.user_sub).length,
 					})),
 				);
 				setLoading(false);
@@ -406,7 +406,7 @@ const Users = () => {
 				<Box sx={{ borderBottom: 1, borderColor: "divider" }}>
 					<Tabs
 						value={value}
-						onChange={(event, newValue) => setValue(newValue)}
+						onChange={(_event, newValue) => setValue(newValue)}
 						aria-label="basic tabs example"
 					>
 						<Tab

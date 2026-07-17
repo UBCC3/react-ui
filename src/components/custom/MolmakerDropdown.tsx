@@ -1,6 +1,32 @@
-import React from "react";
 import PropTypes from "prop-types";
-import { FormControl, InputLabel, Select, MenuItem, FormHelperText } from "@mui/material";
+import { 
+    FormControl, 
+    InputLabel, 
+    Select, 
+    MenuItem, 
+    FormHelperText, 
+    type SxProps,
+    type Theme,
+} from "@mui/material";
+import type { ReactNode } from "react";
+
+interface DropdownOption {
+    value: string | number;
+    label: string;
+}
+
+interface MolmakerDropdownProps {
+    label: ReactNode;
+    value: string | number;
+    onChange: (event: any) => void;
+    options: DropdownOption[];
+    required?: boolean;
+    error?: boolean;
+    helperText?: string;
+    disabled?: boolean;
+    fullWidth?: boolean;
+    sx?: SxProps<Theme>;
+}
 
 /**
  * Generic dropdown selector for MolMaker.
@@ -28,7 +54,7 @@ const MolmakerDropdown = ({
 	disabled = false,
 	fullWidth = true,
 	sx = {},
-}) => (
+}: MolmakerDropdownProps) => (
 	<FormControl required={required} error={error} disabled={disabled} fullWidth={fullWidth} sx={sx}>
 		<InputLabel>{label}</InputLabel>
 		<Select value={value} label={label} onChange={onChange}>

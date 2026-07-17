@@ -6,7 +6,7 @@ import User from "./User";
 import Group from "./Group";
 import Filter from "./Filter";
 
-export {
+export type {
 	Job,
 	Structure,
 	Response,
