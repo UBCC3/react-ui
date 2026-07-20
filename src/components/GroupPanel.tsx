@@ -37,14 +37,13 @@ import { useAuth0 } from '@auth0/auth0-react';
 import {
 	updateGroupName,
 	getCurrentUserMembers,
-	updateUser,
 	upsertCurrentUser,
 	getGroupById,
-	getUserByEmail,
 	getCurrentUserGroupJobs,
 	updateJob,
 	deleteJob,
-	sendRequest,
+    sendInviteRequest,
+    removeGroupUser,
 } from '../services/api';
 import type { User, Job } from '../types';
 
@@ -147,7 +146,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 			);
 		}
 
-		await updateUser(token, userSub, selectedUser.role, '');
+		await removeGroupUser(userSub, token);
 		setReload(r => !r);
 		setRemoveDialogOpen(false);
 	};
@@ -155,17 +154,14 @@ export default function GroupPanel({ token }: GroupPanelProps) {
     // Send a group-join request to the user matching the entered email.
   	const handleAddMember = async () => {
 		if (!newUserEmail) return;
-			const { data: foundUser, error } = await getUserByEmail(newUserEmail, token);
-		if (error) {
-			setNewUserError(error);
+		const resp = await sendInviteRequest(newUserEmail, token);
+		if (resp.error) {
+			setNewUserError(resp.error);
 			return;
 		}
-		if (foundUser) {
-			await sendRequest(foundUser.user_sub, groupId, token);
-			setNewUserEmail('');
-			setReload(r => !r);
-			setAddMemberDialogOpen(false);
-		}
+		setNewUserEmail('');
+		setReload(r => !r);
+		setAddMemberDialogOpen(false);
   	};
 
     // Users displayed on the current table page.

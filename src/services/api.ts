@@ -1089,13 +1089,18 @@ export const getZipPresignedUrl= async (
 /**
  * Fetches all incoming group-related requests for the given user.
  */
-export const getRequests = async (
-	userSub: string,
-	token: string
+export const getReceivedRequests = async (
+	token: string,
+    status: string = 'pending',
+    requestType?: string,
+    recentDays?: number,
 ): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get(`/request/${userSub}/`);
+        const params: Record<string, string | number> = { status };
+        if (requestType) params.request_type = requestType;
+        if (recentDays !== undefined) params.recent_days = recentDays;
+		const res = await API.get(`/request/received`, { params });
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error('Failed to fetch requests', error);
@@ -1127,12 +1132,17 @@ export const getOptimizationTypes = async (token: string): Promise<Response> => 
  * Fetches all group-related requests sent by the given user.
  */
 export const getSentRequests = async (
-	userSub: string,
-	token: string
+	token: string,
+    status: string = 'pending',
+    requestType?: string,
+    recentDays?: number,
 ): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get(`/request/sent/${userSub}/`);
+        const params: Record<string, string | number> = { status };
+        if (requestType) params.request_type = requestType;
+        if (recentDays !== undefined) params.recent_days = recentDays;
+		const res = await API.get(`/request/sent`, { params });
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error('Failed to fetch sent requests', error);
@@ -1144,27 +1154,28 @@ export const getSentRequests = async (
 };
 
 /**
- * Sends a group-related request on behalf of the given user.
+ * Invites a user (by email) to the authenticated group admin's current group.
  */
-export const sendRequest = async (
-	userSub: string,
-	groupId: string,
-	token: string,
+export const sendInviteRequest = async (
+    email: string,
+    token: string,
+    expiresInDays?: number,
 ): Promise<Response> => {
-	const formData = new FormData();
-	formData.append('group_id', groupId);
-	try {
-		const API = createBackendAPI(token);
-		const res = await API.post(`/request/${userSub}/`, formData);
-		return { status: res.status, data: res.data };
-	} catch (error: any) {
-		console.error('Failed to send request', error);
-		return {
-			status: error.response?.status || 500,
-			error: error.response?.data?.detail || error.message,
-		};
-	}
-};
+    const formData = new FormData();
+    formData.append('email', email);
+    if (expiresInDays !== undefined) formData.append('expires_in_days', String(expiresInDays));
+    try {
+        const API = createBackendAPI(token);
+        const res = await API.post('/request/invite', formData);
+        return { status: res.status, data: res.data };
+    } catch (error: any) {
+        console.error('Failed to send invite', error);
+        return {
+            status: error.response?.status || 500,
+            error: error.response?.data?.detail || error.message,
+        }
+    }
+}
 
 /**
  * Approves an incoming request by request ID.
@@ -1225,3 +1236,23 @@ export const deleteRequest = async (
 		};
 	}
 };
+
+/**
+ * Removes a user from the group. Group admins may remove members of their own group.
+ */
+export const removeGroupUser = async (
+    userSub: string, 
+    token: string
+): Promise<Response> => {
+    try {
+        const API = createBackendAPI(token);
+        const res = await API.delete(`/group/users/${userSub}`);
+        return { status: res.status, data: res.data };
+    } catch (error: any) {
+        console.error('Failed to remove group user', error);
+        return {
+            status: error.response?.status || 500,
+            error: error.response?.data?.detail || error.message,
+        }
+    }
+}
