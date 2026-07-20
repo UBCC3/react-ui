@@ -1283,3 +1283,97 @@ export const updateJobOwnership = async (
         }
     }
 }
+
+/**
+ * Requests to join a group by group ID.
+ */
+export const joinGroupRequest = async (
+    groupId: string,
+    token: string,
+    expiresInDays?: number
+): Promise<Response> => {
+    const formData = new FormData();
+    formData.append('group_id', groupId);
+    if (expiresInDays !== undefined) formData.append('expires_in_days', String(expiresInDays));
+    try {
+        const API = createBackendAPI(token);
+        const res = await API.post('/request/join', formData);
+        return { status: res.status, data: res.data };
+    } catch (error: any) {
+        console.error('Failed to send join request', error);
+        return {
+            status: error.response?.status || 500,
+            error: error.response?.data?.detail || error.message,
+        }
+    }
+}
+
+/**
+ * Requests to be removed from the authenticated user's current group.
+ */
+export const requestDemember = async (
+    token: string,
+    expiresInDays?: number,
+): Promise<Response> => {
+    const formData = new FormData();
+    if (expiresInDays !== undefined) formData.append('expires_in_days', String(expiresInDays));
+    try {
+        const API = createBackendAPI(token);
+        const res = await API.post('/request/demember', formData);
+        return { status: res.status, data: res.data };
+    } catch (error: any) {
+        console.error('Failed to send de-member request', error);
+        return {
+            status: error.response?.status || 500,
+            error: error.response?.data?.detail || error.message,
+        }
+    }
+}
+
+/**
+ * Fetches requests for the authenticated admin/group admin's current group.
+ */
+export const getGroupRequests = async (
+    token: string,
+    status: string = 'pending',
+    requestType?: string,
+    recentDays?: number,
+): Promise<Response> => {
+    try {
+        const API = createBackendAPI(token);
+        const params: Record<string, string | number> = { status };
+        if (requestType) params.request_type = requestType;
+        if (recentDays !== undefined) params.recent_days = recentDays;
+        const res = await API.get('/group/requests', { params });
+        return { status: res.status, data: res.data};
+    } catch (error: any) {
+        console.error('Failed to fetch group requests', error);
+        return {
+            status: error.response?.status || 500,
+            error: error.response?.data?.detail || error.message,
+        }
+    }
+}
+
+/**
+ * Updates public/private visibility for a structure.
+ */
+export const updateStructureVisibility = async (
+    structureId: string,
+    isPublic: boolean,
+    token: string,
+): Promise<Response> => {
+    const formData = new FormData();
+    formData.append('is_public', String(isPublic));
+    try {
+        const API = createBackendAPI(token);
+        const res = await API.patch(`/structures/${structureId}/visibility`, formData);
+        return { status: res.status, data: res.data };
+    } catch (error: any) {
+        console.error('Failed to update structure visibility', error);
+        return {
+            status: error.response?.status || 500,
+            error: error.response?.data?.detail || error.message,
+        }
+    }
+}
