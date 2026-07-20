@@ -1,32 +1,32 @@
 import PropTypes from "prop-types";
-import { 
-    FormControl, 
-    RadioGroup, 
-    FormControlLabel, 
-    Radio, 
-    FormHelperText,
-    type SxProps,
-    type Theme,
+import {
+	FormControl,
+	RadioGroup,
+	FormControlLabel,
+	Radio,
+	FormHelperText,
+	type SxProps,
+	type Theme,
 } from "@mui/material";
 import type { ChangeEvent } from "react";
 
 interface RadioOption {
-    value: string;
-    label: string;
-    disabled?: boolean;
+	value: string;
+	label: string;
+	disabled?: boolean;
 }
 
 interface MolmakerRadioGroupProps {
-    name: string;
-    value: string;
-    onChange: (event: ChangeEvent<HTMLInputElement>, value: string) => void;
-    options: RadioOption[];
-    row?: boolean;
-    required?: boolean;
-    error?: boolean;
-    helperText?: string;
-    disabled?: boolean;
-    sx?: SxProps<Theme>;
+	name: string;
+	value: string;
+	onChange: (event: ChangeEvent<HTMLInputElement>, value: string) => void;
+	options: RadioOption[];
+	row?: boolean;
+	required?: boolean;
+	error?: boolean;
+	helperText?: string;
+	disabled?: boolean;
+	sx?: SxProps<Theme>;
 }
 
 /**

@@ -17,10 +17,10 @@ import { Edit, Close, Save } from "@mui/icons-material";
 import { Structure } from "../types";
 
 interface MoleculeInfoProps {
-    open: boolean;
-    setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-    selectedStructureId: string;
-    onStructureUpdated?: (updated: Partial<Structure>) => void;
+	open: boolean;
+	setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+	selectedStructureId: string;
+	onStructureUpdated?: (updated: Partial<Structure>) => void;
 }
 
 /**
@@ -34,7 +34,12 @@ interface MoleculeInfoProps {
  * - Switching between view mode and edit mode
  * - Saving edited structure information back to the backend
  */
-const MoleculeInfo = ({ open, setOpen, selectedStructureId, onStructureUpdated }: MoleculeInfoProps) => {
+const MoleculeInfo = ({
+	open,
+	setOpen,
+	selectedStructureId,
+	onStructureUpdated,
+}: MoleculeInfoProps) => {
 	const [isEditing, setIsEditing] = useState<boolean>(false);
 	const [structureData, setStructureData] = useState<string>("");
 	const [structureName, setStructureName] = useState<string>("");
@@ -262,21 +267,27 @@ const MoleculeInfo = ({ open, setOpen, selectedStructureId, onStructureUpdated }
 						<MolmakerTextField
 							label="Name"
 							value={structureName}
-							onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStructureName(e.target.value)}
+							onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+								setStructureName(e.target.value)
+							}
 							fullWidth
 							disabled={!isEditing}
 						/>
 						<MolmakerTextField
 							label="Chemical Formula"
 							value={chemicalFormula}
-							onChange={(e: React.ChangeEvent<HTMLInputElement>) => setChemicalFormula(e.target.value)}
+							onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+								setChemicalFormula(e.target.value)
+							}
 							fullWidth
 							disabled={!isEditing}
 						/>
 						<MolmakerTextField
 							label="Notes"
 							value={structureNotes}
-							onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStructureNotes(e.target.value)}
+							onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+								setStructureNotes(e.target.value)
+							}
 							fullWidth
 							multiline
 							rows={4}

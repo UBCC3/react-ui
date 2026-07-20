@@ -127,8 +127,8 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 				window.Jmol.script(appletRef.current, `!exit;`);
 			}
 		} catch {
-            // Ignore errors from the Jmol script call; cleanup below runs regardless.
-        }
+			// Ignore errors from the Jmol script call; cleanup below runs regardless.
+		}
 		if (viewerRef.current) viewerRef.current.innerHTML = "";
 		appletRef.current = null;
 	}, [value]);

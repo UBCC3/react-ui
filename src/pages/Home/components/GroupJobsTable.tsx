@@ -12,10 +12,7 @@ import {
 	IconButton,
 	Tooltip,
 } from "@mui/material";
-import {
-	VisibilityOutlined,
-	VisibilityOffOutlined,
-} from "@mui/icons-material";
+import { VisibilityOutlined, VisibilityOffOutlined } from "@mui/icons-material";
 import { grey } from "@mui/material/colors";
 import { useAuth0 } from "@auth0/auth0-react";
 import { ArrowDownAZ, ArrowUpAZ } from "lucide-react";

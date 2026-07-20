@@ -11,7 +11,7 @@ import {
 	LineController,
 	ChartData,
 	ChartOptions,
-    ChartDataset,
+	ChartDataset,
 } from "chart.js";
 
 // Register the Chart.js components needed for scatter and line charts.

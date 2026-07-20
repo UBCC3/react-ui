@@ -12,7 +12,7 @@ import { capitalizeFirstLetter } from "../../../utils";
 import { Job } from "../../../types";
 
 interface JobsStatusProps {
-    jobs: Job[];
+	jobs: Job[];
 }
 
 /**

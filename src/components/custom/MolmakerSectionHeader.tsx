@@ -3,8 +3,8 @@ import PropTypes from "prop-types";
 import { grey } from "@mui/material/colors";
 
 interface MolmakerSectionHeaderProps {
-    text: string;
-    sx?: SxProps<Theme>;
+	text: string;
+	sx?: SxProps<Theme>;
 }
 
 /**

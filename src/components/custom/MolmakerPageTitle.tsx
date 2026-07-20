@@ -2,9 +2,9 @@ import { Grid, Typography, Box } from "@mui/material";
 import { ReactNode } from "react";
 
 interface MolmakerPageTitleProps {
-    title: ReactNode;
-    subtitle: ReactNode;
-    removeBottomPadding?: boolean;
+	title: ReactNode;
+	subtitle: ReactNode;
+	removeBottomPadding?: boolean;
 }
 
 /**
@@ -15,7 +15,11 @@ interface MolmakerPageTitleProps {
  * - subtitle: the sub title of thhe panel
  * - removeBottomPadding: when true, remove the bottom padding
  */
-const MolmakerPageTitle = ({ title, subtitle, removeBottomPadding = false }: MolmakerPageTitleProps) => {
+const MolmakerPageTitle = ({
+	title,
+	subtitle,
+	removeBottomPadding = false,
+}: MolmakerPageTitleProps) => {
 	return (
 		<Box
 			sx={{

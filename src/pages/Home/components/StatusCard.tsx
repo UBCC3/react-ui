@@ -2,11 +2,11 @@ import { Typography, Card, CardContent, Box } from "@mui/material";
 import type { ReactNode } from "react";
 
 interface StatusCardProps {
-    status: string;
-    count: number;
-    bgColor: string;
-    fgColor: string;
-    icon: ReactNode;
+	status: string;
+	count: number;
+	bgColor: string;
+	fgColor: string;
+	icon: ReactNode;
 }
 
 /**

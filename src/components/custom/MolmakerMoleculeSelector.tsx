@@ -1,9 +1,9 @@
-import { 
-    useEffect, 
-    useState, 
-    type ChangeEvent, 
-    type ChangeEventHandler, 
-    type SyntheticEvent 
+import {
+	useEffect,
+	useState,
+	type ChangeEvent,
+	type ChangeEventHandler,
+	type SyntheticEvent,
 } from "react";
 import PropTypes from "prop-types";
 import {
@@ -26,31 +26,31 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { grey } from "@mui/material/colors";
 
 interface StructureOption {
-    structure_id: string;
-    name: string;
+	structure_id: string;
+	name: string;
 }
 
 type MoleculeSource = "upload" | "library";
 
 interface MolmakerMoleculeSelectorProps {
-    source: string;
-    onSourceChange: (source: MoleculeSource) => void;
-    structures: StructureOption[];
-    selectedStructure: string;
-    onLibrarySelect: (id: string) => void;
-    file: File | null;
-    onFileChange: (data: string, file: File) => void;
-    uploadStructure: boolean;
-    onUploadStructureChange: (value: boolean) => void;
-    moleculeName: string;
-    onMoleculeNameChange: ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement>;
-    chemicalFormula: string;
-    onChemicalFormulaChange: ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement>;
-    moleculeNotes: string;
-    onMoleculeNotesChange: ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement>;
-    submitAttempted: boolean;
-    structureTags: string[];
-    onStructureTagsChange: (event: SyntheticEvent, value: string[]) => void;
+	source: string;
+	onSourceChange: (source: MoleculeSource) => void;
+	structures: StructureOption[];
+	selectedStructure: string;
+	onLibrarySelect: (id: string) => void;
+	file: File | null;
+	onFileChange: (data: string, file: File) => void;
+	uploadStructure: boolean;
+	onUploadStructureChange: (value: boolean) => void;
+	moleculeName: string;
+	onMoleculeNameChange: ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement>;
+	chemicalFormula: string;
+	onChemicalFormulaChange: ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement>;
+	moleculeNotes: string;
+	onMoleculeNotesChange: ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement>;
+	submitAttempted: boolean;
+	structureTags: string[];
+	onStructureTagsChange: (event: SyntheticEvent, value: string[]) => void;
 }
 
 /**

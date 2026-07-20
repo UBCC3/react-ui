@@ -9,10 +9,10 @@ import {
 import { ReactNode } from "react";
 
 interface MolmakerConfirmProps {
-    open: boolean;
-    onClose: () => void;
-    textToShow: ReactNode;
-    onConfirm: () => void;
+	open: boolean;
+	onClose: () => void;
+	textToShow: ReactNode;
+	onConfirm: () => void;
 }
 
 /**

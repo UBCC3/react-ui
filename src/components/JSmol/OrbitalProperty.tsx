@@ -54,9 +54,9 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({
 }) => {
 	const [propertyOption, setPropertyOption] = useState<false | propertiesOptions>(false);
 	const [showMolecule, setShowMolecule] = useState(true);
-    // TODO: possibly convert to useState to allow user value adjustment
-    const cutoff = 0.02;
-    const translucent = 0.5;
+	// TODO: possibly convert to useState to allow user value adjustment
+	const cutoff = 0.02;
+	const translucent = 0.5;
 
 	// slice plane
 	const [sliceShow, setSliceShow] = useState<boolean>(false);
@@ -216,19 +216,13 @@ const OrbitalProperty: React.FC<OrbitalPropertyProps> = ({
 					<RadioGroup sx={{ display: "flex", flexDirection: "row", gap: 1 }}>
 						<FormControlLabel
 							control={
-								<Radio
-									checked={meshOrFill === "fill"}
-									onChange={() => setMeshOrFill("fill")}
-								/>
+								<Radio checked={meshOrFill === "fill"} onChange={() => setMeshOrFill("fill")} />
 							}
 							label="Orbital Shape: Fill"
 						/>
 						<FormControlLabel
 							control={
-								<Radio
-									checked={meshOrFill === "mesh"}
-									onChange={() => setMeshOrFill("mesh")}
-								/>
+								<Radio checked={meshOrFill === "mesh"} onChange={() => setMeshOrFill("mesh")} />
 							}
 							label="Mesh"
 						/>

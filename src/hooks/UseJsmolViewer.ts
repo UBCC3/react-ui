@@ -90,8 +90,8 @@ export function useJsmolViewer({
 					);
 				}
 			} catch {
-                // Ignore Jmol script errors during cleanup; teardown below runs regardless.
-            }
+				// Ignore Jmol script errors during cleanup; teardown below runs regardless.
+			}
 			if (viewerRef.current) viewerRef.current.innerHTML = "";
 			appletRef.current = null;
 			setViewerObj(null);

@@ -194,7 +194,7 @@ const Users = () => {
 				const userResponse = await getAllUsers(token);
 				const jobResponse = await getAllJobs(token);
 
-                // Add derived fields to each user for easier rendering.
+				// Add derived fields to each user for easier rendering.
 				setUsers(
 					userResponse.data.map((user: User) => ({
 						...user,

@@ -16,11 +16,7 @@ import {
 import { JobStatus } from "../../constants";
 import JobsToolbar from "./components/JobsToolbar";
 import JobsTable from "./components/JobsTable";
-import {
-	MolmakerLoading,
-	MolmakerAlert,
-	MolmakerConfirm,
-} from "../../components/custom";
+import { MolmakerLoading, MolmakerAlert, MolmakerConfirm } from "../../components/custom";
 import type { Filter, Job, Structure } from "../../types";
 import { filterJobs } from "../../utils";
 
@@ -128,8 +124,8 @@ export default function Home() {
 				const result = await upsertCurrentUser(token, user.email || "");
 
 				if (result.status !== 200 || !result.data) {
-                    console.warn("Upsert returned", result.status, result.error);
-                }
+					console.warn("Upsert returned", result.status, result.error);
+				}
 			} catch (err) {
 				console.error("Failed to sync user to our database:", err);
 			}
@@ -326,8 +322,7 @@ export default function Home() {
 				setLoading(false);
 				return;
 			}
-			jobs.find((job: Job) => job.job_id === selectedJobId)!.status =
-				JobStatus.CANCELLED;
+			jobs.find((job: Job) => job.job_id === selectedJobId)!.status = JobStatus.CANCELLED;
 			if (!jobToCancel.slurm_id) {
 				setAlertMsg("Job Slurm ID is missing.");
 				setAlertSeverity("error");

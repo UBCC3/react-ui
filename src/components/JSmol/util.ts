@@ -28,15 +28,15 @@ export async function fetchRawFileFromS3Url<T = Blob | string | JSON>(
 			case "blob": {
 				const blob = await res.blob();
 				return blob as T;
-            }
+			}
 			case "text": {
 				const text = await res.text();
 				return text as T;
-            }
+			}
 			case "json": {
 				const json = await res.json();
 				return json as T;
-            }
+			}
 		}
 	} catch (error: any) {
 		console.error(`Failed to fetch presigned urls ${url}. Error:\n`, error);

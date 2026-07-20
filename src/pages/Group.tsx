@@ -15,11 +15,7 @@ import {
 } from "../services/api";
 import { JobStatus } from "../constants";
 import JobsToolbar from "./Home/components/JobsToolbar";
-import {
-	MolmakerPageTitle,
-	MolmakerAlert,
-	MolmakerConfirm,
-} from "../components/custom";
+import { MolmakerPageTitle, MolmakerAlert, MolmakerConfirm } from "../components/custom";
 import type { Filter, Job, Structure } from "../types";
 import GroupPanel from "../components/GroupPanel";
 import GroupJobsTable from "./Home/components/GroupJobsTable";
@@ -142,11 +138,15 @@ export default function Group() {
 
 				// Apply structure filter if set
 				const initial = filterStructureId
-					? jr.data.filter((j: Job) => j.structures.some((s) => s.structure_id === filterStructureId))
+					? jr.data.filter((j: Job) =>
+							j.structures.some((s) => s.structure_id === filterStructureId),
+						)
 					: jr.data;
 				setFilteredJobs(initial);
 				// Prep structure list
-				const sortedStructs = sr.data.sort((a: Structure, b: Structure) => a.name.localeCompare(b.name));
+				const sortedStructs = sr.data.sort((a: Structure, b: Structure) =>
+					a.name.localeCompare(b.name),
+				);
 				setStructures([
 					{
 						structure_id: "",

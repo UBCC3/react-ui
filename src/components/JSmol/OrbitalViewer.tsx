@@ -100,7 +100,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 
 	// add-to-library dialog state
 	const [addDialogOpen, setAddDialogOpen] = useState(false);
-    const options: string[] = [];
+	const options: string[] = [];
 	const [moleculeName, setMoleculeName] = useState("");
 	const [chemicalFormula, setChemicalFormula] = useState("");
 	const [moleculeNotes, setMoleculeNotes] = useState("");

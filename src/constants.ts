@@ -8,7 +8,7 @@ import {
 	HelpOutlineOutlined,
 	ReportOutlined,
 	TimerOffOutlined,
-    SvgIconComponent,
+	SvgIconComponent,
 } from "@mui/icons-material";
 import type { FilterExtent } from "./types/Filter";
 
