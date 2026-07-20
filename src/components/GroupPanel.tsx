@@ -40,10 +40,9 @@ import {
 	upsertCurrentUser,
 	getGroupById,
 	getCurrentUserGroupJobs,
-	updateJob,
-	deleteJob,
     sendInviteRequest,
     removeGroupUser,
+    updateJobOwnership,
 } from '../services/api';
 import type { User, Job } from '../types';
 
@@ -81,7 +80,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 	const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
 
 	const [selectedUser, setSelectedUser] = useState<User | null>(null);
-	const [removalPolicy, setRemovalPolicy] = useState<'0' | '1' | '2'>('0');
+	const [removalPolicy, setRemovalPolicy] = useState<'co_owned' | 'user' | 'group'>('co_owned');
 
 	const [loading, setLoading] = useState(true);
 	const [loadingMessage, setLoadingMessage] = useState('Loading...');
@@ -136,15 +135,14 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 		const userSub = selectedUser.user_sub;
 		const userJobs = jobs.filter(j => j.user_sub === userSub);
 
-		if (removalPolicy === '0') {
-			await Promise.all(userJobs.map(j => deleteJob(j.job_id, token)));
-		} else if (removalPolicy === '1') {
-			await Promise.all(
-				userJobs.map(j =>
-					updateJob(j.job_id, j.status || '', j.runtime || '', user?.sub || '', token)
-				)
-			);
-		}
+		if (removalPolicy === 'group') {
+            // User's ownership claim is removed; job stays with the group.
+            await Promise.all(userJobs.map(j => updateJobOwnership(j.job_id, 'group', token, undefined, groupId)));
+        } else if (removalPolicy === 'user') {
+            // Group's ownership claim is removed; job stays with the user.
+            await Promise.all(userJobs.map(j => updateJobOwnership(j.job_id, 'user', token, userSub, undefined)));
+        }
+        // 'co_owned': no change - job remains co-owned by both, matching demember's own default behavior.
 
 		await removeGroupUser(userSub, token);
 		setReload(r => !r);
@@ -331,15 +329,15 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 							As a group admin, you can choose what happens to the user's jobs they ran while they were part of your group.
 							</Typography>
 							<FormControl>
-							<RadioGroup
-								name="removal-policy"
-								value={removalPolicy}
-								onChange={e => setRemovalPolicy(e.target.value as '0'|'1'|'2')}
-							>
-								<FormControlLabel value="0" control={<Radio />} label="Delete all user's jobs" />
-								<FormControlLabel value="1" control={<Radio />} label="Transfer ownership to me" />
-								<FormControlLabel value="2" control={<Radio />} label="Let user retain their jobs" />
-							</RadioGroup>
+                                <RadioGroup
+                                    name="removal-policy"
+                                    value={removalPolicy}
+                                    onChange={e => setRemovalPolicy(e.target.value as 'co_owned'|'user'|'group')}
+                                >
+                                    <FormControlLabel value="co_owned" control={<Radio />} label="Keep jobs co-owned by the user and the group" />
+                                    <FormControlLabel value="group" control={<Radio />} label="Job deleted from user (job stays with the group)" />
+                                    <FormControlLabel value="user" control={<Radio />} label="Job deleted from group (job stays with the user)" />
+                                </RadioGroup>
 							</FormControl>
 						</Box>
 						</DialogContent>
