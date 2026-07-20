@@ -103,7 +103,7 @@ export const upsertCurrentUser = async (
 	formData.append('email', email);
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.post('/users/me/', formData);
+		const res = await API.post('/users/me', formData);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error('Failed to sync user to our database:', error);
