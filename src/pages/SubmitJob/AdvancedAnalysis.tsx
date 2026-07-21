@@ -30,12 +30,12 @@ import {
     getWavefunctionMethods,
     getDensityFunctionalMethods,
     getBasisSets,
-    getMultiplicities,
     createJob,
     AddAndUploadStructureToS3,
-    getStructuresTags, getOptimizationTypes,
+    getStructuresTags,
 } from '../../services/api'
 import { Structure } from '../../types'
+import { unpairedElectronOptions } from '../../constants'
 import { submitAdvancedAnalysis, getChemicalFormula } from '../../services/api'
 import * as React from 'react'
 import {
@@ -103,7 +103,6 @@ const AdvancedAnalysis = () => {
     const [densityTheory, setDensityTheory] = useState<string[]>([]);
     const [calculationTypes, setCalculationTypes] = useState<{ [key: string]: number }>({});
     const [basisSets, setBasisSets] = useState<{ [key: string]: string }>({});
-    const [multiplicityOptions, setMultiplicityOptions] = useState<{ [key: string]: number }>({});
 
     // structure preview snapshot confirm
     const [openConfirmImage, setOpenConfirmImage] = useState<boolean>(false);
@@ -164,12 +163,6 @@ const AdvancedAnalysis = () => {
                     return;
                 }
                 setBasisSets(response.data);
-                response = await getMultiplicities(token);
-                if (response.error) {
-                    setError('Failed to load multiplicities. Please try again later.');
-                    return;
-                }
-                setMultiplicityOptions(response.data);
             } catch (err) {
                 setError('Failed to load calculation types. Please try again later.');
                 console.error('Failed to load calculation types', err);
@@ -636,7 +629,7 @@ const AdvancedAnalysis = () => {
                                         </Grid>
                                     </Grid>
                                     <Grid container spacing={2}>
-                                        <Grid size={{ xs: 12, md: 6 }}>
+                                        <Grid size={12}>
                                             <MolmakerTextField
                                                 fullWidth
                                                 label="Charge"
@@ -651,21 +644,17 @@ const AdvancedAnalysis = () => {
                                                 required
                                             />
                                         </Grid>
-                                        <Grid size={{ xs: 12, md: 6 }}>
-                                            <MolmakerDropdown
-                                                fullWidth
-                                                label="Multiplicity"
-                                                value={multiplicity}
-                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMultiplicity(parseInt(e.target.value))}
-                                                options={Object.entries(multiplicityOptions)
-                                                    .map(([key, value]) => ({
-                                                        label: key,
-                                                        value: value
-                                                    })
-                                                )}
-                                                helperText={submitAttempted && !multiplicity ? 'Please select a multiplicity' : undefined}
-                                                error={submitAttempted && !multiplicity}
-                                                required
+                                        <Grid size={12}>
+                                            <MolmakerSectionHeader text="How many unpaired electrons does this species have?" sx={{ mb: 1 }} />
+                                            <MolmakerRadioGroup
+                                                name="unpairedElectrons"
+                                                value={String(multiplicity)}
+                                                onChange={(_event: unknown, val: string) => setMultiplicity(parseInt(val, 10))}
+                                                options={unpairedElectronOptions.map(o => ({
+                                                    value: String(o.multiplicity),
+                                                    label: o.label,
+                                                }))}
+                                                row
                                             />
                                         </Grid>
                                     </Grid>
