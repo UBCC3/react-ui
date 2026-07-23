@@ -1,6 +1,5 @@
-import React from 'react'
-import PropTypes from 'prop-types';
-import { TextField } from '@mui/material'
+import PropTypes from "prop-types";
+import { TextField, type TextFieldProps } from "@mui/material";
 
 /**
  * Generic text input component for Molecule Maker app.
@@ -26,16 +25,16 @@ const MolmakerTextField = ({
 	onChange,
 	required = false,
 	error = false,
-	helperText = '',
+	helperText = "",
 	disabled = false,
-	type = 'text',
+	type = "text",
 	fullWidth = true,
 	multiline = false,
 	rows = 1,
 	sx = {},
 	slotProps = {},
 	...rest
-}) => (
+}: TextFieldProps) => (
 	<TextField
 		label={label}
 		value={value}
@@ -71,6 +70,6 @@ MolmakerTextField.propTypes = {
 	rows: PropTypes.number,
 	sx: PropTypes.object,
 	slotProps: PropTypes.object,
-}
+};
 
-export default MolmakerTextField
+export default MolmakerTextField;

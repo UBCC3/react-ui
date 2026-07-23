@@ -4,7 +4,7 @@ import MolmakerLoading from "./custom/MolmakerLoading";
 import { useLocation } from "react-router-dom";
 
 type RequireAuthProps = {
-    children: ReactNode;
+	children: ReactNode;
 };
 
 /**
@@ -15,49 +15,36 @@ type RequireAuthProps = {
  * their original page after signing in.
  */
 const RequireAuth = ({ children }: RequireAuthProps) => {
-    const {
-        isAuthenticated,
-        isLoading,
-        loginWithRedirect,
-    } = useAuth0();
+	const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0();
 
-    const location = useLocation();
-    const redirectStarted = useRef(false);
+	const location = useLocation();
+	const redirectStarted = useRef(false);
 
-    const returnTo = location.pathname + location.search;
+	const returnTo = location.pathname + location.search;
 
-    useEffect(() => {
-        if (
-            isLoading ||
-            isAuthenticated ||
-            redirectStarted.current
-        ) {
-            return;
-        }
+	useEffect(() => {
+		if (isLoading || isAuthenticated || redirectStarted.current) {
+			return;
+		}
 
-        redirectStarted.current = true;
+		redirectStarted.current = true;
 
-        void loginWithRedirect({
-            appState: {
-                returnTo,
-            },
-        }).catch((error) => {
-            // Allow another attempt if starting the Auth0 redirect failed.
-            redirectStarted.current = false;
-            console.error("Unable to start Auth0 login redirect", error);
-        });
-    }, [
-        isLoading,
-        isAuthenticated,
-        loginWithRedirect,
-        returnTo,
-    ]);
+		void loginWithRedirect({
+			appState: {
+				returnTo,
+			},
+		}).catch((error) => {
+			// Allow another attempt if starting the Auth0 redirect failed.
+			redirectStarted.current = false;
+			console.error("Unable to start Auth0 login redirect", error);
+		});
+	}, [isLoading, isAuthenticated, loginWithRedirect, returnTo]);
 
-    if (isLoading || !isAuthenticated) {
-        return <MolmakerLoading />;
-    }
+	if (isLoading || !isAuthenticated) {
+		return <MolmakerLoading />;
+	}
 
-    return children;
+	return children;
 };
 
 export default RequireAuth;

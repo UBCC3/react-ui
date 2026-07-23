@@ -6,17 +6,11 @@ import EnergyViewer from "./EnergyViewer";
 
 /**
  * Re-export all result viewer components from this module.
- * 
+ *
  * Allowing other files to import multiple viewer components from
  * a single location.
  */
-export {
-	OrbitalViewer,
-	VibrationViewer,
-	OptimizationViewer,
-	StandardAnalysisViewer,
-	EnergyViewer,
-};
+export { OrbitalViewer, VibrationViewer, OptimizationViewer, StandardAnalysisViewer, EnergyViewer };
 
 /**
  * Extends the browser Window type to include the global Jmol object.

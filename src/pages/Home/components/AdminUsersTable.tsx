@@ -1,4 +1,4 @@
-import React, { use } from 'react';
+import React from "react";
 import {
 	TableContainer,
 	Table,
@@ -6,42 +6,36 @@ import {
 	TableRow,
 	TableCell,
 	TableBody,
-	Chip,
-	Box,
-	Typography,
 	Button,
-	Grid
-} from '@mui/material';
-import { ArrowDropUpOutlined, ArrowDropDownOutlined, AutoMode, TuneOutlined } from '@mui/icons-material';
-import { statusColors } from '../../../constants';
-import { blueGrey } from '@mui/material/colors';
-import type { Job, User } from '../../../types';
-import { getAllUsers } from '../../../services/api';
-import { useEffect } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
+} from "@mui/material";
+import { blueGrey } from "@mui/material/colors";
+import type { User } from "../../../types";
+import { getAllUsers } from "../../../services/api";
+import { useEffect } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
 
 /**
  * Admin table component for displaying all registered users.
- * 
+ *
  * This component handles:
  * - Fetching all users from the backend
  * - Storing the users in local component state
  * - Displaying user account information in a table
  * - Showing placeholder action buttons for editing and deleting users
  */
-export default function AdminUsersTable({}) {
+export default function AdminUsersTable() {
 	const { getAccessTokenSilently } = useAuth0();
 	const [users, setUsers] = React.useState<User[]>([]);
 
-    /**
-     * Fetches all users when the component first loads.
-     */
-  	useEffect(() => {
+	/**
+	 * Fetches all users when the component first loads.
+	 */
+	useEffect(() => {
 		const fetchUsers = async () => {
 			const token = await getAccessTokenSilently();
 			const response = await getAllUsers(token);
 			setUsers(response.data);
-		}
+		};
 		fetchUsers();
 	}, [getAccessTokenSilently]);
 
@@ -58,11 +52,11 @@ export default function AdminUsersTable({}) {
 					</TableRow>
 				</TableHead>
 				<TableBody>
-					{users.map(user => (
+					{users.map((user) => (
 						<TableRow key={user.user_sub}>
 							<TableCell>{user.user_sub}</TableCell>
 							<TableCell>{user.email}</TableCell>
-							<TableCell>{user.group_id || 'None'}</TableCell>
+							<TableCell>{user.group_id || "None"}</TableCell>
 							<TableCell>{user.role}</TableCell>
 							<TableCell>
 								<Button variant="outlined" color="primary" size="small">
