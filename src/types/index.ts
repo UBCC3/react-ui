@@ -1,17 +1,12 @@
-import Job from './Job';
-import Structure from './Structure';
-import Response from './Response';
-import {
-	Orbital,
-	JobResult,
-	VibrationMode,
-	ComplexNumber,
-} from "./JSmol";
-import User from './User';
-import Group from './Group';
-import Filter from './Filter';
+import Job from "./Job";
+import Structure from "./Structure";
+import Response from "./Response";
+import { Orbital, JobResult, VibrationMode, ComplexNumber } from "./JSmol";
+import User from "./User";
+import Group from "./Group";
+import Filter from "./Filter";
 
-export {
+export type {
 	Job,
 	Structure,
 	Response,
@@ -21,5 +16,5 @@ export {
 	ComplexNumber,
 	User,
 	Group,
-    Filter
-}
+	Filter,
+};

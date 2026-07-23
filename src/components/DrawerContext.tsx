@@ -1,16 +1,10 @@
-import { 
-	createContext, 
-	useContext, 
-	useState, 
-	useMemo, 
-	PropsWithChildren 
-} from 'react';
+import { createContext, useContext, useState, useMemo, PropsWithChildren } from "react";
 
 /**
  * Shape of the shared drawer state.
  */
 type DrawerCtx = {
-	open: boolean
+	open: boolean;
 	width: number;
 	toggle: () => void;
 };
@@ -18,10 +12,10 @@ type DrawerCtx = {
 /**
  * Default drawer context value.
  */
-const defaultCtx: DrawerCtx = { 
-    open: true, 
-    width: 250, 
-    toggle: () => {} 
+const defaultCtx: DrawerCtx = {
+	open: true,
+	width: 250,
+	toggle: () => {},
 };
 
 /**
@@ -31,7 +25,7 @@ const Ctx = createContext<DrawerCtx>(defaultCtx);
 
 /**
  * Provides drawer state to child components.
- * 
+ *
  * Components inside this provider can access the drawer's open state, current
  * width, and toggle function through the `useDrawer` hook.
  */

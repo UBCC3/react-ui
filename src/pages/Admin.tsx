@@ -1,41 +1,33 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState, useRef, useMemo } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
+import { useNavigate } from "react-router-dom";
+import { Box, Paper, TablePagination, Snackbar } from "@mui/material";
+import { grey } from "@mui/material/colors";
 import {
-	Box,
-	Paper,
-	TablePagination,
-	Dialog,
-	Snackbar,
-} from '@mui/material';
-import { blueGrey, grey, blue } from '@mui/material/colors';
-import { 
 	cancelJobBySlurmID,
-	adminGetAllJobs, 
-	getJobStatusBySlurmID, 
-	getLibraryStructures, 
-	getStructureDataFromS3, 
+	adminGetAllJobs,
+	getJobStatusBySlurmID,
+	getLibraryStructures,
 	updateJob,
 	deleteJob,
 	getZipPresignedUrl,
-} from '../services/api';
-import { calculationTypes, JobStatus } from '../constants';
-import JobsToolbar from './Home/components/JobsToolbar';
+} from "../services/api";
+import { JobStatus } from "../constants";
+import JobsToolbar from "./Home/components/JobsToolbar";
 import {
 	MolmakerPageTitle,
-	MolmakerMoleculePreview, 
-	MolmakerLoading, 
+	MolmakerLoading,
 	MolmakerAlert,
-	MolmakerConfirm
-} from '../components/custom';
-import type { Job, Structure, Filter } from '../types';
-import AdminJobsTable from './Home/components/AdminJobsTable';
-import { filterJobs } from '../utils';
+	MolmakerConfirm,
+} from "../components/custom";
+import type { Job, Structure, Filter } from "../types";
+import AdminJobsTable from "./Home/components/AdminJobsTable";
+import { filterJobs } from "../utils";
 
 export default function Admin() {
-    // used to redirect the user after the job is successfully submitted
+	// used to redirect the user after the job is successfully submitted
 	const navigate = useNavigate();
-	const { user, getAccessTokenSilently } = useAuth0();
+	const { getAccessTokenSilently } = useAuth0();
 
 	// confirm delete job
 	const [openConfirmDelete, setOpenConfirmDelete] = useState<boolean>(false);
@@ -47,56 +39,49 @@ export default function Admin() {
 
 	// UI state
 	const [error, setError] = useState<string | null>(null);
-	const [open, setOpen] = useState<boolean>(false);
 	const [page, setPage] = useState<number>(0);
 	const [rowsPerPage, setRowsPerPage] = useState<number>(5);
 	const [loading, setLoading] = useState<boolean>(true);
-	const [structureLoading, setStructureLoading] = useState<boolean>(false);
 
 	// selection
-	const [selectedJobId, setSelectedJobId] = useState<string>('');
-	const [filterStructureId, setFilterStructureId] = useState<string>('');
-
-	// preview state
-	const [previewData, setPreviewData] = useState<string>('');
+	const [selectedJobId, setSelectedJobId] = useState<string>("");
+	const [filterStructureId, setFilterStructureId] = useState<string>("");
 
 	// sorting
-	const [order, setOrder] = useState<'asc' | 'desc'>('desc');
-	const [orderBy, setOrderBy] = useState<keyof Job>('submitted_at');
+	const [order, setOrder] = useState<"asc" | "desc">("desc");
+	const [orderBy, setOrderBy] = useState<keyof Job>("submitted_at");
 	const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
 
 	// general alert
 	const [alertShow, setAlertShow] = useState<boolean>(false);
-	const [alertMsg, setAlertMsg] = useState<string>('');
-	const [alertSeverity, setAlertSeverity] = useState<'success' | 'error' | 'info' | 'warning'>('info');
+	const [alertMsg, setAlertMsg] = useState<string>("");
+	const [alertSeverity, setAlertSeverity] = useState<"success" | "error" | "info" | "warning">(
+		"info",
+	);
 
-    // stores all custom table filters created by the user.
-    const [filters, setFilters] = useState<Filter[]>(
-        [{ column: 'job_name', value: '', extent: 'contains' }]
-    )
-
-    // stores the Auth0 access token passed down to admin-related child components.
-	const [adminPanelToken, setAdminPanelToken] = useState<string | null>(null);
-
+	// stores all custom table filters created by the user.
+	const [filters, setFilters] = useState<Filter[]>([
+		{ column: "job_name", value: "", extent: "contains" },
+	]);
 
 	// map column name to display name
 	const columnDisplayNames: Record<any, string> = {
-		job_id: 'Job ID',
-		job_name: 'Name',
-		user_email: 'User Email',
-		group_id: 'Group ID',
-		group_name: 'Group Name',
-		job_notes: 'Job Notes',
-		status: 'Status',
-        calculation_type: 'Calculation Type',
-		structures: 'Library Structure',
-		tags: 'Job Tags',
-		runtime: 'Runtime',
-		submitted_at: 'Submitted At',
-		completed_at: 'Completed At',
-	}
+		job_id: "Job ID",
+		job_name: "Name",
+		user_email: "User Email",
+		group_id: "Group ID",
+		group_name: "Group Name",
+		job_notes: "Job Notes",
+		status: "Status",
+		calculation_type: "Calculation Type",
+		structures: "Library Structure",
+		tags: "Job Tags",
+		runtime: "Runtime",
+		submitted_at: "Submitted At",
+		completed_at: "Completed At",
+	};
 
-    // tracks which table columns shoul be displayed
+	// tracks which table columns shoul be displayed
 	const [displayColumns, setDisplayColumns] = useState({
 		job_id: true,
 		job_name: true,
@@ -105,116 +90,114 @@ export default function Admin() {
 		group_name: true,
 		job_notes: true,
 		status: true,
-        calculation_type: true,
+		calculation_type: true,
 		structures: true,
 		tags: true,
 		runtime: true,
 		submitted_at: true,
-		completed_at: true
+		completed_at: true,
 	});
 
 	// track jobs for polling
 	const jobsRef = useRef<Job[]>([]);
-	useEffect(() => { jobsRef.current = jobs; }, [jobs]);
-
-	// Store token for AdminGroupPanel
 	useEffect(() => {
-		getAccessTokenSilently().then(setAdminPanelToken).catch(() => setAdminPanelToken(null));
-	}, [getAccessTokenSilently]);
+		jobsRef.current = jobs;
+	}, [jobs]);
 
-    // applying the filter to the jobs
-    const handleFilterSubmit = () => {
-        setFilteredJobs(filterJobs(jobsRef.current, filters));
-        setPage(0);
-    }
+	// applying the filter to the jobs
+	const handleFilterSubmit = () => {
+		setFilteredJobs(filterJobs(jobsRef.current, filters));
+		setPage(0);
+	};
 
-    // memoized the list of all tags inside the jobs history table
-    const availableTags = useMemo(() => {
-        const tagSet = new Set<string>();
-        for (const job of jobs) {
-            for (const tag of job.tags ?? []) {
-                tagSet.add(tag);
-            }
-        }
-        return Array.from(tagSet).sort((a, b) => a.localeCompare(b));
-    }, [jobs]);
+	// memoized the list of all tags inside the jobs history table
+	const availableTags = useMemo(() => {
+		const tagSet = new Set<string>();
+		for (const job of jobs) {
+			for (const tag of job.tags ?? []) {
+				tagSet.add(tag);
+			}
+		}
+		return Array.from(tagSet).sort((a, b) => a.localeCompare(b));
+	}, [jobs]);
 
 	// poll statuses every 5s
 	useEffect(() => {
 		const tick = async () => {
-		try {
-			const token = await getAccessTokenSilently();
+			try {
+				const token = await getAccessTokenSilently();
 
-			// Gather all the changes we need to apply
-			const toUpdate: Array<{
-				jobId: string;
-				newStatus?: string;
-				newRuntime?: string;
-				userSub?: string;
-			}> = [];
+				// Gather all the changes we need to apply
+				const toUpdate: Array<{
+					jobId: string;
+					newStatus?: string;
+					newRuntime?: string;
+					userSub?: string;
+				}> = [];
 
-			for (const job of jobsRef.current) {
-			// skip terminal jobs
-			if (
-				[JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED,
-                 JobStatus.OUT_OF_MEMORY, JobStatus.TIMEOUT]
-                .includes(job.status)
-			) {
-				continue;
-			}
-
-			// fetch latest from backend
-			const resp = await getJobStatusBySlurmID(job.slurm_id!, token);
-			if (resp.error) {
-				console.warn(`Failed to fetch status for job ${job.job_id}:`, resp.error);
-				continue;
-			}
-			const fetchedStatus = resp.data.state;
-			const fetchedRuntime = resp.data.elapsed;
-
-			// if anything changed, queue it up
-			if (
-				fetchedStatus !== job.status ||
-				fetchedRuntime !== job.runtime
-			) {
-				toUpdate.push({
-					jobId: job.job_id,
-					userSub: job.user_sub,
-					newStatus: fetchedStatus,
-					newRuntime: fetchedRuntime,
-				});
-			}
-			}
-
-            // Do nothing if every tracked job is already up to date.
-			if (toUpdate.length === 0) {
-				return;
-			}
-
-			// Apply updates on the server
-			await Promise.all(
-				toUpdate.map(({ jobId, newStatus, newRuntime, userSub }) =>
-					updateJob(jobId ?? '', newStatus ?? '', newRuntime ?? '', userSub ?? '', token)
-				)
-			);
-
-			// And mirror them in local state
-			setJobs((prev) =>
-			prev.map((j) => {
-				const upd = toUpdate.find((u) => u.jobId === j.job_id);
-				return upd
-				? {
-					...j,
-					status:  upd.newStatus  ?? j.status,
-					runtime: upd.newRuntime ?? j.runtime,
+				for (const job of jobsRef.current) {
+					// skip terminal jobs
+					if (
+						[
+							JobStatus.COMPLETED,
+							JobStatus.FAILED,
+							JobStatus.CANCELLED,
+							JobStatus.OUT_OF_MEMORY,
+							JobStatus.TIMEOUT,
+						].includes(job.status)
+					) {
+						continue;
 					}
-				: j;
-			})
-			);
-		} catch (err: any) {
-			console.error("Polling error:", err);
-			setError("Failed to refresh job statuses.");
-		}
+
+					// fetch latest from backend
+					const resp = await getJobStatusBySlurmID(job.slurm_id!, token);
+					if (resp.error) {
+						console.warn(`Failed to fetch status for job ${job.job_id}:`, resp.error);
+						continue;
+					}
+					const fetchedStatus = resp.data.state;
+					const fetchedRuntime = resp.data.elapsed;
+
+					// if anything changed, queue it up
+					if (fetchedStatus !== job.status || fetchedRuntime !== job.runtime) {
+						toUpdate.push({
+							jobId: job.job_id,
+							userSub: job.user_sub,
+							newStatus: fetchedStatus,
+							newRuntime: fetchedRuntime,
+						});
+					}
+				}
+
+				// Do nothing if every tracked job is already up to date.
+				if (toUpdate.length === 0) {
+					return;
+				}
+
+				// Apply updates on the server
+				await Promise.all(
+					toUpdate.map(({ jobId, newStatus, newRuntime, userSub }) =>
+						updateJob(jobId ?? "", newStatus ?? "", newRuntime ?? "", userSub ?? "", token),
+					),
+				);
+
+				// And mirror them in local state
+				setJobs((prev) =>
+					prev.map((j) => {
+						const upd = toUpdate.find((u) => u.jobId === j.job_id);
+						return upd
+							? {
+									...j,
+									status: upd.newStatus ?? j.status,
+									runtime: upd.newRuntime ?? j.runtime,
+								}
+							: j;
+					}),
+				);
+			} catch (err: any) {
+				console.error("Polling error:", err);
+				setError("Failed to refresh job statuses.");
+			}
 		};
 
 		// start polling every 5 seconds
@@ -231,35 +214,40 @@ export default function Admin() {
 			try {
 				const token = await getAccessTokenSilently();
 
-                // Fetch jobs and library structures in parallel.
+				// Fetch jobs and library structures in parallel.
 				const [jobsResponse, structuresResponse] = await Promise.all([
 					adminGetAllJobs(token),
-					getLibraryStructures(token)
+					getLibraryStructures(token),
 				]);
-				
-                // Store jobs, excluding pending jobs from the main jobs list.
-				setJobs(jobsResponse.data.filter(job => job.is !== JobStatus.PENDING));
+
+				// Store jobs, excluding pending jobs from the main jobs list.
+				setJobs(jobsResponse.data);
 				setFilteredJobs(jobsResponse.data);
 
-                // Sort structures alphabetically for easier dropdown navigation.
-				const sortedStructures = structuresResponse.data.sort((a, b) => a.name.localeCompare(b.name));
+				// Sort structures alphabetically for easier dropdown navigation.
+				const sortedStructures = structuresResponse.data.sort((a: Structure, b: Structure) =>
+					a.name.localeCompare(b.name),
+				);
 
-                // Add a default "All" option before the real structures.
-				setStructures([{ 
-					structure_id: '', 
-					name: 'All', 
-					user_sub: '', 
-					location: '',
-					uploaded_at: '',
-					notes: ''
-				}, ...sortedStructures]);
+				// Add a default "All" option before the real structures.
+				setStructures([
+					{
+						structure_id: "",
+						name: "All",
+						user_sub: "",
+						location: "",
+						uploaded_at: "",
+						notes: "",
+					},
+					...sortedStructures,
+				]);
 			} catch (err) {
-				setError('Failed to load data');
-				console.error('Failed to load data', err);
+				setError("Failed to load data");
+				console.error("Failed to load data", err);
 			} finally {
 				setLoading(false);
 			}
-		}
+		};
 
 		setLoading(true);
 		loadData();
@@ -270,47 +258,19 @@ export default function Admin() {
 		setLoading(true);
 		try {
 			const filtered = filterStructureId
-				? jobs.filter(job => job.structures.some(s => s.structure_id === filterStructureId))
+				? jobs.filter((job) => job.structures.some((s) => s.structure_id === filterStructureId))
 				: jobs;
 			setFilteredJobs(filtered);
 			setPage(0);
 		} catch (err) {
-			setError('Failed to filter jobs');
-			console.error('Failed to filter jobs:', err);
+			setError("Failed to filter jobs");
+			console.error("Failed to filter jobs:", err);
 		} finally {
 			setLoading(false);
 		}
 	}, [filterStructureId, jobs]);
 
-    // Loads molecule data for a selected structure and displays it in the preview area.
-	const openMoleculeViewer = async (structureId: string) => {
-		console.log("Opening molecule viewer for structure ID:", structureId);
-		setStructureLoading(true);
-		setError(null);
-
-		try {
-			const token = await getAccessTokenSilently();
-
-            // Fetch the structure file contents from S3 through the backend.
-			const response = await getStructureDataFromS3(structureId, token);
-			if (response.error) {
-				setError('Failed to load molecule structure. Please try again.');
-				return;
-			}
-            
-            // Store the molecule data so MolmakerMoleculePreview can render it.
-			setPreviewData(response.data);
-			setError(null);
-			// setOpen(true);
-		} catch (err) {
-			setError('Failed to load molecule structure. Please try again.');
-			console.error("Failed to load molecule structure:", err);
-		} finally {
-			setStructureLoading(false);
-		}
-	};
-
-    // Refreshes jobs from the backend and clears the active structure filter.
+	// Refreshes jobs from the backend and clears the active structure filter.
 	const handleRefresh = async () => {
 		setLoading(true);
 
@@ -318,138 +278,152 @@ export default function Admin() {
 			const token = await getAccessTokenSilently();
 			const response = await adminGetAllJobs(token);
 			setJobs(response.data);
-			setFilterStructureId('');
+			setFilterStructureId("");
 		} catch (err) {
-			setError('Failed to refresh jobs');
-			console.error('Failed to refresh jobs', err);
+			setError("Failed to refresh jobs");
+			console.error("Failed to refresh jobs", err);
 		} finally {
 			setLoading(false);
 		}
 	};
 
-    // Cancels the currently selected job using its Slurm ID.
+	// Cancels the currently selected job using its Slurm ID.
 	const handleCancel = async () => {
 		setLoading(true);
-		
+
 		try {
 			const token = await getAccessTokenSilently();
 
-            // Find the selected job before trying to cancel it.
-			const jobToCancel = jobs.find(j => j.job_id === selectedJobId);
+			// Find the selected job before trying to cancel it.
+			const jobToCancel = jobs.find((j) => j.job_id === selectedJobId);
 			if (!jobToCancel) {
-				setAlertMsg('Selected job not found.');
-				setAlertSeverity('error');
+				setAlertMsg("Selected job not found.");
+				setAlertSeverity("error");
 				setAlertShow(true);
 				setLoading(false);
 				return;
 			}
 			if (!jobToCancel.slurm_id) {
-				setAlertMsg('Job Slurm ID is missing.');
-				setAlertSeverity('error');
+				setAlertMsg("Job Slurm ID is missing.");
+				setAlertSeverity("error");
 				setAlertShow(true);
 				setLoading(false);
 				return;
 			}
 
-            // Request cancellation from the backend or Slurm service.
+			// Request cancellation from the backend or Slurm service.
 			const response = await cancelJobBySlurmID(jobToCancel.slurm_id, token);
-	
-			if (response.data === 'cancelled') {
+
+			if (response.data === "cancelled") {
 				setAlertMsg(`Job ${jobToCancel.job_name} cancelled successfully!`);
-				setAlertSeverity('success');
-				setAlertShow(true)
+				setAlertSeverity("success");
+				setAlertShow(true);
 			}
 		} catch (err) {
-			setAlertMsg('Failed to cancel the job');
-			setAlertSeverity('error');
+			setAlertMsg("Failed to cancel the job");
+			setAlertSeverity("error");
 			setAlertShow(true);
-			console.error('Failed to cancel the job', err);
+			console.error("Failed to cancel the job", err);
 		} finally {
 			setLoading(false);
 		}
 	};
 
-    // Deletes the currently selected job from the backend and removes it from local state.
+	// Deletes the currently selected job from the backend and removes it from local state.
 	const handleDelete = async () => {
 		setLoading(true);
 		try {
 			const token = await getAccessTokenSilently();
 
-            // Send delete request for the selected job.
+			// Send delete request for the selected job.
 			const response = await deleteJob(selectedJobId, token);
 			if (response.error) {
-				setAlertMsg('Failed to delete the job');
-				setAlertSeverity('error');
+				setAlertMsg("Failed to delete the job");
+				setAlertSeverity("error");
 				setAlertShow(true);
 				return;
 			}
 
-            // Remove deleted job from the local jobs list.
-			setJobs(jobs.filter(job => job.job_id !== selectedJobId));
+			// Remove deleted job from the local jobs list.
+			setJobs(jobs.filter((job) => job.job_id !== selectedJobId));
 
-            // Clear current selection after deletion.
-			setSelectedJobId('');
-			setAlertMsg('Job deleted successfully!');
-			setAlertSeverity('success');
+			// Clear current selection after deletion.
+			setSelectedJobId("");
+			setAlertMsg("Job deleted successfully!");
+			setAlertSeverity("success");
 			setAlertShow(true);
 		} catch (err) {
-			setAlertMsg('Failed to delete the job');
-			setAlertSeverity('error');
+			setAlertMsg("Failed to delete the job");
+			setAlertSeverity("error");
 			setAlertShow(true);
-			console.error('Failed to delete the job', err);
+			console.error("Failed to delete the job", err);
 		} finally {
 			setLoading(false);
 		}
 	};
 
-    // Determines whether the cancel button should be disable for the selected job
-	const cancelDisabled = (selectedJobId: string | null) : boolean => {
+	// Determines whether the cancel button should be disable for the selected job
+	const cancelDisabled = (selectedJobId: string | null): boolean => {
 		if (!selectedJobId) {
 			return true;
 		}
 
-		const jobToCancel = jobs.find(j => j.job_id === selectedJobId);
+		const jobToCancel = jobs.find((j) => j.job_id === selectedJobId);
 		if (!jobToCancel) {
 			return true;
 		}
 
-        // Completed, failed, and cancelled jobs cannot be cancelled again.
-		if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED,
-            JobStatus.OUT_OF_MEMORY, JobStatus.TIMEOUT].includes(jobToCancel.status)) {
-           return true
+		// Completed, failed, and cancelled jobs cannot be cancelled again.
+		if (
+			[
+				JobStatus.COMPLETED,
+				JobStatus.FAILED,
+				JobStatus.CANCELLED,
+				JobStatus.OUT_OF_MEMORY,
+				JobStatus.TIMEOUT,
+			].includes(jobToCancel.status)
+		) {
+			return true;
 		}
 
-		return false
-	}
+		return false;
+	};
 
-    // Determines whether the delete button should be disabled for the selected job.
-	const deleteDisabled = (selectedJobId: string | null) : boolean => {
+	// Determines whether the delete button should be disabled for the selected job.
+	const deleteDisabled = (selectedJobId: string | null): boolean => {
 		if (!selectedJobId) {
 			return true;
 		}
-		const jobToDelete = jobs.find(j => j.job_id === selectedJobId);
+		const jobToDelete = jobs.find((j) => j.job_id === selectedJobId);
 		if (!jobToDelete) {
 			return true;
 		}
 
-        // Only allow deletion for terminal jobs.
-		if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED,
-            JobStatus.OUT_OF_MEMORY, JobStatus.TIMEOUT].includes(jobToDelete.status)) {
-           return false;
-       }
+		// Only allow deletion for terminal jobs.
+		if (
+			[
+				JobStatus.COMPLETED,
+				JobStatus.FAILED,
+				JobStatus.CANCELLED,
+				JobStatus.OUT_OF_MEMORY,
+				JobStatus.TIMEOUT,
+			].includes(jobToDelete.status)
+		) {
+			return false;
+		}
 		return true;
-	}
+	};
 
-    // Downloads a ZIP file from a presigned S3 URL using a temporary browser blob link.
+	// Downloads a ZIP file from a presigned S3 URL using a temporary browser blob link.
 	async function downloadZipFromS3WithBlob(presignedUrl: string, filename = "result.zip") {
 		const response = await fetch(presignedUrl);
 		if (!response.ok) throw new Error("Failed to download file");
 
-        // Convert response data into a downloadable browser blob.
+		// Convert response data into a downloadable browser blob.
 		const blob = await response.blob();
 		const blobUrl = window.URL.createObjectURL(blob);
-        
-        // Create a temporary anchor element to trigger the download.
+
+		// Create a temporary anchor element to trigger the download.
 		const link = document.createElement("a");
 		link.href = blobUrl;
 		link.download = filename;
@@ -461,118 +435,105 @@ export default function Admin() {
 		window.URL.revokeObjectURL(blobUrl);
 	}
 
-    // Retrieves a presigned ZIP URL for the selected job and downloads the archive.
+	// Retrieves a presigned ZIP URL for the selected job and downloads the archive.
 	const handleZipDownload = async () => {
 		setLoading(true);
 		try {
 			const token = await getAccessTokenSilently();
 
-            // Ask the backend for a temporary S3 download URL.
+			// Ask the backend for a temporary S3 download URL.
 			const response = await getZipPresignedUrl(selectedJobId, token);
 			if (response.error) {
-				setAlertMsg('Failed to download the job archive');
-				setAlertSeverity('error');
+				setAlertMsg("Failed to download the job archive");
+				setAlertSeverity("error");
 				setAlertShow(true);
 				return;
 			}
-			const jobToDownloadZip = jobs.find(j => j.job_id === selectedJobId);
+			const jobToDownloadZip = jobs.find((j) => j.job_id === selectedJobId);
 			if (!jobToDownloadZip) {
-				setAlertMsg('Selected job not found.');
-				setAlertSeverity('error');
+				setAlertMsg("Selected job not found.");
+				setAlertSeverity("error");
 				setAlertShow(true);
 				setLoading(false);
 				return;
 			}
 			const zipUrl: string = response.data.url;
 
-            // Download the ZIP file using the job name as the filename.
+			// Download the ZIP file using the job name as the filename.
 			await downloadZipFromS3WithBlob(zipUrl, `${jobToDownloadZip.job_name}.zip`);
-			setSelectedJobId('');
-			setAlertMsg('Job archive download successfully!');
-			setAlertSeverity('success');
+			setSelectedJobId("");
+			setAlertMsg("Job archive download successfully!");
+			setAlertSeverity("success");
 			setAlertShow(true);
 		} catch (err) {
-			setAlertMsg('Failed to download the job archive');
-			setAlertSeverity('error');
+			setAlertMsg("Failed to download the job archive");
+			setAlertSeverity("error");
 			setAlertShow(true);
-			console.error('Failed to download the job', err);
+			console.error("Failed to download the job", err);
 		} finally {
 			setLoading(false);
 		}
-	}
-	
-    // Determines whether the ZIP download button should be disabled for the selected job.
+	};
+
+	// Determines whether the ZIP download button should be disabled for the selected job.
 	const downloadDisabled = (selectedJobId: string | null): boolean => {
-		if (!selectedJobId) { return true; }
-
-		const jobToDownloadZip = jobs.find(j => j.job_id === selectedJobId);
-		if (!jobToDownloadZip) { return true; }
-
-        // Archives are not downloadable while jobs are active, pending, cancelled, unknown, out of memory, or timeout.
-		if ([JobStatus.CANCELLED, JobStatus.PENDING, JobStatus.RUNNING, 
-            JobStatus.UNKNOWN, JobStatus.OUT_OF_MEMORY, JobStatus.TIMEOUT]
-            .includes(jobToDownloadZip.status)) {
-			return true
+		if (!selectedJobId) {
+			return true;
 		}
 
-		return false
-	}
+		const jobToDownloadZip = jobs.find((j) => j.job_id === selectedJobId);
+		if (!jobToDownloadZip) {
+			return true;
+		}
 
-    // Show a full-page loading component while data is being fetched or actions are running.
+		// Archives are not downloadable while jobs are active, pending, cancelled, unknown, out of memory, or timeout.
+		if (
+			[
+				JobStatus.CANCELLED,
+				JobStatus.PENDING,
+				JobStatus.RUNNING,
+				JobStatus.UNKNOWN,
+				JobStatus.OUT_OF_MEMORY,
+				JobStatus.TIMEOUT,
+			].includes(jobToDownloadZip.status)
+		) {
+			return true;
+		}
+
+		return false;
+	};
+
+	// Show a full-page loading component while data is being fetched or actions are running.
 	if (loading) {
-		return (
-			<MolmakerLoading />
-		);
+		return <MolmakerLoading />;
 	}
 
 	return (
 		<Box p={4} className="bg-stone-100 min-h-screen">
-            {/* Show a page-level error alert when a general error exists. */}
-			{error && (
-				<MolmakerAlert
-					text={error}
-					severity="error"
-					outline="error"
-					sx={{ mb: 4 }}
-				/>
-			)}
+			{/* Show a page-level error alert when a general error exists. */}
+			{error && <MolmakerAlert text={error} severity="error" outline="error" sx={{ mb: 4 }} />}
 
-			{/* Structure Preview Dialog */}
-			<Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
-				<Box sx={{ width: '100%', height: 400 }}>
-					<MolmakerMoleculePreview
-						data={previewData}
-						format='xyz'
-						source="library"
-						title="Structure Preview"
-						sx={{ width: '100%', height: '100%' }}
-					/>
-				</Box>
-			</Dialog>
-
-            {/* Confirmation dialog shown before permanently deleting a job */}
+			{/* Confirmation dialog shown before permanently deleting a job */}
 			<MolmakerConfirm
 				open={openConfirmDelete}
 				onClose={() => setOpenConfirmDelete(false)}
-				textToShow={
-					"Are you sure you want to delete this row? This action cannot be undone."
-				}
+				textToShow={"Are you sure you want to delete this row? This action cannot be undone."}
 				onConfirm={() => {
 					handleDelete();
 					setOpenConfirmDelete(false);
 				}}
 			/>
 
-            {/* Snackbar container for success, error, info, and warning messages. */}
-			<Box
-				sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-			>
-				<Snackbar 
-					open={alertShow} 
+			{/* Snackbar container for success, error, info, and warning messages. */}
+			<Box sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+				<Snackbar
+					open={alertShow}
 					autoHideDuration={5000}
-					onClose={() => { setAlertShow(false) }}
-					anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-					sx={{ top: { xs: '48px', sm: '80px' } }}
+					onClose={() => {
+						setAlertShow(false);
+					}}
+					anchorOrigin={{ vertical: "top", horizontal: "center" }}
+					sx={{ top: { xs: "48px", sm: "80px" } }}
 				>
 					<div>
 						<MolmakerAlert
@@ -585,36 +546,24 @@ export default function Admin() {
 				</Snackbar>
 			</Box>
 
-            {/* Main page heading and description. */}
+			{/* Main page heading and description. */}
 			<MolmakerPageTitle
 				title="Admin Dashboard"
-				subtitle={
-					<>
-						Welcome to the admin dashboard. Here you can manage jobs, users, and groups.
-					</>
-				}
+				subtitle={<>Welcome to the admin dashboard. Here you can manage jobs, users, and groups.</>}
 			/>
 
-            {/* Main jobs table section. */}
+			{/* Main jobs table section. */}
 			<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50], mb: 4 }}>
 				<JobsToolbar
 					selectedJobId={selectedJobId}
 					onViewDetails={() => navigate(`/jobs/${selectedJobId}`)}
-					onViewStructure={() => {
-                        // Preview the first structure attached to the selected job.
-						const job = filteredJobs.find(j => j.job_id === selectedJobId);
-						if (job?.structures.length) {
-							openMoleculeViewer(job.structures[0].structure_id);
-						}
-					}}
 					onFilterByStructure={() => {
-                        // Filter the table by the first structure attached to the selected job.
-						const job = filteredJobs.find(j => j.job_id === selectedJobId);
+						// Filter the table by the first structure attached to the selected job.
+						const job = filteredJobs.find((j) => j.job_id === selectedJobId);
 						if (job?.structures.length) {
 							setFilterStructureId(job.structures[0].structure_id);
 						}
 					}}
-					viewStructureDisabled={!selectedJobId || !filteredJobs.find(j => j.job_id === selectedJobId)?.structures.length}
 					cancelDisabled={cancelDisabled}
 					deleteDisabled={deleteDisabled}
 					onCancelJob={handleCancel}
@@ -627,18 +576,18 @@ export default function Admin() {
 					downloadDisabled={downloadDisabled}
 					isGroupAdmin={true}
 
-                    displayColumns={displayColumns}
-                    columnDisplayNames={columnDisplayNames}
-                    onColumnToggle={(col, checked) =>
-                        setDisplayColumns(prev => ({ ...prev, [col]: checked}))
-                    }
-                    filters={filters}
-                    onFiltersChange={setFilters}
-                    onFilterSubmit={handleFilterSubmit}
-                    availableTags={availableTags}
+					displayColumns={displayColumns}
+					columnDisplayNames={columnDisplayNames}
+					onColumnToggle={(col, checked) =>
+						setDisplayColumns((prev) => ({ ...prev, [col]: checked }))
+					}
+					filters={filters}
+					onFiltersChange={setFilters}
+					onFilterSubmit={handleFilterSubmit}
+					availableTags={availableTags}
 				/>
 
-                {/* Table containing the filtered, sorted, and selectable job rows. */}
+				{/* Table containing the filtered, sorted, and selectable job rows. */}
 				<AdminJobsTable
 					jobs={filteredJobs}
 					page={page}
@@ -647,11 +596,11 @@ export default function Admin() {
 					orderBy={orderBy}
 					selectedJobId={selectedJobId}
 					onSort={(col: keyof Job) => {
-						const isAsc = orderBy === col && order === 'asc';
-						setOrder(isAsc ? 'desc' : 'asc');
+						const isAsc = orderBy === col && order === "asc";
+						setOrder(isAsc ? "desc" : "asc");
 						setOrderBy(col);
 						const sorted = [...filteredJobs].sort((a, b) => {
-							if (col === 'submitted_at') {
+							if (col === "submitted_at") {
 								return isAsc
 									? new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime()
 									: new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime();
@@ -666,14 +615,17 @@ export default function Admin() {
 					displayColumns={displayColumns}
 				/>
 
-                {/*  Pagination controls for the jobs table. */}
+				{/*  Pagination controls for the jobs table. */}
 				<TablePagination
 					component="div"
 					count={filteredJobs.length}
 					page={page}
 					rowsPerPage={rowsPerPage}
 					onPageChange={(_, newPage) => setPage(newPage)}
-					onRowsPerPageChange={e => { setRowsPerPage(+e.target.value); setPage(0); }}
+					onRowsPerPageChange={(e) => {
+						setRowsPerPage(+e.target.value);
+						setPage(0);
+					}}
 					rowsPerPageOptions={[5, 10, 25]}
 				/>
 			</Paper>
