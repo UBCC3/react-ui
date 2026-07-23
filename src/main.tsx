@@ -17,7 +17,7 @@ const Auth0ProviderWithNavigate = ({ children }) => {
             domain={import.meta.env.VITE_AUTH0_DOMAIN}
             clientId={import.meta.env.VITE_AUTH0_CLIENT_ID}
             authorizationParams={{
-                redirect_uri: window.location.origin + (import.meta.env.VITE_MODE === 'development' ? '/callback' : '/ubchemica'),
+                redirect_uri: window.location.origin + '/ubchemica',
                 audience: import.meta.env.VITE_AUTH0_AUDIENCE,
             }}
             useRefreshTokens={true}
@@ -32,7 +32,7 @@ const rootElement = document.getElementById('root');
 if (rootElement) {
 	createRoot(rootElement).render(
 		<StrictMode>
-			<BrowserRouter basename={import.meta.env.VITE_MODE === 'development' ? '' : '/ubchemica'}>
+			<BrowserRouter basename='/ubchemica'>
                 <Auth0ProviderWithNavigate>
                     <App />
                 </Auth0ProviderWithNavigate>
