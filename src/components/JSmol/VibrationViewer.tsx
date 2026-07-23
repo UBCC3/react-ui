@@ -30,6 +30,7 @@ import { useJsmolViewer } from "../../hooks/UseJsmolViewer";
 import { useJobResult } from "../../hooks/UseJobResult";
 import { ResultDrawer } from "../results/ResultDrawer";
 import { ResultDrawerSection } from "../results/ResultDrawerSection";
+import AddStructureToLibrary from "./AddStructureToLibrary";
 
 /**
  * Generate accessibility props for a Material UI Tab.
@@ -189,17 +190,28 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 					</Tabs>
 				</Box>
 				{value === 0 && (
-					<Paper
-						ref={viewerRef}
-						sx={{
-							width: "100%",
-							aspectRatio: "1 / 1",
-							height: "auto",
-							boxSizing: "border-box",
-							borderRadius: 2,
-						}}
-						elevation={3}
-					/>
+					<>
+						<Box sx={{ mb: 2 }}>
+							<AddStructureToLibrary
+								viewerObj={viewerObj}
+								viewerRef={viewerRef}
+								onDialogOpen={() => setVibrationOn(false)}
+								infoText="The equilibrium geometry is saved to your library, not a 
+                                vibrationally-displaced frame. This also stops the vibration animation."
+							/>
+						</Box>
+						<Paper
+							ref={viewerRef}
+							sx={{
+								width: "100%",
+								aspectRatio: "1 / 1",
+								height: "auto",
+								boxSizing: "border-box",
+								borderRadius: 2,
+							}}
+							elevation={3}
+						/>
+					</>
 				)}
 				{value === 1 && (
 					<Paper

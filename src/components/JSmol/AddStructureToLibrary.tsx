@@ -8,6 +8,7 @@ import {
 	Divider,
 	Autocomplete,
 	TextField,
+	Alert,
 } from "@mui/material";
 import { AddPhotoAlternateOutlined } from "@mui/icons-material";
 import { grey, blueGrey } from "@mui/material/colors";
@@ -18,6 +19,8 @@ import { AddAndUploadStructureToS3 } from "../../services/api";
 interface AddStructureToLibraryProps {
 	viewerObj: any;
 	viewerRef: React.RefObject<HTMLDivElement | null>;
+	infoText?: React.ReactNode;
+	onDialogOpen?: () => void;
 }
 
 /**
@@ -25,7 +28,12 @@ interface AddStructureToLibraryProps {
  * to the user's library. Captures the canvas as a PNG preview and exports the
  * on-screen structure as XYZ, then uploads both with the entered metadata.
  */
-const AddStructureToLibrary = ({ viewerObj, viewerRef }: AddStructureToLibraryProps) => {
+const AddStructureToLibrary = ({
+	viewerObj,
+	viewerRef,
+	infoText,
+	onDialogOpen,
+}: AddStructureToLibraryProps) => {
 	const { getAccessTokenSilently } = useAuth0();
 
 	const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -76,7 +84,10 @@ const AddStructureToLibrary = ({ viewerObj, viewerRef }: AddStructureToLibraryPr
 				color="primary"
 				sx={{ textTransform: "none " }}
 				startIcon={<AddPhotoAlternateOutlined />}
-				onClick={() => setAddDialogOpen(true)}
+				onClick={() => {
+					onDialogOpen?.();
+					setAddDialogOpen(true);
+				}}
 				disabled={!viewerObj}
 			>
 				Add Structure to My Library
@@ -96,6 +107,11 @@ const AddStructureToLibrary = ({ viewerObj, viewerRef }: AddStructureToLibraryPr
 				</DialogTitle>
 				<Divider />
 				<DialogContent sx={{ display: "flex", flexDirection: "column", p: 2, minWidth: 500 }}>
+					{infoText && (
+						<Alert severity="info" sx={{ mb: 2 }}>
+							{infoText}
+						</Alert>
+					)}
 					<MolmakerTextField
 						fullWidth
 						label="Structure Name"

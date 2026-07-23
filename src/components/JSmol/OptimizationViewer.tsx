@@ -120,7 +120,23 @@ const OptimizationViewer: React.FC<VibrationViewerProps> = ({
 	return (
 		<Grid container spacing={2} sx={{ width: "100%" }}>
 			<Grid sx={{ width: "100%" }}>
-				<AddStructureToLibrary viewerObj={viewerObj} viewerRef={viewerRef} />
+				{job.calculation_type === "irc" ? (
+					<AddStructureToLibrary
+						viewerObj={viewerObj}
+						viewerRef={viewerRef}
+						infoText="An IRC traces a reaction path. The structure currently shown will be 
+                        saved, navigate to a path endpoint (a reactant or product minimum) for a meaningful 
+                        structure. Intermediate path points aren't stable geometries and usually need re-optimizing."
+					/>
+				) : (
+					<AddStructureToLibrary
+						viewerObj={viewerObj}
+						viewerRef={viewerRef}
+						onDialogOpen={() => setSelectedIteration(iterations[iterations.length - 1] ?? null)}
+						infoText="The final, most optimized geometry is saved to your library, not the 
+                        intermediate optimization step you may currently be viewing."
+					/>
+				)}
 			</Grid>
 			<Grid
 				sx={{ display: "flex", flexDirection: "column", flex: "1 0 auto", position: "relative" }}
