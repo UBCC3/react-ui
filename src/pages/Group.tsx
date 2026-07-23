@@ -1,8 +1,21 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate } from "react-router-dom";
-import { Box, Paper, TablePagination, Snackbar } from "@mui/material";
-import { grey } from "@mui/material/colors";
+import {
+	Box,
+	Paper,
+	TablePagination,
+	Snackbar,
+	Typography,
+	TableContainer,
+	Table,
+	TableHead,
+	TableRow,
+	TableCell,
+	TableBody,
+	Toolbar,
+} from "@mui/material";
+import { blue, grey } from "@mui/material/colors";
 import {
 	cancelJobBySlurmID,
 	getJobStatusBySlurmID,
@@ -12,6 +25,7 @@ import {
 	getCurrentUserGroupJobs,
 	upsertCurrentUser,
 	getZipPresignedUrl,
+	getCurrentUserGroupStructures,
 } from "../services/api";
 import { JobStatus } from "../constants";
 import JobsToolbar from "./Home/components/JobsToolbar";
@@ -20,6 +34,8 @@ import type { Filter, Job, Structure } from "../types";
 import GroupPanel from "../components/GroupPanel";
 import GroupJobsTable from "./Home/components/GroupJobsTable";
 import { filterJobs } from "../utils";
+import { Pyramid } from "lucide-react";
+import { renderFormula } from "../utils/renderFormula";
 
 export default function Group() {
 	// map column name to display name
@@ -62,6 +78,9 @@ export default function Group() {
 	const [jobs, setJobs] = useState<Job[]>([]);
 	const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
 	const [structures, setStructures] = useState<Structure[]>([]);
+	const [groupStructures, setGroupStructures] = useState<Structure[]>([]);
+	const [structPage, setStructPage] = useState(0);
+	const [structRowsPerPage, setStructRowsPerPage] = useState(5);
 
 	// UI states
 	const [loading, setLoading] = useState(true);
@@ -128,9 +147,10 @@ export default function Group() {
 				const token = await getAccessTokenSilently();
 
 				// Fetch jobs and structures in parallel to reduce loading time.
-				const [jr, sr] = await Promise.all([
+				const [jr, sr, gsr] = await Promise.all([
 					getCurrentUserGroupJobs(token),
 					getLibraryStructures(token),
+					getCurrentUserGroupStructures(token),
 				]);
 
 				// Store all group jobs.
@@ -158,6 +178,9 @@ export default function Group() {
 					},
 					...sortedStructs,
 				]);
+				setGroupStructures(
+					(gsr.data || []).sort((a: Structure, b: Structure) => a.name.localeCompare(b.name)),
+				);
 			} catch (e) {
 				console.error(e);
 				setError("Failed to load data");
@@ -208,7 +231,7 @@ export default function Group() {
 							jobId: j.job_id,
 							newStatus: state,
 							newRuntime: elapsed,
-							userSub: j.user_sub,
+							userSub: j.user_sub ?? "",
 						});
 					}
 				}
@@ -610,6 +633,93 @@ export default function Group() {
 						setPage(0);
 					}}
 					rowsPerPageOptions={[5, 10, 25]}
+				/>
+			</Paper>
+
+			{/* Group structure library — separate Paper, styled like the personal library. */}
+			<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50], mb: 4 }}>
+				<Toolbar
+					sx={{
+						justifyContent: "space-between",
+						borderTopLeftRadius: 5,
+						borderTopRightRadius: 5,
+					}}
+				>
+					<Typography
+						variant="h6"
+						color={grey[800]}
+						sx={{
+							display: "flex",
+							alignItems: "center",
+							fontWeight: "bold",
+							fontSize: "1.1rem",
+						}}
+					>
+						<Pyramid style={{ marginRight: 10, color: blue[600] }} />
+						Structures
+					</Typography>
+				</Toolbar>
+				<TableContainer>
+					<Table>
+						<TableHead>
+							<TableRow sx={{ bgcolor: grey[200] }}>
+								<TableCell>Name</TableCell>
+								<TableCell>Chemical Formula</TableCell>
+								<TableCell>Notes</TableCell>
+								<TableCell>Tags</TableCell>
+								<TableCell>Uploaded At</TableCell>
+							</TableRow>
+						</TableHead>
+						<TableBody>
+							{groupStructures.length === 0 && (
+								<TableRow>
+									<TableCell colSpan={5} align="center">
+										<Typography variant="body2" color="text.secondary">
+											No structures in this group yet.
+										</Typography>
+									</TableCell>
+								</TableRow>
+							)}
+							{groupStructures
+								.slice(
+									structPage * structRowsPerPage,
+									structPage * structRowsPerPage + structRowsPerPage,
+								)
+								.map((structure) => (
+									<TableRow key={structure.structure_id}>
+										<TableCell>{structure.name}</TableCell>
+										<TableCell>{renderFormula(structure.formula)}</TableCell>
+										<TableCell>{structure.notes}</TableCell>
+										<TableCell>
+											{structure.tags && structure.tags.length > 0 ? (
+												structure.tags.join(", ")
+											) : (
+												<Typography variant="body2" color="text.secondary">
+													No tags
+												</Typography>
+											)}
+										</TableCell>
+										<TableCell>
+											{structure.uploaded_at
+												? new Date(structure.uploaded_at).toLocaleString()
+												: ""}
+										</TableCell>
+									</TableRow>
+								))}
+						</TableBody>
+					</Table>
+				</TableContainer>
+				<TablePagination
+					component="div"
+					rowsPerPageOptions={[5, 10, 25]}
+					count={groupStructures.length}
+					rowsPerPage={structRowsPerPage}
+					page={structPage}
+					onPageChange={(_, newPage) => setStructPage(newPage)}
+					onRowsPerPageChange={(e) => {
+						setStructRowsPerPage(+e.target.value);
+						setStructPage(0);
+					}}
 				/>
 			</Paper>
 		</Box>

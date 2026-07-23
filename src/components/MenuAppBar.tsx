@@ -33,7 +33,7 @@ import { useDrawer } from "./DrawerContext";
 import logo from "../assets/logo.svg";
 import {
 	getSentRequests,
-	getRequests,
+	getReceivedRequests,
 	approveRequest,
 	rejectRequest,
 	deleteRequest,
@@ -141,9 +141,9 @@ export default function MenuAppBar() {
 		 */
 		const fetchSent = async () => {
 			const token = await getAccessTokenSilently();
-			if (!token || !user?.sub) return;
-			const resp = await getSentRequests(user.sub, token);
-			setSentRequests(resp.data);
+			if (!token) return;
+			const resp = await getSentRequests(token);
+			setSentRequests(resp.data || []);
 		};
 
 		/**
@@ -151,9 +151,9 @@ export default function MenuAppBar() {
 		 */
 		const fetchIncoming = async () => {
 			const token = await getAccessTokenSilently();
-			if (!token || !user?.sub) return;
-			const resp = await getRequests(user.sub, token);
-			setIncomingRequests(resp.data);
+			if (!token) return;
+			const resp = await getReceivedRequests(token);
+			setIncomingRequests(resp.data || []);
 		};
 
 		fetchSent();

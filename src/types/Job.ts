@@ -11,7 +11,7 @@ interface Job {
 	multiplicity: number;
 	submitted_at: string;
 	completed_at: string | null;
-	user_sub: string;
+	user_sub?: string;
 	user_email: string;
 	group_id: string | null;
 	group_name: string | null;
