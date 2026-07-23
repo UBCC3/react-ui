@@ -162,7 +162,7 @@ export default function Admin() {
 					if (fetchedStatus !== job.status || fetchedRuntime !== job.runtime) {
 						toUpdate.push({
 							jobId: job.job_id,
-							userSub: job.user_sub,
+							userSub: job.user_sub ?? "",
 							newStatus: fetchedStatus,
 							newRuntime: fetchedRuntime,
 						});

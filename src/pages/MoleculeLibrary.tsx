@@ -173,9 +173,9 @@ const MoleculeLibrary = () => {
 				return newOrder === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
 			}
 			// Handle undefined values
-			if (aValue === undefined && bValue === undefined) return 0;
-			if (aValue === undefined) return newOrder === "asc" ? 1 : -1;
-			if (bValue === undefined) return newOrder === "asc" ? -1 : 1;
+			if (aValue == null && bValue == null) return 0;
+			if (aValue == null) return newOrder === "asc" ? 1 : -1;
+			if (bValue == null) return newOrder === "asc" ? -1 : 1;
 
 			// Fallback comparison for non-string values.
 			return newOrder === "asc" ? (aValue < bValue ? -1 : 1) : aValue > bValue ? -1 : 1;

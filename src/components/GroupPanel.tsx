@@ -322,6 +322,20 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 										ROLE
 									</Box>
 								</TableCell>
+								<TableCell>
+									<Box
+										sx={{
+											display: "flex",
+											alignItems: "center",
+											width: "100%",
+											fontSize: "0.7rem",
+											fontWeight: "bold",
+											color: grey[700],
+										}}
+									>
+										ROLE/GROUP UPDATED
+									</Box>
+								</TableCell>
 								{userRole === "group_admin" && (
 									<TableCell>
 										<Box
@@ -352,6 +366,11 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 												<MenuItem value="member">Member</MenuItem>
 											</Select>
 										</FormControl>
+									</TableCell>
+									<TableCell>
+										{u.role_or_group_updated_at
+											? new Date(u.role_or_group_updated_at).toLocaleString()
+											: "-"}
 									</TableCell>
 									{userRole === "group_admin" && (
 										<TableCell>

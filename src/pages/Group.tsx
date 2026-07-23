@@ -231,7 +231,7 @@ export default function Group() {
 							jobId: j.job_id,
 							newStatus: state,
 							newRuntime: elapsed,
-							userSub: j.user_sub,
+							userSub: j.user_sub ?? "",
 						});
 					}
 				}
