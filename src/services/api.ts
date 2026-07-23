@@ -1228,11 +1228,11 @@ export const removeGroupUser = async (userSub: string, token: string): Promise<R
 };
 
 /**
- * Transfers ownership of a job between user, group, or co-owned.
+ * Transfers ownership of a job between user, group, or co_owned.
  */
 export const updateJobOwnership = async (
 	jobId: string,
-	ownership: "user" | "group" | "co-owned",
+	ownership: "user" | "group" | "co_owned",
 	token: string,
 	userSub?: string,
 	groupId?: string,
@@ -1247,6 +1247,33 @@ export const updateJobOwnership = async (
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error("Failed to update job ownership", error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+/**
+ * Transfers ownership of a structure between user, group or co_owned
+ */
+export const updateStructureOwnership = async (
+	structureId: string,
+	ownership: "user" | "group" | "co_owned",
+	token: string,
+	userSub?: string,
+	groupId?: string,
+): Promise<Response> => {
+	const formData = new FormData();
+	formData.append("ownership", ownership);
+	if (userSub) formData.append("user_sub", userSub);
+	if (groupId) formData.append("group_id", groupId);
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.patch(`/group/structures/${structureId}`, formData);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error("Failed to update structure ownership", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,

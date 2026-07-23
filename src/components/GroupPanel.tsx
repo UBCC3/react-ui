@@ -43,8 +43,12 @@ import {
 	sendInviteRequest,
 	removeGroupUser,
 	updateJobOwnership,
+	getCurrentUserGroupStructures,
+	updateStructureOwnership,
+	deleteJob,
+	deleteStructure,
 } from "../services/api";
-import type { User, Job } from "../types";
+import type { User, Job, Structure } from "../types";
 
 /**
  * Props for the GroupPanel
@@ -64,6 +68,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 
 	const [users, setUsers] = useState<User[]>([]);
 	const [jobs, setJobs] = useState<Job[]>([]);
+	const [structures, setStructures] = useState<Structure[]>([]);
 
 	const [groupName, setGroupName] = useState("");
 	const [groupId, setGroupId] = useState("");
@@ -80,7 +85,9 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 	const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
 
 	const [selectedUser, setSelectedUser] = useState<User | null>(null);
-	const [removalPolicy, setRemovalPolicy] = useState<"co_owned" | "user" | "group">("co_owned");
+	const [removalPolicy, setRemovalPolicy] = useState<"co_owned" | "user" | "group" | "delete">(
+		"co_owned",
+	);
 
 	const [loading, setLoading] = useState(true);
 	const [loadingMessage, setLoadingMessage] = useState("Loading...");
@@ -110,6 +117,10 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 			const jobsResp = await getCurrentUserGroupJobs(token);
 			setJobs(jobsResp.data || []);
 
+			setLoadingMessage("Loading structures...");
+			const structuresResp = await getCurrentUserGroupStructures(token);
+			setStructures(structuresResp.data || []);
+
 			setLoading(false);
 		}
 
@@ -127,17 +138,30 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 		if (!selectedUser) return;
 		const userSub = selectedUser.user_sub;
 		const userJobs = jobs.filter((j) => j.user_sub === userSub);
+		const userStructures = structures.filter((s) => s.user_sub === userSub);
 
 		if (removalPolicy === "group") {
-			// User's ownership claim is removed; job stays with the group.
-			await Promise.all(
-				userJobs.map((j) => updateJobOwnership(j.job_id, "group", token, undefined, groupId)),
-			);
+			// User's ownership claim is removed; assets stay with the group.
+			await Promise.all([
+				...userJobs.map((j) => updateJobOwnership(j.job_id, "group", token, undefined, groupId)),
+				...userStructures.map((s) =>
+					updateStructureOwnership(s.structure_id, "group", token, undefined, groupId),
+				),
+			]);
 		} else if (removalPolicy === "user") {
-			// Group's ownership claim is removed; job stays with the user.
-			await Promise.all(
-				userJobs.map((j) => updateJobOwnership(j.job_id, "user", token, userSub, undefined)),
-			);
+			// Group's ownership claim is removed; assets stay with the user.
+			await Promise.all([
+				...userJobs.map((j) => updateJobOwnership(j.job_id, "user", token, userSub, undefined)),
+				...userStructures.map((s) =>
+					updateStructureOwnership(s.structure_id, "user", token, userSub, undefined),
+				),
+			]);
+		} else if (removalPolicy === "delete") {
+			// Soft-delete the user's jobs and structures (is_deleted = true; rows kept in DB).
+			await Promise.all([
+				...userJobs.map((j) => deleteJob(j.job_id, token)),
+				...userStructures.map((s) => deleteStructure(s.structure_id, token)),
+			]);
 		}
 		// 'co_owned': no change - job remains co-owned by both, matching demember's own default behavior.
 
@@ -379,17 +403,22 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 										<FormControlLabel
 											value="co_owned"
 											control={<Radio />}
-											label="Keep jobs co-owned by the user and the group"
+											label="Keep jobs and structures co-owned by the user and the group"
 										/>
 										<FormControlLabel
 											value="group"
 											control={<Radio />}
-											label="Job deleted from user (job stays with the group)"
+											label="Jobs and structures deleted from user database"
 										/>
 										<FormControlLabel
 											value="user"
 											control={<Radio />}
-											label="Job deleted from group (job stays with the user)"
+											label="Jobs and structures deleted from group database"
+										/>
+										<FormControlLabel
+											value="delete"
+											control={<Radio />}
+											label="Delete the user's jobs and structures"
 										/>
 									</RadioGroup>
 								</FormControl>
