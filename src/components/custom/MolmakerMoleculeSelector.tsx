@@ -81,7 +81,7 @@ const MolmakerMoleculeSelector = ({
 	file,
 	onFileChange,
 	uploadStructure,
-	onUploadStructureChange,
+	// onUploadStructureChange,
 	moleculeName,
 	onMoleculeNameChange,
 	chemicalFormula,
@@ -183,7 +183,8 @@ const MolmakerMoleculeSelector = ({
 								</FormHelperText>
 							)}
 						</Box>
-						<FormControlLabel
+						{/* Upload molecule button disabled temporarily */}
+						{/* <FormControlLabel
 							disabled={source !== "upload"}
 							control={
 								<Checkbox
@@ -194,7 +195,7 @@ const MolmakerMoleculeSelector = ({
 							}
 							label="Upload Structure to Library"
 							sx={{ ml: 2 }}
-						/>
+						/> */}
 					</Grid>
 				)}
 
