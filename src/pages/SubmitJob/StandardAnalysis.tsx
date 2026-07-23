@@ -15,10 +15,9 @@ import {
 import { PlayCircleOutlineOutlined, InfoOutline } from "@mui/icons-material";
 import {
 	MolmakerTextField,
-	MolmakerDropdown,
 	MolmakerMoleculeSelector,
 	MolmakerSectionHeader,
-    MolmakerRadioGroup,
+	MolmakerRadioGroup,
 	MolmakerMoleculePreview,
 	MolmakerLoading,
 	MolmakerAlert,
@@ -33,10 +32,10 @@ import {
 	AddAndUploadStructureToS3,
 	getChemicalFormula,
 	getStructuresTags,
-} from '../../services/api';
-import { Structure } from '../../types';
-import { unpairedElectronOptions } from '../../constants';
-import { grey } from '@mui/material/colors';
+} from "../../services/api";
+import { Structure } from "../../types";
+import { unpairedElectronOptions } from "../../constants";
+import { grey } from "@mui/material/colors";
 
 export default function StandardAnalysis() {
 	// used to redirect the user after the job is successfully submitted
@@ -71,15 +70,15 @@ export default function StandardAnalysis() {
 	const [structureNotes, setStructureNotes] = useState<string>("");
 	const [structureTags, setStructureTags] = useState<string[]>([]);
 
-    // state for calculation parameters
-    const [charge, setCharge] = useState<number>(0);
-    const [multiplicity, setMultiplicity] = useState<number>(1);
-    const [isTransitionState, setIsTransitionState] = useState<boolean>(false);
+	// state for calculation parameters
+	const [charge, setCharge] = useState<number>(0);
+	const [multiplicity, setMultiplicity] = useState<number>(1);
+	const [isTransitionState, setIsTransitionState] = useState<boolean>(false);
 
 	// available tag options shown in the autocomplete input
 	const [options, setOptions] = useState<string[]>([]);
 
-    // structure preview snapshot confirm
+	// structure preview snapshot confirm
 	const [openConfirmImage, setOpenConfirmImage] = useState<boolean>(false);
 	const [submitConfirmed, setSubmitConfirmed] = useState(false);
 	const [structureImageData, setStructureImageData] = useState<string>("");
@@ -100,7 +99,7 @@ export default function StandardAnalysis() {
 
 	// fetch library
 	useEffect(() => {
-        // Fetch structures saved in the user's molecule l
+		// Fetch structures saved in the user's molecule l
 		const loadLibraryStructures = async () => {
 			try {
 				setLoading(true);
@@ -140,12 +139,9 @@ export default function StandardAnalysis() {
 			} catch (err) {
 				console.error("Failed to fetch tags", err);
 			}
-			catch (err) {
-				console.error("Failed to fetch tags", err)
-			}
-        }
-		
-        // Load all required data for the form
+		};
+
+		// Load all required data for the form
 		setLoading(true);
 		loadLibraryStructures();
 		fetchTags();
@@ -259,10 +255,10 @@ export default function StandardAnalysis() {
 
 		// Prepare form data for submission
 		const formData = new FormData();
-		formData.append('file', uploadFile);
-		formData.append('job_name', jobName);
-		formData.append('charge', charge.toString());
-		formData.append('multiplicity', multiplicity.toString());
+		formData.append("file", uploadFile);
+		formData.append("job_name", jobName);
+		formData.append("charge", charge.toString());
+		formData.append("multiplicity", multiplicity.toString());
 
 		setLoading(true);
 		try {
@@ -276,7 +272,7 @@ export default function StandardAnalysis() {
 				multiplicity,
 				structureIdToUse,
 				token,
-				isTransitionState ? 'ts' : 'ground',
+				isTransitionState ? "ts" : "ground",
 			);
 			if (response.error) {
 				throw new Error(response.error);
@@ -481,41 +477,48 @@ export default function StandardAnalysis() {
 												required
 											/>
 										</Grid>
-										<Grid 
-                                            size={{ xs: 12, md: 6 }}
-                                            sx={{ pr: { xs: 0, md: 3 } }}
-                                        >
-											<MolmakerSectionHeader text="How many unpaired electrons does this species have?" sx={{ mb: 1 }} />
-                                            <MolmakerRadioGroup
-                                                name="unpairedElectrons"
-                                                value={String(multiplicity)}
-                                                onChange={(_event: unknown, val: string) => setMultiplicity(parseInt(val, 10))}
-                                                options={unpairedElectronOptions.map(o => ({
-                                                    value: String(o.multiplicity),
-                                                    label: o.label,
-                                                }))}
-                                                row
-                                            />
+										<Grid size={{ xs: 12, md: 6 }} sx={{ pr: { xs: 0, md: 3 } }}>
+											<MolmakerSectionHeader
+												text="How many unpaired electrons does this species have?"
+												sx={{ mb: 1 }}
+											/>
+											<MolmakerRadioGroup
+												name="unpairedElectrons"
+												value={String(multiplicity)}
+												onChange={(_event: unknown, val: string) =>
+													setMultiplicity(parseInt(val, 10))
+												}
+												options={unpairedElectronOptions.map((o) => ({
+													value: String(o.multiplicity),
+													label: o.label,
+												}))}
+												row
+											/>
 										</Grid>
-										<Grid 
-                                            size={{ xs: 12, md: 6 }}
-                                            sx={{
-                                                borderLeft: { xs: 0, md: 1},
-                                                borderColor: 'divider',
-                                                pl: { xs: 0, md: 3 }
-                                            }}
-                                        >
-											<MolmakerSectionHeader text="Is the structure a transition state?" sx={{ mb: 1 }} />
-                                            <MolmakerRadioGroup
-                                                name="isTransitionState"
-                                                value={isTransitionState ? 'yes' : 'no'}
-                                                onChange={(_event: unknown, val: string) => setIsTransitionState(val === 'yes')}
-                                                options={[
-                                                    { value: 'no', label: 'No' },
-                                                    { value: 'yes', label: 'Yes'},
-                                                ]}
-                                                row
-                                            />
+										<Grid
+											size={{ xs: 12, md: 6 }}
+											sx={{
+												borderLeft: { xs: 0, md: 1 },
+												borderColor: "divider",
+												pl: { xs: 0, md: 3 },
+											}}
+										>
+											<MolmakerSectionHeader
+												text="Is the structure a transition state?"
+												sx={{ mb: 1 }}
+											/>
+											<MolmakerRadioGroup
+												name="isTransitionState"
+												value={isTransitionState ? "yes" : "no"}
+												onChange={(_event: unknown, val: string) =>
+													setIsTransitionState(val === "yes")
+												}
+												options={[
+													{ value: "no", label: "No" },
+													{ value: "yes", label: "Yes" },
+												]}
+												row
+											/>
 										</Grid>
 									</Grid>
 								</Box>
