@@ -20,6 +20,7 @@ import { useJsmolViewer } from "../../hooks/UseJsmolViewer";
 import { useJobResult } from "../../hooks/UseJobResult";
 import { ResultDrawer } from "../results/ResultDrawer";
 import { ResultDrawerSection } from "../results/ResultDrawerSection";
+import AddStructureToLibrary from "./AddStructureToLibrary";
 
 /**
  * Props for the OptimizationViewer component.
@@ -118,6 +119,9 @@ const OptimizationViewer: React.FC<VibrationViewerProps> = ({
 
 	return (
 		<Grid container spacing={2} sx={{ width: "100%" }}>
+			<Grid sx={{ width: "100%" }}>
+				<AddStructureToLibrary viewerObj={viewerObj} viewerRef={viewerRef} />
+			</Grid>
 			<Grid
 				sx={{ display: "flex", flexDirection: "column", flex: "1 0 auto", position: "relative" }}
 			>
