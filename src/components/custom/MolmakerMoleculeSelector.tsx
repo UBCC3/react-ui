@@ -6,16 +6,7 @@ import {
 	type SyntheticEvent,
 } from "react";
 import PropTypes from "prop-types";
-import {
-	Box,
-	Grid,
-	Button,
-	FormHelperText,
-	Checkbox,
-	FormControlLabel,
-	Autocomplete,
-	TextField,
-} from "@mui/material";
+import { Box, Grid, Button, FormHelperText, Autocomplete, TextField } from "@mui/material";
 import CloudUploadOutlined from "@mui/icons-material/CloudUploadOutlined";
 import MolmakerRadioGroup from "./MolmakerRadioGroup";
 import MolmakerDropdown from "./MolmakerDropdown";
@@ -81,7 +72,7 @@ const MolmakerMoleculeSelector = ({
 	file,
 	onFileChange,
 	uploadStructure,
-	onUploadStructureChange,
+	// onUploadStructureChange,
 	moleculeName,
 	onMoleculeNameChange,
 	chemicalFormula,
@@ -183,7 +174,8 @@ const MolmakerMoleculeSelector = ({
 								</FormHelperText>
 							)}
 						</Box>
-						<FormControlLabel
+						{/* Upload molecule button disabled temporarily */}
+						{/* <FormControlLabel
 							disabled={source !== "upload"}
 							control={
 								<Checkbox
@@ -194,7 +186,7 @@ const MolmakerMoleculeSelector = ({
 							}
 							label="Upload Structure to Library"
 							sx={{ ml: 2 }}
-						/>
+						/> */}
 					</Grid>
 				)}
 

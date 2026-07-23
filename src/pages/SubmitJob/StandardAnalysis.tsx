@@ -15,9 +15,9 @@ import {
 import { PlayCircleOutlineOutlined, InfoOutline } from "@mui/icons-material";
 import {
 	MolmakerTextField,
-	MolmakerDropdown,
 	MolmakerMoleculeSelector,
 	MolmakerSectionHeader,
+	MolmakerRadioGroup,
 	MolmakerMoleculePreview,
 	MolmakerLoading,
 	MolmakerAlert,
@@ -30,12 +30,11 @@ import {
 	getStructureDataFromS3,
 	submitStandardAnalysis,
 	AddAndUploadStructureToS3,
-	getMultiplicities,
 	getChemicalFormula,
 	getStructuresTags,
-	getOptimizationTypes,
 } from "../../services/api";
 import { Structure } from "../../types";
+import { unpairedElectronOptions } from "../../constants";
 import { grey } from "@mui/material/colors";
 
 export default function StandardAnalysis() {
@@ -74,14 +73,10 @@ export default function StandardAnalysis() {
 	// state for calculation parameters
 	const [charge, setCharge] = useState<number>(0);
 	const [multiplicity, setMultiplicity] = useState<number>(1);
-	const [optimizationType, setOptimizationType] = useState<"ground" | "ts">("ground");
+	const [isTransitionState, setIsTransitionState] = useState<boolean>(false);
 
 	// available tag options shown in the autocomplete input
 	const [options, setOptions] = useState<string[]>([]);
-
-	// dropdown options for multiplicity
-	const [multiplicityOptions, setMultiplicityOptions] = useState<{ [key: string]: number }>({});
-	const [optimizationOptions, setOptimizationOptions] = useState<{ [key: string]: number }>({});
 
 	// structure preview snapshot confirm
 	const [openConfirmImage, setOpenConfirmImage] = useState<boolean>(false);
@@ -104,24 +99,6 @@ export default function StandardAnalysis() {
 
 	// fetch library
 	useEffect(() => {
-		// Load multiplicity options
-		const loadMultiplicityOptions = async () => {
-			try {
-				const token = await getAccessTokenSilently();
-				const response = await getMultiplicities(token);
-				if (response.error) {
-					setError("Failed to load multiplicities. Please try again later.");
-					return;
-				}
-				setMultiplicityOptions(response.data);
-			} catch (err) {
-				setError("Failed to fetch multiplicity options. Please try again later.");
-				console.error("Failed to fetch multiplicity options", err);
-			} finally {
-				setLoading(false);
-			}
-		};
-
 		// Fetch structures saved in the user's molecule l
 		const loadLibraryStructures = async () => {
 			try {
@@ -164,29 +141,9 @@ export default function StandardAnalysis() {
 			}
 		};
 
-		// Fetch available optimization types from the backend
-		const loadOptimizationOptions = async () => {
-			try {
-				const token = await getAccessTokenSilently();
-				const response = await getOptimizationTypes(token);
-				if (response.error) {
-					setError("Failed to load optimization types. Please try again later.");
-					return;
-				}
-				setOptimizationOptions(response.data);
-			} catch (err) {
-				setError("Failed to fetch multiplicity options. Please try again later.");
-				console.error("Failed to fetch multiplicity options", err);
-			} finally {
-				setLoading(false);
-			}
-		};
-
 		// Load all required data for the form
 		setLoading(true);
-		loadMultiplicityOptions();
 		loadLibraryStructures();
-		loadOptimizationOptions();
 		fetchTags();
 	}, [getAccessTokenSilently]);
 
@@ -303,11 +260,6 @@ export default function StandardAnalysis() {
 		formData.append("charge", charge.toString());
 		formData.append("multiplicity", multiplicity.toString());
 
-		// Only include optimization type if transition state mode is selected
-		if (optimizationType === "ts") {
-			formData.append("opt_type", optimizationType);
-		}
-
 		setLoading(true);
 		try {
 			const token = await getAccessTokenSilently();
@@ -320,7 +272,7 @@ export default function StandardAnalysis() {
 				multiplicity,
 				structureIdToUse,
 				token,
-				optimizationType,
+				isTransitionState ? "ts" : "ground",
 			);
 			if (response.error) {
 				throw new Error(response.error);
@@ -511,7 +463,7 @@ export default function StandardAnalysis() {
 										/>
 									</Grid>
 									<Grid container spacing={2} sx={{ mt: 2 }}>
-										<Grid size={{ xs: 12, md: 6 }}>
+										<Grid size={12}>
 											<MolmakerTextField
 												label="Charge"
 												type="number"
@@ -525,38 +477,47 @@ export default function StandardAnalysis() {
 												required
 											/>
 										</Grid>
-										<Grid size={{ xs: 12, md: 6 }}>
-											<MolmakerDropdown
-												label="Multiplicity"
-												value={multiplicity}
-												onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-													setMultiplicity(parseInt(e.target.value))
+										<Grid size={{ xs: 12, md: 6 }} sx={{ pr: { xs: 0, md: 3 } }}>
+											<MolmakerSectionHeader
+												text="How many unpaired electrons does this species have?"
+												sx={{ mb: 1 }}
+											/>
+											<MolmakerRadioGroup
+												name="unpairedElectrons"
+												value={String(multiplicity)}
+												onChange={(_event: unknown, val: string) =>
+													setMultiplicity(parseInt(val, 10))
 												}
-												options={Object.entries(multiplicityOptions).map(([key, value]) => ({
-													label: key,
-													value: value,
+												options={unpairedElectronOptions.map((o) => ({
+													value: String(o.multiplicity),
+													label: o.label,
 												}))}
-												required
+												row
 											/>
 										</Grid>
-										<Grid size={{ xs: 12, md: 6 }}>
-											<MolmakerDropdown
-												label="Optimization Type"
-												value={optimizationType}
-												onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-													setOptimizationType(e.target.value as "ground" | "ts")
+										<Grid
+											size={{ xs: 12, md: 6 }}
+											sx={{
+												borderLeft: { xs: 0, md: 1 },
+												borderColor: "divider",
+												pl: { xs: 0, md: 3 },
+											}}
+										>
+											<MolmakerSectionHeader
+												text="Is the structure a transition state?"
+												sx={{ mb: 1 }}
+											/>
+											<MolmakerRadioGroup
+												name="isTransitionState"
+												value={isTransitionState ? "yes" : "no"}
+												onChange={(_event: unknown, val: string) =>
+													setIsTransitionState(val === "yes")
 												}
-												options={Object.entries(optimizationOptions).map(([key, value]) => ({
-													label: key,
-													value: value,
-												}))}
-												helperText={
-													submitAttempted && !optimizationOptions
-														? "Please select a optimization type"
-														: undefined
-												}
-												error={submitAttempted && !optimizationOptions}
-												required
+												options={[
+													{ value: "no", label: "No" },
+													{ value: "yes", label: "Yes" },
+												]}
+												row
 											/>
 										</Grid>
 									</Grid>
