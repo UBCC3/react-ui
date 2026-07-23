@@ -103,7 +103,7 @@ export const upsertCurrentUser = async (token: any, email: string): Promise<Resp
 	formData.append("email", email);
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.post('/users/me', formData);
+		const res = await API.post("/users/me", formData);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error("Failed to sync user to our database:", error);
@@ -1053,15 +1053,15 @@ export const getZipPresignedUrl = async (jobId: string, token: string): Promise<
  */
 export const getReceivedRequests = async (
 	token: string,
-    status: string = 'pending',
-    requestType?: string,
-    recentDays?: number,
+	status: string = "pending",
+	requestType?: string,
+	recentDays?: number,
 ): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-        const params: Record<string, string | number> = { status };
-        if (requestType) params.request_type = requestType;
-        if (recentDays !== undefined) params.recent_days = recentDays;
+		const params: Record<string, string | number> = { status };
+		if (requestType) params.request_type = requestType;
+		if (recentDays !== undefined) params.recent_days = recentDays;
 		const res = await API.get(`/request/received`, { params });
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
@@ -1095,15 +1095,15 @@ export const getOptimizationTypes = async (token: string): Promise<Response> => 
  */
 export const getSentRequests = async (
 	token: string,
-    status: string = 'pending',
-    requestType?: string,
-    recentDays?: number,
+	status: string = "pending",
+	requestType?: string,
+	recentDays?: number,
 ): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-        const params: Record<string, string | number> = { status };
-        if (requestType) params.request_type = requestType;
-        if (recentDays !== undefined) params.recent_days = recentDays;
+		const params: Record<string, string | number> = { status };
+		if (requestType) params.request_type = requestType;
+		if (recentDays !== undefined) params.recent_days = recentDays;
 		const res = await API.get(`/request/sent`, { params });
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
@@ -1119,25 +1119,25 @@ export const getSentRequests = async (
  * Invites a user (by email) to the authenticated group admin's current group.
  */
 export const sendInviteRequest = async (
-    email: string,
-    token: string,
-    expiresInDays?: number,
+	email: string,
+	token: string,
+	expiresInDays?: number,
 ): Promise<Response> => {
-    const formData = new FormData();
-    formData.append('email', email);
-    if (expiresInDays !== undefined) formData.append('expires_in_days', String(expiresInDays));
-    try {
-        const API = createBackendAPI(token);
-        const res = await API.post('/request/invite', formData);
-        return { status: res.status, data: res.data };
-    } catch (error: any) {
-        console.error('Failed to send invite', error);
-        return {
-            status: error.response?.status || 500,
-            error: error.response?.data?.detail || error.message,
-        }
-    }
-}
+	const formData = new FormData();
+	formData.append("email", email);
+	if (expiresInDays !== undefined) formData.append("expires_in_days", String(expiresInDays));
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.post("/request/invite", formData);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error("Failed to send invite", error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
 
 /**
  * Approves an incoming request by request ID.
@@ -1193,140 +1193,134 @@ export const deleteRequest = async (requestId: string, token: string): Promise<R
 /**
  * Removes a user from the group. Group admins may remove members of their own group.
  */
-export const removeGroupUser = async (
-    userSub: string, 
-    token: string
-): Promise<Response> => {
-    try {
-        const API = createBackendAPI(token);
-        const res = await API.delete(`/group/users/${userSub}`);
-        return { status: res.status, data: res.data };
-    } catch (error: any) {
-        console.error('Failed to remove group user', error);
-        return {
-            status: error.response?.status || 500,
-            error: error.response?.data?.detail || error.message,
-        }
-    }
-}
+export const removeGroupUser = async (userSub: string, token: string): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.delete(`/group/users/${userSub}`);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error("Failed to remove group user", error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
 
 /**
  * Transfers ownership of a job between user, group, or co-owned.
  */
 export const updateJobOwnership = async (
-    jobId: string,
-    ownership: 'user' | 'group' | 'co-owned',
-    token: string,
-    userSub?: string,
-    groupId?: string,
+	jobId: string,
+	ownership: "user" | "group" | "co-owned",
+	token: string,
+	userSub?: string,
+	groupId?: string,
 ): Promise<Response> => {
-    const formData = new FormData();
-    formData.append('ownership', ownership);
-    if (userSub) formData.append('user_sub', userSub);
-    if (groupId) formData.append('group_id', groupId);
-    try {
-        const API = createBackendAPI(token);
-        const res = await API.patch(`/group/jobs/${jobId}`, formData);
-        return { status: res.status, data: res.data };
-    } catch (error: any) {
-        console.error('Failed to update job ownership', error);
-        return {
-            status: error.response?.status || 500,
-            error: error.response?.data?.detail || error.message,
-        }
-    }
-}
+	const formData = new FormData();
+	formData.append("ownership", ownership);
+	if (userSub) formData.append("user_sub", userSub);
+	if (groupId) formData.append("group_id", groupId);
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.patch(`/group/jobs/${jobId}`, formData);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error("Failed to update job ownership", error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
 
 /**
  * Requests to join a group by group ID.
  */
 export const joinGroupRequest = async (
-    groupId: string,
-    token: string,
-    expiresInDays?: number
+	groupId: string,
+	token: string,
+	expiresInDays?: number,
 ): Promise<Response> => {
-    const formData = new FormData();
-    formData.append('group_id', groupId);
-    if (expiresInDays !== undefined) formData.append('expires_in_days', String(expiresInDays));
-    try {
-        const API = createBackendAPI(token);
-        const res = await API.post('/request/join', formData);
-        return { status: res.status, data: res.data };
-    } catch (error: any) {
-        console.error('Failed to send join request', error);
-        return {
-            status: error.response?.status || 500,
-            error: error.response?.data?.detail || error.message,
-        }
-    }
-}
+	const formData = new FormData();
+	formData.append("group_id", groupId);
+	if (expiresInDays !== undefined) formData.append("expires_in_days", String(expiresInDays));
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.post("/request/join", formData);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error("Failed to send join request", error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
 
 /**
  * Requests to be removed from the authenticated user's current group.
  */
-export const requestDemember = async (
-    token: string,
-    expiresInDays?: number,
-): Promise<Response> => {
-    const formData = new FormData();
-    if (expiresInDays !== undefined) formData.append('expires_in_days', String(expiresInDays));
-    try {
-        const API = createBackendAPI(token);
-        const res = await API.post('/request/demember', formData);
-        return { status: res.status, data: res.data };
-    } catch (error: any) {
-        console.error('Failed to send de-member request', error);
-        return {
-            status: error.response?.status || 500,
-            error: error.response?.data?.detail || error.message,
-        }
-    }
-}
+export const requestDemember = async (token: string, expiresInDays?: number): Promise<Response> => {
+	const formData = new FormData();
+	if (expiresInDays !== undefined) formData.append("expires_in_days", String(expiresInDays));
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.post("/request/demember", formData);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error("Failed to send de-member request", error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
 
 /**
  * Fetches requests for the authenticated admin/group admin's current group.
  */
 export const getGroupRequests = async (
-    token: string,
-    status: string = 'pending',
-    requestType?: string,
-    recentDays?: number,
+	token: string,
+	status: string = "pending",
+	requestType?: string,
+	recentDays?: number,
 ): Promise<Response> => {
-    try {
-        const API = createBackendAPI(token);
-        const params: Record<string, string | number> = { status };
-        if (requestType) params.request_type = requestType;
-        if (recentDays !== undefined) params.recent_days = recentDays;
-        const res = await API.get('/group/requests', { params });
-        return { status: res.status, data: res.data};
-    } catch (error: any) {
-        console.error('Failed to fetch group requests', error);
-        return {
-            status: error.response?.status || 500,
-            error: error.response?.data?.detail || error.message,
-        }
-    }
-}
+	try {
+		const API = createBackendAPI(token);
+		const params: Record<string, string | number> = { status };
+		if (requestType) params.request_type = requestType;
+		if (recentDays !== undefined) params.recent_days = recentDays;
+		const res = await API.get("/group/requests", { params });
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error("Failed to fetch group requests", error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
 
 /**
  * Updates public/private visibility for a structure.
  */
 export const updateStructureVisibility = async (
-    structureId: string,
-    isPublic: boolean,
-    token: string,
+	structureId: string,
+	isPublic: boolean,
+	token: string,
 ): Promise<Response> => {
-    const formData = new FormData();
-    formData.append('is_public', String(isPublic));
-    try {
-        const API = createBackendAPI(token);
-        const res = await API.patch(`/structures/${structureId}/visibility`, formData);
-        return { status: res.status, data: res.data };
-    } catch (error: any) {
-        console.error('Failed to update structure visibility', error);
-        return {
-            status: error.response?.status || 500,
-            error: error.response?.data?.detail || error.message,
-        }
-    }
-}
+	const formData = new FormData();
+	formData.append("is_public", String(isPublic));
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.patch(`/structures/${structureId}/visibility`, formData);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error("Failed to update structure visibility", error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};

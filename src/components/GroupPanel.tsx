@@ -40,11 +40,11 @@ import {
 	upsertCurrentUser,
 	getGroupById,
 	getCurrentUserGroupJobs,
-    sendInviteRequest,
-    removeGroupUser,
-    updateJobOwnership,
-} from '../services/api';
-import type { User, Job } from '../types';
+	sendInviteRequest,
+	removeGroupUser,
+	updateJobOwnership,
+} from "../services/api";
+import type { User, Job } from "../types";
 
 /**
  * Props for the GroupPanel
@@ -80,7 +80,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 	const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
 
 	const [selectedUser, setSelectedUser] = useState<User | null>(null);
-	const [removalPolicy, setRemovalPolicy] = useState<'co_owned' | 'user' | 'group'>('co_owned');
+	const [removalPolicy, setRemovalPolicy] = useState<"co_owned" | "user" | "group">("co_owned");
 
 	const [loading, setLoading] = useState(true);
 	const [loadingMessage, setLoadingMessage] = useState("Loading...");
@@ -128,17 +128,21 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 		const userSub = selectedUser.user_sub;
 		const userJobs = jobs.filter((j) => j.user_sub === userSub);
 
-		if (removalPolicy === 'group') {
-            // User's ownership claim is removed; job stays with the group.
-            await Promise.all(userJobs.map(j => updateJobOwnership(j.job_id, 'group', token, undefined, groupId)));
-        } else if (removalPolicy === 'user') {
-            // Group's ownership claim is removed; job stays with the user.
-            await Promise.all(userJobs.map(j => updateJobOwnership(j.job_id, 'user', token, userSub, undefined)));
-        }
-        // 'co_owned': no change - job remains co-owned by both, matching demember's own default behavior.
+		if (removalPolicy === "group") {
+			// User's ownership claim is removed; job stays with the group.
+			await Promise.all(
+				userJobs.map((j) => updateJobOwnership(j.job_id, "group", token, undefined, groupId)),
+			);
+		} else if (removalPolicy === "user") {
+			// Group's ownership claim is removed; job stays with the user.
+			await Promise.all(
+				userJobs.map((j) => updateJobOwnership(j.job_id, "user", token, userSub, undefined)),
+			);
+		}
+		// 'co_owned': no change - job remains co-owned by both, matching demember's own default behavior.
 
 		await removeGroupUser(userSub, token);
-		setReload(r => !r);
+		setReload((r) => !r);
 		setRemoveDialogOpen(false);
 	};
 
@@ -150,10 +154,10 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 			setNewUserError(resp.error);
 			return;
 		}
-		setNewUserEmail('');
-		setReload(r => !r);
+		setNewUserEmail("");
+		setReload((r) => !r);
 		setAddMemberDialogOpen(false);
-  	};
+	};
 
 	// Users displayed on the current table page.
 	const paginatedUsers = users.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
@@ -359,22 +363,37 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 					<Dialog open={removeDialogOpen} onClose={() => setRemoveDialogOpen(false)} fullWidth>
 						<DialogTitle>Remove User</DialogTitle>
 						<DialogContent>
-							<Typography variant="body2" color="text.secondary">
-								Are you sure you want to remove this user from the group? This action cannot be
-								undone.
-							</Typography>
-							<FormControl>
-                                <RadioGroup
-                                    name="removal-policy"
-                                    value={removalPolicy}
-                                    onChange={e => setRemovalPolicy(e.target.value as 'co_owned'|'user'|'group')}
-                                >
-                                    <FormControlLabel value="co_owned" control={<Radio />} label="Keep jobs co-owned by the user and the group" />
-                                    <FormControlLabel value="group" control={<Radio />} label="Job deleted from user (job stays with the group)" />
-                                    <FormControlLabel value="user" control={<Radio />} label="Job deleted from group (job stays with the user)" />
-                                </RadioGroup>
-							</FormControl>
-						</Box>
+							<Box sx={{ border: 1, borderColor: "divider", p: 3, mt: 2, borderRadius: 2 }}>
+								<Typography variant="body2" color="text.secondary">
+									Are you sure you want to remove this user from the group? This action cannot be
+									undone.
+								</Typography>
+								<FormControl>
+									<RadioGroup
+										name="removal-policy"
+										value={removalPolicy}
+										onChange={(e) =>
+											setRemovalPolicy(e.target.value as "co_owned" | "user" | "group")
+										}
+									>
+										<FormControlLabel
+											value="co_owned"
+											control={<Radio />}
+											label="Keep jobs co-owned by the user and the group"
+										/>
+										<FormControlLabel
+											value="group"
+											control={<Radio />}
+											label="Job deleted from user (job stays with the group)"
+										/>
+										<FormControlLabel
+											value="user"
+											control={<Radio />}
+											label="Job deleted from group (job stays with the user)"
+										/>
+									</RadioGroup>
+								</FormControl>
+							</Box>
 						</DialogContent>
 						<DialogActions>
 							<Button
