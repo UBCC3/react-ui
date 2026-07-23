@@ -1,28 +1,32 @@
-import { useState, useEffect } from 'react'
-import { useAuth0 } from '@auth0/auth0-react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
+import { useNavigate } from "react-router-dom";
 import {
-    Box,
-    Grid,
-    Divider,
-    Button,
-    Paper, Accordion, AccordionSummary, AccordionDetails,
-    Autocomplete,
-    TextField,
-} from '@mui/material'
-import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline'
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
+	Box,
+	Grid,
+	Divider,
+	Button,
+	Paper,
+	Accordion,
+	AccordionSummary,
+	AccordionDetails,
+	Autocomplete,
+	TextField,
+} from "@mui/material";
+import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
-    MolmakerPageTitle,
-    MolmakerTextField,
-    MolmakerDropdown,
-    MolmakerMoleculeSelector,
-    MolmakerSectionHeader,
-    MolmakerRadioGroup,
-    MolmakerMoleculePreview,
-    MolmakerAlert,
-    MolmakerLoading, MolmakerConfirm
-} from '../../components/custom'
+	MolmakerPageTitle,
+	MolmakerTextField,
+	MolmakerDropdown,
+	MolmakerMoleculeSelector,
+	MolmakerSectionHeader,
+	MolmakerRadioGroup,
+	MolmakerMoleculePreview,
+	MolmakerAlert,
+	MolmakerLoading,
+	MolmakerConfirm,
+} from "../../components/custom";
 import {
     getCalculationTypes,
     getLibraryStructures,
@@ -46,7 +50,7 @@ import { grey } from '@mui/material/colors'
 
 /**
  * AdvancedAnalysis renders the advanced job submission page.
- * 
+ *
  * This page lets the user:
  * - upload a molecule file or select one from the library,
  * - configure calculation settings,
@@ -705,16 +709,16 @@ const AdvancedAnalysis = () => {
                 <Grid size={{ xs: 12, md: 6 }}>
           			<MolmakerMoleculePreview
 						data={structureData}
-						format='xyz'
+						format="xyz"
 						source={source}
-                        sx={{ maxHeight: 437 }}
-                        submitConfirmed={submitConfirmed}
-                        setStructureImageData={setStructureImageData}
+						sx={{ maxHeight: 437 }}
+						submitConfirmed={submitConfirmed}
+						setStructureImageData={setStructureImageData}
 					/>
-        		</Grid>
-            </Grid>
-        </Box>
-    )
-}
+				</Grid>
+			</Grid>
+		</Box>
+	);
+};
 
-export default AdvancedAnalysis
+export default AdvancedAnalysis;

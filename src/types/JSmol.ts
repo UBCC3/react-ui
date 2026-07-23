@@ -1,4 +1,3 @@
-
 export type Orbital = {
 	energy: number;
 	index: number;
@@ -9,22 +8,22 @@ export type Orbital = {
 };
 
 export interface JobError {
-	id: string | null
-	input_data: any
-	success: boolean
+	id: string | null;
+	input_data: any;
+	success: boolean;
 	error: {
-		error_type: string,
-		error_message: string,
-		extras: any
-	}
-	extras: any
+		error_type: string;
+		error_message: string;
+		extras: any;
+	};
+	extras: any;
 }
 
 export interface JobResult {
-	jobId: string
-	calculation: string
-	status: string
-	urls: { [key: string]: string }
+	jobId: string;
+	calculation: string;
+	status: string;
+	urls: { [key: string]: string };
 }
 
 export type VibrationMode = {
@@ -39,11 +38,11 @@ export type VibrationMode = {
 export type ComplexNumber = {
 	real: number;
 	imag: number;
-}
+};
 
 export type Atom = {
 	atomIndex: number;
-	atomNo: number,
+	atomNo: number;
 	bondCount: number;
 	element: string;
 	model: string;
@@ -52,4 +51,4 @@ export type Atom = {
 	x: number;
 	y: number;
 	z: number;
-}
+};

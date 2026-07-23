@@ -1,36 +1,24 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState, useRef, useMemo } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
+import { useNavigate } from "react-router-dom";
+import { Box, Paper, TablePagination, Snackbar } from "@mui/material";
+import { grey } from "@mui/material/colors";
 import {
-	Box,
-	Paper,
-	TablePagination,
-	Dialog,
-	Snackbar,
-} from '@mui/material';
-import { grey } from '@mui/material/colors';
-import { 
 	cancelJobBySlurmID,
 	getAllJobs,
 	getJobStatusBySlurmID,
 	getLibraryStructures,
-	getStructureDataFromS3,
 	updateJob,
 	deleteJob,
 	upsertCurrentUser,
-	getZipPresignedUrl
-} from '../../services/api';
-import { JobStatus } from '../../constants';
-import JobsToolbar from './components/JobsToolbar';
-import JobsTable from './components/JobsTable';
-import {
-	MolmakerMoleculePreview, 
-	MolmakerLoading, 
-	MolmakerAlert,
-	MolmakerConfirm
-} from '../../components/custom';
-import type { Filter, Job, Structure } from '../../types';
-import { filterJobs } from '../../utils';
+	getZipPresignedUrl,
+} from "../../services/api";
+import { JobStatus } from "../../constants";
+import JobsToolbar from "./components/JobsToolbar";
+import JobsTable from "./components/JobsTable";
+import { MolmakerLoading, MolmakerAlert, MolmakerConfirm } from "../../components/custom";
+import type { Filter, Job, Structure } from "../../types";
+import { filterJobs } from "../../utils";
 
 export default function Home() {
 	const navigate = useNavigate();
@@ -46,100 +34,100 @@ export default function Home() {
 
 	// UI state
 	const [error, setError] = useState<string | null>(null);
-	const [open, setOpen] = useState<boolean>(false);
 	const [page, setPage] = useState<number>(0);
 	const [rowsPerPage, setRowsPerPage] = useState<number>(5);
 	const [loading, setLoading] = useState<boolean>(true);
-	const [structureLoading, setStructureLoading] = useState<boolean>(false);
-	const [userRole, setUserRole] = useState<string>('');
 
 	// selection
-	const [selectedJobId, setSelectedJobId] = useState<string>('');
-	const [filterStructureId, setFilterStructureId] = useState<string>('');
-
-	// preview state
-	const [previewData, setPreviewData] = useState<string>('');
+	const [selectedJobId, setSelectedJobId] = useState<string>("");
+	const [filterStructureId, setFilterStructureId] = useState<string>("");
 
 	// sorting
-	const [order, setOrder] = useState<'asc' | 'desc'>('desc');
-	const [orderBy, setOrderBy] = useState<keyof Job>('submitted_at');
+	const [order, setOrder] = useState<"asc" | "desc">("desc");
+	const [orderBy, setOrderBy] = useState<keyof Job>("submitted_at");
 	const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
 
 	// general alert
 	const [alertShow, setAlertShow] = useState<boolean>(false);
-	const [alertMsg, setAlertMsg] = useState<string>('');
-	const [alertSeverity, setAlertSeverity] = useState<'success' | 'error' | 'info' | 'warning'>('info');
+	const [alertMsg, setAlertMsg] = useState<string>("");
+	const [alertSeverity, setAlertSeverity] = useState<"success" | "error" | "info" | "warning">(
+		"info",
+	);
 
-    // stores custom table filters entered by the user
-	const [filters, setFilters] = useState<Filter[]>([{
-        column: 'job_name', value: '', extent: 'contains'
-    }]);
+	// stores custom table filters entered by the user
+	const [filters, setFilters] = useState<Filter[]>([
+		{
+			column: "job_name",
+			value: "",
+			extent: "contains",
+		},
+	]);
 
 	// map column name to display name
 	const columnDisplayNames: Record<any, string> = {
-		job_name: 'Name',
-		job_notes: 'Job Notes',
-		status: 'Status',
-        calculation_type: 'Calculation Type',
-		structures: 'Library Structure',
-		tags: 'Job Tags',
-		runtime: 'Runtime',
-		submitted_at: 'Submitted At',
-		completed_at: 'Completed At',
-	}
+		job_name: "Name",
+		job_notes: "Job Notes",
+		status: "Status",
+		calculation_type: "Calculation Type",
+		structures: "Library Structure",
+		tags: "Job Tags",
+		runtime: "Runtime",
+		submitted_at: "Submitted At",
+		completed_at: "Completed At",
+	};
 
-    // controls which columns are currently visible in the jobs table.
+	// controls which columns are currently visible in the jobs table.
 	const [displayColumns, setDisplayColumns] = useState({
 		job_name: true,
 		job_notes: true,
 		status: true,
-        calculation_type: true,
+		calculation_type: true,
 		structures: true,
 		tags: true,
 		runtime: true,
 		submitted_at: true,
-		completed_at: true
+		completed_at: true,
 	});
 
 	// track jobs for polling
 	const jobsRef = useRef<Job[]>([]);
-	useEffect(() => { jobsRef.current = jobs; }, [jobs]);
+	useEffect(() => {
+		jobsRef.current = jobs;
+	}, [jobs]);
 
-    // applying the filter to the jobs
-    const handleFilterSubmit = () => {
-        setFilteredJobs(filterJobs(jobsRef.current, filters));
-        setPage(0);
-    }
+	// applying the filter to the jobs
+	const handleFilterSubmit = () => {
+		setFilteredJobs(filterJobs(jobsRef.current, filters));
+		setPage(0);
+	};
 
-    // memoized the list of all tags inside the jobs history table
-    const availableTags = useMemo(() => {
-        const tagSet = new Set<string>();
-        for (const job of jobs) {
-            for (const tag of job.tags ?? []) {
-                tagSet.add(tag);
-            }
-        }
-        return Array.from(tagSet).sort((a, b) => a.localeCompare(b));
-    }, [jobs]);
+	// memoized the list of all tags inside the jobs history table
+	const availableTags = useMemo(() => {
+		const tagSet = new Set<string>();
+		for (const job of jobs) {
+			for (const tag of job.tags ?? []) {
+				tagSet.add(tag);
+			}
+		}
+		return Array.from(tagSet).sort((a, b) => a.localeCompare(b));
+	}, [jobs]);
 
-    /**
-     * Syncs the Auth0 user with the app database.
-     */
+	/**
+	 * Syncs the Auth0 user with the app database.
+	 */
 	useEffect(() => {
 		if (!user) return;
 
 		const loadUserProfile = async () => {
 			try {
 				const token = await getAccessTokenSilently();
-				const result = await upsertCurrentUser(token, user.email || '');
+				const result = await upsertCurrentUser(token, user.email || "");
 
-				if (result.status === 200 && result.data) {
-					setUserRole(result.data.role || '');
-				} else {
-					console.warn('Upsert returned', result.status, result.error);
+				if (result.status !== 200 || !result.data) {
+					console.warn("Upsert returned", result.status, result.error);
 				}
 			} catch (err) {
-				console.error('Failed to sync user to our database:', err);
+				console.error("Failed to sync user to our database:", err);
 			}
 		};
 		loadUserProfile();
@@ -147,94 +135,97 @@ export default function Home() {
 
 	// poll statuses every 5s
 	useEffect(() => {
-        let stopped = false;
-        let id: ReturnType<typeof setInterval>;
+		let stopped = false;
 
 		const tick = async () => {
-            if (stopped) return;
-            try {
-                const token = await getAccessTokenSilently();
+			if (stopped) return;
+			try {
+				const token = await getAccessTokenSilently();
 
-                // Gather all the changes we need to apply
-                const toUpdate: Array<{
-                    jobId: string;
-                    newStatus?: string;
-                    newRuntime?: string;
-                }> = [];
+				// Gather all the changes we need to apply
+				const toUpdate: Array<{
+					jobId: string;
+					newStatus?: string;
+					newRuntime?: string;
+				}> = [];
 
-                for (const job of jobsRef.current) {
-                // skip terminal jobs
-                if (
-                    [JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED,
-                    JobStatus.OUT_OF_MEMORY, JobStatus.TIMEOUT]
-                    .includes(job.status)
-                ) {
-                    continue;
-                }
+				for (const job of jobsRef.current) {
+					// skip terminal jobs
+					if (
+						[
+							JobStatus.COMPLETED,
+							JobStatus.FAILED,
+							JobStatus.CANCELLED,
+							JobStatus.OUT_OF_MEMORY,
+							JobStatus.TIMEOUT,
+						].includes(job.status)
+					) {
+						continue;
+					}
 
-                // fetch latest from backend
-                const resp = await getJobStatusBySlurmID(job.slurm_id!, token);
-                if (resp.error) {
-                    console.warn(`Failed to fetch status for job ${job.job_id}:`, resp.error);
-                    continue; // skip this job if there's an error
-                }
-                const fetchedStatus = resp.data.state;
-                const fetchedRuntime = resp.data.elapsed;
+					// fetch latest from backend
+					const resp = await getJobStatusBySlurmID(job.slurm_id!, token);
+					if (resp.error) {
+						console.warn(`Failed to fetch status for job ${job.job_id}:`, resp.error);
+						continue; // skip this job if there's an error
+					}
+					const fetchedStatus = resp.data.state;
+					const fetchedRuntime = resp.data.elapsed;
 
-                // if anything changed, queue it up
-                if (
-                    fetchedStatus !== job.status ||
-                    fetchedRuntime !== job.runtime
-                ) {
-                    toUpdate.push({
-                        jobId: job.job_id,
-                        newStatus: fetchedStatus,
-                        newRuntime: fetchedRuntime,
-                    });
-                }
-                }
+					// if anything changed, queue it up
+					if (fetchedStatus !== job.status || fetchedRuntime !== job.runtime) {
+						toUpdate.push({
+							jobId: job.job_id,
+							newStatus: fetchedStatus,
+							newRuntime: fetchedRuntime,
+						});
+					}
+				}
 
-                if (toUpdate.length === 0) {
-                    return; // nothing to do
-                }
+				if (toUpdate.length === 0) {
+					return; // nothing to do
+				}
 
-                // Apply updates on the server one by one (or you could Promise.all)
-                await Promise.all(
-                    toUpdate.map(({ jobId, newStatus, newRuntime }) =>
-                        updateJob(jobId ?? '', newStatus ?? '', newRuntime ?? '', user?.sub ?? '', token)
-                    )
-                );
+				// Apply updates on the server one by one (or you could Promise.all)
+				await Promise.all(
+					toUpdate.map(({ jobId, newStatus, newRuntime }) =>
+						updateJob(jobId ?? "", newStatus ?? "", newRuntime ?? "", user?.sub ?? "", token),
+					),
+				);
 
-                // And mirror them in local state
-                setJobs((prev) =>
-                prev.map((j) => {
-                    const upd = toUpdate.find((u) => u.jobId === j.job_id);
-                    return upd
-                    ? {
-                        ...j,
-                        status:  upd.newStatus  ?? j.status,
-                        runtime: upd.newRuntime ?? j.runtime,
-                        }
-                    : j;
-                })
-                );
-            } catch (err: any) {
-                console.error("Polling error:", err);
-                if (err?.error === 'login_required' || err?.error === 'consent_required') {
-                    stopped = true;
-                    clearInterval(id);
-                    return;
-                }
-                setError("Failed to refresh job statuses.");
-            }
+				// And mirror them in local state
+				setJobs((prev) =>
+					prev.map((j) => {
+						const upd = toUpdate.find((u) => u.jobId === j.job_id);
+						return upd
+							? {
+									...j,
+									status: upd.newStatus ?? j.status,
+									runtime: upd.newRuntime ?? j.runtime,
+								}
+							: j;
+					}),
+				);
+			} catch (err: any) {
+				console.error("Polling error:", err);
+				if (err?.error === "login_required" || err?.error === "consent_required") {
+					stopped = true;
+					clearInterval(id);
+					return;
+				}
+				setError("Failed to refresh job statuses.");
+			}
 		};
 
 		// start poll
-		id = setInterval(tick, 5000);
+		const id = setInterval(tick, 5000);
 		// run immediately once
 		tick();
 
-		return () => {stopped = true; clearInterval(id); };
+		return () => {
+			stopped = true;
+			clearInterval(id);
+		};
 	}, [getAccessTokenSilently]);
 
 	// load jobs & structures
@@ -244,28 +235,33 @@ export default function Home() {
 				const token = await getAccessTokenSilently();
 				const [jobsResponse, structuresResponse] = await Promise.all([
 					getAllJobs(token),
-					getLibraryStructures(token)
+					getLibraryStructures(token),
 				]);
-				
-				setJobs(jobsResponse.data.filter(job => job.is !== JobStatus.PENDING));
+
+				setJobs(jobsResponse.data);
 				setFilteredJobs(jobsResponse.data);
 
-				const sortedStructures = structuresResponse.data.sort((a, b) => a.name.localeCompare(b.name));
-				setStructures([{ 
-					structure_id: '', 
-					name: 'All', 
-					user_sub: '', 
-					location: '',
-					uploaded_at: '',
-					notes: ''
-				}, ...sortedStructures]);
+				const sortedStructures = structuresResponse.data.sort((a: Structure, b: Structure) =>
+					a.name.localeCompare(b.name),
+				);
+				setStructures([
+					{
+						structure_id: "",
+						name: "All",
+						user_sub: "",
+						location: "",
+						uploaded_at: "",
+						notes: "",
+					},
+					...sortedStructures,
+				]);
 			} catch (err) {
-				setError('Failed to load data');
-				console.error('Failed to load data', err);
+				setError("Failed to load data");
+				console.error("Failed to load data", err);
 			} finally {
 				setLoading(false);
 			}
-		}
+		};
 
 		setLoading(true);
 		loadData();
@@ -276,47 +272,21 @@ export default function Home() {
 		setLoading(true);
 		try {
 			const filtered = filterStructureId
-				? jobs.filter(job => job.structures.some(s => s.structure_id === filterStructureId))
+				? jobs.filter((job) => job.structures.some((s) => s.structure_id === filterStructureId))
 				: jobs;
 			setFilteredJobs(filtered);
 			setPage(0);
 		} catch (err) {
-			setError('Failed to filter jobs');
-			console.error('Failed to filter jobs:', err);
+			setError("Failed to filter jobs");
+			console.error("Failed to filter jobs:", err);
 		} finally {
 			setLoading(false);
 		}
 	}, [filterStructureId, jobs]);
 
-    /**
-     * Loads molecule structure data from S3 and sends it to the preview component.
-     */
-	const openMoleculeViewer = async (structureId: string) => {
-		console.log("Opening molecule viewer for structure ID:", structureId);
-		setStructureLoading(true);
-		setError(null);
-
-		try {
-			const token = await getAccessTokenSilently();
-			const response = await getStructureDataFromS3(structureId, token);
-			if (response.error) {
-				setError('Failed to load molecule structure. Please try again.');
-				return;
-			}
-			setPreviewData(response.data);
-			setError(null);
-			// setOpen(true);
-		} catch (err) {
-			setError('Failed to load molecule structure. Please try again.');
-			console.error("Failed to load molecule structure:", err);
-		} finally {
-			setStructureLoading(false);
-		}
-	};
-
-    /**
-     * Reloads all jobs from the backend and clears the structure filter.
-     */
+	/**
+	 * Reloads all jobs from the backend and clears the structure filter.
+	 */
 	const handleRefresh = async () => {
 		setLoading(true);
 
@@ -324,94 +294,94 @@ export default function Home() {
 			const token = await getAccessTokenSilently();
 			const response = await getAllJobs(token);
 			setJobs(response.data);
-			setFilterStructureId('');
+			setFilterStructureId("");
 		} catch (err) {
-			setError('Failed to refresh jobs');
-			console.error('Failed to refresh jobs', err);
+			setError("Failed to refresh jobs");
+			console.error("Failed to refresh jobs", err);
 		} finally {
 			setLoading(false);
 		}
 	};
 
-    /**
-     * Cancels the currently selected job through its Slurm ID.
-     * 
-     * The selected job must exist and must have a Slurm ID before the cancel
-     * request can be sent.
-     */
+	/**
+	 * Cancels the currently selected job through its Slurm ID.
+	 *
+	 * The selected job must exist and must have a Slurm ID before the cancel
+	 * request can be sent.
+	 */
 	const handleCancel = async () => {
 		setLoading(true);
-		
+
 		try {
 			const token = await getAccessTokenSilently();
-			const jobToCancel = jobs.find(j => j.job_id === selectedJobId);
+			const jobToCancel = jobs.find((j) => j.job_id === selectedJobId);
 			if (!jobToCancel) {
-				setAlertMsg('Selected job not found.');
-				setAlertSeverity('error');
+				setAlertMsg("Selected job not found.");
+				setAlertSeverity("error");
 				setAlertShow(true);
 				setLoading(false);
 				return;
 			}
-			jobs.find((job: Job, idx: number) => (job.job_id === selectedJobId))!.status = JobStatus.CANCELLED;
+			jobs.find((job: Job) => job.job_id === selectedJobId)!.status = JobStatus.CANCELLED;
 			if (!jobToCancel.slurm_id) {
-				setAlertMsg('Job Slurm ID is missing.');
-				setAlertSeverity('error');
+				setAlertMsg("Job Slurm ID is missing.");
+				setAlertSeverity("error");
 				setAlertShow(true);
 				setLoading(false);
 				return;
 			}
 			const response = await cancelJobBySlurmID(jobToCancel.slurm_id, token);
-	
-			if (response.data === 'cancelled') {
+
+			if (response.data === "cancelled") {
 				setAlertMsg(`Job ${jobToCancel.job_name} cancelled successfully!`);
-				setAlertSeverity('success');
-				setAlertShow(true)
+				setAlertSeverity("success");
+				setAlertShow(true);
 			}
 		} catch (err) {
-			setAlertMsg('Failed to cancel the job');
-			setAlertSeverity('error');
+			setAlertMsg("Failed to cancel the job");
+			setAlertSeverity("error");
 			setAlertShow(true);
-			console.error('Failed to cancel the job', err);
+			console.error("Failed to cancel the job", err);
 		} finally {
 			setLoading(false);
 		}
 	};
 
-    /**
-     * Deletes the selected job from the backend and removes it from local state.
-     */
+	/**
+	 * Deletes the selected job from the backend and removes it from local state.
+	 */
 	const handleDelete = async () => {
 		setLoading(true);
 		try {
 			const token = await getAccessTokenSilently();
 			const response = await deleteJob(selectedJobId, token);
 			if (response.error) {
-				setAlertMsg('Failed to delete the job');
-				setAlertSeverity('error');
+				setAlertMsg("Failed to delete the job");
+				setAlertSeverity("error");
 				setAlertShow(true);
 				return;
 			}
-			setJobs(jobs.filter(job => job.job_id !== selectedJobId));
-			setSelectedJobId('');
-			setAlertMsg('Job deleted successfully!');
-			setAlertSeverity('success');
+			setJobs(jobs.filter((job) => job.job_id !== selectedJobId));
+			setSelectedJobId("");
+			setAlertMsg("Job deleted successfully!");
+			setAlertSeverity("success");
 			setAlertShow(true);
 		} catch (err) {
-			setAlertMsg('Failed to delete the job');
-			setAlertSeverity('error');
+			setAlertMsg("Failed to delete the job");
+			setAlertSeverity("error");
 			setAlertShow(true);
-			console.error('Failed to delete the job', err);
+			console.error("Failed to delete the job", err);
 		} finally {
 			setLoading(false);
 		}
 	};
 
-    /**
-     * Downloads a zip file from a presigned S3 URL.
-     * 
-     * The file is fetched as a Blob, converted into a temporary browser URL,
-     * and then downloaded using a temporary anchor element.
-     */
+	/**
+	 * Downloads a zip file from a presigned S3 URL.
+	 *
+	 * The file is fetched as a Blob, converted into a temporary browser URL,
+	 * and then downloaded using a temporary anchor element.
+	 */
 	async function downloadZipFromS3WithBlob(presignedUrl: string, filename = "result.zip") {
 		const response = await fetch(presignedUrl);
 		if (!response.ok) throw new Error("Failed to download file");
@@ -430,151 +400,153 @@ export default function Home() {
 		window.URL.revokeObjectURL(blobUrl);
 	}
 
-    /**
-     * Requests a presigned zip download URL for the selectd job,
-     * then downloads the archive using the job name as the filename.
-     */
+	/**
+	 * Requests a presigned zip download URL for the selectd job,
+	 * then downloads the archive using the job name as the filename.
+	 */
 	const handleZipDownload = async () => {
 		setLoading(true);
 		try {
 			const token = await getAccessTokenSilently();
 			const response = await getZipPresignedUrl(selectedJobId, token);
 			if (response.error) {
-				setAlertMsg('Failed to download the job archive');
-				setAlertSeverity('error');
+				setAlertMsg("Failed to download the job archive");
+				setAlertSeverity("error");
 				setAlertShow(true);
 				return;
 			}
-			const jobToDownloadZip = jobs.find(j => j.job_id === selectedJobId);
+			const jobToDownloadZip = jobs.find((j) => j.job_id === selectedJobId);
 			if (!jobToDownloadZip) {
-				setAlertMsg('Selected job not found.');
-				setAlertSeverity('error');
+				setAlertMsg("Selected job not found.");
+				setAlertSeverity("error");
 				setAlertShow(true);
 				setLoading(false);
 				return;
 			}
 			const zipUrl: string = response.data.url;
 			await downloadZipFromS3WithBlob(zipUrl, `${jobToDownloadZip.job_name}.zip`);
-			setSelectedJobId('');
-			setAlertMsg('Job archive download successfully!');
-			setAlertSeverity('success');
+			setSelectedJobId("");
+			setAlertMsg("Job archive download successfully!");
+			setAlertSeverity("success");
 			setAlertShow(true);
 		} catch (err) {
-			setAlertMsg('Failed to download the job archive');
-			setAlertSeverity('error');
+			setAlertMsg("Failed to download the job archive");
+			setAlertSeverity("error");
 			setAlertShow(true);
-			console.error('Failed to download the job', err);
+			console.error("Failed to download the job", err);
 		} finally {
 			setLoading(false);
 		}
-	}
+	};
 
-    /**
-     * Returns true when the selected job archive should not be downloadable.
-     */
+	/**
+	 * Returns true when the selected job archive should not be downloadable.
+	 */
 	const downloadDisabled = (selectedJobId: string | null): boolean => {
-		if (!selectedJobId) { return true; }
-
-		const jobToDownloadZip = jobs.find(j => j.job_id === selectedJobId);
-		if (!jobToDownloadZip) { return true; }
-
-        // Archives are not downloadable while jobs are active, pending, cancelled, unknown, out of memory, or timeout.
-		if ([JobStatus.CANCELLED, JobStatus.PENDING, JobStatus.RUNNING, 
-            JobStatus.UNKNOWN, JobStatus.OUT_OF_MEMORY, JobStatus.TIMEOUT]
-            .includes(jobToDownloadZip.status)) {
-			return true
-		}
-
-		return false
-	}
-
-    /**
-     * Returns true when the selected job cannot be cancelled.
-     */
-	const cancelDisabled = (selectedJobId: string | null) : boolean => {
 		if (!selectedJobId) {
 			return true;
 		}
 
-		const jobToCancel = jobs.find(j => j.job_id === selectedJobId);
+		const jobToDownloadZip = jobs.find((j) => j.job_id === selectedJobId);
+		if (!jobToDownloadZip) {
+			return true;
+		}
+
+		// Archives are not downloadable while jobs are active, pending, cancelled, unknown, out of memory, or timeout.
+		if (
+			[
+				JobStatus.CANCELLED,
+				JobStatus.PENDING,
+				JobStatus.RUNNING,
+				JobStatus.UNKNOWN,
+				JobStatus.OUT_OF_MEMORY,
+				JobStatus.TIMEOUT,
+			].includes(jobToDownloadZip.status)
+		) {
+			return true;
+		}
+
+		return false;
+	};
+
+	/**
+	 * Returns true when the selected job cannot be cancelled.
+	 */
+	const cancelDisabled = (selectedJobId: string | null): boolean => {
+		if (!selectedJobId) {
+			return true;
+		}
+
+		const jobToCancel = jobs.find((j) => j.job_id === selectedJobId);
 		if (!jobToCancel) {
 			return true;
 		}
-		if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED,
-             JobStatus.OUT_OF_MEMORY, JobStatus.TIMEOUT].includes(jobToCancel.status)) {
-			return true
+		if (
+			[
+				JobStatus.COMPLETED,
+				JobStatus.FAILED,
+				JobStatus.CANCELLED,
+				JobStatus.OUT_OF_MEMORY,
+				JobStatus.TIMEOUT,
+			].includes(jobToCancel.status)
+		) {
+			return true;
 		}
 
-		return false
-	}
+		return false;
+	};
 
-    /**
-     * Returns true when the selected job cannot be deleted.
-     */
-	const deleteDisabled = (selectedJobId: string | null) : boolean => {
+	/**
+	 * Returns true when the selected job cannot be deleted.
+	 */
+	const deleteDisabled = (selectedJobId: string | null): boolean => {
 		if (!selectedJobId) {
 			return true;
 		}
-		const jobToDelete = jobs.find(j => j.job_id === selectedJobId);
+		const jobToDelete = jobs.find((j) => j.job_id === selectedJobId);
 		if (!jobToDelete) {
 			return true;
 		}
-		if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED,
-             JobStatus.OUT_OF_MEMORY, JobStatus.TIMEOUT].includes(jobToDelete.status)) {
+		if (
+			[
+				JobStatus.COMPLETED,
+				JobStatus.FAILED,
+				JobStatus.CANCELLED,
+				JobStatus.OUT_OF_MEMORY,
+				JobStatus.TIMEOUT,
+			].includes(jobToDelete.status)
+		) {
 			return false;
 		}
 		return true;
-	}
+	};
 
-    // Show the full-page loading component while data is being fetched.
+	// Show the full-page loading component while data is being fetched.
 	if (loading) {
-		return (
-			<MolmakerLoading />
-		);
+		return <MolmakerLoading />;
 	}
 
 	return (
 		<Box p={4} sx={{ minHeight: `calc(100vh - 64px)` }} className="bg-stone-100">
-			{error && (
-				<MolmakerAlert
-					text={error}
-					severity="error"
-					outline="error"
-					sx={{ mb: 4 }}
-				/>
-			)}
-			{/* Structure Preview Dialog */}
-			<Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
-				<Box sx={{ width: '100%', height: 400 }}>
-					<MolmakerMoleculePreview
-						data={previewData}
-						format='xyz'
-						source="library"
-						title="Structure Preview"
-						sx={{ width: '100%', height: '100%' }}
-					/>
-				</Box>
-			</Dialog>
+			{error && <MolmakerAlert text={error} severity="error" outline="error" sx={{ mb: 4 }} />}
 			<MolmakerConfirm
 				open={openConfirmDelete}
 				onClose={() => setOpenConfirmDelete(false)}
-				textToShow={
-					"Are you sure you want to delete this row? This action cannot be undone."
-				}
+				textToShow={"Are you sure you want to delete this row? This action cannot be undone."}
 				onConfirm={() => {
 					handleDelete();
 					setOpenConfirmDelete(false);
 				}}
 			/>
-			<Box
-				sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-			>
-				<Snackbar 
-					open={alertShow} 
+			<Box sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+				<Snackbar
+					open={alertShow}
 					autoHideDuration={5000}
-					onClose={() => { setAlertShow(false) }}
-					anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-					sx={{ top: { xs: '48px', sm: '80px' } }}
+					onClose={() => {
+						setAlertShow(false);
+					}}
+					anchorOrigin={{ vertical: "top", horizontal: "center" }}
+					sx={{ top: { xs: "48px", sm: "80px" } }}
 				>
 					<div>
 						<MolmakerAlert
@@ -588,30 +560,23 @@ export default function Home() {
 			</Box>
 			<Box sx={{ mb: 4 }}>
 				<h5 className="font-semibold text-2xl text-gray-700 mb-2 font-sans">
-					Hello, {user?.email || 'User'}
+					Hello, {user?.email || "User"}
 				</h5>
 			</Box>
-            {/* Jobs history */}
+			{/* Jobs history */}
 			<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50], mb: 4 }}>
 				<JobsToolbar
-                    title="My Jobs"
+					title="My Jobs"
 					selectedJobId={selectedJobId}
 					onViewDetails={() => {
 						navigate(`/jobs/${selectedJobId}`);
 					}}
-					onViewStructure={() => {
-						const job = filteredJobs.find(j => j.job_id === selectedJobId);
-						if (job?.structures.length) {
-							openMoleculeViewer(job.structures[0].structure_id);
-						}
-					}}
 					onFilterByStructure={() => {
-						const job = filteredJobs.find(j => j.job_id === selectedJobId);
+						const job = filteredJobs.find((j) => j.job_id === selectedJobId);
 						if (job?.structures.length) {
 							setFilterStructureId(job.structures[0].structure_id);
 						}
 					}}
-					viewStructureDisabled={!selectedJobId || !filteredJobs.find(j => j.job_id === selectedJobId)?.structures.length}
 					cancelDisabled={cancelDisabled}
 					deleteDisabled={deleteDisabled}
 					onCancelJob={handleCancel}
@@ -624,17 +589,17 @@ export default function Home() {
 					downloadDisabled={downloadDisabled}
 					isGroupAdmin={true}
 
-                    displayColumns={displayColumns}
-                    columnDisplayNames={columnDisplayNames}
-                    onColumnToggle={(col, checked) =>
-                        setDisplayColumns(prev => ({ ...prev, [col]: checked }))
-                    }
-                    filters={filters}
-                    onFiltersChange={setFilters}
-                    onFilterSubmit={handleFilterSubmit}
-                    availableTags={availableTags}
+					displayColumns={displayColumns}
+					columnDisplayNames={columnDisplayNames}
+					onColumnToggle={(col, checked) =>
+						setDisplayColumns((prev) => ({ ...prev, [col]: checked }))
+					}
+					filters={filters}
+					onFiltersChange={setFilters}
+					onFilterSubmit={handleFilterSubmit}
+					availableTags={availableTags}
 				/>
-                {/* Jobs history table */}
+				{/* Jobs history table */}
 				<JobsTable
 					jobs={filteredJobs}
 					page={page}
@@ -643,11 +608,11 @@ export default function Home() {
 					orderBy={orderBy}
 					selectedJobId={selectedJobId}
 					onSort={(col: keyof Job) => {
-						const isAsc = orderBy === col && order === 'asc';
-						setOrder(isAsc ? 'desc' : 'asc');
+						const isAsc = orderBy === col && order === "asc";
+						setOrder(isAsc ? "desc" : "asc");
 						setOrderBy(col);
 						const sorted = [...filteredJobs].sort((a, b) => {
-							if (col === 'submitted_at') {
+							if (col === "submitted_at") {
 								return isAsc
 									? new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime()
 									: new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime();
@@ -667,23 +632,13 @@ export default function Home() {
 					page={page}
 					rowsPerPage={rowsPerPage}
 					onPageChange={(_, newPage) => setPage(newPage)}
-					onRowsPerPageChange={e => { setRowsPerPage(+e.target.value); setPage(0); }}
+					onRowsPerPageChange={(e) => {
+						setRowsPerPage(+e.target.value);
+						setPage(0);
+					}}
 					rowsPerPageOptions={[5, 10, 25]}
 				/>
 			</Paper>
-            {/* <Drawer
-                anchor="right"
-                open={!!selectedJobId}
-                variant="persistent"
-                sx={{ width: 350, '& .MuiDrawer-paper': {width: 350, top: 64}}}
-            >
-                <MolmakerMoleculePreview
-					data={previewData}
-					format='xyz'
-					source={'library'}
-					sx={{ height: '100%' }}
-				/>
-            </Drawer> */}
 		</Box>
 	);
 }

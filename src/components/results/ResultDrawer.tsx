@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { Drawer, Toolbar, IconButton, Box } from "@mui/material";
-import { Fullscreen, FullscreenExit } from '@mui/icons-material';
-import { grey } from '@mui/material/colors';
+import { Fullscreen, FullscreenExit } from "@mui/icons-material";
+import { grey } from "@mui/material/colors";
 import { APP_BAR_HEIGHT, DRAWER_FULL_WIDTH, DRAWER_MINI_WIDTH } from "../../constants";
 import { useResizableWidth } from "../../hooks/UseResizableWidth";
 import { useDrawerWidth } from "../../contexts/DrawerWidthContext";
@@ -16,9 +16,9 @@ const DRAWER_MIN_WIDTH = 320;
 const DRAWER_MAX_WIDTH = 560;
 
 interface ResultDrawerProps {
-    open: boolean;
-    onToggle: () => void;
-    children: React.ReactNode;
+	open: boolean;
+	onToggle: () => void;
+	children: React.ReactNode;
 }
 
 /**
@@ -26,63 +26,67 @@ interface ResultDrawerProps {
  * viewers (Energy, Optimization, Orbital, Vibration). Renders the
  * fullscreen/collapse toggle in the toolbar; viewer-specific content is
  * passed in as `children`, typically a series of <ResultDrawerSection />s.
- * 
+ *
  * The dragged width only applies while the drawer is expanded - collapsing
  * it always snaps back to DRAWER_MINI_WIDTH, and the last dragged width is
  * restored the next time it's expanded.
  */
 export function ResultDrawer({ open, onToggle, children }: ResultDrawerProps) {
-    const { width, startResizing } = useResizableWidth(DRAWER_FULL_WIDTH, DRAWER_MIN_WIDTH, DRAWER_MAX_WIDTH);
-    const drawerWidth = open ? width : DRAWER_MINI_WIDTH;
-    const { setDrawerWidth } = useDrawerWidth();
-    useEffect(() => {
-        setDrawerWidth(drawerWidth);
-    }, [drawerWidth, setDrawerWidth]);
+	const { width, startResizing } = useResizableWidth(
+		DRAWER_FULL_WIDTH,
+		DRAWER_MIN_WIDTH,
+		DRAWER_MAX_WIDTH,
+	);
+	const drawerWidth = open ? width : DRAWER_MINI_WIDTH;
+	const { setDrawerWidth } = useDrawerWidth();
+	useEffect(() => {
+		setDrawerWidth(drawerWidth);
+	}, [drawerWidth, setDrawerWidth]);
 
-    return (
-        <Drawer
-            variant="persistent"
-            anchor="right"
-            sx={{
-                width: drawerWidth,
-                flexShrink: 0,
-                '& .MuiDrawer-paper': {
-                    top: `${APP_BAR_HEIGHT}px`,
-                    height: `calc(100% - ${APP_BAR_HEIGHT}px)`,
-                    width: drawerWidth,
-                    boxSizing: 'border-box',
-                    overflowX: 'hidden',
-                    overflowY: 'auto',
-                    backgroundColor: grey['A100'],
-                    transition: 'none',
-                }
-            }}
-            open
-        >
-            {open && (
-                <Box
-                    onMouseDown={startResizing}
-                    sx={{
-                        position: 'absolute',
-                        left: 0,
-                        top: 0,
-                        bottom: 0,
-                        width: '6px',
-                        cursor: 'col-resize',
-                        zIndex: (theme) => theme.zIndex.drawer + 1,
-                        '&:hover': {
-                            backgroundColor: 'primary.main',
-                            opacity: 0.4,
-                        },
-                    }}
-                />
-            )}
-            <Toolbar sx={{ justifyContent: 'flex-start', display: 'flex', alignItems: 'center' }}>
-                <IconButton onClick={onToggle} size="small" sx={{ color: grey[500], mr: 2 }}>
-                    {open ? <FullscreenExit /> : <Fullscreen />}
-                </IconButton>
-            </Toolbar>
-            {children}
-        </Drawer>
-    );
+	return (
+		<Drawer
+			variant="persistent"
+			anchor="right"
+			sx={{
+				width: drawerWidth,
+				flexShrink: 0,
+				"& .MuiDrawer-paper": {
+					top: `${APP_BAR_HEIGHT}px`,
+					height: `calc(100% - ${APP_BAR_HEIGHT}px)`,
+					width: drawerWidth,
+					boxSizing: "border-box",
+					overflowX: "hidden",
+					overflowY: "auto",
+					backgroundColor: grey["A100"],
+					transition: "none",
+				},
+			}}
+			open
+		>
+			{open && (
+				<Box
+					onMouseDown={startResizing}
+					sx={{
+						position: "absolute",
+						left: 0,
+						top: 0,
+						bottom: 0,
+						width: "6px",
+						cursor: "col-resize",
+						zIndex: (theme) => theme.zIndex.drawer + 1,
+						"&:hover": {
+							backgroundColor: "primary.main",
+							opacity: 0.4,
+						},
+					}}
+				/>
+			)}
+			<Toolbar sx={{ justifyContent: "flex-start", display: "flex", alignItems: "center" }}>
+				<IconButton onClick={onToggle} size="small" sx={{ color: grey[500], mr: 2 }}>
+					{open ? <FullscreenExit /> : <Fullscreen />}
+				</IconButton>
+			</Toolbar>
+			{children}
+		</Drawer>
+	);
 }
