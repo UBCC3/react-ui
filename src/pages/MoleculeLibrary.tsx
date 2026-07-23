@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
 	Paper,
@@ -27,6 +27,7 @@ import type { Structure } from "../types";
 import MoleculeInfo from "../components/MoleculeInfo";
 import MoleculeUpload from "../components/MoleculeUpload";
 import { Pyramid } from "lucide-react";
+import { renderFormula } from "../utils/renderFormula";
 
 const MoleculeLibrary = () => {
 	// Auth0 helper used to retrieve access tokens before calling protected APIs.
@@ -153,52 +154,6 @@ const MoleculeLibrary = () => {
 			</Box>
 		</TableCell>
 	);
-
-	// Converts a chemical formula string into JSX with subscripts and superscripts..
-	const renderFormula = (formula: string) => {
-		if (!formula) {
-			return (
-				<Typography variant="body2" color="text.secondary">
-					No formula
-				</Typography>
-			);
-		}
-
-		// Regex: match {...} or (...) for superscript, or numbers for subscript
-		const regex = /\{([^}]+)\}|\(([^)]+)\)|(\d+)/g;
-		// Stores each piece of rendered formula text.
-		const parts: React.ReactNode[] = [];
-		// Tracks the end of the previous match so normal text can be preserved.
-		let lastIndex = 0;
-		// Counter used to give generated <sup> and <sub> elements unique keys.
-		let i = 0;
-		let match;
-
-		// Walk through the formula and split it into normal text, superscripts, and subscripts.
-		while ((match = regex.exec(formula)) !== null) {
-			// Add any normal text before the current matched token.
-			if (match.index > lastIndex) {
-				parts.push(formula.slice(lastIndex, match.index));
-			}
-			if (match[1] !== undefined) {
-				// {superscript}
-				parts.push(<sup key={i++}>{match[1]}</sup>);
-			} else if (match[2] !== undefined) {
-				// (superscript)
-				parts.push(<sup key={i++}>{match[2]}</sup>);
-			} else if (match[3] !== undefined) {
-				// subscript
-				parts.push(<sub key={i++}>{match[3]}</sub>);
-			}
-			lastIndex = regex.lastIndex;
-		}
-
-		// Add any remaining normal text after the last match.
-		if (lastIndex < formula.length) {
-			parts.push(formula.slice(lastIndex));
-		}
-		return <Typography variant="body2">{parts}</Typography>;
-	};
 
 	// Sorts the molecule table by the selected column.
 	const onSort = (column: keyof Structure) => {

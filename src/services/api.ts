@@ -75,6 +75,26 @@ export const getCurrentUserGroupJobs = async (token: any): Promise<Response> => 
 };
 
 /**
+ * Fetches structures owned by the current user's group.
+ */
+export const getCurrentUserGroupStructures = async (token: any): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.get("/group/structures?limit=100");
+		return {
+			status: res.status,
+			data: res.data,
+		};
+	} catch (error: any) {
+		console.error("Failed to fetch group structures", error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+/**
  * Fetches all members in the current user's group.
  */
 export const getCurrentUserMembers = async (token: any): Promise<Response> => {
