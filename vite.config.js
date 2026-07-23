@@ -7,13 +7,13 @@ import tailwindcss from "@tailwindcss/vite";
 // has no trailing slash, but Vite's dev server only serves the app under the
 // slashed base, so this bridges the two.
 const redirectBaseWithoutSlash = {
-	name: 'redirect-base-without-trailing-slash',
+	name: "redirect-base-without-trailing-slash",
 	configureServer(server) {
 		server.middlewares.use((req, res, next) => {
-			const [path, query] = req.url.split('?');
-			if (path === '/ubchemica') {
+			const [path, query] = req.url.split("?");
+			if (path === "/ubchemica") {
 				res.statusCode = 302;
-				res.setHeader('Location', '/ubchemica/' + (query ? '?' + query : ''));
+				res.setHeader("Location", "/ubchemica/" + (query ? "?" + query : ""));
 				res.end();
 				return;
 			}
@@ -24,6 +24,6 @@ const redirectBaseWithoutSlash = {
 
 // https://vite.dev/config/
 export default defineConfig({
-	base: '/ubchemica/',
+	base: "/ubchemica/",
 	plugins: [react(), tailwindcss(), redirectBaseWithoutSlash],
-})
+});
