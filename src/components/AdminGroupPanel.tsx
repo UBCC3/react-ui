@@ -78,10 +78,20 @@ export default function AdminGroupPanel({ token }: { token: string }) {
 			return;
 		}
 		const resp = await createGroup(groupName, token);
-		if (resp.status !== 200) {
+		if (resp.error) {
 			alert("Failed to create group.");
-		} else {
-			await updateUser(token, groupAdminUser.user_sub, "group_admin", resp.data.group_id);
+			return;
+		}
+
+		// Promote the selected user to group admin for the newly created group.
+		const promote = await updateUser(
+			token,
+			groupAdminUser.user_sub,
+			"group_admin",
+			resp.data.group_id,
+		);
+		if (promote.error) {
+			alert(`Group created, but assigning the group admin failed: ${promote.error}`);
 		}
 
 		setGroupName("");
@@ -95,10 +105,12 @@ export default function AdminGroupPanel({ token }: { token: string }) {
 	 * Passing an empty group ID removes the user from their current group.
 	 */
 	const handleUserUpdate = async (userSub: string, newRole: string, newGroupId: string) => {
-		if (!newGroupId) {
-			await updateUser(token, userSub, newRole);
-		} else {
-			await updateUser(token, userSub, newRole, newGroupId);
+		// The backend rejects group_admin without a group, so demote on removal.
+		const role = !newGroupId && newRole === "group_admin" ? "member" : newRole;
+		const resp = await updateUser(token, userSub, role, newGroupId || undefined);
+		if (resp.error) {
+			alert(resp.error);
+			return;
 		}
 		setReload(!reload);
 	};
@@ -192,6 +204,7 @@ export default function AdminGroupPanel({ token }: { token: string }) {
 											>
 												Remove from Group
 											</Button>
+											{/* TODO: this is just a no-op button currently */}
 											<Button
 												variant="outlined"
 												color="error"

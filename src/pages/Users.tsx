@@ -6,6 +6,7 @@ import {
 	getAllGroupsPaged,
 	getAllJobsPaged,
 	getAllUsersPaged,
+	removeGroupUser,
 	updateUser,
 } from "../services/api";
 import { useAuth0 } from "@auth0/auth0-react";
@@ -228,44 +229,52 @@ const Users = () => {
 		}
 	}, [keyword, users]);
 
-	// Removes a user from their group and resets their role to member.
+	// Removes a user from their group without touching job or structure ownership.
 	const handleDeMember = async (userSub: string) => {
 		try {
 			const token = await getAccessTokenSilently();
+			const resp = await removeGroupUser(userSub, token);
+			if (resp.error) {
+				setAlertMessage(resp.error);
+				return;
+			}
 
-			// Update the backend user record.
-			await updateUser(token, userSub, "member", "");
-
-			// Update local state so the UI reflects the change immeediately.
+			// The backend demotes group admins to member and leaves other roles alone.
 			setUsers(
 				users.map((user) =>
-					user.user_sub === userSub ? { ...user, role: "member", group_id: "" } : user,
+					user.user_sub === userSub
+						? {
+								...user,
+								role: user.role === "group_admin" ? "member" : user.role,
+								group_id: undefined,
+								group: "No Group",
+							}
+						: user,
 				),
 			);
-			setAlertMessage("User de-membered successfully.");
+			setAlertMessage("User removed from group successfully.");
 			setTimeout(() => setAlertMessage(""), 3000);
 		} catch (error) {
-			console.error("Error de-membering user:", error);
+			console.error("Error removing user from group:", error);
 		}
 	};
 
 	// Saves edits made to the selected user's role or group.
 	const handleEditUser = async (user: User | null) => {
 		if (!user) return;
-		try {
-			const token = await getAccessTokenSilently();
-
-			// Persist the edited user role and group to the backend.
-			await updateUser(token, user.user_sub, user.role, user.group_id);
-
-			// Replace the updated user in local state.
-			setUsers(users.map((u) => (u.user_sub === user.user_sub ? user : u)));
-
-			setAlertMessage("User updated successfully.");
-			setTimeout(() => setAlertMessage(""), 3000);
-		} catch (error) {
-			console.error("Error editing user:", error);
+		if (user.role === "group_admin" && !user.group_id) {
+			setAlertMessage("Group admins must be assigned to a group.");
+			return;
 		}
+		const token = await getAccessTokenSilently();
+		const resp = await updateUser(token, user.user_sub, user.role, user.group_id);
+		if (resp.error) {
+			setAlertMessage(resp.error);
+			return;
+		}
+		setUsers(users.map((u) => (u.user_sub === user.user_sub ? user : u)));
+		setAlertMessage("User updated successfully.");
+		setTimeout(() => setAlertMessage(""), 3000);
 	};
 
 	// Deletes a user from the system.
@@ -305,14 +314,22 @@ const Users = () => {
 
 		// Create the group first so the returned group ID can be assigned to the admin.
 		const resp = await createGroup(groupName, token);
-		if (resp.status !== 200) {
+		if (resp.error) {
 			alert("Failed to create group.");
-		} else {
-			// Promote the selected user to group admin for the newly created group.
-			await updateUser(token, groupAdminUser.user_sub, "group_admin", resp.data.group_id);
+			return;
 		}
 
-		// Reset the form after the create attempt.
+		// Promote the selected user to group admin for the newly created group.
+		const promote = await updateUser(
+			token,
+			groupAdminUser.user_sub,
+			"group_admin",
+			resp.data.group_id,
+		);
+		if (promote.error) {
+			alert(`Group created, but assigning the group admin failed: ${promote.error}`);
+		}
+
 		setGroupName("");
 		setGroupAdmin("");
 	};
@@ -806,7 +823,9 @@ const Users = () => {
 								}}
 							>
 								<MenuItem value="admin">Administrator</MenuItem>
-								<MenuItem value="group_admin">Group Admin</MenuItem>
+								<MenuItem value="group_admin" disabled={!selectedUser?.group_id}>
+									Group Admin
+								</MenuItem>
 								<MenuItem value="member">Member</MenuItem>
 							</TextField>
 						</FormControl>
