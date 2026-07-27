@@ -47,6 +47,7 @@ import {
 	getCurrentUserMembersPaged,
 	getCurrentUserGroupJobsPaged,
 	getCurrentUserGroupStructuresPaged,
+	joinGroupRequest,
 } from "../services/api";
 import type { User, Job, Structure } from "../types";
 
@@ -73,6 +74,10 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 	const [groupName, setGroupName] = useState("");
 	const [groupId, setGroupId] = useState("");
 	const [userRole, setUserRole] = useState("");
+
+	const [joinGroupId, setJoinGroupId] = useState("");
+	const [joinGroupName, setJoinGroupName] = useState<string | null>(null);
+	const [joinError, setJoinError] = useState("");
 
 	const [newUserEmail, setNewUserEmail] = useState("");
 	const [newUserError, setNewUserError] = useState("");
@@ -126,6 +131,29 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 
 		loadData();
 	}, [token, user?.email, reload]);
+
+	// Resolve the pasted ID to a group name so the user can confirm before sending.
+	const handleLookupGroup = async () => {
+		setJoinError("");
+		setJoinGroupName(null);
+		const resp = await getGroupById(joinGroupId.trim(), token);
+		if (resp.error) {
+			setJoinError("No group found with that ID.");
+			return;
+		}
+		setJoinGroupName(resp.data.name);
+	};
+
+	const handleJoinRequest = async () => {
+		const resp = await joinGroupRequest(joinGroupId.trim(), token);
+		if (resp.error) {
+			setJoinError(resp.error);
+			return;
+		}
+		setJoinGroupId("");
+		setJoinGroupName(null);
+		setReload((r) => !r);
+	};
 
 	// Handlers
 	const handleGroupUpdate = async () => {
@@ -219,189 +247,248 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 				</Box>
 			) : (
 				<>
-					{/* Group Info and Add Member */}
-					<Typography variant="body2" sx={{ px: 2, mb: 2, fontWeight: "bold", color: grey[600] }}>
-						{userRole === "group_admin" ? "Manage Group" : "Group Information"}
-					</Typography>
-
-					<Grid container spacing={2} sx={{ px: 2 }}>
-						<Grid size={{ xs: 12, md: 6 }}>
-							{/* Group Name */}
-							<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2 }}>
-								<Typography variant="body2" color={grey[800]} sx={{ mb: 2 }}>
-									{userRole === "group_admin" ? "Update Group Name" : "Group Name"}
-								</Typography>
-								<Box display="flex" gap={2}>
-									<TextField
-										label="Group Name"
-										value={groupName}
-										onChange={(e) => setGroupName(e.target.value)}
-										size="small"
-										disabled={userRole !== "group_admin"}
-									/>
-									{userRole === "group_admin" && (
-										<Button
-											variant="contained"
-											onClick={handleGroupUpdate}
-											size="small"
-											disabled={!groupName}
-											sx={{ textTransform: "none" }}
-										>
-											Update
-										</Button>
-									)}
-								</Box>
-							</Box>
-						</Grid>
-						<Grid size={{ xs: 12, md: 6 }}>
-							{/* Add Member */}
-							{userRole === "group_admin" && (
-								<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2 }}>
-									{newUserError && (
-										<Alert severity="error" sx={{ mb: 2 }}>
-											{newUserError}
-										</Alert>
-									)}
-									<Typography variant="body2" color={grey[800]} sx={{ mb: 2 }}>
-										Add User to Group
-									</Typography>
-									<Box display="flex" gap={2}>
-										<TextField
-											label="User Email"
-											value={newUserEmail}
-											onChange={(e) => setNewUserEmail(e.target.value)}
-											size="small"
-										/>
-										<Button
-											variant="contained"
-											onClick={() => setAddMemberDialogOpen(true)}
-											size="small"
-											disabled={!newUserEmail}
-											sx={{ textTransform: "none" }}
-										>
-											Add
-										</Button>
-									</Box>
-								</Box>
+					{!groupId && (
+						<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2, mx: 2, mb: 2 }}>
+							{joinError && (
+								<Alert severity="error" sx={{ mb: 2 }}>
+									{joinError}
+								</Alert>
 							)}
-						</Grid>
-					</Grid>
-
-					{/* User Table */}
-					<Typography variant="body2" sx={{ px: 2, my: 2, fontWeight: "bold", color: grey[600] }}>
-						{userRole === "group_admin" ? "Manage Group Members" : "Your Group Members"}
-					</Typography>
-					<Table>
-						<TableHead sx={{ bgcolor: grey[200] }}>
-							<TableRow>
-								<TableCell>
-									<Box
-										sx={{
-											display: "flex",
-											alignItems: "center",
-											width: "100%",
-											fontSize: "0.7rem",
-											fontWeight: "bold",
-											color: grey[700],
-										}}
+							<Typography variant="body2" color={grey[800]} sx={{ mb: 2 }}>
+								Join a Group
+							</Typography>
+							<Box display="flex" gap={2} alignItems="center">
+								<TextField
+									label="Group ID"
+									value={joinGroupId}
+									onChange={(e) => {
+										setJoinGroupId(e.target.value);
+										setJoinGroupName(null);
+									}}
+									size="small"
+									sx={{ minWidth: 340 }}
+								/>
+								{joinGroupName ? (
+									<Button
+										variant="contained"
+										onClick={handleJoinRequest}
+										size="small"
+										sx={{ textTransform: "none" }}
 									>
-										EMAIL
-									</Box>
-								</TableCell>
-								<TableCell>
-									<Box
-										sx={{
-											display: "flex",
-											alignItems: "center",
-											width: "100%",
-											fontSize: "0.7rem",
-											fontWeight: "bold",
-											color: grey[700],
-										}}
+										Request to join {joinGroupName}
+									</Button>
+								) : (
+									<Button
+										variant="outlined"
+										onClick={handleLookupGroup}
+										size="small"
+										disabled={!joinGroupId.trim()}
+										sx={{ textTransform: "none" }}
 									>
-										ROLE
-									</Box>
-								</TableCell>
-								<TableCell>
-									<Box
-										sx={{
-											display: "flex",
-											alignItems: "center",
-											width: "100%",
-											fontSize: "0.7rem",
-											fontWeight: "bold",
-											color: grey[700],
-										}}
-									>
-										ROLE/GROUP UPDATED
-									</Box>
-								</TableCell>
-								{userRole === "group_admin" && (
-									<TableCell>
-										<Box
-											sx={{
-												display: "flex",
-												alignItems: "center",
-												width: "100%",
-												fontSize: "0.7rem",
-												fontWeight: "bold",
-												color: grey[700],
-											}}
-										>
-											REMOVE
-										</Box>
-									</TableCell>
+										Look up
+									</Button>
 								)}
-							</TableRow>
-						</TableHead>
-						<TableBody>
-							{paginatedUsers.map((u) => (
-								<TableRow key={u.user_sub}>
-									<TableCell>{u.email}</TableCell>
-									<TableCell>
-										<FormControl fullWidth size="small">
-											<InputLabel id={`role-${u.user_sub}`}>Role</InputLabel>
-											<Select labelId={`role-${u.user_sub}`} label="Role" value={u.role} disabled>
-												<MenuItem value="group_admin">Group Admin</MenuItem>
-												<MenuItem value="member">Member</MenuItem>
-											</Select>
-										</FormControl>
-									</TableCell>
-									<TableCell>
-										{u.role_or_group_updated_at
-											? new Date(u.role_or_group_updated_at).toLocaleString()
-											: "-"}
-									</TableCell>
-									{userRole === "group_admin" && (
-										<TableCell>
-											<IconButton
+							</Box>
+						</Box>
+					)}
+					{groupId && (
+						<>
+							{/* Group Info and Add Member */}
+							<Typography
+								variant="body2"
+								sx={{ px: 2, mb: 2, fontWeight: "bold", color: grey[600] }}
+							>
+								{userRole === "group_admin" ? "Manage Group" : "Group Information"}
+							</Typography>
+
+							<Grid container spacing={2} sx={{ px: 2 }}>
+								<Grid size={{ xs: 12, md: 6 }}>
+									{/* Group Name */}
+									<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2 }}>
+										<Typography variant="body2" color={grey[800]} sx={{ mb: 2 }}>
+											{userRole === "group_admin" ? "Update Group Name" : "Group Name"}
+										</Typography>
+										<Box display="flex" gap={2}>
+											<TextField
+												label="Group Name"
+												value={groupName}
+												onChange={(e) => setGroupName(e.target.value)}
 												size="small"
-												color="warning"
-												onClick={() => {
-													setSelectedUser(u);
-													setRemoveDialogOpen(true);
+												disabled={userRole !== "group_admin"}
+											/>
+											{userRole === "group_admin" && (
+												<Button
+													variant="contained"
+													onClick={handleGroupUpdate}
+													size="small"
+													disabled={!groupName}
+													sx={{ textTransform: "none" }}
+												>
+													Update
+												</Button>
+											)}
+										</Box>
+									</Box>
+								</Grid>
+								<Grid size={{ xs: 12, md: 6 }}>
+									{/* Add Member */}
+									{userRole === "group_admin" && (
+										<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2 }}>
+											{newUserError && (
+												<Alert severity="error" sx={{ mb: 2 }}>
+													{newUserError}
+												</Alert>
+											)}
+											<Typography variant="body2" color={grey[800]} sx={{ mb: 2 }}>
+												Add User to Group
+											</Typography>
+											<Box display="flex" gap={2}>
+												<TextField
+													label="User Email"
+													value={newUserEmail}
+													onChange={(e) => setNewUserEmail(e.target.value)}
+													size="small"
+												/>
+												<Button
+													variant="contained"
+													onClick={() => setAddMemberDialogOpen(true)}
+													size="small"
+													disabled={!newUserEmail}
+													sx={{ textTransform: "none" }}
+												>
+													Add
+												</Button>
+											</Box>
+										</Box>
+									)}
+								</Grid>
+							</Grid>
+
+							{/* User Table */}
+							<Typography
+								variant="body2"
+								sx={{ px: 2, my: 2, fontWeight: "bold", color: grey[600] }}
+							>
+								{userRole === "group_admin" ? "Manage Group Members" : "Your Group Members"}
+							</Typography>
+							<Table>
+								<TableHead sx={{ bgcolor: grey[200] }}>
+									<TableRow>
+										<TableCell>
+											<Box
+												sx={{
+													display: "flex",
+													alignItems: "center",
+													width: "100%",
+													fontSize: "0.7rem",
+													fontWeight: "bold",
+													color: grey[700],
 												}}
 											>
-												<RemoveCircleOutlineOutlined />
-											</IconButton>
+												EMAIL
+											</Box>
 										</TableCell>
-									)}
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
-					<TablePagination
-						component="div"
-						count={users.length}
-						page={page}
-						rowsPerPage={rowsPerPage}
-						onPageChange={(_, newPage) => setPage(newPage)}
-						onRowsPerPageChange={(e) => {
-							setRowsPerPage(+e.target.value);
-							setPage(0);
-						}}
-						rowsPerPageOptions={[5, 10, 25]}
-					/>
+										<TableCell>
+											<Box
+												sx={{
+													display: "flex",
+													alignItems: "center",
+													width: "100%",
+													fontSize: "0.7rem",
+													fontWeight: "bold",
+													color: grey[700],
+												}}
+											>
+												ROLE
+											</Box>
+										</TableCell>
+										<TableCell>
+											<Box
+												sx={{
+													display: "flex",
+													alignItems: "center",
+													width: "100%",
+													fontSize: "0.7rem",
+													fontWeight: "bold",
+													color: grey[700],
+												}}
+											>
+												ROLE/GROUP UPDATED
+											</Box>
+										</TableCell>
+										{userRole === "group_admin" && (
+											<TableCell>
+												<Box
+													sx={{
+														display: "flex",
+														alignItems: "center",
+														width: "100%",
+														fontSize: "0.7rem",
+														fontWeight: "bold",
+														color: grey[700],
+													}}
+												>
+													REMOVE
+												</Box>
+											</TableCell>
+										)}
+									</TableRow>
+								</TableHead>
+								<TableBody>
+									{paginatedUsers.map((u) => (
+										<TableRow key={u.user_sub}>
+											<TableCell>{u.email}</TableCell>
+											<TableCell>
+												<FormControl fullWidth size="small">
+													<InputLabel id={`role-${u.user_sub}`}>Role</InputLabel>
+													<Select
+														labelId={`role-${u.user_sub}`}
+														label="Role"
+														value={u.role}
+														disabled
+													>
+														<MenuItem value="group_admin">Group Admin</MenuItem>
+														<MenuItem value="member">Member</MenuItem>
+													</Select>
+												</FormControl>
+											</TableCell>
+											<TableCell>
+												{u.role_or_group_updated_at
+													? new Date(u.role_or_group_updated_at).toLocaleString()
+													: "-"}
+											</TableCell>
+											{userRole === "group_admin" && (
+												<TableCell>
+													<IconButton
+														size="small"
+														color="warning"
+														onClick={() => {
+															setSelectedUser(u);
+															setRemoveDialogOpen(true);
+														}}
+													>
+														<RemoveCircleOutlineOutlined />
+													</IconButton>
+												</TableCell>
+											)}
+										</TableRow>
+									))}
+								</TableBody>
+							</Table>
+							<TablePagination
+								component="div"
+								count={users.length}
+								page={page}
+								rowsPerPage={rowsPerPage}
+								onPageChange={(_, newPage) => setPage(newPage)}
+								onRowsPerPageChange={(e) => {
+									setRowsPerPage(+e.target.value);
+									setPage(0);
+								}}
+								rowsPerPageOptions={[5, 10, 25]}
+							/>
+						</>
+					)}
 					{/* Remove User Dialog */}
 					<Dialog open={removeDialogOpen} onClose={() => setRemoveDialogOpen(false)} fullWidth>
 						<DialogTitle>Remove User</DialogTitle>
