@@ -1279,13 +1279,27 @@ export const rejectRequest = async (requestId: string, token: string): Promise<R
 /**
  * Deletes a request by request ID.
  */
-export const deleteRequest = async (requestId: string, token: string): Promise<Response> => {
+// export const deleteRequest = async (requestId: string, token: string): Promise<Response> => {
+// 	try {
+// 		const API = createBackendAPI(token);
+// 		const res = await API.delete(`/request/${requestId}/`);
+// 		return { status: res.status, data: res.data };
+// 	} catch (error: any) {
+// 		console.error("Failed to delete request", error);
+// 		return {
+// 			status: error.response?.status || 500,
+// 			error: error.response?.data?.detail || error.message,
+// 		};
+// 	}
+// };
+
+/** Cancels a pending request the user sent, created, or manages. */
+export const cancelRequest = async (requestId: string, token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.delete(`/request/${requestId}/`);
+		const res = await API.put(`/request/${requestId}/cancel`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error("Failed to delete request", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,

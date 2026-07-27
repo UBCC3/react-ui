@@ -36,8 +36,8 @@ import {
 	getReceivedRequests,
 	approveRequest,
 	rejectRequest,
-	deleteRequest,
 	getGroupRequests,
+	cancelRequest,
 } from "../services/api";
 import { grey } from "@mui/material/colors";
 import { APP_BAR_HEIGHT } from "../constants";
@@ -145,11 +145,13 @@ export default function MenuAppBar() {
 	 * Deletes a sent request using the authenticated user's access token,
 	 * then removes the deleted request from the local sent requests state.
 	 */
-	const handleDeleteRequest = async (requestId: string) => {
+	const handleCancelRequest = async (requestId: string) => {
 		const token = await getAccessTokenSilently();
 		if (!token) return;
-		await deleteRequest(requestId, token);
-		setSentRequests((prev) => prev.filter((r) => r.request_id !== requestId));
+		await cancelRequest(requestId, token);
+		setSentRequests((prev) =>
+			prev.map((r) => (r.request_id === requestId ? { ...r, status: "cancelled" } : r)),
+		);
 	};
 
 	/**
@@ -464,7 +466,7 @@ export default function MenuAppBar() {
 							? "Are you sure you want to approve this request?"
 							: requestType === "reject"
 								? "Are you sure you want to reject this request?"
-								: "Are you sure you want to delete this request?"}
+								: "Are you sure you want to cancel this request?"}
 					</DialogContentText>
 				</DialogContent>
 				<DialogActions>
@@ -482,7 +484,7 @@ export default function MenuAppBar() {
 							} else if (requestType === "reject" && selectedRequest) {
 								await handleRejectRequest(selectedRequest);
 							} else if (requestType === "delete" && selectedRequest) {
-								await handleDeleteRequest(selectedRequest);
+								await handleCancelRequest(selectedRequest);
 							}
 							setConfirmDialogOpen(false);
 						}}
