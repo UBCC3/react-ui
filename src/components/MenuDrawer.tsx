@@ -225,32 +225,30 @@ export default function MenuDrawer() {
 						)}
 					</ListItemButton>
 				))}
-				{groupId && (
-					<>
-						<ListItemButton
-							key={"my-group"}
-							selected={location.pathname === "/group"}
-							onClick={() => {
-								navigate("/group");
-							}}
-							sx={{
-								py: 2,
-								justifyContent: open ? "initial" : "center",
-							}}
-						>
-							<ListItemIcon sx={{ color: blue[600], minWidth: 0, mr: open ? 3 : "auto" }}>
-								<PeopleAltOutlined />
-							</ListItemIcon>
-							{open && (
-								<ListItemText
-									primary={
-										<span className="text-gray-700 text-sm font-semibold font-sans">My Group</span>
-									}
-								/>
-							)}
-						</ListItemButton>
-					</>
-				)}
+				<ListItemButton
+					key={"my-group"}
+					selected={location.pathname === "/group"}
+					onClick={() => {
+						navigate("/group");
+					}}
+					sx={{
+						py: 2,
+						justifyContent: open ? "initial" : "center",
+					}}
+				>
+					<ListItemIcon sx={{ color: blue[600], minWidth: 0, mr: open ? 3 : "auto" }}>
+						<PeopleAltOutlined />
+					</ListItemIcon>
+					{open && (
+						<ListItemText
+							primary={
+								<span className="text-gray-700 text-sm font-semibold font-sans">
+									{groupId ? "My Group" : "Join a Group"}
+								</span>
+							}
+						/>
+					)}
+				</ListItemButton>
 				{role === "admin" && (
 					<>
 						<ListItemButton

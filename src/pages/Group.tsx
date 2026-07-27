@@ -183,18 +183,19 @@ export default function Group() {
 					getCurrentUserGroupStructuresPaged(token),
 				]);
 
-				// Store all group jobs.
-				setJobs(jr.data);
+				// Store all group jobs. Members with no group get a 403 here.
+				const groupJobs: Job[] = jr.data ?? [];
+				setJobs(groupJobs);
 
 				// Apply structure filter if set
 				const initial = filterStructureId
-					? jr.data.filter((j: Job) =>
+					? groupJobs.filter((j: Job) =>
 							j.structures.some((s) => s.structure_id === filterStructureId),
 						)
-					: jr.data;
+					: groupJobs;
 				setFilteredJobs(initial);
 				// Prep structure list
-				const sortedStructs = sr.data.sort((a: Structure, b: Structure) =>
+				const sortedStructs = (sr.data ?? []).sort((a: Structure, b: Structure) =>
 					a.name.localeCompare(b.name),
 				);
 				setStructures([
