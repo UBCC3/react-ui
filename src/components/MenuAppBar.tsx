@@ -37,6 +37,7 @@ import {
 	approveRequest,
 	rejectRequest,
 	deleteRequest,
+	getGroupRequests,
 } from "../services/api";
 import { grey } from "@mui/material/colors";
 import { APP_BAR_HEIGHT } from "../constants";
@@ -82,6 +83,8 @@ export default function MenuAppBar() {
 	const [requestType, setRequestType] = useState<"approve" | "reject" | "delete" | null>(null);
 	const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
 
+	const [groupRequests, setGroupRequests] = useState<GroupRequest[]>([]);
+
 	const statusColors: Record<string, string> = {
 		pending: "orange",
 		approved: "green",
@@ -123,17 +126,19 @@ export default function MenuAppBar() {
 		if (!token) return;
 		await approveRequest(requestId, token);
 		setIncomingRequests((prev) => prev.filter((r) => r.request_id !== requestId));
+		setGroupRequests((prev) => prev.filter((r) => r.request_id !== requestId));
 	};
 
 	/**
 	 * Rejects an incoming request using the authenticated user's access token,
-	 * then removes the rejected request from the local incomng requests state.
+	 * then removes the rejected request from the local incoming requests state.
 	 */
 	const handleRejectRequest = async (requestId: string) => {
 		const token = await getAccessTokenSilently();
 		if (!token) return;
 		await rejectRequest(requestId, token);
 		setIncomingRequests((prev) => prev.filter((r) => r.request_id !== requestId));
+		setGroupRequests((prev) => prev.filter((r) => r.request_id !== requestId));
 	};
 
 	/**
@@ -180,6 +185,24 @@ export default function MenuAppBar() {
 		fetchSent();
 		fetchIncoming();
 	}, [user?.sub, getAccessTokenSilently]);
+
+	/**
+	 * Handles join/de-member requests to be visible from group admin page
+	 */
+	useEffect(() => {
+		const fetchGroupRequests = async () => {
+			const token = await getAccessTokenSilently();
+			if (!token) return;
+			const resp = await getGroupRequests(token, "pending");
+			// 403 for plain members / users with no group — treat as "nothing to show"
+			setGroupRequests(resp.error ? [] : (resp.data ?? []));
+		};
+		fetchGroupRequests();
+	}, [user?.sub, getAccessTokenSilently]);
+
+	// Invites already appear under Sent Requests, and only the invited user can
+	// act on them - so this section covers join and de-member requests only.
+	const groupOnlyRequests = groupRequests.filter((r) => r.request_type !== "invite");
 
 	return (
 		<Box className="bg-slate-100">
@@ -372,6 +395,56 @@ export default function MenuAppBar() {
 								>
 									<PersonAddDisabledOutlined />
 								</IconButton>
+							)}
+						</MenuItem>
+					))
+				)}
+				<Divider />
+				<ListSubheader sx={{ fontWeight: "bold" }}>Group Requests</ListSubheader>
+				{groupOnlyRequests.length === 0 ? (
+					<MenuItem disabled>No group requests</MenuItem>
+				) : (
+					groupOnlyRequests.map((req) => (
+						<MenuItem
+							key={req.request_id}
+							sx={{ display: "flex", justifyContent: "space-between", gap: 1 }}
+						>
+							<Box>
+								<Typography variant="body2" sx={{ fontWeight: 600 }}>
+									{REQUEST_TYPE_LABELS[req.request_type] ?? req.request_type}
+								</Typography>
+								<Typography variant="caption" color="text.secondary" display="block">
+									{req.sender_name ?? "Unknown user"}
+								</Typography>
+								<Typography variant="caption" color="text.secondary" display="block">
+									{formatExpiry(req.expires_at)}
+								</Typography>
+							</Box>
+							{req.status === "pending" && (
+								<Box>
+									<IconButton
+										size="small"
+										onClick={() => {
+											setConfirmDialogOpen(true);
+											setRequestType("approve");
+											setSelectedRequest(req.request_id);
+										}}
+										color="success"
+									>
+										<CheckCircleOutlineOutlined />
+									</IconButton>
+									<IconButton
+										size="small"
+										onClick={() => {
+											setConfirmDialogOpen(true);
+											setRequestType("reject");
+											setSelectedRequest(req.request_id);
+										}}
+										color="error"
+									>
+										<CancelOutlined />
+									</IconButton>
+								</Box>
 							)}
 						</MenuItem>
 					))
