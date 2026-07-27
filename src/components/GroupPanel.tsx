@@ -36,17 +36,17 @@ import {
 import { useAuth0 } from "@auth0/auth0-react";
 import {
 	updateGroupName,
-	getCurrentUserMembers,
 	upsertCurrentUser,
 	getGroupById,
-	getCurrentUserGroupJobs,
 	sendInviteRequest,
 	removeGroupUser,
 	updateJobOwnership,
-	getCurrentUserGroupStructures,
 	updateStructureOwnership,
 	deleteJob,
 	deleteStructure,
+	getCurrentUserMembersPaged,
+	getCurrentUserGroupJobsPaged,
+	getCurrentUserGroupStructuresPaged,
 } from "../services/api";
 import type { User, Job, Structure } from "../types";
 
@@ -99,7 +99,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 			setLoading(true);
 
 			setLoadingMessage("Loading users...");
-			const membersResp = await getCurrentUserMembers(token);
+			const membersResp = await getCurrentUserMembersPaged(token);
 			setUsers(membersResp.data || []);
 
 			setLoadingMessage("Loading current user...");
@@ -114,11 +114,11 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 			}
 
 			setLoadingMessage("Loading jobs...");
-			const jobsResp = await getCurrentUserGroupJobs(token);
+			const jobsResp = await getCurrentUserGroupJobsPaged(token);
 			setJobs(jobsResp.data || []);
 
 			setLoadingMessage("Loading structures...");
-			const structuresResp = await getCurrentUserGroupStructures(token);
+			const structuresResp = await getCurrentUserGroupStructuresPaged(token);
 			setStructures(structuresResp.data || []);
 
 			setLoading(false);

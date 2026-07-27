@@ -19,13 +19,14 @@ import { blue, grey } from "@mui/material/colors";
 import {
 	cancelJobBySlurmID,
 	getJobStatusBySlurmID,
-	getLibraryStructures,
 	updateJob,
 	deleteJob,
 	getCurrentUserGroupJobs,
 	upsertCurrentUser,
 	getZipPresignedUrl,
-	getCurrentUserGroupStructures,
+	getCurrentUserGroupJobsPaged,
+	getLibraryStructuresPaged,
+	getCurrentUserGroupStructuresPaged,
 } from "../services/api";
 import { JobStatus } from "../constants";
 import JobsToolbar from "./Home/components/JobsToolbar";
@@ -148,9 +149,9 @@ export default function Group() {
 
 				// Fetch jobs and structures in parallel to reduce loading time.
 				const [jr, sr, gsr] = await Promise.all([
-					getCurrentUserGroupJobs(token),
-					getLibraryStructures(token),
-					getCurrentUserGroupStructures(token),
+					getCurrentUserGroupJobsPaged(token),
+					getLibraryStructuresPaged(token),
+					getCurrentUserGroupStructuresPaged(token),
 				]);
 
 				// Store all group jobs.
@@ -274,6 +275,7 @@ export default function Group() {
 
 		try {
 			const token = await getAccessTokenSilently();
+			// TODO: move filter to backend
 			const response = await getCurrentUserGroupJobs(token);
 			setJobs(response.data);
 			setFilterStructureId("");

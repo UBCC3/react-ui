@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { blueGrey } from "@mui/material/colors";
 import type { User } from "../../../types";
-import { getAllUsers } from "../../../services/api";
+import { getAllUsersPaged } from "../../../services/api";
 import { useEffect } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 
@@ -33,7 +33,7 @@ export default function AdminUsersTable() {
 	useEffect(() => {
 		const fetchUsers = async () => {
 			const token = await getAccessTokenSilently();
-			const response = await getAllUsers(token);
+			const response = await getAllUsersPaged(token);
 			setUsers(response.data);
 		};
 		fetchUsers();

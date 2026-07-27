@@ -22,7 +22,7 @@ import { Refresh, VisibilityOutlined, DeleteOutlineOutlined, Add } from "@mui/ic
 import { ArrowUpAZ, ArrowDownAZ } from "lucide-react";
 import { grey, blue } from "@mui/material/colors";
 import { MolmakerPageTitle, MolmakerLoading, MolmakerConfirm } from "../components/custom";
-import { getLibraryStructures, deleteStructure } from "../services/api";
+import { deleteStructure, getLibraryStructuresPaged } from "../services/api";
 import type { Structure } from "../types";
 import MoleculeInfo from "../components/MoleculeInfo";
 import MoleculeUpload from "../components/MoleculeUpload";
@@ -54,7 +54,7 @@ const MoleculeLibrary = () => {
 		setLoading(true);
 		try {
 			const token = await getAccessTokenSilently();
-			const response = await getLibraryStructures(token);
+			const response = await getLibraryStructuresPaged(token);
 			setLibraryStructures(response.data);
 			setSelectedStructureId("");
 		} catch (err) {
@@ -94,7 +94,7 @@ const MoleculeLibrary = () => {
 				const token = await getAccessTokenSilently();
 
 				// Fetch structures saved in the user's molecule library.
-				const response = await getLibraryStructures(token);
+				const response = await getLibraryStructuresPaged(token);
 
 				// Normalize the backend response into the Structure shape expected by the UI.
 				setLibraryStructures(

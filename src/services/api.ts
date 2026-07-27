@@ -1,8 +1,31 @@
 import axios from "axios";
-import { Response } from "../types";
+import { Group, Job, Response, Structure } from "../types";
+import { User } from "@auth0/auth0-react";
+
+type Paging = { limit?: number; offset?: number };
 
 function getErrorMessage(error: unknown): string {
 	return error instanceof Error ? error.message : String(error);
+}
+
+/**
+ * Pulls every page of a paginated list endpoint.
+ */
+async function fetchAllPages<T>(
+	fetchPage: (paging: Required<Paging>) => Promise<Response>,
+	pageSize = 100,
+): Promise<Response> {
+	const all: T[] = [];
+	let offset = 0;
+	for (;;) {
+		const res = await fetchPage({ limit: pageSize, offset });
+		if (res.error) return all.length ? { status: 200, data: all } : res;
+		const page = (res.data ?? []) as T[];
+		all.push(...page);
+		if (page.length < pageSize) break;
+		offset += pageSize;
+	}
+	return { status: 200, data: all };
 }
 
 /**
@@ -57,10 +80,13 @@ export const createStorageAPI = (token: any) => {
 /**
  * Fetches all jobs that belong to the current user's group.
  */
-export const getCurrentUserGroupJobs = async (token: any): Promise<Response> => {
+export const getCurrentUserGroupJobs = async (
+	token: any,
+	paging: Paging = {},
+): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get("/group/jobs/");
+		const res = await API.get("/group/jobs/", { params: paging });
 		return {
 			status: res.status,
 			data: res.data,
@@ -75,12 +101,21 @@ export const getCurrentUserGroupJobs = async (token: any): Promise<Response> => 
 };
 
 /**
+ * All of the current user's group jobs, following pagination.
+ */
+export const getCurrentUserGroupJobsPaged = (token: string) =>
+	fetchAllPages<Job>((p) => getCurrentUserGroupJobs(token, p), 100);
+
+/**
  * Fetches structures owned by the current user's group.
  */
-export const getCurrentUserGroupStructures = async (token: any): Promise<Response> => {
+export const getCurrentUserGroupStructures = async (
+	token: any,
+	paging: Paging = {},
+): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get("/group/structures?limit=100");
+		const res = await API.get("/group/structures/", { params: paging });
 		return {
 			status: res.status,
 			data: res.data,
@@ -95,12 +130,18 @@ export const getCurrentUserGroupStructures = async (token: any): Promise<Respons
 };
 
 /**
+ * All of the current user's group structures, following pagination.
+ */
+export const getCurrentUserGroupStructuresPaged = (token: string) =>
+	fetchAllPages<Structure>((p) => getCurrentUserGroupStructures(token, p), 100);
+
+/**
  * Fetches all members in the current user's group.
  */
-export const getCurrentUserMembers = async (token: any): Promise<Response> => {
+export const getCurrentUserMembers = async (token: any, paging: Paging = {}): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get("/group/users/");
+		const res = await API.get("/group/users/", { params: paging });
 		return {
 			status: res.status,
 			data: res.data,
@@ -113,6 +154,12 @@ export const getCurrentUserMembers = async (token: any): Promise<Response> => {
 		};
 	}
 };
+
+/**
+ * All of the user's group members, following pagination.
+ */
+export const getCurrentUserMembersPaged = (token: string) =>
+	fetchAllPages<User>((p) => getCurrentUserMembers(token, p), 100);
 
 /**
  * Creates or updates the currently authenticated user in the backend database.
@@ -137,10 +184,10 @@ export const upsertCurrentUser = async (token: any, email: string): Promise<Resp
 /**
  * Fetches all groups from the admin endpoint.
  */
-export const getAllGroups = async (token: any): Promise<Response> => {
+export const getAllGroups = async (token: any, paging: Paging = {}): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get("/admin/groups/");
+		const res = await API.get("/admin/groups/", { params: paging });
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error("Failed to fetch groups", error);
@@ -150,6 +197,12 @@ export const getAllGroups = async (token: any): Promise<Response> => {
 		};
 	}
 };
+
+/**
+ * All groups, following pagination.
+ */
+export const getAllGroupsPaged = (token: string) =>
+	fetchAllPages<Group>((p) => getAllGroups(token, p), 100);
 
 /**
  * Fetches a specific group using its group ID.
@@ -230,10 +283,10 @@ export const deleteGroup = async (token: any, groupId: string): Promise<Response
 /**
  * Fetches all users from the admin endpoint.
  */
-export const getAllUsers = async (token: any): Promise<Response> => {
+export const getAllUsers = async (token: any, paging: Paging = {}): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get("/admin/users/");
+		const res = await API.get("/admin/users/", { params: paging });
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error("Failed to fetch users", error);
@@ -243,6 +296,12 @@ export const getAllUsers = async (token: any): Promise<Response> => {
 		};
 	}
 };
+
+/**
+ * All users, following pagination.
+ */
+export const getAllUsersPaged = (token: string) =>
+	fetchAllPages<User>((p) => getAllUsers(token, p), 100);
 
 /**
  * Fetches a user record using the user's email address.
@@ -308,10 +367,10 @@ export const updateUser = async (
 /**
  * Fetches all jobs from the admin jobs endpoint.
  */
-export const adminGetAllJobs = async (token: any): Promise<Response> => {
+export const adminGetAllJobs = async (token: any, paging: Paging = {}): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get("/admin/jobs/");
+		const res = await API.get("/admin/jobs/", { params: paging });
 		return {
 			status: res.status,
 			data: res.data,
@@ -324,6 +383,12 @@ export const adminGetAllJobs = async (token: any): Promise<Response> => {
 		};
 	}
 };
+
+/**
+ * All jobs, following pagination.
+ */
+export const adminGetAllJobsPaged = (token: string) =>
+	fetchAllPages<Job>((p) => adminGetAllJobs(token, p), 100);
 
 /**
  * Cancels a running or queued cluster job using its SLURM ID.
@@ -553,10 +618,10 @@ export const getStructureDataFromS3 = async (
 /**
  * Fetches all structures available in the current user's library.
  */
-export const getLibraryStructures = async (token: any): Promise<Response> => {
+export const getLibraryStructures = async (token: any, paging: Paging = {}): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get("/structures/");
+		const res = await API.get("/structures/", { params: paging });
 		return {
 			status: res.status,
 			data: res.data,
@@ -569,6 +634,12 @@ export const getLibraryStructures = async (token: any): Promise<Response> => {
 		};
 	}
 };
+
+/**
+ * All of the user's structures, following pagination.
+ */
+export const getLibraryStructuresPaged = (token: string) =>
+	fetchAllPages<Structure>((p) => getLibraryStructures(token, p), 100);
 
 /**
  * Fetches metadata/details ffor one structure by structure ID.
@@ -649,10 +720,10 @@ export const getJobByJobID = async (jobId: string, token: any): Promise<Response
 /**
  * Fetches all jobs visible to the current user.
  */
-export const getAllJobs = async (token: string): Promise<Response> => {
+export const getAllJobs = async (token: string, paging: Paging = {}): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get("/jobs/");
+		const res = await API.get("/jobs/", { params: paging });
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error("Failed to fetch jobs", error);
@@ -662,6 +733,12 @@ export const getAllJobs = async (token: string): Promise<Response> => {
 		};
 	}
 };
+
+/**
+ * All of the user's jobs, following pagination.
+ */
+export const getAllJobsPaged = (token: string) =>
+	fetchAllPages<Job>((p) => getAllJobs(token, p), 100);
 
 /**
  * Fetches details for a single job by job ID.
@@ -1076,12 +1153,15 @@ export const getReceivedRequests = async (
 	status: string = "pending",
 	requestType?: string,
 	recentDays?: number,
+	limit: number = 100,
+	offset?: number,
 ): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const params: Record<string, string | number> = { status };
+		const params: Record<string, string | number> = { status, limit };
 		if (requestType) params.request_type = requestType;
 		if (recentDays !== undefined) params.recent_days = recentDays;
+		if (offset !== undefined) params.offset = offset;
 		const res = await API.get(`/request/received`, { params });
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
@@ -1118,12 +1198,15 @@ export const getSentRequests = async (
 	status: string = "pending",
 	requestType?: string,
 	recentDays?: number,
+	limit: number = 100,
+	offset?: number,
 ): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const params: Record<string, string | number> = { status };
+		const params: Record<string, string | number> = { status, limit };
 		if (requestType) params.request_type = requestType;
 		if (recentDays !== undefined) params.recent_days = recentDays;
+		if (offset !== undefined) params.offset = offset;
 		const res = await API.get(`/request/sent`, { params });
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
@@ -1332,12 +1415,15 @@ export const getGroupRequests = async (
 	status: string = "pending",
 	requestType?: string,
 	recentDays?: number,
+	limit: number = 100,
+	offset?: number,
 ): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const params: Record<string, string | number> = { status };
+		const params: Record<string, string | number> = { status, limit };
 		if (requestType) params.request_type = requestType;
 		if (recentDays !== undefined) params.recent_days = recentDays;
+		if (offset !== undefined) params.offset = offset;
 		const res = await API.get("/group/requests", { params });
 		return { status: res.status, data: res.data };
 	} catch (error: any) {

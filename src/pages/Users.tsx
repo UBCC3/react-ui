@@ -3,9 +3,9 @@ import {
 	createGroup,
 	deleteGroup,
 	deleteUser,
-	getAllGroups,
-	getAllJobs,
-	getAllUsers,
+	getAllGroupsPaged,
+	getAllJobsPaged,
+	getAllUsersPaged,
 	updateUser,
 } from "../services/api";
 import { useAuth0 } from "@auth0/auth0-react";
@@ -187,12 +187,12 @@ const Users = () => {
 				const token = await getAccessTokenSilently();
 
 				// Fetch all groups so users can be matched with their group names.
-				const groupResponse = await getAllGroups(token);
+				const groupResponse = await getAllGroupsPaged(token);
 				setGroups(groupResponse.data);
 
 				// Fetch all users and jobs for the management view.
-				const userResponse = await getAllUsers(token);
-				const jobResponse = await getAllJobs(token);
+				const userResponse = await getAllUsersPaged(token);
+				const jobResponse = await getAllJobsPaged(token);
 
 				// Add derived fields to each user for easier rendering.
 				setUsers(

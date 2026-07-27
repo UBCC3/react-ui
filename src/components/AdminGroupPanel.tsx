@@ -15,7 +15,7 @@ import {
 	List,
 	AccordionActions,
 } from "@mui/material";
-import { getAllGroups, createGroup, getAllUsers, updateUser } from "../services/api"; // assume these exist
+import { createGroup, updateUser, getAllGroupsPaged, getAllUsersPaged } from "../services/api"; // assume these exist
 import type { User, Group } from "../types";
 import { grey, blueGrey } from "@mui/material/colors";
 import {
@@ -50,7 +50,10 @@ export default function AdminGroupPanel({ token }: { token: string }) {
 	// Fetch groups and users whenever the auth token changes or data is reloaded.
 	useEffect(() => {
 		const fetchData = async () => {
-			const [groupResp, userResp] = await Promise.all([getAllGroups(token), getAllUsers(token)]);
+			const [groupResp, userResp] = await Promise.all([
+				getAllGroupsPaged(token),
+				getAllUsersPaged(token),
+			]);
 			setGroups(groupResp.data);
 			setUsers(userResp.data);
 		};

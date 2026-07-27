@@ -7,10 +7,11 @@ import {
 	cancelJobBySlurmID,
 	adminGetAllJobs,
 	getJobStatusBySlurmID,
-	getLibraryStructures,
 	updateJob,
 	deleteJob,
 	getZipPresignedUrl,
+	adminGetAllJobsPaged,
+	getLibraryStructuresPaged,
 } from "../services/api";
 import { JobStatus } from "../constants";
 import JobsToolbar from "./Home/components/JobsToolbar";
@@ -216,8 +217,8 @@ export default function Admin() {
 
 				// Fetch jobs and library structures in parallel.
 				const [jobsResponse, structuresResponse] = await Promise.all([
-					adminGetAllJobs(token),
-					getLibraryStructures(token),
+					adminGetAllJobsPaged(token),
+					getLibraryStructuresPaged(token),
 				]);
 
 				// Store jobs, excluding pending jobs from the main jobs list.
@@ -276,6 +277,7 @@ export default function Admin() {
 
 		try {
 			const token = await getAccessTokenSilently();
+			// TODO: move filter to backend
 			const response = await adminGetAllJobs(token);
 			setJobs(response.data);
 			setFilterStructureId("");
