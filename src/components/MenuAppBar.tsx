@@ -86,6 +86,8 @@ export default function MenuAppBar() {
 		pending: "orange",
 		approved: "green",
 		rejected: "red",
+		expired: "grey",
+		cancelled: "grey",
 	};
 
 	/**
@@ -150,14 +152,19 @@ export default function MenuAppBar() {
 	 * Auth0 id becomes available or changes.
 	 */
 	useEffect(() => {
+		const TERMINAL_STATUSES = ["approved", "rejected", "expired", "cancelled"] as const;
+
 		/**
 		 * Fetches requests sent by the current authenticated user.
 		 */
 		const fetchSent = async () => {
 			const token = await getAccessTokenSilently();
 			if (!token) return;
-			const resp = await getSentRequests(token);
-			setSentRequests(resp.data || []);
+			const results = await Promise.all([
+				getSentRequests(token, "pending"),
+				...TERMINAL_STATUSES.map((s) => getSentRequests(token, s, undefined, 30)),
+			]);
+			setSentRequests(results.flatMap((r) => r.data ?? []));
 		};
 
 		/**
