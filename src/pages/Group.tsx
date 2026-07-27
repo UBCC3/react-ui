@@ -14,6 +14,8 @@ import {
 	TableCell,
 	TableBody,
 	Toolbar,
+	Tooltip,
+	IconButton,
 } from "@mui/material";
 import { blue, grey } from "@mui/material/colors";
 import {
@@ -27,6 +29,7 @@ import {
 	getCurrentUserGroupJobsPaged,
 	getLibraryStructuresPaged,
 	getCurrentUserGroupStructuresPaged,
+	updateStructureVisibility,
 } from "../services/api";
 import { JobStatus } from "../constants";
 import JobsToolbar from "./Home/components/JobsToolbar";
@@ -37,6 +40,7 @@ import GroupJobsTable from "./Home/components/GroupJobsTable";
 import { filterJobs } from "../utils";
 import { Pyramid } from "lucide-react";
 import { renderFormula } from "../utils/renderFormula";
+import { VisibilityOffOutlined, VisibilityOutlined } from "@mui/icons-material";
 
 export default function Group() {
 	// map column name to display name
@@ -125,6 +129,21 @@ export default function Group() {
 			(!!job.user_sub && job.user_sub === user?.sub),
 		[userRole, user?.sub],
 	);
+
+	// Updates public/private visibility for one group structure.
+	const toggleStructureVisibility = async (structureId: string, makePublic: boolean) => {
+		const token = await getAccessTokenSilently();
+		const resp = await updateStructureVisibility(structureId, makePublic, token);
+		if (resp.error) {
+			setAlertMsg("Failed to update structure visibility");
+			setAlertSeverity("error");
+			setAlertShow(true);
+			return;
+		}
+		setGroupStructures((prev) =>
+			prev.map((s) => (s.structure_id === structureId ? { ...s, is_public: makePublic } : s)),
+		);
+	};
 
 	// Initialize token and role
 	useEffect(() => {
@@ -688,12 +707,13 @@ export default function Group() {
 								<TableCell>Notes</TableCell>
 								<TableCell>Tags</TableCell>
 								<TableCell>Uploaded At</TableCell>
+								{userRole === "group_admin" && <TableCell>Visibility</TableCell>}
 							</TableRow>
 						</TableHead>
 						<TableBody>
 							{groupStructures.length === 0 && (
 								<TableRow>
-									<TableCell colSpan={5} align="center">
+									<TableCell colSpan={userRole === "group_admin" ? 6 : 5} align="center">
 										<Typography variant="body2" color="text.secondary">
 											No structures in this group yet.
 										</Typography>
@@ -724,6 +744,35 @@ export default function Group() {
 												? new Date(structure.uploaded_at).toLocaleString()
 												: ""}
 										</TableCell>
+										{userRole === "group_admin" && (
+											<TableCell>
+												{structure.is_public ? (
+													<Tooltip title="Make Private">
+														<IconButton
+															size="small"
+															color="primary"
+															onClick={() =>
+																toggleStructureVisibility(structure.structure_id, false)
+															}
+														>
+															<VisibilityOutlined />
+														</IconButton>
+													</Tooltip>
+												) : (
+													<Tooltip title="Make Public">
+														<IconButton
+															size="small"
+															sx={{ color: grey[600] }}
+															onClick={() =>
+																toggleStructureVisibility(structure.structure_id, true)
+															}
+														>
+															<VisibilityOffOutlined />
+														</IconButton>
+													</Tooltip>
+												)}
+											</TableCell>
+										)}
 									</TableRow>
 								))}
 						</TableBody>
