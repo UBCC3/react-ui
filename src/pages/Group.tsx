@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -116,6 +116,16 @@ export default function Group() {
 		jobsRef.current = jobs;
 	}, [jobs]);
 
+	// Mirrors can_write_asset on the backend: admins and group admins can write
+	// any job in the group, everyone else only their own.
+	const canWrite = useCallback(
+		(job: Job) =>
+			userRole === "admin" ||
+			userRole === "group_admin" ||
+			(!!job.user_sub && job.user_sub === user?.sub),
+		[userRole, user?.sub],
+	);
+
 	// Initialize token and role
 	useEffect(() => {
 		getAccessTokenSilently()
@@ -206,6 +216,9 @@ export default function Group() {
 				}> = [];
 
 				for (const j of jobsRef.current) {
+					// Skip jobs this user cannot write; updateJob would 403.
+					if (!canWrite(j)) continue;
+
 					// Skip jobs that are alreadiy in a final state.
 					if (
 						[
@@ -261,7 +274,7 @@ export default function Group() {
 
 		// Stop polling when the component unmounts.
 		return () => clearInterval(id);
-	}, [getAccessTokenSilently]);
+	}, [getAccessTokenSilently, canWrite]);
 
 	// applying the filter to the jobs
 	const handleFilterSubmit = () => {
@@ -397,6 +410,11 @@ export default function Group() {
 		}
 		const jobToDelete = jobs.find((j) => j.job_id === selectedJobId);
 		if (!jobToDelete) {
+			return true;
+		}
+
+		// The backend requires write access to delete.
+		if (!canWrite(jobToDelete)) {
 			return true;
 		}
 

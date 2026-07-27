@@ -888,8 +888,8 @@ const Users = () => {
 							Are you sure you want to delete the user <strong>{selectedUser?.email}</strong>?
 						</Typography>
 						<Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
-							This action cannot be undone. Any jobs and structures associated with this user will
-							also be deleted.
+							This action cannot be undone. Jobs and structures shared with a group stay with that
+							group; anything owned only by this user is deleted.
 						</Typography>
 					</DialogContent>
 
