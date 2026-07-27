@@ -5,6 +5,7 @@ import { Orbital, JobResult, VibrationMode, ComplexNumber } from "./JSmol";
 import User from "./User";
 import Group from "./Group";
 import Filter from "./Filter";
+import GroupRequest from "./Request";
 
 export type {
 	Job,
@@ -17,4 +18,5 @@ export type {
 	User,
 	Group,
 	Filter,
+	GroupRequest,
 };

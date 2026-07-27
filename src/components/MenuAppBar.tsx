@@ -40,9 +40,23 @@ import {
 } from "../services/api";
 import { grey } from "@mui/material/colors";
 import { APP_BAR_HEIGHT } from "../constants";
+import { GroupRequest } from "../types";
 
 // Height used to calculate the maximum visible height of the requests menu.
 const ITEM_HEIGHT = 48;
+
+const REQUEST_TYPE_LABELS: Record<string, string> = {
+	invite: "Group Invite",
+	join_request: "Join Request",
+	demember_request: "Leave-Group Request",
+};
+
+const formatExpiry = (iso: string) => {
+	const ms = new Date(iso).getTime() - Date.now();
+	if (ms <= 0) return "expired";
+	const days = Math.ceil(ms / 86_400_000);
+	return `expires in ${days} day${days === 1 ? "" : "s"}`;
+};
 
 /**
  * Main navigation bar component for the app.
@@ -61,8 +75,8 @@ export default function MenuAppBar() {
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 	const [anchorRequestsEl, setAnchorRequestsEl] = useState<null | HTMLElement>(null);
 
-	const [sentRequests, setSentRequests] = useState<any[]>([]);
-	const [incomingRequests, setIncomingRequests] = useState<any[]>([]);
+	const [sentRequests, setSentRequests] = useState<GroupRequest[]>([]);
+	const [incomingRequests, setIncomingRequests] = useState<GroupRequest[]>([]);
 
 	const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 	const [requestType, setRequestType] = useState<"approve" | "reject" | "delete" | null>(null);
@@ -270,9 +284,15 @@ export default function MenuAppBar() {
 							sx={{ display: "flex", justifyContent: "space-between", gap: 1 }}
 						>
 							<Box>
-								<Typography variant="body2">{req.sender_name}</Typography>
-								<Typography variant="caption" color="text.secondary">
-									{req.group_name}
+								<Typography variant="body2" sx={{ fontWeight: 600 }}>
+									{REQUEST_TYPE_LABELS[req.request_type] ?? req.request_type}
+								</Typography>
+								<Typography variant="caption" color="text.secondary" display="block">
+									{req.group_name ?? "Unknown group"}
+									{req.sender_name ? ` · from ${req.sender_name}` : ""}
+								</Typography>
+								<Typography variant="caption" color="text.secondary" display="block">
+									{formatExpiry(req.expires_at)}
 								</Typography>
 							</Box>
 							{req.status === "pending" && (
@@ -315,17 +335,23 @@ export default function MenuAppBar() {
 							sx={{ display: "flex", justifyContent: "space-between", gap: 1 }}
 						>
 							<Box>
-								{req.receiver_name}
-								<Chip
-									label={req.status}
-									size="small"
-									sx={{
-										bgcolor: statusColors[req.status] ?? "grey.300",
-										color: "white",
-										textTransform: "capitalize",
-										ml: 1,
-									}}
-								/>
+								<Typography variant="body2" sx={{ fontWeight: 600 }}>
+									{REQUEST_TYPE_LABELS[req.request_type] ?? req.request_type}
+									<Chip
+										label={req.status}
+										size="small"
+										sx={{
+											bgcolor: statusColors[req.status] ?? "grey.300",
+											color: "white",
+											textTransform: "capitalize",
+											ml: 1,
+										}}
+									/>
+								</Typography>
+								<Typography variant="caption" color="text.secondary" display="block">
+									{req.group_name ?? "Unknown group"}
+									{req.receiver_name ? ` · to ${req.receiver_name}` : ""}
+								</Typography>
 							</Box>
 							{req.status === "pending" && (
 								<IconButton
