@@ -51,8 +51,11 @@ import {
 	getCurrentUserGroupStructuresPaged,
 	joinGroupRequest,
 	requestDemember,
+	approveRequest,
+	getGroupRequests,
+	rejectRequest,
 } from "../services/api";
-import type { User, Job, Structure } from "../types";
+import { type User, type Job, type Structure, GroupRequest } from "../types";
 
 /**
  * Props for the GroupPanel
@@ -100,6 +103,9 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 		"co_owned",
 	);
 
+	const [pendingRequestId, setPendingRequestId] = useState<string | null>(null);
+	const [dememberRequests, setDememberRequests] = useState<GroupRequest[]>([]);
+
 	const [loading, setLoading] = useState(true);
 	const [loadingMessage, setLoadingMessage] = useState("Loading...");
 
@@ -114,6 +120,10 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 			setLoadingMessage("Loading users...");
 			const membersResp = await getCurrentUserMembersPaged(token);
 			setUsers(membersResp.data || []);
+
+			setLoadingMessage("Loading requests...");
+			const reqResp = await getGroupRequests(token, "pending", "demember_request");
+			setDememberRequests(reqResp.error ? [] : (reqResp.data ?? []));
 
 			setLoadingMessage("Loading current user...");
 			const upsertResp = await upsertCurrentUser(token, user.email);
@@ -176,11 +186,9 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 		setTimeout(() => setCopiedGroupId(false), 2000);
 	};
 
-	// Remove the selected user from the group and handle their jobs based on the selected policy.
-	const handleUserUpdate = async () => {
-		if (!selectedUser) return;
-		const userSub = selectedUser.user_sub;
-		const userJobs = jobs.filter((j) => j.user_sub === userSub);
+	// Applies the chosen ownership policy to one member's jobs and structures.
+	const applyRemovalPolicy = async (userSub: string) => {
+		const userJobs = jobs.filter((j) => j.user_sub == userSub);
 		const userStructures = structures.filter((s) => s.user_sub === userSub);
 
 		if (removalPolicy === "group") {
@@ -206,9 +214,25 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 				...userStructures.map((s) => deleteStructure(s.structure_id, token)),
 			]);
 		}
-		// 'co_owned': no change - job remains co-owned by both, matching demember's own default behavior.
+		// 'co_owned': no change - assets remain co-owned by both.
+	};
 
-		await removeGroupUser(userSub, token);
+	// Remove the selected user from the group and handle their jobs based on the selected policy
+	const handleUserUpdate = async () => {
+		if (!selectedUser) return;
+		const userSub = selectedUser.user_sub;
+
+		// Ownership must move while the user is still in the group: a co_owned
+		// transfer is rejected once their group_id is null.
+		await applyRemovalPolicy(userSub);
+
+		if (pendingRequestId) {
+			await approveRequest(pendingRequestId, token);
+		} else {
+			await removeGroupUser(userSub, token);
+		}
+
+		setPendingRequestId(null);
 		setReload((r) => !r);
 		setRemoveDialogOpen(false);
 	};
@@ -447,6 +471,61 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 								</Grid>
 							</Grid>
 
+							{userRole === "group_admin" && dememberRequests.length > 0 && (
+								<Box sx={{ px: 2, mb: 2 }}>
+									<Typography variant="body2" sx={{ mb: 1, fontWeight: "bold", color: grey[600] }}>
+										Pending Leave Requests
+									</Typography>
+									{dememberRequests.map((req) => (
+										<Box
+											key={req.request_id}
+											sx={{
+												display: "flex",
+												alignItems: "center",
+												justifyContent: "space-between",
+												p: 2,
+												mb: 1,
+												bgcolor: grey[200],
+												borderRadius: 2,
+											}}
+										>
+											<Typography variant="body2">
+												{req.sender_name ?? "Unknown user"} asked to leave this group
+											</Typography>
+											<Box display="flex" gap={1}>
+												<Button
+													size="small"
+													variant="contained"
+													sx={{ textTransform: "none" }}
+													onClick={() => {
+														const requester = users.find((u) => u.user_sub === req.sender_sub);
+														if (!requester) return;
+														setSelectedUser(requester);
+														setPendingRequestId(req.request_id);
+														setRemovalPolicy("co_owned");
+														setRemoveDialogOpen(true);
+													}}
+												>
+													Approve
+												</Button>
+												<Button
+													size="small"
+													variant="outlined"
+													color="inherit"
+													sx={{ textTransform: "none" }}
+													onClick={async () => {
+														await rejectRequest(req.request_id, token);
+														setReload((r) => !r);
+													}}
+												>
+													Reject
+												</Button>
+											</Box>
+										</Box>
+									))}
+								</Box>
+							)}
+
 							{/* User Table */}
 							<Typography
 								variant="body2"
@@ -573,7 +652,14 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 						</>
 					)}
 					{/* Remove User Dialog */}
-					<Dialog open={removeDialogOpen} onClose={() => setRemoveDialogOpen(false)} fullWidth>
+					<Dialog
+						open={removeDialogOpen}
+						onClose={() => {
+							setRemoveDialogOpen(false);
+							setPendingRequestId(null);
+						}}
+						fullWidth
+					>
 						<DialogTitle>Remove User</DialogTitle>
 						<DialogContent>
 							<Box sx={{ border: 1, borderColor: "divider", p: 3, mt: 2, borderRadius: 2 }}>
@@ -597,12 +683,12 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 										<FormControlLabel
 											value="group"
 											control={<Radio />}
-											label="Jobs and structures deleted from user database"
+											label="Give jobs and structures to the group"
 										/>
 										<FormControlLabel
 											value="user"
 											control={<Radio />}
-											label="Jobs and structures deleted from group database"
+											label="Give jobs and structures to the user"
 										/>
 										<FormControlLabel
 											value="delete"
@@ -615,7 +701,10 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 						</DialogContent>
 						<DialogActions>
 							<Button
-								onClick={() => setRemoveDialogOpen(false)}
+								onClick={() => {
+									setRemoveDialogOpen(false);
+									setPendingRequestId(null);
+								}}
 								variant="outlined"
 								sx={{ textTransform: "none", color: grey[600], borderColor: grey[400] }}
 							>

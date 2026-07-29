@@ -1,4 +1,5 @@
 import { useEffect, useState, MouseEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
@@ -70,6 +71,8 @@ const formatExpiry = (iso: string) => {
  * - Confirmation dialog state
  */
 export default function MenuAppBar() {
+	const navigate = useNavigate();
+
 	const { open, width } = useDrawer();
 	const { loginWithRedirect, logout, isAuthenticated, user, getAccessTokenSilently } = useAuth0();
 
@@ -424,28 +427,44 @@ export default function MenuAppBar() {
 							</Box>
 							{req.status === "pending" && (
 								<Box>
-									<IconButton
-										size="small"
-										onClick={() => {
-											setConfirmDialogOpen(true);
-											setRequestType("approve");
-											setSelectedRequest(req.request_id);
-										}}
-										color="success"
-									>
-										<CheckCircleOutlineOutlined />
-									</IconButton>
-									<IconButton
-										size="small"
-										onClick={() => {
-											setConfirmDialogOpen(true);
-											setRequestType("reject");
-											setSelectedRequest(req.request_id);
-										}}
-										color="error"
-									>
-										<CancelOutlined />
-									</IconButton>
+									{req.request_type === "demember_request" ? (
+										// Leaving needs an asset-ownership decision, which lives in GroupPanel.
+										<Button
+											size="small"
+											sx={{ textTransform: "none" }}
+											onClick={() => {
+												handleRequestsClose();
+												navigate("/group");
+											}}
+										>
+											Review
+										</Button>
+									) : (
+										<>
+											<IconButton
+												size="small"
+												onClick={() => {
+													setConfirmDialogOpen(true);
+													setRequestType("approve");
+													setSelectedRequest(req.request_id);
+												}}
+												color="success"
+											>
+												<CheckCircleOutlineOutlined />
+											</IconButton>
+											<IconButton
+												size="small"
+												onClick={() => {
+													setConfirmDialogOpen(true);
+													setRequestType("reject");
+													setSelectedRequest(req.request_id);
+												}}
+												color="error"
+											>
+												<CancelOutlined />
+											</IconButton>
+										</>
+									)}
 								</Box>
 							)}
 						</MenuItem>

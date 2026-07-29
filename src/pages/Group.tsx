@@ -23,7 +23,6 @@ import {
 	getJobStatusBySlurmID,
 	updateJob,
 	deleteJob,
-	getCurrentUserGroupJobs,
 	upsertCurrentUser,
 	getZipPresignedUrl,
 	getCurrentUserGroupJobsPaged,
@@ -309,8 +308,8 @@ export default function Group() {
 		try {
 			const token = await getAccessTokenSilently();
 			// TODO: move filter to backend
-			const response = await getCurrentUserGroupJobs(token);
-			setJobs(response.data);
+			const response = await getCurrentUserGroupJobsPaged(token);
+			setJobs(response.data ?? []);
 			setFilterStructureId("");
 		} catch (err) {
 			setError("Failed to refresh jobs");
