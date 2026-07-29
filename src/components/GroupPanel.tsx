@@ -266,7 +266,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 	const paginatedUsers = users.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
 	return (
-		<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50], mb: 4 }}>
+		<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50], mb: 4, pb: 1 }}>
 			{/* Header */}
 			<Typography
 				variant="h6"
@@ -282,7 +282,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 				}}
 			>
 				<GroupOutlined sx={{ mr: 1, color: blue[600] }} />
-				Group Management
+				{userRole === "group_admin" ? "Group Management" : "Group Information"}
 			</Typography>
 			{loading ? (
 				<Box
@@ -299,7 +299,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 			) : (
 				<>
 					{!groupId && (
-						<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2, mx: 2, mb: 2 }}>
+						<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2, mx: 2, mb: 4 }}>
 							{joinError && (
 								<Alert severity="error" sx={{ mb: 2 }}>
 									{joinError}
@@ -345,17 +345,19 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 					{groupId && (
 						<>
 							{/* Group Info and Add Member */}
-							<Typography
-								variant="body2"
-								sx={{ px: 2, mb: 2, fontWeight: "bold", color: grey[600] }}
-							>
-								{userRole === "group_admin" ? "Manage Group" : "Group Information"}
-							</Typography>
+							{userRole === "group_admin" && (
+								<Typography
+									variant="body2"
+									sx={{ px: 2, mb: 2, fontWeight: "bold", color: grey[600] }}
+								>
+									Manage Group
+								</Typography>
+							)}
 
-							<Grid container spacing={2} sx={{ px: 2 }}>
+							<Grid container spacing={2} sx={{ px: 2, pb: 4 }}>
 								<Grid size={{ xs: 12, md: 6 }}>
 									{/* Group Name */}
-									<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2 }}>
+									<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2, heigh: "100%" }}>
 										<Typography variant="body2" color={grey[800]} sx={{ mb: 2 }}>
 											{userRole === "group_admin" ? "Update Group Name" : "Group Name"}
 										</Typography>
@@ -416,7 +418,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 								<Grid size={{ xs: 12, md: 6 }}>
 									{/* Add Member */}
 									{userRole === "group_admin" && (
-										<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2 }}>
+										<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2, height: "100%" }}>
 											{newUserError && (
 												<Alert severity="error" sx={{ mb: 2 }}>
 													{newUserError}
@@ -447,7 +449,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 
 									{/* Leave Group */}
 									{userRole !== "group_admin" && (
-										<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2 }}>
+										<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2, height: "100%" }}>
 											{leaveError && (
 												<Alert severity="error" sx={{ mb: 2 }}>
 													{leaveError}
@@ -527,128 +529,132 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 							)}
 
 							{/* User Table */}
-							<Typography
-								variant="body2"
-								sx={{ px: 2, my: 2, fontWeight: "bold", color: grey[600] }}
-							>
-								{userRole === "group_admin" ? "Manage Group Members" : "Your Group Members"}
-							</Typography>
-							<Table>
-								<TableHead sx={{ bgcolor: grey[200] }}>
-									<TableRow>
-										<TableCell>
-											<Box
-												sx={{
-													display: "flex",
-													alignItems: "center",
-													width: "100%",
-													fontSize: "0.7rem",
-													fontWeight: "bold",
-													color: grey[700],
-												}}
-											>
-												EMAIL
-											</Box>
-										</TableCell>
-										<TableCell>
-											<Box
-												sx={{
-													display: "flex",
-													alignItems: "center",
-													width: "100%",
-													fontSize: "0.7rem",
-													fontWeight: "bold",
-													color: grey[700],
-												}}
-											>
-												ROLE
-											</Box>
-										</TableCell>
-										<TableCell>
-											<Box
-												sx={{
-													display: "flex",
-													alignItems: "center",
-													width: "100%",
-													fontSize: "0.7rem",
-													fontWeight: "bold",
-													color: grey[700],
-												}}
-											>
-												ROLE/GROUP UPDATED
-											</Box>
-										</TableCell>
-										{userRole === "group_admin" && (
-											<TableCell>
-												<Box
-													sx={{
-														display: "flex",
-														alignItems: "center",
-														width: "100%",
-														fontSize: "0.7rem",
-														fontWeight: "bold",
-														color: grey[700],
-													}}
-												>
-													REMOVE
-												</Box>
-											</TableCell>
-										)}
-									</TableRow>
-								</TableHead>
-								<TableBody>
-									{paginatedUsers.map((u) => (
-										<TableRow key={u.user_sub}>
-											<TableCell>{u.email}</TableCell>
-											<TableCell>
-												<FormControl fullWidth size="small">
-													<InputLabel id={`role-${u.user_sub}`}>Role</InputLabel>
-													<Select
-														labelId={`role-${u.user_sub}`}
-														label="Role"
-														value={u.role}
-														disabled
-													>
-														<MenuItem value="group_admin">Group Admin</MenuItem>
-														<MenuItem value="member">Member</MenuItem>
-													</Select>
-												</FormControl>
-											</TableCell>
-											<TableCell>
-												{u.role_or_group_updated_at
-													? new Date(u.role_or_group_updated_at).toLocaleString()
-													: "-"}
-											</TableCell>
-											{userRole === "group_admin" && (
+							{userRole === "group_admin" && (
+								<>
+									<Typography
+										variant="body2"
+										sx={{ px: 2, my: 2, fontWeight: "bold", color: grey[600] }}
+									>
+										Manage Group Members
+									</Typography>
+									<Table>
+										<TableHead sx={{ bgcolor: grey[200] }}>
+											<TableRow>
 												<TableCell>
-													<IconButton
-														size="small"
-														color="warning"
-														onClick={() => {
-															setSelectedUser(u);
-															setRemoveDialogOpen(true);
+													<Box
+														sx={{
+															display: "flex",
+															alignItems: "center",
+															width: "100%",
+															fontSize: "0.7rem",
+															fontWeight: "bold",
+															color: grey[700],
 														}}
 													>
-														<RemoveCircleOutlineOutlined />
-													</IconButton>
+														EMAIL
+													</Box>
 												</TableCell>
-											)}
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-							<TablePagination
-								component="div"
-								count={users.length}
-								page={page}
-								rowsPerPage={rowsPerPage}
-								onPageChange={(_, newPage) => setPage(newPage)}
-								onRowsPerPageChange={(e) => {
-									setRowsPerPage(+e.target.value);
-									setPage(0);
-								}}
-								rowsPerPageOptions={[5, 10, 25]}
-							/>
+												<TableCell>
+													<Box
+														sx={{
+															display: "flex",
+															alignItems: "center",
+															width: "100%",
+															fontSize: "0.7rem",
+															fontWeight: "bold",
+															color: grey[700],
+														}}
+													>
+														ROLE
+													</Box>
+												</TableCell>
+												<TableCell>
+													<Box
+														sx={{
+															display: "flex",
+															alignItems: "center",
+															width: "100%",
+															fontSize: "0.7rem",
+															fontWeight: "bold",
+															color: grey[700],
+														}}
+													>
+														ROLE/GROUP UPDATED
+													</Box>
+												</TableCell>
+												{userRole === "group_admin" && (
+													<TableCell>
+														<Box
+															sx={{
+																display: "flex",
+																alignItems: "center",
+																width: "100%",
+																fontSize: "0.7rem",
+																fontWeight: "bold",
+																color: grey[700],
+															}}
+														>
+															REMOVE
+														</Box>
+													</TableCell>
+												)}
+											</TableRow>
+										</TableHead>
+										<TableBody>
+											{paginatedUsers.map((u) => (
+												<TableRow key={u.user_sub}>
+													<TableCell>{u.email}</TableCell>
+													<TableCell>
+														<FormControl fullWidth size="small">
+															<InputLabel id={`role-${u.user_sub}`}>Role</InputLabel>
+															<Select
+																labelId={`role-${u.user_sub}`}
+																label="Role"
+																value={u.role}
+																disabled
+															>
+																<MenuItem value="group_admin">Group Admin</MenuItem>
+																<MenuItem value="member">Member</MenuItem>
+															</Select>
+														</FormControl>
+													</TableCell>
+													<TableCell>
+														{u.role_or_group_updated_at
+															? new Date(u.role_or_group_updated_at).toLocaleString()
+															: "-"}
+													</TableCell>
+													{userRole === "group_admin" && (
+														<TableCell>
+															<IconButton
+																size="small"
+																color="warning"
+																onClick={() => {
+																	setSelectedUser(u);
+																	setRemoveDialogOpen(true);
+																}}
+															>
+																<RemoveCircleOutlineOutlined />
+															</IconButton>
+														</TableCell>
+													)}
+												</TableRow>
+											))}
+										</TableBody>
+									</Table>
+									<TablePagination
+										component="div"
+										count={users.length}
+										page={page}
+										rowsPerPage={rowsPerPage}
+										onPageChange={(_, newPage) => setPage(newPage)}
+										onRowsPerPageChange={(e) => {
+											setRowsPerPage(+e.target.value);
+											setPage(0);
+										}}
+										rowsPerPageOptions={[5, 10, 25]}
+									/>
+								</>
+							)}
 						</>
 					)}
 					{/* Remove User Dialog */}
