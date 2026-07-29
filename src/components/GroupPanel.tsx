@@ -26,12 +26,14 @@ import {
 	RadioGroup,
 	CircularProgress,
 	Grid,
+    Tooltip,
 } from "@mui/material";
 import { blue, grey } from "@mui/material/colors";
 import {
 	GroupOutlined,
 	RemoveCircleOutlineOutlined,
 	CheckCircleOutlineOutlined,
+    ContentCopyOutlined,
 } from "@mui/icons-material";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
@@ -97,6 +99,8 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 	const [loading, setLoading] = useState(true);
 	const [loadingMessage, setLoadingMessage] = useState("Loading...");
 
+    const [copiedGroupId, setCopiedGroupId] = useState(false);
+
 	// Fetch and load data sequentially with loading messages
 	useEffect(() => {
 		async function loadData() {
@@ -159,6 +163,13 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 	const handleGroupUpdate = async () => {
 		await updateGroupName(groupId, groupName, token);
 		setReload((r) => !r);
+	};
+
+    // Group IDs are what members paste into the join form, so make it copyable.
+	const handleCopyGroupId = async () => {
+		await navigator.clipboard.writeText(groupId);
+		setCopiedGroupId(true);
+		setTimeout(() => setCopiedGroupId(false), 2000);
 	};
 
 	// Remove the selected user from the group and handle their jobs based on the selected policy.
@@ -328,6 +339,38 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 												</Button>
 											)}
 										</Box>
+										{userRole === "group_admin" && groupId && (
+											<Box sx={{ mt: 2 }}>
+												<Typography
+													variant="caption"
+													color={grey[700]}
+													display="block"
+													sx={{ mb: 0.5 }}
+												>
+													Group ID — share this with people who need to request to join
+												</Typography>
+												<Box display="flex" gap={1} alignItems="center">
+													<Typography
+														variant="body2"
+														sx={{
+															fontFamily: "monospace",
+															bgcolor: grey[100],
+															px: 1,
+															py: 0.5,
+															borderRadius: 1,
+															wordBreak: "break-all",
+														}}
+													>
+														{groupId}
+													</Typography>
+													<Tooltip title={copiedGroupId ? "Copied" : "Copy"}>
+														<IconButton size="small" onClick={handleCopyGroupId}>
+															<ContentCopyOutlined fontSize="small" />
+														</IconButton>
+													</Tooltip>
+												</Box>
+											</Box>
+										)}
 									</Box>
 								</Grid>
 								<Grid size={{ xs: 12, md: 6 }}>
