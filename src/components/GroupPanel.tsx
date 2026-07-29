@@ -50,6 +50,7 @@ import {
 	getCurrentUserGroupJobsPaged,
 	getCurrentUserGroupStructuresPaged,
 	joinGroupRequest,
+	requestDemember,
 } from "../services/api";
 import type { User, Job, Structure } from "../types";
 
@@ -83,6 +84,9 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 
 	const [newUserEmail, setNewUserEmail] = useState("");
 	const [newUserError, setNewUserError] = useState("");
+
+	const [leaveError, setLeaveError] = useState("");
+	const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
 
 	const [reload, setReload] = useState(false);
 	const [page, setPage] = useState(0);
@@ -220,6 +224,18 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 		setNewUserEmail("");
 		setReload((r) => !r);
 		setAddMemberDialogOpen(false);
+	};
+
+	// Members request removal; a group admin approves it from Group Requests.
+	const handleLeaveGroup = async () => {
+		const resp = await requestDemember(token);
+		setLeaveDialogOpen(false);
+		if (resp.error) {
+			setLeaveError(resp.error);
+			return;
+		}
+		setLeaveError("");
+		setReload((r) => !r);
 	};
 
 	// Users displayed on the current table page.
@@ -402,6 +418,30 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 													Add
 												</Button>
 											</Box>
+										</Box>
+									)}
+
+									{/* Leave Group */}
+									{userRole !== "group_admin" && (
+										<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2 }}>
+											{leaveError && (
+												<Alert severity="error" sx={{ mb: 2 }}>
+													{leaveError}
+												</Alert>
+											)}
+											<Typography variant="body2" color={grey[800]} sx={{ mb: 2 }}>
+												Leave Group
+											</Typography>
+											<Button
+												variant="outlined"
+												color="warning"
+												onClick={() => setLeaveDialogOpen(true)}
+												size="small"
+												sx={{ textTransform: "none" }}
+												startIcon={<RemoveCircleOutlineOutlined />}
+											>
+												Request to leave this group
+											</Button>
 										</Box>
 									)}
 								</Grid>
@@ -623,6 +663,36 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 								sx={{ textTransform: "none" }}
 							>
 								Confirm
+							</Button>
+						</DialogActions>
+					</Dialog>
+
+					{/* Leave Group Dialog */}
+					<Dialog open={leaveDialogOpen} onClose={() => setLeaveDialogOpen(false)} fullWidth>
+						<DialogTitle>Confirm Request</DialogTitle>
+						<DialogContent>
+							<Typography variant="body2" color="text.secondary">
+								Request to leave <strong style={{ color: "#1565c0" }}>{groupName}</strong>? A group
+								admin has to approve it, so you stay in the group until they do. Jobs and structures
+								ownership will depend on admin decision.
+							</Typography>
+						</DialogContent>
+						<DialogActions>
+							<Button
+								onClick={() => setLeaveDialogOpen(false)}
+								variant="outlined"
+								sx={{ textTransform: "none", color: grey[600], borderColor: grey[400] }}
+							>
+								Cancel
+							</Button>
+							<Button
+								onClick={handleLeaveGroup}
+								color="warning"
+								variant="contained"
+								startIcon={<RemoveCircleOutlineOutlined />}
+								sx={{ textTransform: "none" }}
+							>
+								Send Request
 							</Button>
 						</DialogActions>
 					</Dialog>
