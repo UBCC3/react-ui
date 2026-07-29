@@ -205,6 +205,27 @@ export default function MenuAppBar() {
 		fetchGroupRequests();
 	}, [user?.sub, getAccessTokenSilently]);
 
+	// Requests arrive while the user sits on a page, so refresh the actionable
+	// lists on an interval. Sent history is fetched on mount only.
+	useEffect(() => {
+		const REFRESH_MS = 20000;
+
+		const refresh = async () => {
+			const token = await getAccessTokenSilently();
+			if (!token) return;
+
+			const [incoming, group] = await Promise.all([
+				getReceivedRequests(token),
+				getGroupRequests(token, "pending"),
+			]);
+			setIncomingRequests(incoming.error ? [] : (incoming.data ?? []));
+			setGroupRequests(group.error ? [] : (group.data ?? []));
+		};
+
+		const id = setInterval(refresh, REFRESH_MS);
+		return () => clearInterval(id);
+	}, [getAccessTokenSilently]);
+
 	// Invites already appear under Sent Requests, and only the invited user can
 	// act on them - so this section covers join and de-member requests only.
 	const groupOnlyRequests = groupRequests.filter((r) => r.request_type !== "invite");

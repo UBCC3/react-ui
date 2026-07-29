@@ -188,7 +188,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 
 	// Applies the chosen ownership policy to one member's jobs and structures.
 	const applyRemovalPolicy = async (userSub: string) => {
-		const userJobs = jobs.filter((j) => j.user_sub == userSub);
+		const userJobs = jobs.filter((j) => j.user_sub === userSub);
 		const userStructures = structures.filter((s) => s.user_sub === userSub);
 
 		if (removalPolicy === "group") {
@@ -261,6 +261,18 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 		setLeaveError("");
 		setReload((r) => !r);
 	};
+
+	useEffect(() => {
+		if (userRole !== "group_admin") return;
+
+		const refresh = async () => {
+			const resp = await getGroupRequests(token, "pending", "demember_request");
+			setDememberRequests(resp.error ? [] : (resp.data ?? []));
+		};
+
+		const id = setInterval(refresh, 20000);
+		return () => clearInterval(id);
+	}, [token, userRole]);
 
 	// Users displayed on the current table page.
 	const paginatedUsers = users.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
