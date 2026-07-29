@@ -25,6 +25,7 @@ import {
 	getAllGroupsPaged,
 	getAllUsersPaged,
 	deleteUser,
+	deleteGroup,
 } from "../services/api"; // assume these exist
 import type { User, Group } from "../types";
 import { grey, blueGrey } from "@mui/material/colors";
@@ -60,6 +61,10 @@ export default function AdminGroupPanel({ token }: { token: string }) {
 	// Delete-user confirmation state.
 	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 	const [userToDelete, setUserToDelete] = useState<User | null>(null);
+
+	// Delete-group confirmation state.
+	const [deleteGroupConfirmOpen, setDeleteGroupConfirmOpen] = useState(false);
+	const [groupToDelete, setGroupToDelete] = useState<Group | null>(null);
 
 	// Fetch groups and users whenever the auth token changes or data is reloaded.
 	useEffect(() => {
@@ -137,6 +142,22 @@ export default function AdminGroupPanel({ token }: { token: string }) {
 		const resp = await deleteUser(token, userToDelete.user_sub);
 		setDeleteConfirmOpen(false);
 		setUserToDelete(null);
+		if (resp.error) {
+			alert(resp.error);
+			return;
+		}
+		setReload(!reload);
+	};
+
+	/**
+	 * Delete a group. Members are removed from it and group admins are demoted;
+	 * assets owned only by the group are soft-deleted.
+	 */
+	const handleGroupDelete = async () => {
+		if (!groupToDelete) return;
+		const resp = await deleteGroup(token, groupToDelete.group_id);
+		setDeleteGroupConfirmOpen(false);
+		setGroupToDelete(null);
 		if (resp.error) {
 			alert(resp.error);
 			return;
@@ -233,7 +254,6 @@ export default function AdminGroupPanel({ token }: { token: string }) {
 											>
 												Remove from Group
 											</Button>
-											{/* TODO: this is just a no-op button currently */}
 											<Button
 												variant="outlined"
 												color="error"
@@ -255,7 +275,10 @@ export default function AdminGroupPanel({ token }: { token: string }) {
 							<Button
 								variant="contained"
 								size="small"
-								onClick={() => handleUserUpdate(group.group_id, "group_admin", group.group_id)}
+								onClick={() => {
+									setGroupToDelete(group);
+									setDeleteGroupConfirmOpen(true);
+								}}
 								sx={{ textTransform: "none" }}
 								color="error"
 								startIcon={<GroupRemoveOutlined />}
@@ -298,6 +321,42 @@ export default function AdminGroupPanel({ token }: { token: string }) {
 						sx={{ textTransform: "none", borderRadius: 2 }}
 					>
 						Delete User
+					</Button>
+				</DialogActions>
+			</Dialog>
+			<Dialog
+				open={deleteGroupConfirmOpen}
+				onClose={() => setDeleteGroupConfirmOpen(false)}
+				aria-labelledby="delete-group-dialog-title"
+			>
+				<DialogTitle id="delete-group-dialog-title">Confirm Deletion</DialogTitle>
+				<DialogContent>
+					<Typography variant="body1" color="text.primary">
+						Are you sure you want to delete <strong>{groupToDelete?.name}</strong>?
+					</Typography>
+					<Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+						All {groupToDelete?.users.length ?? 0} member(s) will be removed from the group and any
+						group admins demoted to member. Jobs and structures still owned by a user stay with that
+						user; anything owned only by the group is deleted. This cannot be undone.
+					</Typography>
+				</DialogContent>
+				<DialogActions>
+					<Button
+						onClick={() => setDeleteGroupConfirmOpen(false)}
+						variant="outlined"
+						color="inherit"
+						sx={{ textTransform: "none", borderRadius: 2 }}
+					>
+						Cancel
+					</Button>
+					<Button
+						onClick={handleGroupDelete}
+						color="error"
+						variant="contained"
+						startIcon={<GroupRemoveOutlined />}
+						sx={{ textTransform: "none", borderRadius: 2 }}
+					>
+						Delete Group
 					</Button>
 				</DialogActions>
 			</Dialog>
