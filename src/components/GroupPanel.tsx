@@ -26,14 +26,14 @@ import {
 	RadioGroup,
 	CircularProgress,
 	Grid,
-    Tooltip,
+	Tooltip,
 } from "@mui/material";
 import { blue, grey } from "@mui/material/colors";
 import {
 	GroupOutlined,
 	RemoveCircleOutlineOutlined,
 	CheckCircleOutlineOutlined,
-    ContentCopyOutlined,
+	ContentCopyOutlined,
 } from "@mui/icons-material";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
@@ -99,7 +99,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 	const [loading, setLoading] = useState(true);
 	const [loadingMessage, setLoadingMessage] = useState("Loading...");
 
-    const [copiedGroupId, setCopiedGroupId] = useState(false);
+	const [copiedGroupId, setCopiedGroupId] = useState(false);
 
 	// Fetch and load data sequentially with loading messages
 	useEffect(() => {
@@ -165,7 +165,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 		setReload((r) => !r);
 	};
 
-    // Group IDs are what members paste into the join form, so make it copyable.
+	// Group IDs are what members paste into the join form, so make it copyable.
 	const handleCopyGroupId = async () => {
 		await navigator.clipboard.writeText(groupId);
 		setCopiedGroupId(true);

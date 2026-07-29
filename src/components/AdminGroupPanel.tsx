@@ -14,8 +14,18 @@ import {
 	AccordionDetails,
 	List,
 	AccordionActions,
+	Dialog,
+	DialogTitle,
+	DialogContent,
+	DialogActions,
 } from "@mui/material";
-import { createGroup, updateUser, getAllGroupsPaged, getAllUsersPaged } from "../services/api"; // assume these exist
+import {
+	createGroup,
+	updateUser,
+	getAllGroupsPaged,
+	getAllUsersPaged,
+	deleteUser,
+} from "../services/api"; // assume these exist
 import type { User, Group } from "../types";
 import { grey, blueGrey } from "@mui/material/colors";
 import {
@@ -46,6 +56,10 @@ export default function AdminGroupPanel({ token }: { token: string }) {
 
 	// Toggle used to re-fetch group/users after create/update actions.
 	const [reload, setReload] = useState(false);
+
+	// Delete-user confirmation state.
+	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+	const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
 	// Fetch groups and users whenever the auth token changes or data is reloaded.
 	useEffect(() => {
@@ -108,6 +122,21 @@ export default function AdminGroupPanel({ token }: { token: string }) {
 		// The backend rejects group_admin without a group, so demote on removal.
 		const role = !newGroupId && newRole === "group_admin" ? "member" : newRole;
 		const resp = await updateUser(token, userSub, role, newGroupId || undefined);
+		if (resp.error) {
+			alert(resp.error);
+			return;
+		}
+		setReload(!reload);
+	};
+
+	/**
+	 * Delete user's account permanently, including their Auth0 account
+	 */
+	const handleUserDelete = async () => {
+		if (!userToDelete) return;
+		const resp = await deleteUser(token, userToDelete.user_sub);
+		setDeleteConfirmOpen(false);
+		setUserToDelete(null);
 		if (resp.error) {
 			alert(resp.error);
 			return;
@@ -208,7 +237,10 @@ export default function AdminGroupPanel({ token }: { token: string }) {
 											<Button
 												variant="outlined"
 												color="error"
-												onClick={() => handleUserUpdate(user.user_sub, user.role, group.group_id)}
+												onClick={() => {
+													setUserToDelete(user);
+													setDeleteConfirmOpen(true);
+												}}
 												sx={{ textTransform: "none", borderRadius: 2 }}
 												startIcon={<DeleteOutlineOutlined />}
 											>
@@ -234,6 +266,41 @@ export default function AdminGroupPanel({ token }: { token: string }) {
 					</Accordion>
 				))}
 			</Box>
+			<Dialog
+				open={deleteConfirmOpen}
+				onClose={() => setDeleteConfirmOpen(false)}
+				aria-labelledby="delete-user-dialog-title"
+			>
+				<DialogTitle id="delete-user-dialog-title">Confirm Deletion</DialogTitle>
+				<DialogContent>
+					<Typography variant="body1" color="text.primary">
+						Are you sure you want to delete <strong>{userToDelete?.email}</strong>?
+					</Typography>
+					<Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+						This also removes their Auth0 account and cannot be undone. Jobs and structures shared
+						with a group stay with that group; anything owned only by this user is deleted.
+					</Typography>
+				</DialogContent>
+				<DialogActions>
+					<Button
+						onClick={() => setDeleteConfirmOpen(false)}
+						variant="outlined"
+						color="inherit"
+						sx={{ textTransform: "none", borderRadius: 2 }}
+					>
+						Cancel
+					</Button>
+					<Button
+						onClick={handleUserDelete}
+						color="error"
+						variant="contained"
+						startIcon={<DeleteOutlineOutlined />}
+						sx={{ textTransform: "none", borderRadius: 2 }}
+					>
+						Delete User
+					</Button>
+				</DialogActions>
+			</Dialog>
 		</Paper>
 	);
 }
