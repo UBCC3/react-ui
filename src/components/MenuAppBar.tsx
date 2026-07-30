@@ -1,4 +1,4 @@
-import { useEffect, useState, MouseEvent } from "react";
+import { useEffect, useState, MouseEvent, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
@@ -9,6 +9,7 @@ import Menu from "@mui/material/Menu";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
 	Avatar,
+	Badge,
 	Box,
 	Button,
 	Chip,
@@ -230,6 +231,14 @@ export default function MenuAppBar() {
 	// act on them - so this section covers join and de-member requests only.
 	const groupOnlyRequests = groupRequests.filter((r) => r.request_type !== "invite");
 
+	// The number of unresponsed requests
+	const pendingCount = useMemo(
+		() =>
+			incomingRequests.filter((r) => r.status === "pending").length +
+			groupOnlyRequests.filter((r) => r.status === "pending").length,
+		[incomingRequests, groupOnlyRequests],
+	);
+
 	return (
 		<Box className="bg-slate-100">
 			<AppBar
@@ -278,9 +287,11 @@ export default function MenuAppBar() {
 									aria-haspopup="true"
 									aria-expanded={anchorRequestsEl ? "true" : undefined}
 								>
-									<Avatar sx={{ bgcolor: grey[300], color: grey[700] }}>
-										<InboxOutlined fontSize="medium" />
-									</Avatar>
+									<Badge badgeContent={pendingCount} color="error" overlap="circular">
+										<Avatar sx={{ bgcolor: grey[300], color: grey[700] }}>
+											<InboxOutlined fontSize="medium" />
+										</Avatar>
+									</Badge>
 								</IconButton>
 							</Tooltip>
 							<IconButton
