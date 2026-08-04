@@ -20,7 +20,7 @@ import { ArrowDownAZ, ArrowUpAZ } from "lucide-react";
 import type { Job } from "../../../types";
 import { updateVisibility } from "../../../services/api";
 import { statusColors, statusIcons, calculationTypes } from "../../../constants";
-import { reverseMapping } from "../../../utils";
+import { formatRuntime, reverseMapping } from "../../../utils";
 
 /**
  * Props for the JobsTable
@@ -266,7 +266,7 @@ export default function GroupJobsTable({
 												</TableCell>
 											)}
 											{displayColumns.runtime && (
-												<TableCell>{job.runtime ?? "unavailable"}</TableCell>
+												<TableCell>{formatRuntime(job.runtime_seconds) ?? "unavailable"}</TableCell>
 											)}
 											{displayColumns.submitted_at && (
 												<TableCell>{new Date(job.submitted_at).toLocaleString()}</TableCell>

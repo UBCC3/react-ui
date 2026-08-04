@@ -5,6 +5,14 @@ export const capitalizeFirstLetter = (str: string) => {
 	return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
+export const formatRuntime = (seconds: number | null | undefined): string => {
+	if (seconds == null) return "unavailable";
+	const h = Math.floor(seconds / 3600);
+	const m = Math.floor((seconds % 3600) / 60);
+	const s = seconds % 60;
+	return [h, m, s].map((v) => String(v).padStart(2, "0")).join(":");
+};
+
 export const formatComplex = (c: ComplexNumber) => {
 	const { real, imag } = c;
 

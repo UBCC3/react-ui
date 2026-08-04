@@ -14,7 +14,7 @@ import { ArrowDownAZ, ArrowUpAZ } from "lucide-react";
 import { calculationTypes, statusColors, statusIcons } from "../../../constants";
 import { blueGrey, grey } from "@mui/material/colors";
 import type { Job } from "../../../types";
-import { reverseMapping } from "../../../utils";
+import { formatRuntime, reverseMapping } from "../../../utils";
 
 /**
  * Props shared by job table components.
@@ -264,7 +264,7 @@ export default function AdminJobsTable({
 									</TableCell>
 								)}
 								{displayColumns.runtime && (
-									<TableCell>{job.runtime ? job.runtime : "unavailable"}</TableCell>
+									<TableCell>{formatRuntime(job.runtime_seconds) ? formatRuntime(job.runtime_seconds) : "unavailable"}</TableCell>
 								)}
 								{displayColumns.submitted_at && (
 									<TableCell>{new Date(job.submitted_at).toLocaleString()}</TableCell>

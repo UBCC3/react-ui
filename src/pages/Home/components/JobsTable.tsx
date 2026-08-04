@@ -14,7 +14,7 @@ import { statusColors, statusIcons, calculationTypes } from "../../../constants"
 import { grey } from "@mui/material/colors";
 import { ArrowDownAZ, ArrowUpAZ } from "lucide-react";
 import type { Job } from "../../../types";
-import { reverseMapping } from "../../../utils";
+import { formatRuntime, reverseMapping } from "../../../utils";
 
 /**
  * Props for the JobsTable
@@ -237,8 +237,8 @@ export default function JobsTable({
 								)}
 								{displayColumns.runtime && (
 									<TableCell>
-										{job.runtime ? (
-											job.runtime
+										{formatRuntime(job.runtime_seconds) ? (
+											formatRuntime(job.runtime_seconds)
 										) : (
 											<Typography variant="caption" color="text.secondary">
 												N/A
