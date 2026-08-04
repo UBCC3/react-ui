@@ -28,6 +28,7 @@ import {
 	Grid,
 	Tooltip,
 	Badge,
+	Checkbox,
 } from "@mui/material";
 import { blue, grey } from "@mui/material/colors";
 import {
@@ -95,6 +96,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 
 	const [reload, setReload] = useState(false);
 	const [page, setPage] = useState(0);
+	const [selectedMemberSubs, setSelectedMemberSubs] = useState<string[]>([]);
 	const [rowsPerPage, setRowsPerPage] = useState(5);
 
 	const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
@@ -227,20 +229,35 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 
 	// Remove the selected user from the group and handle their jobs based on the selected policy
 	const handleUserUpdate = async () => {
-		if (!selectedUser) return;
-		const userSub = selectedUser.user_sub;
+		// Bulk when a selection exists, otherwise the single row that was clicked.
+		const targets =
+			selectedMemberSubs.length > 0
+				? users.filter((u) => selectedMemberSubs.includes(u.user_sub))
+				: selectedUser
+					? [selectedUser]
+					: [];
 
-		// Ownership must move while the user is still in the group: a co_owned
-		// transfer is rejected once their group_id is null.
-		await applyRemovalPolicy(userSub);
+		if (targets.length === 0) return;
 
-		if (pendingRequestId) {
-			await approveRequest(pendingRequestId, token);
-		} else {
-			await removeGroupUser(userSub, token);
+		for (const target of targets) {
+			const userSub = target.user_sub;
+
+			// Ownership must move while the user is still in the group.
+			await applyRemovalPolicy(userSub);
+
+			const resp = pendingRequestId
+				? await approveRequest(pendingRequestId, token)
+				: await removeGroupUser(userSub, token);
+
+			if (resp.error) {
+				setRequestError(`${target.email}: ${resp.error}`);
+				break;
+			}
 		}
 
+		setSelectedMemberSubs([]);
 		setPendingRequestId(null);
+		setSelectedUser(null);
 		setReload((r) => !r);
 		setRemoveDialogOpen(false);
 	};
@@ -309,6 +326,22 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 
 	// Users displayed on the current table page.
 	const paginatedUsers = users.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
+	// Selection is scoped to the current table page and cleared on page change.
+	const pageSubs = paginatedUsers.map((u) => u.user_sub);
+	const allPageSelected =
+		pageSubs.length > 0 && pageSubs.every((s) => selectedMemberSubs.includes(s));
+	const somePageSelected = pageSubs.some((s) => selectedMemberSubs.includes(s)) && !allPageSelected;
+
+	const toggleAllOnPage = (checked: boolean) => {
+		setSelectedMemberSubs(checked ? pageSubs : []);
+	};
+
+	const toggleOneMember = (userSub: string) => {
+		setSelectedMemberSubs((prev) =>
+			prev.includes(userSub) ? prev.filter((s) => s !== userSub) : [...prev, userSub],
+		);
+	};
 
 	return (
 		<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50], mb: 4, pb: 1 }}>
@@ -658,9 +691,60 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 									>
 										Manage Group Members
 									</Typography>
+									{selectedMemberSubs.length > 0 && (
+										<Box
+											sx={{
+												display: "flex",
+												alignItems: "center",
+												justifyContent: "space-between",
+												px: 2,
+												py: 1.5,
+												mb: 1,
+												bgcolor: blue[50],
+												borderRadius: 2,
+											}}
+										>
+											<Typography variant="body2" sx={{ fontWeight: 600, color: grey[800] }}>
+												{selectedMemberSubs.length} member
+												{selectedMemberSubs.length === 1 ? "" : "s"} selected
+											</Typography>
+											<Box display="flex" gap={1}>
+												<Button
+													size="small"
+													variant="outlined"
+													color="inherit"
+													sx={{ textTransform: "none" }}
+													onClick={() => setSelectedMemberSubs([])}
+												>
+													Clear
+												</Button>
+												<Button
+													size="small"
+													variant="contained"
+													color="warning"
+													startIcon={<RemoveCircleOutlineOutlined />}
+													sx={{ textTransform: "none" }}
+													onClick={() => {
+														setSelectedUser(null);
+														setRemoveDialogOpen(true);
+													}}
+												>
+													Remove selected
+												</Button>
+											</Box>
+										</Box>
+									)}
 									<Table>
 										<TableHead sx={{ bgcolor: grey[200] }}>
 											<TableRow>
+												<TableCell padding="checkbox">
+													<Checkbox
+														size="small"
+														checked={allPageSelected}
+														indeterminate={somePageSelected}
+														onChange={(e) => toggleAllOnPage(e.target.checked)}
+													/>
+												</TableCell>
 												<TableCell>
 													<Box
 														sx={{
@@ -724,6 +808,13 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 										<TableBody>
 											{paginatedUsers.map((u) => (
 												<TableRow key={u.user_sub}>
+													<TableCell padding="checkbox">
+														<Checkbox
+															size="small"
+															checked={selectedMemberSubs.includes(u.user_sub)}
+															onChange={() => toggleOneMember(u.user_sub)}
+														/>
+													</TableCell>
 													<TableCell>{u.email}</TableCell>
 													<TableCell>
 														<FormControl fullWidth size="small">
@@ -750,6 +841,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 																size="small"
 																color="warning"
 																onClick={() => {
+																	setSelectedMemberSubs([]);
 																	setSelectedUser(u);
 																	setRemoveDialogOpen(true);
 																}}
@@ -767,8 +859,12 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 										count={users.length}
 										page={page}
 										rowsPerPage={rowsPerPage}
-										onPageChange={(_, newPage) => setPage(newPage)}
+										onPageChange={(_, newPage) => {
+											setSelectedMemberSubs([]);
+											setPage(newPage);
+										}}
 										onRowsPerPageChange={(e) => {
+											setSelectedMemberSubs([]);
 											setRowsPerPage(+e.target.value);
 											setPage(0);
 										}}
@@ -791,8 +887,9 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 						<DialogContent>
 							<Box sx={{ border: 1, borderColor: "divider", p: 3, mt: 2, borderRadius: 2 }}>
 								<Typography variant="body2" color="text.secondary">
-									Are you sure you want to remove this user from the group? This action cannot be
-									undone.
+									{selectedMemberSubs.length > 1
+										? `Remove ${selectedMemberSubs.length} members from the group? The choice below applies to all of them.`
+										: "Are you sure you want to remove this user from the group? This action cannot be undone."}
 								</Typography>
 								<FormControl>
 									<RadioGroup
