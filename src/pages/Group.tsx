@@ -167,75 +167,13 @@ export default function Group() {
 		})();
 	}, [getAccessTokenSilently, filterStructureId]);
 
-	// Poll job statuses every 5s
+	// The backend advances job status; just refetch periodically.
 	useEffect(() => {
-		const tick = async () => {
-			try {
-				const token = await getAccessTokenSilently();
-
-				// Stores jobs whose status or runtime changed since the last poll.
-				const toUpdate: Array<{
-					jobId: string;
-					newStatus: string;
-					newRuntime: string;
-					userSub: string;
-				}> = [];
-
-				for (const j of jobsRef.current) {
-					// Skip jobs that are alreadiy in a final state.
-					if (
-						[
-							JobStatus.COMPLETED,
-							JobStatus.FAILED,
-							JobStatus.CANCELLED,
-							JobStatus.OUT_OF_MEMORY,
-							JobStatus.TIMEOUT,
-						].includes(j.status)
-					)
-						continue;
-
-					// Fetch the latest Slurm status for this job.
-					const r = await getJobStatusBySlurmID(j.slurm_id!, token);
-
-					// Ignore failed polling results for this specific job.
-					if (r.error) continue;
-
-					const { state, elapsed } = r.data;
-
-					// Queue an update only when status or runtime has actually changed.
-					if (state !== j.status || elapsed !== j.runtime) {
-						toUpdate.push({
-							jobId: j.job_id,
-							newStatus: state,
-							newRuntime: elapsed,
-							userSub: j.user_sub,
-						});
-					}
-				}
-
-				// Persist changed statuses to the backend and update local state.
-				if (toUpdate.length) {
-					await Promise.all(
-						toUpdate.map((u) => updateJob(u.jobId, u.newStatus, u.newRuntime, u.userSub, token)),
-					);
-					setJobs((prev) =>
-						prev.map((j) => {
-							const u = toUpdate.find((x) => x.jobId === j.job_id);
-							return u ? { ...j, status: u.newStatus, runtime: u.newRuntime } : j;
-						}),
-					);
-				}
-			} catch (e) {
-				console.error(e);
-				setError("Failed to refresh job statuses.");
-			}
-		};
-
-		// Run immediately, then continue polling every 5 seconds.
-		tick();
-		const id = setInterval(tick, 5000);
-
-		// Stop polling when the component unmounts.
+		const id = setInterval(async () => {
+			const token = await getAccessTokenSilently();
+			const resp = await getCurrentUserGroupJobsPaged(token);
+			if (!resp.error) setJobs(resp.data ?? []);
+		}, 20000);
 		return () => clearInterval(id);
 	}, [getAccessTokenSilently]);
 

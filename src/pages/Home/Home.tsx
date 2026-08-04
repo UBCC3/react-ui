@@ -133,100 +133,16 @@ export default function Home() {
 		loadUserProfile();
 	}, [user, getAccessTokenSilently]);
 
-	// poll statuses every 5s
+	// The backend advances job status; just refetch periodically.
 	useEffect(() => {
-		let stopped = false;
-
-		const tick = async () => {
-			if (stopped) return;
-			try {
-				const token = await getAccessTokenSilently();
-
-				// Gather all the changes we need to apply
-				const toUpdate: Array<{
-					jobId: string;
-					newStatus?: string;
-					newRuntime?: string;
-				}> = [];
-
-				for (const job of jobsRef.current) {
-					// skip terminal jobs
-					if (
-						[
-							JobStatus.COMPLETED,
-							JobStatus.FAILED,
-							JobStatus.CANCELLED,
-							JobStatus.OUT_OF_MEMORY,
-							JobStatus.TIMEOUT,
-						].includes(job.status)
-					) {
-						continue;
-					}
-
-					// fetch latest from backend
-					const resp = await getJobStatusBySlurmID(job.slurm_id!, token);
-					if (resp.error) {
-						console.warn(`Failed to fetch status for job ${job.job_id}:`, resp.error);
-						continue; // skip this job if there's an error
-					}
-					const fetchedStatus = resp.data.state;
-					const fetchedRuntime = resp.data.elapsed;
-
-					// if anything changed, queue it up
-					if (fetchedStatus !== job.status || fetchedRuntime !== job.runtime) {
-						toUpdate.push({
-							jobId: job.job_id,
-							newStatus: fetchedStatus,
-							newRuntime: fetchedRuntime,
-						});
-					}
-				}
-
-				if (toUpdate.length === 0) {
-					return; // nothing to do
-				}
-
-				// Apply updates on the server one by one (or you could Promise.all)
-				await Promise.all(
-					toUpdate.map(({ jobId, newStatus, newRuntime }) =>
-						updateJob(jobId ?? "", newStatus ?? "", newRuntime ?? "", user?.sub ?? "", token),
-					),
-				);
-
-				// And mirror them in local state
-				setJobs((prev) =>
-					prev.map((j) => {
-						const upd = toUpdate.find((u) => u.jobId === j.job_id);
-						return upd
-							? {
-									...j,
-									status: upd.newStatus ?? j.status,
-									runtime: upd.newRuntime ?? j.runtime,
-								}
-							: j;
-					}),
-				);
-			} catch (err: any) {
-				console.error("Polling error:", err);
-				if (err?.error === "login_required" || err?.error === "consent_required") {
-					stopped = true;
-					clearInterval(id);
-					return;
-				}
-				setError("Failed to refresh job statuses.");
-			}
-		};
-
-		// start poll
-		const id = setInterval(tick, 5000);
-		// run immediately once
-		tick();
-
-		return () => {
-			stopped = true;
-			clearInterval(id);
-		};
+		const id = setInterval(async () => {
+			const token = await getAccessTokenSilently();
+			const resp = await getCurrentUserJobsPaged(token);
+			if (!resp.error) setJobs(resp.data ?? []);
+		}, 20000);
+		return () => clearInterval(id);
 	}, [getAccessTokenSilently]);
+
 
 	// load jobs & structures
 	useEffect(() => {

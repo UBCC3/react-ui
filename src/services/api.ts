@@ -364,6 +364,93 @@ export const getJobStatusBySlurmID = async (slurmId: string, token: any): Promis
 };
 
 /**
+ * Submits a standard-analysis job. The backend uploads to the cluster and
+ * advances the job status in the background.
+ */
+export const submitStandardAnalysisJob = async (
+	token: string,
+	params: {
+		file?: File | Blob;
+		structureId?: string;
+		charge: number;
+		multiplicity: number;
+		optimizationType?: "ground" | "ts";
+		jobName: string;
+		jobNotes?: string;
+		tags?: string[];
+	},
+): Promise<Response> => {
+	const formData = new FormData();
+	if (params.file) formData.append("file", params.file);
+	if (params.structureId) formData.append("structure_id", params.structureId);
+	formData.append("charge", String(params.charge));
+	formData.append("multiplicity", String(params.multiplicity));
+	formData.append("optimization_type", params.optimizationType ?? "ground");
+	formData.append("job_name", params.jobName);
+	if (params.jobNotes) formData.append("job_notes", params.jobNotes);
+	(params.tags ?? []).forEach((t) => formData.append("tags", t));
+
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.post("/calculation/workflow/standard_analysis", formData);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error("Standard analysis submission failed", error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+/**
+ * Submits a custom (advanced) calculation job.
+ */
+export const submitCustomCalculation = async (
+	token: string,
+	params: {
+		file?: File | Blob;
+		structureId?: string;
+		calculationType: string;
+		method: string;
+		basisSet: string;
+		charge: number;
+		multiplicity: number;
+		optimizationType?: "ground" | "ts";
+		keywords?: File;
+		jobName: string;
+		jobNotes?: string;
+		tags?: string[];
+	},
+): Promise<Response> => {
+	const formData = new FormData();
+	if (params.file) formData.append("file", params.file);
+	if (params.structureId) formData.append("structure_id", params.structureId);
+	formData.append("calculation_type", params.calculationType);
+	formData.append("method", params.method);
+	formData.append("basis_set", params.basisSet);
+	formData.append("charge", String(params.charge));
+	formData.append("multiplicity", String(params.multiplicity));
+	if (params.optimizationType) formData.append("optimization_type", params.optimizationType);
+	if (params.keywords) formData.append("keywords", params.keywords);
+	formData.append("job_name", params.jobName);
+	if (params.jobNotes) formData.append("job_notes", params.jobNotes);
+	(params.tags ?? []).forEach((t) => formData.append("tags", t));
+
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.post("/calculation/custom", formData);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error("Custom calculation submission failed", error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+/**
  * Submits an advanced analysis job to the cluster API.
  * The uploaded molecular file, calculation settings, and optional keyword file.
  * are sent as multipart form data.
@@ -829,33 +916,25 @@ export const deleteStructure = async (structureId: string, token: string): Promi
 };
 
 /**
- * Updates a job's state, runtime, and associated user in the backend.
- * Throws the error object instead of returning a Response when the request fails.
+ * Updates user-editable job metadata. Status and runtime are backend-managed.
  */
 export const updateJob = async (
 	jobId: string,
-	state: string,
-	runtime: string,
-	userSub: string,
 	token: string,
-): Promise<UpdateJobResponse> => {
-	console.log("Updating job:", { jobId, state, runtime });
-	const formData = new FormData();
-	formData.append("state", state);
-	formData.append("runtime", runtime);
-	formData.append("user_sub", userSub);
+	fields: {
+		job_name?: string;
+		job_notes?: string;
+		tags?: string[];
+		replace_tags?: boolean;
+	},
+): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.patch(`/jobs/${jobId}`, formData);
-		return {
-			job_id: res.data.job_id,
-			runtime: res.data.runtime,
-			state: res.data.state,
-			message: res.data.message || "",
-		};
+		const res = await API.patch(`/jobs/${jobId}`, fields);
+		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error("Failed to update job", error);
-		throw {
+		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
 		};
