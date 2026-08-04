@@ -99,6 +99,9 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 	const [selectedMemberSubs, setSelectedMemberSubs] = useState<string[]>([]);
 	const [rowsPerPage, setRowsPerPage] = useState(5);
 
+    const [selectedJoinIds, setSelectedJoinIds] = useState<string[]>([]);
+	const [selectedLeaveIds, setSelectedLeaveIds] = useState<string[]>([]);
+
     const [joinPage, setJoinPage] = useState(0);
 	const [joinRowsPerPage, setJoinRowsPerPage] = useState(5);
 	const [leavePage, setLeavePage] = useState(0);
@@ -126,10 +129,29 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 		leavePage * leaveRowsPerPage + leaveRowsPerPage,
 	);
 
+    const joinPageIds = paginatedJoinRequests.map((r) => r.request_id);
+	const allJoinPageSelected =
+		joinPageIds.length > 0 && joinPageIds.every((id) => selectedJoinIds.includes(id));
+	const someJoinPageSelected =
+		joinPageIds.some((id) => selectedJoinIds.includes(id)) && !allJoinPageSelected;
+
+	const leavePageIds = paginatedLeaveRequests.map((r) => r.request_id);
+	const allLeavePageSelected =
+		leavePageIds.length > 0 && leavePageIds.every((id) => selectedLeaveIds.includes(id));
+	const someLeavePageSelected =
+		leavePageIds.some((id) => selectedLeaveIds.includes(id)) && !allLeavePageSelected;
+
 	const [loading, setLoading] = useState(true);
 	const [loadingMessage, setLoadingMessage] = useState("Loading...");
 
 	const [copiedGroupId, setCopiedGroupId] = useState(false);
+
+    const formatExpiry = (iso: string) => {
+        const ms = new Date(iso).getTime() - Date.now();
+        if (ms <= 0) return "expired";
+        const days = Math.ceil(ms / 86_400_000);
+        return `expires in ${days} day${days === 1 ? "" : "s"}`;
+    };
 
 	// Fetch and load data sequentially with loading messages
 	useEffect(() => {
@@ -306,6 +328,69 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 		}
 		setRequestError("");
 		setReload((r) => !r);
+	};
+
+    const toggleJoinId = (id: string) => {
+		setSelectedJoinIds((prev) =>
+			prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+		);
+	};
+
+	const toggleLeaveId = (id: string) => {
+		setSelectedLeaveIds((prev) =>
+			prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+		);
+	};
+
+	// Joins carry no assets, so a bulk approve needs no ownership decision.
+	const handleApproveSelectedJoins = async () => {
+		for (const id of selectedJoinIds) {
+			const resp = await approveRequest(id, token);
+			if (resp.error) {
+				setRequestError(resp.error);
+				break;
+			}
+		}
+		setSelectedJoinIds([]);
+		setReload((r) => !r);
+	};
+
+	const handleRejectSelectedJoins = async () => {
+		for (const id of selectedJoinIds) {
+			const resp = await rejectRequest(id, token);
+			if (resp.error) {
+				setRequestError(resp.error);
+				break;
+			}
+		}
+		setSelectedJoinIds([]);
+		setReload((r) => !r);
+	};
+
+	const handleRejectSelectedLeaves = async () => {
+		for (const id of selectedLeaveIds) {
+			const resp = await rejectRequest(id, token);
+			if (resp.error) {
+				setRequestError(resp.error);
+				break;
+			}
+		}
+		setSelectedLeaveIds([]);
+		setReload((r) => !r);
+	};
+
+	// Approving leaves needs one ownership policy applied to every selected member.
+	const openBulkLeaveDialog = () => {
+		const subs = leaveRequests
+			.filter((r) => selectedLeaveIds.includes(r.request_id))
+			.map((r) => r.sender_sub)
+			.filter((s): s is string => !!s);
+
+		setSelectedMemberSubs(subs);
+		setSelectedUser(null);
+		setPendingRequestId(null);
+		setRemovalPolicy("co_owned");
+		setRemoveDialogOpen(true);
 	};
 
 	// Send a group-join request to the user matching the entered email.
@@ -601,6 +686,65 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 											Pending Join Requests
 										</Typography>
 									</Badge>
+                                    {selectedJoinIds.length > 0 && (
+										<Box
+											sx={{
+												display: "flex",
+												alignItems: "center",
+												justifyContent: "space-between",
+												px: 2,
+												py: 1.5,
+												mb: 1,
+												bgcolor: blue[50],
+												borderRadius: 2,
+											}}
+										>
+											<Typography variant="body2" sx={{ fontWeight: 600, color: grey[800] }}>
+												{selectedJoinIds.length} request
+												{selectedJoinIds.length === 1 ? "" : "s"} selected
+											</Typography>
+											<Box display="flex" gap={1}>
+												<Button
+													size="small"
+													variant="outlined"
+													color="inherit"
+													sx={{ textTransform: "none" }}
+													onClick={() => setSelectedJoinIds([])}
+												>
+													Clear
+												</Button>
+												<Button
+													size="small"
+													variant="contained"
+													sx={{ textTransform: "none" }}
+													onClick={handleApproveSelectedJoins}
+												>
+													Approve selected
+												</Button>
+												<Button
+													size="small"
+													variant="outlined"
+													color="error"
+													sx={{ textTransform: "none" }}
+													onClick={handleRejectSelectedJoins}
+												>
+													Reject selected
+												</Button>
+											</Box>
+										</Box>
+									)}
+
+									<Box display="flex" alignItems="center" sx={{ mb: 0.5 }}>
+										<Checkbox
+											size="small"
+											checked={allJoinPageSelected}
+											indeterminate={someJoinPageSelected}
+											onChange={(e) => setSelectedJoinIds(e.target.checked ? joinPageIds : [])}
+										/>
+										<Typography variant="caption" color={grey[700]}>
+											Select all on this page
+										</Typography>
+									</Box>
 									{paginatedJoinRequests.map((req) => (
 										<Box
 											key={req.request_id}
@@ -614,15 +758,30 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 												borderRadius: 2,
 											}}
 										>
-											<Typography variant="body2">
-												{req.sender_name ?? "Unknown user"} asked to join this group
-											</Typography>
+											<Box display="flex" alignItems="center" gap={1}>
+												<Checkbox
+													size="small"
+													checked={selectedJoinIds.includes(req.request_id)}
+													onChange={() => toggleJoinId(req.request_id)}
+												/>
+												<Box>
+													<Typography variant="body2">
+														{req.sender_name ?? "Unknown user"} asked to join this group
+													</Typography>
+													<Typography variant="caption" color={grey[700]}>
+														{formatExpiry(req.expires_at)}
+													</Typography>
+												</Box>
+											</Box>
 											<Box display="flex" gap={1}>
 												<Button
 													size="small"
 													variant="contained"
 													sx={{ textTransform: "none" }}
-													onClick={() => handleApproveJoin(req.request_id)}
+													onClick={() => {
+														setSelectedJoinIds([]);
+														handleApproveJoin(req.request_id);
+													}}
 												>
 													Approve
 												</Button>
@@ -643,8 +802,12 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 										count={joinRequests.length}
 										page={joinPage}
 										rowsPerPage={joinRowsPerPage}
-										onPageChange={(_, newPage) => setJoinPage(newPage)}
+										onPageChange={(_, newPage) => {
+											setSelectedJoinIds([]);
+											setJoinPage(newPage);
+										}}
 										onRowsPerPageChange={(e) => {
+											setSelectedJoinIds([]);
 											setJoinRowsPerPage(+e.target.value);
 											setJoinPage(0);
 										}}
@@ -672,57 +835,133 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 											Pending Leave Requests
 										</Typography>
 									</Badge>
-									{paginatedLeaveRequests.map((req) => (
+                                    {selectedLeaveIds.length > 0 && (
 										<Box
-											key={req.request_id}
 											sx={{
 												display: "flex",
 												alignItems: "center",
 												justifyContent: "space-between",
-												p: 2,
+												px: 2,
+												py: 1.5,
 												mb: 1,
-												bgcolor: grey[200],
+												bgcolor: blue[50],
 												borderRadius: 2,
 											}}
 										>
-											<Typography variant="body2">
-												{req.sender_name ?? "Unknown user"} asked to leave this group
+											<Typography variant="body2" sx={{ fontWeight: 600, color: grey[800] }}>
+												{selectedLeaveIds.length} request
+												{selectedLeaveIds.length === 1 ? "" : "s"} selected
 											</Typography>
 											<Box display="flex" gap={1}>
-												<Button
-													size="small"
-													variant="contained"
-													sx={{ textTransform: "none" }}
-													onClick={() => {
-														const requester = users.find((u) => u.user_sub === req.sender_sub);
-														if (!requester) return;
-														setSelectedUser(requester);
-														setPendingRequestId(req.request_id);
-														setRemovalPolicy("co_owned");
-														setRemoveDialogOpen(true);
-													}}
-												>
-													Approve
-												</Button>
 												<Button
 													size="small"
 													variant="outlined"
 													color="inherit"
 													sx={{ textTransform: "none" }}
-													onClick={() => handleRejectGroupRequest(req.request_id)}
+													onClick={() => setSelectedLeaveIds([])}
 												>
-													Reject
+													Clear
+												</Button>
+												<Button
+													size="small"
+													variant="contained"
+													sx={{ textTransform: "none" }}
+													onClick={openBulkLeaveDialog}
+												>
+													Approve selected
+												</Button>
+												<Button
+													size="small"
+													variant="outlined"
+													color="error"
+													sx={{ textTransform: "none" }}
+													onClick={handleRejectSelectedLeaves}
+												>
+													Reject selected
 												</Button>
 											</Box>
 										</Box>
+									)}
+
+									<Box display="flex" alignItems="center" sx={{ mb: 0.5 }}>
+										<Checkbox
+											size="small"
+											checked={allLeavePageSelected}
+											indeterminate={someLeavePageSelected}
+											onChange={(e) => setSelectedLeaveIds(e.target.checked ? leavePageIds : [])}
+										/>
+										<Typography variant="caption" color={grey[700]}>
+											Select all on this page
+										</Typography>
+									</Box>
+									{paginatedLeaveRequests.map((req) => (
+										<Box
+                                        key={req.request_id}
+                                        sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "space-between",
+                                            p: 2,
+                                            mb: 1,
+                                            bgcolor: grey[200],
+                                            borderRadius: 2,
+                                        }}
+                                    >
+                                        <Box display="flex" alignItems="center" gap={1}>
+                                            <Checkbox
+                                                size="small"
+                                                checked={selectedLeaveIds.includes(req.request_id)}
+                                                onChange={() => toggleLeaveId(req.request_id)}
+                                            />
+                                            <Box>
+                                                <Typography variant="body2">
+                                                    {req.sender_name ?? "Unknown user"} asked to leave this group
+                                                </Typography>
+                                                <Typography variant="caption" color={grey[700]}>
+                                                    {formatExpiry(req.expires_at)}
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+                                        <Box display="flex" gap={1}>
+                                            <Button
+                                                size="small"
+                                                variant="contained"
+                                                sx={{ textTransform: "none" }}
+                                                onClick={() => {
+                                                    setSelectedLeaveIds([]);
+                                                    const requester = users.find((u) => u.user_sub === req.sender_sub);
+                                                    if (!requester) return;
+                                                    setSelectedUser(requester);
+                                                    setPendingRequestId(req.request_id);
+                                                    setRemovalPolicy("co_owned");
+                                                    setRemoveDialogOpen(true);
+                                                }}
+                                            >
+                                                Approve
+                                            </Button>
+                                            <Button
+                                                size="small"
+                                                variant="outlined"
+                                                color="inherit"
+                                                sx={{ textTransform: "none" }}
+                                                onClick={() => handleRejectGroupRequest(req.request_id)}
+                                            >
+                                                Reject
+                                            </Button>
+                                        </Box>
+                                    </Box>
 									))}
                                     <TablePagination
 										component="div"
 										count={leaveRequests.length}
 										page={leavePage}
 										rowsPerPage={leaveRowsPerPage}
-										onPageChange={(_, newPage) => setLeavePage(newPage)}
+										onPageChange={(_, newPage) => {
+											setSelectedLeaveIds([]);
+											setLeavePage(newPage);
+										}}
 										onRowsPerPageChange={(e) => {
+											setSelectedLeaveIds([]);
 											setLeaveRowsPerPage(+e.target.value);
 											setLeavePage(0);
 										}}
