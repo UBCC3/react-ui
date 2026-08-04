@@ -27,6 +27,7 @@ import {
 	CircularProgress,
 	Grid,
 	Tooltip,
+	Badge,
 } from "@mui/material";
 import { blue, grey } from "@mui/material/colors";
 import {
@@ -89,6 +90,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 	// const [newUserError, setNewUserError] = useState("");
 
 	const [leaveError, setLeaveError] = useState("");
+	const [requestError, setRequestError] = useState("");
 	const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
 
 	const [reload, setReload] = useState(false);
@@ -104,7 +106,9 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 	);
 
 	const [pendingRequestId, setPendingRequestId] = useState<string | null>(null);
-	const [dememberRequests, setDememberRequests] = useState<GroupRequest[]>([]);
+	const [groupRequests, setGroupRequests] = useState<GroupRequest[]>([]);
+	const joinRequests = groupRequests.filter((r) => r.request_type === "join_request");
+	const leaveRequests = groupRequests.filter((r) => r.request_type === "demember_request");
 
 	const [loading, setLoading] = useState(true);
 	const [loadingMessage, setLoadingMessage] = useState("Loading...");
@@ -122,8 +126,12 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 			setUsers(membersResp.data || []);
 
 			setLoadingMessage("Loading requests...");
-			const reqResp = await getGroupRequests(token, "pending", "demember_request");
-			setDememberRequests(reqResp.error ? [] : (reqResp.data ?? []));
+			const reqResp = await getGroupRequests(token, "pending");
+			setGroupRequests(
+				reqResp.error
+					? []
+					: (reqResp.data ?? []).filter((r: GroupRequest) => r.request_type !== "invite"),
+			);
 
 			setLoadingMessage("Loading current user...");
 			const upsertResp = await upsertCurrentUser(token, user.email);
@@ -237,6 +245,27 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 		setRemoveDialogOpen(false);
 	};
 
+	// Join requests carry no assets, so they approve directly — no ownership dialog.
+	const handleApproveJoin = async (requestId: string) => {
+		const resp = await approveRequest(requestId, token);
+		if (resp.error) {
+			setRequestError(resp.error);
+			return;
+		}
+		setRequestError("");
+		setReload((r) => !r);
+	};
+
+	const handleRejectGroupRequest = async (requestId: string) => {
+		const resp = await rejectRequest(requestId, token);
+		if (resp.error) {
+			setRequestError(resp.error);
+			return;
+		}
+		setRequestError("");
+		setReload((r) => !r);
+	};
+
 	// Send a group-join request to the user matching the entered email.
 	// const handleAddMember = async () => {
 	// 	if (!newUserEmail) return;
@@ -266,8 +295,12 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 		if (userRole !== "group_admin") return;
 
 		const refresh = async () => {
-			const resp = await getGroupRequests(token, "pending", "demember_request");
-			setDememberRequests(resp.error ? [] : (resp.data ?? []));
+			const reqResp = await getGroupRequests(token, "pending");
+			setGroupRequests(
+				reqResp.error
+					? []
+					: (reqResp.data ?? []).filter((r: GroupRequest) => r.request_type !== "invite"),
+			);
 		};
 
 		const id = setInterval(refresh, 20000);
@@ -485,12 +518,91 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 								</Grid>
 							</Grid>
 
-							{userRole === "group_admin" && dememberRequests.length > 0 && (
+							{userRole === "group_admin" && requestError && (
+								<Alert severity="error" sx={{ mx: 2, mb: 2 }}>
+									{requestError}
+								</Alert>
+							)}
+
+							{/* Pending Join Requests — approve directly, joiners bring no assets. */}
+							{userRole === "group_admin" && joinRequests.length > 0 && (
 								<Box sx={{ px: 2, mb: 2 }}>
-									<Typography variant="body2" sx={{ mb: 1, fontWeight: "bold", color: grey[600] }}>
-										Pending Leave Requests
-									</Typography>
-									{dememberRequests.map((req) => (
+									<Badge
+										badgeContent={joinRequests.length}
+										color="error"
+										sx={{
+											mb: 1,
+											"& .MuiBadge-badge": {
+												position: "static",
+												transform: "none",
+												ml: 1.5,
+											},
+										}}
+									>
+										<Typography variant="body2" sx={{ fontWeight: "bold", color: grey[600] }}>
+											Pending Join Requests
+										</Typography>
+									</Badge>
+									{joinRequests.map((req) => (
+										<Box
+											key={req.request_id}
+											sx={{
+												display: "flex",
+												alignItems: "center",
+												justifyContent: "space-between",
+												p: 2,
+												mb: 1,
+												bgcolor: grey[200],
+												borderRadius: 2,
+											}}
+										>
+											<Typography variant="body2">
+												{req.sender_name ?? "Unknown user"} asked to join this group
+											</Typography>
+											<Box display="flex" gap={1}>
+												<Button
+													size="small"
+													variant="contained"
+													sx={{ textTransform: "none" }}
+													onClick={() => handleApproveJoin(req.request_id)}
+												>
+													Approve
+												</Button>
+												<Button
+													size="small"
+													variant="outlined"
+													color="inherit"
+													sx={{ textTransform: "none" }}
+													onClick={() => handleRejectGroupRequest(req.request_id)}
+												>
+													Reject
+												</Button>
+											</Box>
+										</Box>
+									))}
+								</Box>
+							)}
+
+							{/* Pending Leave Requests — approving opens the ownership dialog first. */}
+							{userRole === "group_admin" && leaveRequests.length > 0 && (
+								<Box sx={{ px: 2, mb: 2 }}>
+									<Badge
+										badgeContent={leaveRequests.length}
+										color="error"
+										sx={{
+											mb: 1,
+											"& .MuiBadge-badge": {
+												position: "static",
+												transform: "none",
+												ml: 1.5,
+											},
+										}}
+									>
+										<Typography variant="body2" sx={{ fontWeight: "bold", color: grey[600] }}>
+											Pending Leave Requests
+										</Typography>
+									</Badge>
+									{leaveRequests.map((req) => (
 										<Box
 											key={req.request_id}
 											sx={{
@@ -527,10 +639,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 													variant="outlined"
 													color="inherit"
 													sx={{ textTransform: "none" }}
-													onClick={async () => {
-														await rejectRequest(req.request_id, token);
-														setReload((r) => !r);
-													}}
+													onClick={() => handleRejectGroupRequest(req.request_id)}
 												>
 													Reject
 												</Button>

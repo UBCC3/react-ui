@@ -24,7 +24,6 @@ import {
 	Tooltip,
 } from "@mui/material";
 import {
-	CancelOutlined,
 	CheckCircleOutlineOutlined,
 	InboxOutlined,
 	PersonAddDisabledOutlined,
@@ -33,13 +32,7 @@ import {
 } from "@mui/icons-material";
 import { useDrawer } from "./DrawerContext";
 import logo from "../assets/logo.svg";
-import {
-	getSentRequests,
-	approveRequest,
-	rejectRequest,
-	getGroupRequests,
-	cancelRequest,
-} from "../services/api";
+import { getSentRequests, getGroupRequests, cancelRequest } from "../services/api";
 import { grey } from "@mui/material/colors";
 import { APP_BAR_HEIGHT } from "../constants";
 import { GroupRequest } from "../types";
@@ -82,7 +75,7 @@ export default function MenuAppBar() {
 	const [sentRequests, setSentRequests] = useState<GroupRequest[]>([]);
 
 	const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-	const [requestType, setRequestType] = useState<"approve" | "reject" | "delete" | null>(null);
+	const [requestType, setRequestType] = useState<"cancel" | null>(null);
 	const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
 
 	const [groupRequests, setGroupRequests] = useState<GroupRequest[]>([]);
@@ -118,28 +111,6 @@ export default function MenuAppBar() {
 	 * Closes the requests menu by clearing its anchor element.
 	 */
 	const handleRequestsClose = () => setAnchorRequestsEl(null);
-
-	/**
-	 * Approves an incoming request using the authenticated user's access token,
-	 * then removes the approved request from the local incoming requests state.
-	 */
-	const handleApproveRequest = async (requestId: string) => {
-		const token = await getAccessTokenSilently();
-		if (!token) return;
-		await approveRequest(requestId, token);
-		setGroupRequests((prev) => prev.filter((r) => r.request_id !== requestId));
-	};
-
-	/**
-	 * Rejects an incoming request using the authenticated user's access token,
-	 * then removes the rejected request from the local incoming requests state.
-	 */
-	const handleRejectRequest = async (requestId: string) => {
-		const token = await getAccessTokenSilently();
-		if (!token) return;
-		await rejectRequest(requestId, token);
-		setGroupRequests((prev) => prev.filter((r) => r.request_id !== requestId));
-	};
 
 	/**
 	 * Deletes a sent request using the authenticated user's access token,
@@ -353,7 +324,7 @@ export default function MenuAppBar() {
 									size="small"
 									onClick={() => {
 										setConfirmDialogOpen(true);
-										setRequestType("delete");
+										setRequestType("cancel");
 										setSelectedRequest(req.request_id);
 									}}
 									color="primary"
@@ -386,46 +357,16 @@ export default function MenuAppBar() {
 								</Typography>
 							</Box>
 							{req.status === "pending" && (
-								<Box>
-									{req.request_type === "demember_request" ? (
-										// Leaving needs an asset-ownership decision, which lives in GroupPanel.
-										<Button
-											size="small"
-											sx={{ textTransform: "none" }}
-											onClick={() => {
-												handleRequestsClose();
-												navigate("/group");
-											}}
-										>
-											Review
-										</Button>
-									) : (
-										<>
-											<IconButton
-												size="small"
-												onClick={() => {
-													setConfirmDialogOpen(true);
-													setRequestType("approve");
-													setSelectedRequest(req.request_id);
-												}}
-												color="success"
-											>
-												<CheckCircleOutlineOutlined />
-											</IconButton>
-											<IconButton
-												size="small"
-												onClick={() => {
-													setConfirmDialogOpen(true);
-													setRequestType("reject");
-													setSelectedRequest(req.request_id);
-												}}
-												color="error"
-											>
-												<CancelOutlined />
-											</IconButton>
-										</>
-									)}
-								</Box>
+								<Button
+									size="small"
+									sx={{ textTransform: "none" }}
+									onClick={() => {
+										handleRequestsClose();
+										navigate("/group");
+									}}
+								>
+									Review
+								</Button>
 							)}
 						</MenuItem>
 					))
@@ -441,11 +382,7 @@ export default function MenuAppBar() {
 				<DialogTitle id="confirm-dialog-title">Confirm Action</DialogTitle>
 				<DialogContent>
 					<DialogContentText id="confirm-dialog-description">
-						{requestType === "approve"
-							? "Are you sure you want to approve this request?"
-							: requestType === "reject"
-								? "Are you sure you want to reject this request?"
-								: "Are you sure you want to cancel this request?"}
+						Are you sure you want to cancel this request?
 					</DialogContentText>
 				</DialogContent>
 				<DialogActions>
@@ -458,11 +395,7 @@ export default function MenuAppBar() {
 					</Button>
 					<Button
 						onClick={async () => {
-							if (requestType === "approve" && selectedRequest) {
-								await handleApproveRequest(selectedRequest);
-							} else if (requestType === "reject" && selectedRequest) {
-								await handleRejectRequest(selectedRequest);
-							} else if (requestType === "delete" && selectedRequest) {
+							if (requestType === "cancel" && selectedRequest) {
 								await handleCancelRequest(selectedRequest);
 							}
 							setConfirmDialogOpen(false);
