@@ -32,7 +32,7 @@ import { blue, grey } from "@mui/material/colors";
 import {
 	GroupOutlined,
 	RemoveCircleOutlineOutlined,
-	CheckCircleOutlineOutlined,
+	// CheckCircleOutlineOutlined,
 	ContentCopyOutlined,
 } from "@mui/icons-material";
 import { useAuth0 } from "@auth0/auth0-react";
@@ -40,7 +40,7 @@ import {
 	updateGroupName,
 	upsertCurrentUser,
 	getGroupById,
-	sendInviteRequest,
+	// sendInviteRequest,
 	removeGroupUser,
 	updateJobOwnership,
 	updateStructureOwnership,
@@ -85,8 +85,8 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 	const [joinGroupName, setJoinGroupName] = useState<string | null>(null);
 	const [joinError, setJoinError] = useState("");
 
-	const [newUserEmail, setNewUserEmail] = useState("");
-	const [newUserError, setNewUserError] = useState("");
+	// const [newUserEmail, setNewUserEmail] = useState("");
+	// const [newUserError, setNewUserError] = useState("");
 
 	const [leaveError, setLeaveError] = useState("");
 	const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
@@ -96,7 +96,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 	const [rowsPerPage, setRowsPerPage] = useState(5);
 
 	const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
-	const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
+	// const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
 
 	const [selectedUser, setSelectedUser] = useState<User | null>(null);
 	const [removalPolicy, setRemovalPolicy] = useState<"co_owned" | "user" | "group" | "delete">(
@@ -238,17 +238,17 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 	};
 
 	// Send a group-join request to the user matching the entered email.
-	const handleAddMember = async () => {
-		if (!newUserEmail) return;
-		const resp = await sendInviteRequest(newUserEmail, token);
-		if (resp.error) {
-			setNewUserError(resp.error);
-			return;
-		}
-		setNewUserEmail("");
-		setReload((r) => !r);
-		setAddMemberDialogOpen(false);
-	};
+	// const handleAddMember = async () => {
+	// 	if (!newUserEmail) return;
+	// 	const resp = await sendInviteRequest(newUserEmail, token);
+	// 	if (resp.error) {
+	// 		setNewUserError(resp.error);
+	// 		return;
+	// 	}
+	// 	setNewUserEmail("");
+	// 	setReload((r) => !r);
+	// 	setAddMemberDialogOpen(false);
+	// };
 
 	// Members request removal; a group admin approves it from Group Requests.
 	const handleLeaveGroup = async () => {
@@ -429,7 +429,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 								</Grid>
 								<Grid size={{ xs: 12, md: 6 }}>
 									{/* Add Member */}
-									{userRole === "group_admin" && (
+									{/* {userRole === "group_admin" && (
 										<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2, height: "100%" }}>
 											{newUserError && (
 												<Alert severity="error" sx={{ mb: 2 }}>
@@ -457,7 +457,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 												</Button>
 											</Box>
 										</Box>
-									)}
+									)} */}
 
 									{/* Leave Group */}
 									{userRole !== "group_admin" && (
@@ -741,7 +741,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 					</Dialog>
 
 					{/* Add Member Dialog */}
-					<Dialog
+					{/* <Dialog
 						open={addMemberDialogOpen}
 						onClose={() => setAddMemberDialogOpen(false)}
 						fullWidth
@@ -772,7 +772,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 								Confirm
 							</Button>
 						</DialogActions>
-					</Dialog>
+					</Dialog> */}
 
 					{/* Leave Group Dialog */}
 					<Dialog open={leaveDialogOpen} onClose={() => setLeaveDialogOpen(false)} fullWidth>
