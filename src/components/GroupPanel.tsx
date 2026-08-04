@@ -29,6 +29,7 @@ import {
 	Tooltip,
 	Badge,
 	Checkbox,
+	Collapse,
 } from "@mui/material";
 import { blue, grey } from "@mui/material/colors";
 import {
@@ -36,6 +37,7 @@ import {
 	RemoveCircleOutlineOutlined,
 	// CheckCircleOutlineOutlined,
 	ContentCopyOutlined,
+	ExpandMore,
 } from "@mui/icons-material";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
@@ -145,6 +147,11 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 	const [loadingMessage, setLoadingMessage] = useState("Loading...");
 
 	const [copiedGroupId, setCopiedGroupId] = useState(false);
+
+	const [panelOpen, setPanelOpen] = useState(false);
+	const [membersOpen, setMembersOpen] = useState(false);
+	const [joinOpen, setJoinOpen] = useState(false);
+	const [leaveOpen, setLeaveOpen] = useState(false);
 
 	const formatExpiry = (iso: string) => {
 		const ms = new Date(iso).getTime() - Date.now();
@@ -459,6 +466,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 			<Typography
 				variant="h6"
 				color={grey[800]}
+				onClick={() => setPanelOpen((o) => !o)}
 				sx={{
 					p: 2,
 					display: "flex",
@@ -467,145 +475,155 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 					borderTopRightRadius: 5,
 					fontWeight: "bold",
 					fontSize: "1.1rem",
+					cursor: "pointer",
 				}}
 			>
 				<GroupOutlined sx={{ mr: 1, color: blue[600] }} />
 				{userRole === "group_admin" ? "Group Management" : "Group Information"}
+				<ExpandMore
+					sx={{
+						ml: "auto",
+						color: grey[600],
+						transform: panelOpen ? "none" : "rotate(-90deg)",
+						transition: "transform 150ms",
+					}}
+				/>
 			</Typography>
-			{loading ? (
-				<Box
-					sx={{ mb: 4, p: 4, bgcolor: grey[50], borderRadius: 2 }}
-					display="flex"
-					alignItems="center"
-					justifyContent="center"
-				>
-					<CircularProgress />
-					<Typography variant="body2" sx={{ ml: 2 }}>
-						{loadingMessage}
-					</Typography>
-				</Box>
-			) : (
-				<>
-					{!groupId && (
-						<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2, mx: 2, mb: 4 }}>
-							{joinError && (
-								<Alert severity="error" sx={{ mb: 2 }}>
-									{joinError}
-								</Alert>
-							)}
-							<Typography variant="body2" color={grey[800]} sx={{ mb: 2 }}>
-								Join a Group
-							</Typography>
-							<Box display="flex" gap={2} alignItems="center">
-								<TextField
-									label="Group ID"
-									value={joinGroupId}
-									onChange={(e) => {
-										setJoinGroupId(e.target.value);
-										setJoinGroupName(null);
-									}}
-									size="small"
-									sx={{ minWidth: 340 }}
-								/>
-								{joinGroupName ? (
-									<Button
-										variant="contained"
-										onClick={handleJoinRequest}
-										size="small"
-										sx={{ textTransform: "none" }}
-									>
-										Request to join {joinGroupName}
-									</Button>
-								) : (
-									<Button
-										variant="outlined"
-										onClick={handleLookupGroup}
-										size="small"
-										disabled={!joinGroupId.trim()}
-										sx={{ textTransform: "none" }}
-									>
-										Look up
-									</Button>
+			<Collapse in={panelOpen}>
+				{loading ? (
+					<Box
+						sx={{ mb: 4, p: 4, bgcolor: grey[50], borderRadius: 2 }}
+						display="flex"
+						alignItems="center"
+						justifyContent="center"
+					>
+						<CircularProgress />
+						<Typography variant="body2" sx={{ ml: 2 }}>
+							{loadingMessage}
+						</Typography>
+					</Box>
+				) : (
+					<>
+						{!groupId && (
+							<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2, mx: 2, mb: 4 }}>
+								{joinError && (
+									<Alert severity="error" sx={{ mb: 2 }}>
+										{joinError}
+									</Alert>
 								)}
-							</Box>
-						</Box>
-					)}
-					{groupId && (
-						<>
-							{/* Group Info and Add Member */}
-							{userRole === "group_admin" && (
-								<Typography
-									variant="body2"
-									sx={{ px: 2, mb: 2, fontWeight: "bold", color: grey[600] }}
-								>
-									Manage Group
+								<Typography variant="body2" color={grey[800]} sx={{ mb: 2 }}>
+									Join a Group
 								</Typography>
-							)}
+								<Box display="flex" gap={2} alignItems="center">
+									<TextField
+										label="Group ID"
+										value={joinGroupId}
+										onChange={(e) => {
+											setJoinGroupId(e.target.value);
+											setJoinGroupName(null);
+										}}
+										size="small"
+										sx={{ minWidth: 340 }}
+									/>
+									{joinGroupName ? (
+										<Button
+											variant="contained"
+											onClick={handleJoinRequest}
+											size="small"
+											sx={{ textTransform: "none" }}
+										>
+											Request to join {joinGroupName}
+										</Button>
+									) : (
+										<Button
+											variant="outlined"
+											onClick={handleLookupGroup}
+											size="small"
+											disabled={!joinGroupId.trim()}
+											sx={{ textTransform: "none" }}
+										>
+											Look up
+										</Button>
+									)}
+								</Box>
+							</Box>
+						)}
+						{groupId && (
+							<>
+								{/* Group Info and Add Member */}
+								{userRole === "group_admin" && (
+									<Typography
+										variant="body2"
+										sx={{ px: 2, mb: 2, fontWeight: "bold", color: grey[600] }}
+									>
+										Manage Group
+									</Typography>
+								)}
 
-							<Grid container spacing={2} sx={{ px: 2, pb: 4 }}>
-								<Grid size={{ xs: 12, md: 6 }}>
-									{/* Group Name */}
-									<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2, heigh: "100%" }}>
-										<Typography variant="body2" color={grey[800]} sx={{ mb: 2 }}>
-											{userRole === "group_admin" ? "Update Group Name" : "Group Name"}
-										</Typography>
-										<Box display="flex" gap={2}>
-											<TextField
-												label="Group Name"
-												value={groupName}
-												onChange={(e) => setGroupName(e.target.value)}
-												size="small"
-												disabled={userRole !== "group_admin"}
-											/>
-											{userRole === "group_admin" && (
-												<Button
-													variant="contained"
-													onClick={handleGroupUpdate}
+								<Grid container spacing={2} sx={{ px: 2, pb: 4 }}>
+									<Grid size={{ xs: 12, md: 6 }}>
+										{/* Group Name */}
+										<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2, heigh: "100%" }}>
+											<Typography variant="body2" color={grey[800]} sx={{ mb: 2 }}>
+												{userRole === "group_admin" ? "Update Group Name" : "Group Name"}
+											</Typography>
+											<Box display="flex" gap={2}>
+												<TextField
+													label="Group Name"
+													value={groupName}
+													onChange={(e) => setGroupName(e.target.value)}
 													size="small"
-													disabled={!groupName}
-													sx={{ textTransform: "none" }}
-												>
-													Update
-												</Button>
+													disabled={userRole !== "group_admin"}
+												/>
+												{userRole === "group_admin" && (
+													<Button
+														variant="contained"
+														onClick={handleGroupUpdate}
+														size="small"
+														disabled={!groupName}
+														sx={{ textTransform: "none" }}
+													>
+														Update
+													</Button>
+												)}
+											</Box>
+											{userRole === "group_admin" && groupId && (
+												<Box sx={{ mt: 2 }}>
+													<Typography
+														variant="caption"
+														color={grey[700]}
+														display="block"
+														sx={{ mb: 0.5 }}
+													>
+														Group ID — share this with people who need to request to join
+													</Typography>
+													<Box display="flex" gap={1} alignItems="center">
+														<Typography
+															variant="body2"
+															sx={{
+																fontFamily: "monospace",
+																bgcolor: grey[100],
+																px: 1,
+																py: 0.5,
+																borderRadius: 1,
+																wordBreak: "break-all",
+															}}
+														>
+															{groupId}
+														</Typography>
+														<Tooltip title={copiedGroupId ? "Copied" : "Copy"}>
+															<IconButton size="small" onClick={handleCopyGroupId}>
+																<ContentCopyOutlined fontSize="small" />
+															</IconButton>
+														</Tooltip>
+													</Box>
+												</Box>
 											)}
 										</Box>
-										{userRole === "group_admin" && groupId && (
-											<Box sx={{ mt: 2 }}>
-												<Typography
-													variant="caption"
-													color={grey[700]}
-													display="block"
-													sx={{ mb: 0.5 }}
-												>
-													Group ID — share this with people who need to request to join
-												</Typography>
-												<Box display="flex" gap={1} alignItems="center">
-													<Typography
-														variant="body2"
-														sx={{
-															fontFamily: "monospace",
-															bgcolor: grey[100],
-															px: 1,
-															py: 0.5,
-															borderRadius: 1,
-															wordBreak: "break-all",
-														}}
-													>
-														{groupId}
-													</Typography>
-													<Tooltip title={copiedGroupId ? "Copied" : "Copy"}>
-														<IconButton size="small" onClick={handleCopyGroupId}>
-															<ContentCopyOutlined fontSize="small" />
-														</IconButton>
-													</Tooltip>
-												</Box>
-											</Box>
-										)}
-									</Box>
-								</Grid>
-								<Grid size={{ xs: 12, md: 6 }}>
-									{/* Add Member */}
-									{/* {userRole === "group_admin" && (
+									</Grid>
+									<Grid size={{ xs: 12, md: 6 }}>
+										{/* Add Member */}
+										{/* {userRole === "group_admin" && (
 										<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2, height: "100%" }}>
 											{newUserError && (
 												<Alert severity="error" sx={{ mb: 2 }}>
@@ -635,607 +653,655 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 										</Box>
 									)} */}
 
-									{/* Leave Group */}
-									{userRole !== "group_admin" && (
-										<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2, height: "100%" }}>
-											{leaveError && (
-												<Alert severity="error" sx={{ mb: 2 }}>
-													{leaveError}
-												</Alert>
-											)}
-											<Typography variant="body2" color={grey[800]} sx={{ mb: 2 }}>
-												Leave Group
-											</Typography>
-											<Button
-												variant="outlined"
-												color="warning"
-												onClick={() => setLeaveDialogOpen(true)}
-												size="small"
-												sx={{ textTransform: "none" }}
-												startIcon={<RemoveCircleOutlineOutlined />}
-											>
-												Request to leave this group
-											</Button>
-										</Box>
-									)}
-								</Grid>
-							</Grid>
-
-							{userRole === "group_admin" && requestError && (
-								<Alert severity="error" sx={{ mx: 2, mb: 2 }}>
-									{requestError}
-								</Alert>
-							)}
-
-							{/* Pending Join Requests — approve directly, joiners bring no assets. */}
-							{userRole === "group_admin" && joinRequests.length > 0 && (
-								<Box sx={{ px: 2, mb: 2 }}>
-									<Badge
-										badgeContent={joinRequests.length}
-										color="error"
-										sx={{
-											mb: 1,
-											"& .MuiBadge-badge": {
-												position: "static",
-												transform: "none",
-												ml: 1.5,
-											},
-										}}
-									>
-										<Typography variant="body2" sx={{ fontWeight: "bold", color: grey[600] }}>
-											Pending Join Requests
-										</Typography>
-									</Badge>
-									{selectedJoinIds.length > 0 && (
-										<Box
-											sx={{
-												display: "flex",
-												alignItems: "center",
-												justifyContent: "space-between",
-												px: 2,
-												py: 1.5,
-												mb: 1,
-												bgcolor: blue[50],
-												borderRadius: 2,
-											}}
-										>
-											<Typography variant="body2" sx={{ fontWeight: 600, color: grey[800] }}>
-												{selectedJoinIds.length} request
-												{selectedJoinIds.length === 1 ? "" : "s"} selected
-											</Typography>
-											<Box display="flex" gap={1}>
-												<Button
-													size="small"
-													variant="outlined"
-													color="inherit"
-													sx={{ textTransform: "none" }}
-													onClick={() => setSelectedJoinIds([])}
-												>
-													Clear
-												</Button>
-												<Button
-													size="small"
-													variant="contained"
-													sx={{ textTransform: "none" }}
-													onClick={handleApproveSelectedJoins}
-												>
-													Approve selected
-												</Button>
-												<Button
-													size="small"
-													variant="outlined"
-													color="error"
-													sx={{ textTransform: "none" }}
-													onClick={handleRejectSelectedJoins}
-												>
-													Reject selected
-												</Button>
-											</Box>
-										</Box>
-									)}
-
-									<Box display="flex" alignItems="center" sx={{ mb: 0.5 }}>
-										<Checkbox
-											size="small"
-											checked={allJoinPageSelected}
-											indeterminate={someJoinPageSelected}
-											onChange={(e) => setSelectedJoinIds(e.target.checked ? joinPageIds : [])}
-										/>
-										<Typography variant="caption" color={grey[700]}>
-											Select all on this page
-										</Typography>
-									</Box>
-									{paginatedJoinRequests.map((req) => (
-										<Box
-											key={req.request_id}
-											sx={{
-												display: "flex",
-												alignItems: "center",
-												justifyContent: "space-between",
-												p: 2,
-												mb: 1,
-												bgcolor: grey[200],
-												borderRadius: 2,
-											}}
-										>
-											<Box display="flex" alignItems="center" gap={1}>
-												<Checkbox
-													size="small"
-													checked={selectedJoinIds.includes(req.request_id)}
-													onChange={() => toggleJoinId(req.request_id)}
-												/>
-												<Box>
-													<Typography variant="body2">
-														{req.sender_name ?? "Unknown user"} asked to join this group
-													</Typography>
-													<Typography variant="caption" color={grey[700]}>
-														{formatExpiry(req.expires_at)}
-													</Typography>
-												</Box>
-											</Box>
-											<Box display="flex" gap={1}>
-												<Button
-													size="small"
-													variant="contained"
-													sx={{ textTransform: "none" }}
-													onClick={() => {
-														setSelectedJoinIds([]);
-														handleApproveJoin(req.request_id);
-													}}
-												>
-													Approve
-												</Button>
-												<Button
-													size="small"
-													variant="outlined"
-													color="inherit"
-													sx={{ textTransform: "none" }}
-													onClick={() => handleRejectGroupRequest(req.request_id)}
-												>
-													Reject
-												</Button>
-											</Box>
-										</Box>
-									))}
-									<TablePagination
-										component="div"
-										count={joinRequests.length}
-										page={joinPage}
-										rowsPerPage={joinRowsPerPage}
-										onPageChange={(_, newPage) => {
-											setSelectedJoinIds([]);
-											setJoinPage(newPage);
-										}}
-										onRowsPerPageChange={(e) => {
-											setSelectedJoinIds([]);
-											setJoinRowsPerPage(+e.target.value);
-											setJoinPage(0);
-										}}
-										rowsPerPageOptions={[5, 10, 25]}
-									/>
-								</Box>
-							)}
-
-							{/* Pending Leave Requests — approving opens the ownership dialog first. */}
-							{userRole === "group_admin" && leaveRequests.length > 0 && (
-								<Box sx={{ px: 2, mb: 2 }}>
-									<Badge
-										badgeContent={leaveRequests.length}
-										color="error"
-										sx={{
-											mb: 1,
-											"& .MuiBadge-badge": {
-												position: "static",
-												transform: "none",
-												ml: 1.5,
-											},
-										}}
-									>
-										<Typography variant="body2" sx={{ fontWeight: "bold", color: grey[600] }}>
-											Pending Leave Requests
-										</Typography>
-									</Badge>
-									{selectedLeaveIds.length > 0 && (
-										<Box
-											sx={{
-												display: "flex",
-												alignItems: "center",
-												justifyContent: "space-between",
-												px: 2,
-												py: 1.5,
-												mb: 1,
-												bgcolor: blue[50],
-												borderRadius: 2,
-											}}
-										>
-											<Typography variant="body2" sx={{ fontWeight: 600, color: grey[800] }}>
-												{selectedLeaveIds.length} request
-												{selectedLeaveIds.length === 1 ? "" : "s"} selected
-											</Typography>
-											<Box display="flex" gap={1}>
-												<Button
-													size="small"
-													variant="outlined"
-													color="inherit"
-													sx={{ textTransform: "none" }}
-													onClick={() => setSelectedLeaveIds([])}
-												>
-													Clear
-												</Button>
-												<Button
-													size="small"
-													variant="contained"
-													sx={{ textTransform: "none" }}
-													onClick={openBulkLeaveDialog}
-												>
-													Approve selected
-												</Button>
-												<Button
-													size="small"
-													variant="outlined"
-													color="error"
-													sx={{ textTransform: "none" }}
-													onClick={handleRejectSelectedLeaves}
-												>
-													Reject selected
-												</Button>
-											</Box>
-										</Box>
-									)}
-
-									<Box display="flex" alignItems="center" sx={{ mb: 0.5 }}>
-										<Checkbox
-											size="small"
-											checked={allLeavePageSelected}
-											indeterminate={someLeavePageSelected}
-											onChange={(e) => setSelectedLeaveIds(e.target.checked ? leavePageIds : [])}
-										/>
-										<Typography variant="caption" color={grey[700]}>
-											Select all on this page
-										</Typography>
-									</Box>
-									{paginatedLeaveRequests.map((req) => (
-										<Box
-											key={req.request_id}
-											sx={{
-												display: "flex",
-												alignItems: "center",
-												justifyContent: "space-between",
-												p: 2,
-												mb: 1,
-												bgcolor: grey[200],
-												borderRadius: 2,
-											}}
-										>
-											<Box display="flex" alignItems="center" gap={1}>
-												<Checkbox
-													size="small"
-													checked={selectedLeaveIds.includes(req.request_id)}
-													onChange={() => toggleLeaveId(req.request_id)}
-												/>
-												<Box>
-													<Typography variant="body2">
-														{req.sender_name ?? "Unknown user"} asked to leave this group
-													</Typography>
-													<Typography variant="caption" color={grey[700]}>
-														{formatExpiry(req.expires_at)}
-													</Typography>
-												</Box>
-											</Box>
-											<Box display="flex" gap={1}>
-												<Button
-													size="small"
-													variant="contained"
-													sx={{ textTransform: "none" }}
-													onClick={() => {
-														setSelectedLeaveIds([]);
-														const requester = users.find((u) => u.user_sub === req.sender_sub);
-														if (!requester) return;
-														setSelectedUser(requester);
-														setPendingRequestId(req.request_id);
-														setRemovalPolicy("co_owned");
-														setRemoveDialogOpen(true);
-													}}
-												>
-													Approve
-												</Button>
-												<Button
-													size="small"
-													variant="outlined"
-													color="inherit"
-													sx={{ textTransform: "none" }}
-													onClick={() => handleRejectGroupRequest(req.request_id)}
-												>
-													Reject
-												</Button>
-											</Box>
-										</Box>
-									))}
-									<TablePagination
-										component="div"
-										count={leaveRequests.length}
-										page={leavePage}
-										rowsPerPage={leaveRowsPerPage}
-										onPageChange={(_, newPage) => {
-											setSelectedLeaveIds([]);
-											setLeavePage(newPage);
-										}}
-										onRowsPerPageChange={(e) => {
-											setSelectedLeaveIds([]);
-											setLeaveRowsPerPage(+e.target.value);
-											setLeavePage(0);
-										}}
-										rowsPerPageOptions={[5, 10, 25]}
-									/>
-								</Box>
-							)}
-
-							{/* User Table */}
-							{userRole === "group_admin" && (
-								<>
-									<Typography
-										variant="body2"
-										sx={{ px: 2, my: 2, fontWeight: "bold", color: grey[600] }}
-									>
-										Manage Group Members
-									</Typography>
-									{selectedMemberSubs.length > 0 && (
-										<Box
-											sx={{
-												display: "flex",
-												alignItems: "center",
-												justifyContent: "space-between",
-												px: 2,
-												py: 1.5,
-												mb: 1,
-												bgcolor: blue[50],
-												borderRadius: 2,
-											}}
-										>
-											<Typography variant="body2" sx={{ fontWeight: 600, color: grey[800] }}>
-												{selectedMemberSubs.length} member
-												{selectedMemberSubs.length === 1 ? "" : "s"} selected
-											</Typography>
-											<Box display="flex" gap={1}>
-												<Button
-													size="small"
-													variant="outlined"
-													color="inherit"
-													sx={{ textTransform: "none" }}
-													onClick={() => setSelectedMemberSubs([])}
-												>
-													Clear
-												</Button>
-												<Button
-													size="small"
-													variant="contained"
-													color="warning"
-													startIcon={<RemoveCircleOutlineOutlined />}
-													sx={{ textTransform: "none" }}
-													onClick={() => {
-														setSelectedUser(null);
-														setRemoveDialogOpen(true);
-													}}
-												>
-													Remove selected
-												</Button>
-											</Box>
-										</Box>
-									)}
-									<Table>
-										<TableHead sx={{ bgcolor: grey[200] }}>
-											<TableRow>
-												<TableCell padding="checkbox">
-													<Checkbox
-														size="small"
-														checked={allPageSelected}
-														indeterminate={somePageSelected}
-														onChange={(e) => toggleAllOnPage(e.target.checked)}
-													/>
-												</TableCell>
-												<TableCell>
-													<Box
-														sx={{
-															display: "flex",
-															alignItems: "center",
-															width: "100%",
-															fontSize: "0.7rem",
-															fontWeight: "bold",
-															color: grey[700],
-														}}
-													>
-														EMAIL
-													</Box>
-												</TableCell>
-												<TableCell>
-													<Box
-														sx={{
-															display: "flex",
-															alignItems: "center",
-															width: "100%",
-															fontSize: "0.7rem",
-															fontWeight: "bold",
-															color: grey[700],
-														}}
-													>
-														ROLE
-													</Box>
-												</TableCell>
-												<TableCell>
-													<Box
-														sx={{
-															display: "flex",
-															alignItems: "center",
-															width: "100%",
-															fontSize: "0.7rem",
-															fontWeight: "bold",
-															color: grey[700],
-														}}
-													>
-														ROLE/GROUP UPDATED
-													</Box>
-												</TableCell>
-												{userRole === "group_admin" && (
-													<TableCell>
-														<Box
-															sx={{
-																display: "flex",
-																alignItems: "center",
-																width: "100%",
-																fontSize: "0.7rem",
-																fontWeight: "bold",
-																color: grey[700],
-															}}
-														>
-															REMOVE
-														</Box>
-													</TableCell>
+										{/* Leave Group */}
+										{userRole !== "group_admin" && (
+											<Box sx={{ p: 2, bgcolor: grey[200], borderRadius: 2, height: "100%" }}>
+												{leaveError && (
+													<Alert severity="error" sx={{ mb: 2 }}>
+														{leaveError}
+													</Alert>
 												)}
-											</TableRow>
-										</TableHead>
-										<TableBody>
-											{paginatedUsers.map((u) => (
-												<TableRow key={u.user_sub}>
-													<TableCell padding="checkbox">
+												<Typography variant="body2" color={grey[800]} sx={{ mb: 2 }}>
+													Leave Group
+												</Typography>
+												<Button
+													variant="outlined"
+													color="warning"
+													onClick={() => setLeaveDialogOpen(true)}
+													size="small"
+													sx={{ textTransform: "none" }}
+													startIcon={<RemoveCircleOutlineOutlined />}
+												>
+													Request to leave this group
+												</Button>
+											</Box>
+										)}
+									</Grid>
+								</Grid>
+
+								{userRole === "group_admin" && requestError && (
+									<Alert severity="error" sx={{ mx: 2, mb: 2 }}>
+										{requestError}
+									</Alert>
+								)}
+
+								{/* Pending Join Requests — approve directly, joiners bring no assets. */}
+								{userRole === "group_admin" && joinRequests.length > 0 && (
+									<Box sx={{ px: 2, mb: 2 }}>
+										<Box
+											onClick={() => setJoinOpen((o) => !o)}
+											sx={{ display: "flex", alignItems: "center", cursor: "pointer", mb: 1 }}
+										>
+											<ExpandMore
+												sx={{
+													color: grey[600],
+													mr: 0.5,
+													transform: joinOpen ? "none" : "rotate(-90deg)",
+													transition: "transform 150ms",
+												}}
+											/>
+											<Badge
+												badgeContent={joinRequests.length}
+												color="error"
+												sx={{
+													"& .MuiBadge-badge": {
+														position: "static",
+														transform: "none",
+														ml: 1.5,
+													},
+												}}
+											>
+												<Typography variant="body2" sx={{ fontWeight: "bold", color: grey[600] }}>
+													Pending Join Requests
+												</Typography>
+											</Badge>
+										</Box>
+										<Collapse in={joinOpen}>
+											{selectedJoinIds.length > 0 && (
+												<Box
+													sx={{
+														display: "flex",
+														alignItems: "center",
+														justifyContent: "space-between",
+														px: 2,
+														py: 1.5,
+														mb: 1,
+														bgcolor: blue[50],
+														borderRadius: 2,
+													}}
+												>
+													<Typography variant="body2" sx={{ fontWeight: 600, color: grey[800] }}>
+														{selectedJoinIds.length} request
+														{selectedJoinIds.length === 1 ? "" : "s"} selected
+													</Typography>
+													<Box display="flex" gap={1}>
+														<Button
+															size="small"
+															variant="outlined"
+															color="inherit"
+															sx={{ textTransform: "none" }}
+															onClick={() => setSelectedJoinIds([])}
+														>
+															Clear
+														</Button>
+														<Button
+															size="small"
+															variant="contained"
+															sx={{ textTransform: "none" }}
+															onClick={handleApproveSelectedJoins}
+														>
+															Approve selected
+														</Button>
+														<Button
+															size="small"
+															variant="outlined"
+															color="error"
+															sx={{ textTransform: "none" }}
+															onClick={handleRejectSelectedJoins}
+														>
+															Reject selected
+														</Button>
+													</Box>
+												</Box>
+											)}
+
+											<Box display="flex" alignItems="center" sx={{ mb: 0.5 }}>
+												<Checkbox
+													size="small"
+													checked={allJoinPageSelected}
+													indeterminate={someJoinPageSelected}
+													onChange={(e) => setSelectedJoinIds(e.target.checked ? joinPageIds : [])}
+												/>
+												<Typography variant="caption" color={grey[700]}>
+													Select all on this page
+												</Typography>
+											</Box>
+											{paginatedJoinRequests.map((req) => (
+												<Box
+													key={req.request_id}
+													sx={{
+														display: "flex",
+														alignItems: "center",
+														justifyContent: "space-between",
+														p: 2,
+														mb: 1,
+														bgcolor: grey[200],
+														borderRadius: 2,
+													}}
+												>
+													<Box display="flex" alignItems="center" gap={1}>
 														<Checkbox
 															size="small"
-															checked={selectedMemberSubs.includes(u.user_sub)}
-															onChange={() => toggleOneMember(u.user_sub)}
+															checked={selectedJoinIds.includes(req.request_id)}
+															onChange={() => toggleJoinId(req.request_id)}
 														/>
-													</TableCell>
-													<TableCell>{u.email}</TableCell>
-													<TableCell>
-														<FormControl fullWidth size="small">
-															<InputLabel id={`role-${u.user_sub}`}>Role</InputLabel>
-															<Select
-																labelId={`role-${u.user_sub}`}
-																label="Role"
-																value={u.role}
-																disabled
-															>
-																<MenuItem value="group_admin">Group Admin</MenuItem>
-																<MenuItem value="member">Member</MenuItem>
-															</Select>
-														</FormControl>
-													</TableCell>
-													<TableCell>
-														{u.role_or_group_updated_at
-															? new Date(u.role_or_group_updated_at).toLocaleString()
-															: "-"}
-													</TableCell>
-													{userRole === "group_admin" && (
-														<TableCell>
-															<IconButton
+														<Box>
+															<Typography variant="body2">
+																{req.sender_name ?? "Unknown user"} asked to join this group
+															</Typography>
+															<Typography variant="caption" color={grey[700]}>
+																{formatExpiry(req.expires_at)}
+															</Typography>
+														</Box>
+													</Box>
+													<Box display="flex" gap={1}>
+														<Button
+															size="small"
+															variant="contained"
+															sx={{ textTransform: "none" }}
+															onClick={() => {
+																setSelectedJoinIds([]);
+																handleApproveJoin(req.request_id);
+															}}
+														>
+															Approve
+														</Button>
+														<Button
+															size="small"
+															variant="outlined"
+															color="inherit"
+															sx={{ textTransform: "none" }}
+															onClick={() => handleRejectGroupRequest(req.request_id)}
+														>
+															Reject
+														</Button>
+													</Box>
+												</Box>
+											))}
+											<TablePagination
+												component="div"
+												count={joinRequests.length}
+												page={joinPage}
+												rowsPerPage={joinRowsPerPage}
+												onPageChange={(_, newPage) => {
+													setSelectedJoinIds([]);
+													setJoinPage(newPage);
+												}}
+												onRowsPerPageChange={(e) => {
+													setSelectedJoinIds([]);
+													setJoinRowsPerPage(+e.target.value);
+													setJoinPage(0);
+												}}
+												rowsPerPageOptions={[5, 10, 25]}
+											/>
+										</Collapse>
+									</Box>
+								)}
+
+								{/* Pending Leave Requests — approving opens the ownership dialog first. */}
+								{userRole === "group_admin" && leaveRequests.length > 0 && (
+									<Box sx={{ px: 2, mb: 2 }}>
+										<Box
+											onClick={() => setLeaveOpen((o) => !o)}
+											sx={{ display: "flex", alignItems: "center", cursor: "pointer", mb: 1 }}
+										>
+											<ExpandMore
+												sx={{
+													color: grey[600],
+													mr: 0.5,
+													transform: leaveOpen ? "none" : "rotate(-90deg)",
+													transition: "transform 150ms",
+												}}
+											/>
+											<Badge
+												badgeContent={leaveRequests.length}
+												color="error"
+												sx={{
+													"& .MuiBadge-badge": {
+														position: "static",
+														transform: "none",
+														ml: 1.5,
+													},
+												}}
+											>
+												<Typography variant="body2" sx={{ fontWeight: "bold", color: grey[600] }}>
+													Pending Leave Requests
+												</Typography>
+											</Badge>
+										</Box>
+										<Collapse in={leaveOpen}>
+											{selectedLeaveIds.length > 0 && (
+												<Box
+													sx={{
+														display: "flex",
+														alignItems: "center",
+														justifyContent: "space-between",
+														px: 2,
+														py: 1.5,
+														mb: 1,
+														bgcolor: blue[50],
+														borderRadius: 2,
+													}}
+												>
+													<Typography variant="body2" sx={{ fontWeight: 600, color: grey[800] }}>
+														{selectedLeaveIds.length} request
+														{selectedLeaveIds.length === 1 ? "" : "s"} selected
+													</Typography>
+													<Box display="flex" gap={1}>
+														<Button
+															size="small"
+															variant="outlined"
+															color="inherit"
+															sx={{ textTransform: "none" }}
+															onClick={() => setSelectedLeaveIds([])}
+														>
+															Clear
+														</Button>
+														<Button
+															size="small"
+															variant="contained"
+															sx={{ textTransform: "none" }}
+															onClick={openBulkLeaveDialog}
+														>
+															Approve selected
+														</Button>
+														<Button
+															size="small"
+															variant="outlined"
+															color="error"
+															sx={{ textTransform: "none" }}
+															onClick={handleRejectSelectedLeaves}
+														>
+															Reject selected
+														</Button>
+													</Box>
+												</Box>
+											)}
+
+											<Box display="flex" alignItems="center" sx={{ mb: 0.5 }}>
+												<Checkbox
+													size="small"
+													checked={allLeavePageSelected}
+													indeterminate={someLeavePageSelected}
+													onChange={(e) =>
+														setSelectedLeaveIds(e.target.checked ? leavePageIds : [])
+													}
+												/>
+												<Typography variant="caption" color={grey[700]}>
+													Select all on this page
+												</Typography>
+											</Box>
+											{paginatedLeaveRequests.map((req) => (
+												<Box
+													key={req.request_id}
+													sx={{
+														display: "flex",
+														alignItems: "center",
+														justifyContent: "space-between",
+														p: 2,
+														mb: 1,
+														bgcolor: grey[200],
+														borderRadius: 2,
+													}}
+												>
+													<Box display="flex" alignItems="center" gap={1}>
+														<Checkbox
+															size="small"
+															checked={selectedLeaveIds.includes(req.request_id)}
+															onChange={() => toggleLeaveId(req.request_id)}
+														/>
+														<Box>
+															<Typography variant="body2">
+																{req.sender_name ?? "Unknown user"} asked to leave this group
+															</Typography>
+															<Typography variant="caption" color={grey[700]}>
+																{formatExpiry(req.expires_at)}
+															</Typography>
+														</Box>
+													</Box>
+													<Box display="flex" gap={1}>
+														<Button
+															size="small"
+															variant="contained"
+															sx={{ textTransform: "none" }}
+															onClick={() => {
+																setSelectedLeaveIds([]);
+																const requester = users.find((u) => u.user_sub === req.sender_sub);
+																if (!requester) return;
+																setSelectedUser(requester);
+																setPendingRequestId(req.request_id);
+																setRemovalPolicy("co_owned");
+																setRemoveDialogOpen(true);
+															}}
+														>
+															Approve
+														</Button>
+														<Button
+															size="small"
+															variant="outlined"
+															color="inherit"
+															sx={{ textTransform: "none" }}
+															onClick={() => handleRejectGroupRequest(req.request_id)}
+														>
+															Reject
+														</Button>
+													</Box>
+												</Box>
+											))}
+											<TablePagination
+												component="div"
+												count={leaveRequests.length}
+												page={leavePage}
+												rowsPerPage={leaveRowsPerPage}
+												onPageChange={(_, newPage) => {
+													setSelectedLeaveIds([]);
+													setLeavePage(newPage);
+												}}
+												onRowsPerPageChange={(e) => {
+													setSelectedLeaveIds([]);
+													setLeaveRowsPerPage(+e.target.value);
+													setLeavePage(0);
+												}}
+												rowsPerPageOptions={[5, 10, 25]}
+											/>
+										</Collapse>
+									</Box>
+								)}
+
+								{/* User Table */}
+								{userRole === "group_admin" && (
+									<>
+										<Box
+											onClick={() => setMembersOpen((o) => !o)}
+											sx={{
+												display: "flex",
+												alignItems: "center",
+												cursor: "pointer",
+												px: 2,
+												my: 2,
+											}}
+										>
+											<ExpandMore
+												sx={{
+													color: grey[600],
+													mr: 0.5,
+													transform: membersOpen ? "none" : "rotate(-90deg)",
+													transition: "transform 150ms",
+												}}
+											/>
+											<Typography variant="body2" sx={{ fontWeight: "bold", color: grey[600] }}>
+												Manage Group Members
+											</Typography>
+										</Box>
+										<Collapse in={membersOpen}>
+											{selectedMemberSubs.length > 0 && (
+												<Box
+													sx={{
+														display: "flex",
+														alignItems: "center",
+														justifyContent: "space-between",
+														px: 2,
+														py: 1.5,
+														mb: 1,
+														bgcolor: blue[50],
+														borderRadius: 2,
+													}}
+												>
+													<Typography variant="body2" sx={{ fontWeight: 600, color: grey[800] }}>
+														{selectedMemberSubs.length} member
+														{selectedMemberSubs.length === 1 ? "" : "s"} selected
+													</Typography>
+													<Box display="flex" gap={1}>
+														<Button
+															size="small"
+															variant="outlined"
+															color="inherit"
+															sx={{ textTransform: "none" }}
+															onClick={() => setSelectedMemberSubs([])}
+														>
+															Clear
+														</Button>
+														<Button
+															size="small"
+															variant="contained"
+															color="warning"
+															startIcon={<RemoveCircleOutlineOutlined />}
+															sx={{ textTransform: "none" }}
+															onClick={() => {
+																setSelectedUser(null);
+																setRemoveDialogOpen(true);
+															}}
+														>
+															Remove selected
+														</Button>
+													</Box>
+												</Box>
+											)}
+											<Table>
+												<TableHead sx={{ bgcolor: grey[200] }}>
+													<TableRow>
+														<TableCell padding="checkbox">
+															<Checkbox
 																size="small"
-																color="warning"
-																onClick={() => {
-																	setSelectedMemberSubs([]);
-																	setSelectedUser(u);
-																	setRemoveDialogOpen(true);
+																checked={allPageSelected}
+																indeterminate={somePageSelected}
+																onChange={(e) => toggleAllOnPage(e.target.checked)}
+															/>
+														</TableCell>
+														<TableCell>
+															<Box
+																sx={{
+																	display: "flex",
+																	alignItems: "center",
+																	width: "100%",
+																	fontSize: "0.7rem",
+																	fontWeight: "bold",
+																	color: grey[700],
 																}}
 															>
-																<RemoveCircleOutlineOutlined />
-															</IconButton>
+																EMAIL
+															</Box>
 														</TableCell>
-													)}
-												</TableRow>
-											))}
-										</TableBody>
-									</Table>
-									<TablePagination
-										component="div"
-										count={users.length}
-										page={page}
-										rowsPerPage={rowsPerPage}
-										onPageChange={(_, newPage) => {
-											setSelectedMemberSubs([]);
-											setPage(newPage);
-										}}
-										onRowsPerPageChange={(e) => {
-											setSelectedMemberSubs([]);
-											setRowsPerPage(+e.target.value);
-											setPage(0);
-										}}
-										rowsPerPageOptions={[5, 10, 25]}
-									/>
-								</>
-							)}
-						</>
-					)}
-					{/* Remove User Dialog */}
-					<Dialog
-						open={removeDialogOpen}
-						onClose={() => {
-							setRemoveDialogOpen(false);
-							setPendingRequestId(null);
-						}}
-						fullWidth
-					>
-						<DialogTitle>Remove User</DialogTitle>
-						<DialogContent>
-							<Box sx={{ border: 1, borderColor: "divider", p: 3, mt: 2, borderRadius: 2 }}>
-								<Typography variant="body2" color="text.secondary">
-									{selectedMemberSubs.length > 1
-										? `Remove ${selectedMemberSubs.length} members from the group? The choice below applies to all of them.`
-										: "Are you sure you want to remove this user from the group? This action cannot be undone."}
-								</Typography>
-								<FormControl>
-									<RadioGroup
-										name="removal-policy"
-										value={removalPolicy}
-										onChange={(e) =>
-											setRemovalPolicy(e.target.value as "co_owned" | "user" | "group")
-										}
-									>
-										<FormControlLabel
-											value="co_owned"
-											control={<Radio />}
-											label="Keep jobs and structures co-owned by the user and the group"
-										/>
-										<FormControlLabel
-											value="group"
-											control={<Radio />}
-											label="Give jobs and structures to the group"
-										/>
-										<FormControlLabel
-											value="user"
-											control={<Radio />}
-											label="Give jobs and structures to the user"
-										/>
-										<FormControlLabel
-											value="delete"
-											control={<Radio />}
-											label="Delete the user's jobs and structures"
-										/>
-									</RadioGroup>
-								</FormControl>
-							</Box>
-						</DialogContent>
-						<DialogActions>
-							<Button
-								onClick={() => {
-									setRemoveDialogOpen(false);
-									setPendingRequestId(null);
-								}}
-								variant="outlined"
-								sx={{ textTransform: "none", color: grey[600], borderColor: grey[400] }}
-							>
-								Cancel
-							</Button>
-							<Button
-								onClick={handleUserUpdate}
-								color="error"
-								variant="contained"
-								startIcon={<RemoveCircleOutlineOutlined />}
-								sx={{ textTransform: "none" }}
-							>
-								Remove
-							</Button>
-						</DialogActions>
-					</Dialog>
+														<TableCell>
+															<Box
+																sx={{
+																	display: "flex",
+																	alignItems: "center",
+																	width: "100%",
+																	fontSize: "0.7rem",
+																	fontWeight: "bold",
+																	color: grey[700],
+																}}
+															>
+																ROLE
+															</Box>
+														</TableCell>
+														<TableCell>
+															<Box
+																sx={{
+																	display: "flex",
+																	alignItems: "center",
+																	width: "100%",
+																	fontSize: "0.7rem",
+																	fontWeight: "bold",
+																	color: grey[700],
+																}}
+															>
+																ROLE/GROUP UPDATED
+															</Box>
+														</TableCell>
+														{userRole === "group_admin" && (
+															<TableCell>
+																<Box
+																	sx={{
+																		display: "flex",
+																		alignItems: "center",
+																		width: "100%",
+																		fontSize: "0.7rem",
+																		fontWeight: "bold",
+																		color: grey[700],
+																	}}
+																>
+																	REMOVE
+																</Box>
+															</TableCell>
+														)}
+													</TableRow>
+												</TableHead>
+												<TableBody>
+													{paginatedUsers.map((u) => (
+														<TableRow key={u.user_sub}>
+															<TableCell padding="checkbox">
+																<Checkbox
+																	size="small"
+																	checked={selectedMemberSubs.includes(u.user_sub)}
+																	onChange={() => toggleOneMember(u.user_sub)}
+																/>
+															</TableCell>
+															<TableCell>{u.email}</TableCell>
+															<TableCell>
+																<FormControl fullWidth size="small">
+																	<InputLabel id={`role-${u.user_sub}`}>Role</InputLabel>
+																	<Select
+																		labelId={`role-${u.user_sub}`}
+																		label="Role"
+																		value={u.role}
+																		disabled
+																	>
+																		<MenuItem value="group_admin">Group Admin</MenuItem>
+																		<MenuItem value="member">Member</MenuItem>
+																	</Select>
+																</FormControl>
+															</TableCell>
+															<TableCell>
+																{u.role_or_group_updated_at
+																	? new Date(u.role_or_group_updated_at).toLocaleString()
+																	: "-"}
+															</TableCell>
+															{userRole === "group_admin" && (
+																<TableCell>
+																	<IconButton
+																		size="small"
+																		color="warning"
+																		onClick={() => {
+																			setSelectedMemberSubs([]);
+																			setSelectedUser(u);
+																			setRemoveDialogOpen(true);
+																		}}
+																	>
+																		<RemoveCircleOutlineOutlined />
+																	</IconButton>
+																</TableCell>
+															)}
+														</TableRow>
+													))}
+												</TableBody>
+											</Table>
+											<TablePagination
+												component="div"
+												count={users.length}
+												page={page}
+												rowsPerPage={rowsPerPage}
+												onPageChange={(_, newPage) => {
+													setSelectedMemberSubs([]);
+													setPage(newPage);
+												}}
+												onRowsPerPageChange={(e) => {
+													setSelectedMemberSubs([]);
+													setRowsPerPage(+e.target.value);
+													setPage(0);
+												}}
+												rowsPerPageOptions={[5, 10, 25]}
+											/>
+										</Collapse>
+									</>
+								)}
+							</>
+						)}
+						{/* Remove User Dialog */}
+						<Dialog
+							open={removeDialogOpen}
+							onClose={() => {
+								setRemoveDialogOpen(false);
+								setPendingRequestId(null);
+							}}
+							fullWidth
+						>
+							<DialogTitle>Remove User</DialogTitle>
+							<DialogContent>
+								<Box sx={{ border: 1, borderColor: "divider", p: 3, mt: 2, borderRadius: 2 }}>
+									<Typography variant="body2" color="text.secondary">
+										{selectedMemberSubs.length > 1
+											? `Remove ${selectedMemberSubs.length} members from the group? The choice below applies to all of them.`
+											: "Are you sure you want to remove this user from the group? This action cannot be undone."}
+									</Typography>
+									<FormControl>
+										<RadioGroup
+											name="removal-policy"
+											value={removalPolicy}
+											onChange={(e) =>
+												setRemovalPolicy(e.target.value as "co_owned" | "user" | "group")
+											}
+										>
+											<FormControlLabel
+												value="co_owned"
+												control={<Radio />}
+												label="Keep jobs and structures co-owned by the user and the group"
+											/>
+											<FormControlLabel
+												value="group"
+												control={<Radio />}
+												label="Give jobs and structures to the group"
+											/>
+											<FormControlLabel
+												value="user"
+												control={<Radio />}
+												label="Give jobs and structures to the user"
+											/>
+											<FormControlLabel
+												value="delete"
+												control={<Radio />}
+												label="Delete the user's jobs and structures"
+											/>
+										</RadioGroup>
+									</FormControl>
+								</Box>
+							</DialogContent>
+							<DialogActions>
+								<Button
+									onClick={() => {
+										setRemoveDialogOpen(false);
+										setPendingRequestId(null);
+									}}
+									variant="outlined"
+									sx={{ textTransform: "none", color: grey[600], borderColor: grey[400] }}
+								>
+									Cancel
+								</Button>
+								<Button
+									onClick={handleUserUpdate}
+									color="error"
+									variant="contained"
+									startIcon={<RemoveCircleOutlineOutlined />}
+									sx={{ textTransform: "none" }}
+								>
+									Remove
+								</Button>
+							</DialogActions>
+						</Dialog>
 
-					{/* Add Member Dialog */}
-					{/* <Dialog
+						{/* Add Member Dialog */}
+						{/* <Dialog
 						open={addMemberDialogOpen}
 						onClose={() => setAddMemberDialogOpen(false)}
 						fullWidth
@@ -1268,37 +1334,38 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 						</DialogActions>
 					</Dialog> */}
 
-					{/* Leave Group Dialog */}
-					<Dialog open={leaveDialogOpen} onClose={() => setLeaveDialogOpen(false)} fullWidth>
-						<DialogTitle>Confirm Request</DialogTitle>
-						<DialogContent>
-							<Typography variant="body2" color="text.secondary">
-								Request to leave <strong style={{ color: "#1565c0" }}>{groupName}</strong>? A group
-								admin has to approve it, so you stay in the group until they do. Jobs and structures
-								ownership will depend on admin decision.
-							</Typography>
-						</DialogContent>
-						<DialogActions>
-							<Button
-								onClick={() => setLeaveDialogOpen(false)}
-								variant="outlined"
-								sx={{ textTransform: "none", color: grey[600], borderColor: grey[400] }}
-							>
-								Cancel
-							</Button>
-							<Button
-								onClick={handleLeaveGroup}
-								color="warning"
-								variant="contained"
-								startIcon={<RemoveCircleOutlineOutlined />}
-								sx={{ textTransform: "none" }}
-							>
-								Send Request
-							</Button>
-						</DialogActions>
-					</Dialog>
-				</>
-			)}
+						{/* Leave Group Dialog */}
+						<Dialog open={leaveDialogOpen} onClose={() => setLeaveDialogOpen(false)} fullWidth>
+							<DialogTitle>Confirm Request</DialogTitle>
+							<DialogContent>
+								<Typography variant="body2" color="text.secondary">
+									Request to leave <strong style={{ color: "#1565c0" }}>{groupName}</strong>? A
+									group admin has to approve it, so you stay in the group until they do. Jobs and
+									structures ownership will depend on admin decision.
+								</Typography>
+							</DialogContent>
+							<DialogActions>
+								<Button
+									onClick={() => setLeaveDialogOpen(false)}
+									variant="outlined"
+									sx={{ textTransform: "none", color: grey[600], borderColor: grey[400] }}
+								>
+									Cancel
+								</Button>
+								<Button
+									onClick={handleLeaveGroup}
+									color="warning"
+									variant="contained"
+									startIcon={<RemoveCircleOutlineOutlined />}
+									sx={{ textTransform: "none" }}
+								>
+									Send Request
+								</Button>
+							</DialogActions>
+						</Dialog>
+					</>
+				)}
+			</Collapse>
 		</Paper>
 	);
 }
