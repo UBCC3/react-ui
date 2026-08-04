@@ -61,6 +61,18 @@ export const calculationTypes = {
 	"Intrinsic Reaction Coordinate": "irc",
 };
 
+/**
+ * Maps the number of unpaired electrons (shown to the user) to the spin
+ * multiplicity value electronic structure programs expect on the backend.
+ * multiplicity = unpaired electrons + 1.
+ */
+export const unpairedElectronOptions: { label: string; multiplicity: number }[] = [
+	{ label: "0", multiplicity: 1 }, // singlet
+	{ label: "1", multiplicity: 2 }, // doublet
+	{ label: "2", multiplicity: 3 }, // triplet
+	{ label: "3", multiplicity: 4 }, // quartet
+];
+
 export type ColumnKind = "string" | "date" | "runtime";
 
 export const columnKinds: Record<string, ColumnKind> = {
