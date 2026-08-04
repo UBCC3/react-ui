@@ -99,6 +99,11 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 	const [selectedMemberSubs, setSelectedMemberSubs] = useState<string[]>([]);
 	const [rowsPerPage, setRowsPerPage] = useState(5);
 
+    const [joinPage, setJoinPage] = useState(0);
+	const [joinRowsPerPage, setJoinRowsPerPage] = useState(5);
+	const [leavePage, setLeavePage] = useState(0);
+	const [leaveRowsPerPage, setLeaveRowsPerPage] = useState(5);
+
 	const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
 	// const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
 
@@ -111,6 +116,15 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 	const [groupRequests, setGroupRequests] = useState<GroupRequest[]>([]);
 	const joinRequests = groupRequests.filter((r) => r.request_type === "join_request");
 	const leaveRequests = groupRequests.filter((r) => r.request_type === "demember_request");
+
+    const paginatedJoinRequests = joinRequests.slice(
+		joinPage * joinRowsPerPage,
+		joinPage * joinRowsPerPage + joinRowsPerPage,
+	);
+	const paginatedLeaveRequests = leaveRequests.slice(
+		leavePage * leaveRowsPerPage,
+		leavePage * leaveRowsPerPage + leaveRowsPerPage,
+	);
 
 	const [loading, setLoading] = useState(true);
 	const [loadingMessage, setLoadingMessage] = useState("Loading...");
@@ -159,6 +173,17 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 
 		loadData();
 	}, [token, user?.email, reload]);
+
+    // A resolved request can empty the current page; step back so the list stays visible.
+	useEffect(() => {
+		const lastPage = Math.max(0, Math.ceil(joinRequests.length / joinRowsPerPage) - 1);
+		if (joinPage > lastPage) setJoinPage(lastPage);
+	}, [joinRequests.length, joinRowsPerPage, joinPage]);
+
+	useEffect(() => {
+		const lastPage = Math.max(0, Math.ceil(leaveRequests.length / leaveRowsPerPage) - 1);
+		if (leavePage > lastPage) setLeavePage(lastPage);
+	}, [leaveRequests.length, leaveRowsPerPage, leavePage]);
 
 	// Resolve the pasted ID to a group name so the user can confirm before sending.
 	const handleLookupGroup = async () => {
@@ -576,7 +601,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 											Pending Join Requests
 										</Typography>
 									</Badge>
-									{joinRequests.map((req) => (
+									{paginatedJoinRequests.map((req) => (
 										<Box
 											key={req.request_id}
 											sx={{
@@ -613,6 +638,18 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 											</Box>
 										</Box>
 									))}
+                                    <TablePagination
+										component="div"
+										count={joinRequests.length}
+										page={joinPage}
+										rowsPerPage={joinRowsPerPage}
+										onPageChange={(_, newPage) => setJoinPage(newPage)}
+										onRowsPerPageChange={(e) => {
+											setJoinRowsPerPage(+e.target.value);
+											setJoinPage(0);
+										}}
+										rowsPerPageOptions={[5, 10, 25]}
+									/>
 								</Box>
 							)}
 
@@ -635,7 +672,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 											Pending Leave Requests
 										</Typography>
 									</Badge>
-									{leaveRequests.map((req) => (
+									{paginatedLeaveRequests.map((req) => (
 										<Box
 											key={req.request_id}
 											sx={{
@@ -679,6 +716,18 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 											</Box>
 										</Box>
 									))}
+                                    <TablePagination
+										component="div"
+										count={leaveRequests.length}
+										page={leavePage}
+										rowsPerPage={leaveRowsPerPage}
+										onPageChange={(_, newPage) => setLeavePage(newPage)}
+										onRowsPerPageChange={(e) => {
+											setLeaveRowsPerPage(+e.target.value);
+											setLeavePage(0);
+										}}
+										rowsPerPageOptions={[5, 10, 25]}
+									/>
 								</Box>
 							)}
 
