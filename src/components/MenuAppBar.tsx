@@ -35,7 +35,6 @@ import { useDrawer } from "./DrawerContext";
 import logo from "../assets/logo.svg";
 import {
 	getSentRequests,
-	getReceivedRequests,
 	approveRequest,
 	rejectRequest,
 	getGroupRequests,
@@ -81,7 +80,6 @@ export default function MenuAppBar() {
 	const [anchorRequestsEl, setAnchorRequestsEl] = useState<null | HTMLElement>(null);
 
 	const [sentRequests, setSentRequests] = useState<GroupRequest[]>([]);
-	const [incomingRequests, setIncomingRequests] = useState<GroupRequest[]>([]);
 
 	const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 	const [requestType, setRequestType] = useState<"approve" | "reject" | "delete" | null>(null);
@@ -129,7 +127,6 @@ export default function MenuAppBar() {
 		const token = await getAccessTokenSilently();
 		if (!token) return;
 		await approveRequest(requestId, token);
-		setIncomingRequests((prev) => prev.filter((r) => r.request_id !== requestId));
 		setGroupRequests((prev) => prev.filter((r) => r.request_id !== requestId));
 	};
 
@@ -141,7 +138,6 @@ export default function MenuAppBar() {
 		const token = await getAccessTokenSilently();
 		if (!token) return;
 		await rejectRequest(requestId, token);
-		setIncomingRequests((prev) => prev.filter((r) => r.request_id !== requestId));
 		setGroupRequests((prev) => prev.filter((r) => r.request_id !== requestId));
 	};
 
@@ -178,18 +174,7 @@ export default function MenuAppBar() {
 			setSentRequests(results.flatMap((r) => r.data ?? []));
 		};
 
-		/**
-		 * Fetches requests received by the current authenticated user.
-		 */
-		const fetchIncoming = async () => {
-			const token = await getAccessTokenSilently();
-			if (!token) return;
-			const resp = await getReceivedRequests(token);
-			setIncomingRequests(resp.data || []);
-		};
-
 		fetchSent();
-		fetchIncoming();
 	}, [user?.sub, getAccessTokenSilently]);
 
 	/**
@@ -215,11 +200,7 @@ export default function MenuAppBar() {
 			const token = await getAccessTokenSilently();
 			if (!token) return;
 
-			const [incoming, group] = await Promise.all([
-				getReceivedRequests(token),
-				getGroupRequests(token, "pending"),
-			]);
-			setIncomingRequests(incoming.error ? [] : (incoming.data ?? []));
+			const group = await getGroupRequests(token, "pending");
 			setGroupRequests(group.error ? [] : (group.data ?? []));
 		};
 
@@ -233,10 +214,8 @@ export default function MenuAppBar() {
 
 	// The number of unresponsed requests
 	const pendingCount = useMemo(
-		() =>
-			incomingRequests.filter((r) => r.status === "pending").length +
-			groupOnlyRequests.filter((r) => r.status === "pending").length,
-		[incomingRequests, groupOnlyRequests],
+		() => groupOnlyRequests.filter((r) => r.status === "pending").length,
+		[groupOnlyRequests],
 	);
 
 	return (
@@ -341,57 +320,6 @@ export default function MenuAppBar() {
 					paper: { style: { maxHeight: ITEM_HEIGHT * 4.5 } },
 				}}
 			>
-				<ListSubheader sx={{ fontWeight: "bold" }}>Incoming Requests</ListSubheader>
-				{incomingRequests.length === 0 ? (
-					<MenuItem disabled>No incoming requests</MenuItem>
-				) : (
-					incomingRequests.map((req) => (
-						<MenuItem
-							key={req.request_id}
-							sx={{ display: "flex", justifyContent: "space-between", gap: 1 }}
-						>
-							<Box>
-								<Typography variant="body2" sx={{ fontWeight: 600 }}>
-									{REQUEST_TYPE_LABELS[req.request_type] ?? req.request_type}
-								</Typography>
-								<Typography variant="caption" color="text.secondary" display="block">
-									{req.group_name ?? "Unknown group"}
-									{req.sender_name ? ` · from ${req.sender_name}` : ""}
-								</Typography>
-								<Typography variant="caption" color="text.secondary" display="block">
-									{formatExpiry(req.expires_at)}
-								</Typography>
-							</Box>
-							{req.status === "pending" && (
-								<Box>
-									<IconButton
-										size="small"
-										onClick={() => {
-											setConfirmDialogOpen(true);
-											setRequestType("approve");
-											setSelectedRequest(req.request_id);
-										}}
-										color="success"
-									>
-										<CheckCircleOutlineOutlined />
-									</IconButton>
-									<IconButton
-										size="small"
-										onClick={() => {
-											setConfirmDialogOpen(true);
-											setRequestType("reject");
-											setSelectedRequest(req.request_id);
-										}}
-										color="error"
-									>
-										<CancelOutlined />
-									</IconButton>
-								</Box>
-							)}
-						</MenuItem>
-					))
-				)}
-				<Divider />
 				<ListSubheader sx={{ fontWeight: "bold" }}>Sent Requests</ListSubheader>
 				{sentRequests.length === 0 ? (
 					<MenuItem disabled>No sent requests</MenuItem>
