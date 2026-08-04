@@ -86,7 +86,7 @@ export const getCurrentUserGroupJobs = async (
 ): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get("/group/jobs/", { params: paging });
+		const res = await API.get("/group/jobs", { params: paging });
 		return {
 			status: res.status,
 			data: res.data,
@@ -115,7 +115,7 @@ export const getCurrentUserGroupStructures = async (
 ): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get("/group/structures/", { params: paging });
+		const res = await API.get("/group/structures", { params: paging });
 		return {
 			status: res.status,
 			data: res.data,
@@ -141,7 +141,7 @@ export const getCurrentUserGroupStructuresPaged = (token: string) =>
 export const getCurrentUserMembers = async (token: any, paging: Paging = {}): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get("/group/users/", { params: paging });
+		const res = await API.get("/group/users", { params: paging });
 		return {
 			status: res.status,
 			data: res.data,
@@ -187,7 +187,7 @@ export const upsertCurrentUser = async (token: any, email: string): Promise<Resp
 export const getAllGroups = async (token: any, paging: Paging = {}): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get("/admin/groups/", { params: paging });
+		const res = await API.get("/admin/groups", { params: paging });
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error("Failed to fetch groups", error);
@@ -252,7 +252,7 @@ export const createGroup = async (name: string, token: any): Promise<Response> =
 	formData.append("name", name);
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.post("/admin/groups/", formData);
+		const res = await API.post("/admin/groups", formData);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error("Failed to create group", error);
@@ -286,7 +286,7 @@ export const deleteGroup = async (token: any, groupId: string): Promise<Response
 export const getAllUsers = async (token: any, paging: Paging = {}): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get("/admin/users/", { params: paging });
+		const res = await API.get("/admin/users", { params: paging });
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error("Failed to fetch users", error);
@@ -370,7 +370,7 @@ export const updateUser = async (
 export const adminGetAllJobs = async (token: any, paging: Paging = {}): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get("/admin/jobs/", { params: paging });
+		const res = await API.get("/admin/jobs", { params: paging });
 		return {
 			status: res.status,
 			data: res.data,
@@ -1009,7 +1009,7 @@ export const updateJobRuntime = async (
 export const getCalculationTypes = async (token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get("/enums/calculation_types/");
+		const res = await API.get("/enums/calculation_types");
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error("Failed to fetch calculation types", error);
@@ -1026,7 +1026,7 @@ export const getCalculationTypes = async (token: string): Promise<Response> => {
 export const getWavefunctionMethods = async (token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get("/enums/wave_functional_theories/");
+		const res = await API.get("/enums/wave_functional_theories");
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error("Failed to fetch wavefunction methods", error);
@@ -1043,7 +1043,7 @@ export const getWavefunctionMethods = async (token: string): Promise<Response> =
 export const getDensityFunctionalMethods = async (token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get("/enums/density_functional_theories/");
+		const res = await API.get("/enums/density_functional_theories");
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error("Failed to fetch density functional methods", error);
@@ -1060,7 +1060,7 @@ export const getDensityFunctionalMethods = async (token: string): Promise<Respon
 export const getBasisSets = async (token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get("/enums/basis_sets/");
+		const res = await API.get("/enums/basis_sets");
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error("Failed to fetch basis sets", error);
@@ -1077,7 +1077,7 @@ export const getBasisSets = async (token: string): Promise<Response> => {
 export const getMultiplicities = async (token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get("/enums/multiplicities/");
+		const res = await API.get("/enums/multiplicities");
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error("Failed to fetch multiplicities", error);
@@ -1095,7 +1095,7 @@ export const getMultiplicities = async (token: string): Promise<Response> => {
 export const getStructuresTags = async (token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get("/structures/tags/");
+		const res = await API.get("/structures/tags");
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error("Failed to fetch structures tags", error);
@@ -1116,7 +1116,7 @@ export const getChemicalFormula = async (file: File | Blob, token: string): Prom
 
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.post("/structures/formula/", formData);
+		const res = await API.post("/structures/formula", formData);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error("Failed to fetch chemical formula", error);
@@ -1179,7 +1179,7 @@ export const getReceivedRequests = async (
 export const getOptimizationTypes = async (token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get("/enums/optimization_types/");
+		const res = await API.get("/enums/optimization_types");
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error("Failed to fetch optimization types", error);
@@ -1248,7 +1248,7 @@ export const sendInviteRequest = async (
 export const approveRequest = async (requestId: string, token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.put(`/request/${requestId}/approve/`);
+		const res = await API.put(`/request/${requestId}/approve`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error("Failed to approve request", error);
@@ -1265,7 +1265,7 @@ export const approveRequest = async (requestId: string, token: string): Promise<
 export const rejectRequest = async (requestId: string, token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.put(`/request/${requestId}/reject/`);
+		const res = await API.put(`/request/${requestId}/reject`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error("Failed to reject request", error);
