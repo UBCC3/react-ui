@@ -48,6 +48,11 @@ const AddStructureToLibrary = ({
 		setSubmitAttempted(true);
 		if (!moleculeName || !chemicalFormula) return;
 
+		// Freeze any animation and settle to the reference frame before capture,
+		// so we never export a mid-vibration/mid-optimization geometry even if the
+		// caller forgot to stop it via onDialogOpen.
+		window.Jmol.script(viewerObj, "vibration OFF; frame last;");
+
 		const canvas = viewerRef.current?.querySelector("canvas");
 		const imageDataUrl = canvas?.toDataURL("image/png") || "";
 
