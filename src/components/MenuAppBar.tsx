@@ -130,7 +130,7 @@ export default function MenuAppBar() {
 	 * Auth0 id becomes available or changes.
 	 */
 	useEffect(() => {
-		const TERMINAL_STATUSES = ["approved", "rejected", "expired", "cancelled"] as const;
+		const SENT_STATUSES = ["pending", "rejected"] as const;
 
 		/**
 		 * Fetches requests sent by the current authenticated user.
@@ -138,10 +138,11 @@ export default function MenuAppBar() {
 		const fetchSent = async () => {
 			const token = await getAccessTokenSilently();
 			if (!token) return;
-			const results = await Promise.all([
-				getSentRequests(token, "pending"),
-				...TERMINAL_STATUSES.map((s) => getSentRequests(token, s, undefined, 30)),
-			]);
+			const results = await Promise.all(
+				SENT_STATUSES.map((s) =>
+					s === "pending" ? getSentRequests(token, s) : getSentRequests(token, s, undefined, 30),
+				),
+			);
 			setSentRequests(results.flatMap((r) => r.data ?? []));
 		};
 
