@@ -195,10 +195,16 @@ const Users = () => {
 	const [groupName, setGroupName] = useState("");
 	// Stores the email of the user who should become the new group's admin.
 	const [groupAdmin, setGroupAdmin] = useState("");
+	// State for group creation process
+	const [creatingGroup, setCreatingGroup] = useState(false);
 	// Controls whether the delete group confirmation dialog is open.
 	const [openConfirmation, setOpenConfirmation] = useState(false);
 	// Stores the currently selected group for deletion.
 	const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+
+	// Manage new group's admin who already exist in another group
+	const [moveAdminConfirmation, setMoveAdminConfirmation] = useState(false);
+	const [pendingGroupAdmin, setPendingGroupAdmin] = useState<User | null>(null);
 
 	// Group admins rank above members, admins above both.
 	const roleRank: Record<string, number> = { admin: 2, group_admin: 1, member: 0 };
@@ -354,7 +360,7 @@ const Users = () => {
 
 	// Creates a new group and assigns the provided user as its group admin.
 	const handleGroupCreate = async () => {
-		const token = await getAccessTokenSilently();
+		if (creatingGroup) return;
 
 		// Require both group name and admin email before creating the group.
 		if (!groupName || !groupAdmin) {
@@ -362,36 +368,56 @@ const Users = () => {
 			return;
 		}
 
-		// Find the user thst should become the group admin.
+		// Find the user that should become the group admin.
 		const groupAdminUser = users.find((user) => user.email === groupAdmin);
 		if (!groupAdminUser) {
 			alert("Group admin email does not match any user.");
 			return;
 		}
 
-		// Create the group first so the returned group ID can be assigned to the admin.
-		const resp = await createGroup(groupName, token);
-		if (resp.error) {
-			alert("Failed to create group.");
+		// Already in a group: confirm the move before creating anything.
+		if (groupAdminUser.group_id) {
+			setPendingGroupAdmin(groupAdminUser);
+			setMoveAdminConfirmation(true);
 			return;
 		}
 
-		// Promote the selected user to group admin for the newly created group.
-		const promote = await updateUser(
-			token,
-			groupAdminUser.user_sub,
-			"group_admin",
-			resp.data.group_id,
-		);
-		if (promote.error) {
-			alert(`Group created, but assigning the group admin failed: ${promote.error}`);
-		}
+		await performGroupCreate(groupAdminUser);
+	};
 
-		await refreshUsersAndGroups(token);
-		setGroupName("");
-		setGroupAdmin("");
-		setAlertMessage("Group created successfully.");
-		setTimeout(() => setAlertMessage(""), 3000);
+	const performGroupCreate = async (groupAdminUser: User) => {
+		setCreatingGroup(true);
+		try {
+			const token = await getAccessTokenSilently();
+
+			// Create the group first so the returned group ID can be assigned to the admin.
+			const resp = await createGroup(groupName, token);
+			if (resp.error) {
+				alert("Failed to create group.");
+				return;
+			}
+
+			// Promote the selected user to group admin for the newly created group.
+			const promote = await updateUser(
+				token,
+				groupAdminUser.user_sub,
+				"group_admin",
+				resp.data.group_id,
+			);
+			if (promote.error) {
+				alert(`Group created, but assigning the group admin failed: ${promote.error}`);
+			}
+
+			await refreshUsersAndGroups(token);
+			setGroupName("");
+			setGroupAdmin("");
+			setAlertMessage("Group created successfully.");
+			setTimeout(() => setAlertMessage(""), 3000);
+		} finally {
+			setCreatingGroup(false);
+			setMoveAdminConfirmation(false);
+			setPendingGroupAdmin(null);
+		}
 	};
 
 	// Deletes a selected group from the system.
@@ -456,11 +482,12 @@ const Users = () => {
 
 					{/* Confirm group deletion for the selected group. */}
 					<Button
-						onClick={() => {
+						onClick={async () => {
 							if (selectedGroup) {
-								handleGroupDelete(selectedGroup.group_id);
+								await handleGroupDelete(selectedGroup.group_id);
 							}
-							setDeleteUserConfirmation(false);
+							setOpenConfirmation(false);
+							setSelectedGroup(null);
 						}}
 						color="error"
 						sx={{ ml: 1, textTransform: "none", borderRadius: 2 }}
@@ -767,10 +794,13 @@ const Users = () => {
 								variant="contained"
 								onClick={handleGroupCreate}
 								size="small"
-								disabled={!groupName || !groupAdmin}
+								disabled={!groupName || !groupAdmin || creatingGroup}
+								startIcon={
+									creatingGroup ? <CircularProgress size={16} color="inherit" /> : undefined
+								}
 								sx={{ textTransform: "none", borderRadius: 2 }}
 							>
-								Create Group
+								{creatingGroup ? "Creating..." : "Create Group"}
 							</Button>
 						</Box>
 					</Paper>
@@ -1091,6 +1121,74 @@ const Users = () => {
 							startIcon={<RemoveCircleOutline />}
 						>
 							Remove
+						</Button>
+					</DialogActions>
+				</Dialog>
+			)}
+
+			{/* Moving new group's admin from another group confirmation dialog */}
+			{moveAdminConfirmation && (
+				<Dialog
+					open={moveAdminConfirmation}
+					onClose={() => {
+						setMoveAdminConfirmation(false);
+						setPendingGroupAdmin(null);
+					}}
+					sx={{ borderRadius: 2 }}
+				>
+					<DialogTitle
+						sx={{
+							color: grey[800],
+							fontWeight: "bold",
+							fontSize: "1.1rem",
+							px: 2,
+							pb: 1,
+							pt: 3,
+							bgcolor: grey[50],
+							display: "flex",
+							alignItems: "center",
+						}}
+					>
+						<UserRoundPen style={{ marginRight: 10, color: blue[600], width: 24, height: 24 }} />
+						Move User to New Group
+					</DialogTitle>
+
+					<DialogContent sx={{ px: 2, bgcolor: grey[50] }}>
+						<Typography variant="body1" color="textPrimary">
+							<strong>{pendingGroupAdmin?.email}</strong> is currently in{" "}
+							<strong>{pendingGroupAdmin?.group}</strong>. Creating <strong>{groupName}</strong>{" "}
+							will move them out of <strong>{pendingGroupAdmin?.group}</strong> and make them its
+							group admin.
+						</Typography>
+						<Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
+							Their jobs and structures keep their current ownership. Any pending membership
+							requests involving their old group are cancelled.
+						</Typography>
+					</DialogContent>
+
+					<DialogActions sx={{ px: 2, pb: 3, pt: 0, bgcolor: grey[50] }}>
+						<Button
+							onClick={() => {
+								setMoveAdminConfirmation(false);
+								setPendingGroupAdmin(null);
+							}}
+							variant="outlined"
+							color="inherit"
+							sx={{ textTransform: "none", borderRadius: 2 }}
+						>
+							Cancel
+						</Button>
+						<Button
+							onClick={() => {
+								if (pendingGroupAdmin) performGroupCreate(pendingGroupAdmin);
+							}}
+							color="warning"
+							variant="contained"
+							disabled={creatingGroup}
+							sx={{ ml: 1, textTransform: "none", borderRadius: 2 }}
+							startIcon={<GroupAddOutlined />}
+						>
+							Create and move
 						</Button>
 					</DialogActions>
 				</Dialog>
