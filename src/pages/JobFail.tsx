@@ -15,7 +15,7 @@ import { fetchRawFileFromS3Url } from "../components/JSmol/util";
 import { Box, Grid, Paper } from "@mui/material";
 import { useAuth0 } from "@auth0/auth0-react";
 import { reverseMapping } from "../utils";
-import { calculationTypes } from "../constants";
+import { calculationTypes, failureReasonLabels } from "../constants";
 
 function JobFail() {
 	// Reads the job ID from the URL rout parameters.
@@ -241,6 +241,20 @@ function JobFail() {
 								</Grid>
 							</Grid>
 
+							{/* Backend-recorded failure, available even when result.err does not exist. */}
+							{job.failure_reason && (
+								<Grid size={12}>
+									<MolmakerAlert
+										text={`${failureReasonLabels[job.failure_reason] ?? job.failure_reason}${
+											job.failure_message ? `: ${job.failure_message}` : ""
+										}`}
+										severity="error"
+										outline="error"
+										sx={{ mb: 3 }}
+									/>
+								</Grid>
+							)}
+
 							{/* Show parsed result.err details when the error file exists. */}
 							{resultErrExist ? (
 								<Grid size={12}>
@@ -280,7 +294,11 @@ function JobFail() {
 									<MolmakerTextField
 										fullWidth
 										label="Error Type"
-										value={"Result.err file not found!"}
+										value={
+											job.failure_reason
+												? "The job failed before producing a result file."
+												: "Result.err file not found!"
+										}
 										onChange={() => {}}
 										sx={{ mb: 2 }}
 										slotProps={{

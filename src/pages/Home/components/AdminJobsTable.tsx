@@ -9,9 +9,15 @@ import {
 	Chip,
 	Box,
 	Typography,
+	Tooltip,
 } from "@mui/material";
 import { ArrowDownAZ, ArrowUpAZ } from "lucide-react";
-import { calculationTypes, statusColors, statusIcons } from "../../../constants";
+import {
+	calculationTypes,
+	failureReasonLabels,
+	statusColors,
+	statusIcons,
+} from "../../../constants";
 import { blueGrey, grey } from "@mui/material/colors";
 import type { Job } from "../../../types";
 import { formatRuntime, reverseMapping } from "../../../utils";
@@ -208,23 +214,33 @@ export default function AdminJobsTable({
 								{displayColumns.job_notes && <TableCell>{job.job_notes || "N/A"}</TableCell>}
 								{displayColumns.status && (
 									<TableCell>
-										<Chip
-											label={job.status}
-											size="small"
-											sx={{
-												bgcolor: statusColors[job.status] ?? grey[300],
-												color: "white",
-												textTransform: "capitalize",
-												fontSize: "0.65rem",
-											}}
-											icon={
-												statusIcons[job.status]
-													? React.createElement(statusIcons[job.status], {
-															style: { color: "white", width: 16, height: 16 },
-														})
-													: undefined
+										<Tooltip
+											title={
+												job.failure_reason
+													? `${failureReasonLabels[job.failure_reason] ?? job.failure_reason}${
+															job.failure_message ? `: ${job.failure_message}` : ""
+														}`
+													: ""
 											}
-										/>
+										>
+											<Chip
+												label={job.status}
+												size="small"
+												sx={{
+													bgcolor: statusColors[job.status] ?? grey[300],
+													color: "white",
+													textTransform: "capitalize",
+													fontSize: "0.65rem",
+												}}
+												icon={
+													statusIcons[job.status]
+														? React.createElement(statusIcons[job.status], {
+																style: { color: "white", width: 16, height: 16 },
+															})
+														: undefined
+												}
+											/>
+										</Tooltip>
 									</TableCell>
 								)}
 								{displayColumns.calculation_type && (

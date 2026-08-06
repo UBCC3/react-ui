@@ -9,8 +9,14 @@ import {
 	Chip,
 	Box,
 	Typography,
+	Tooltip,
 } from "@mui/material";
-import { statusColors, statusIcons, calculationTypes } from "../../../constants";
+import {
+	statusColors,
+	statusIcons,
+	calculationTypes,
+	failureReasonLabels,
+} from "../../../constants";
 import { grey } from "@mui/material/colors";
 import { ArrowDownAZ, ArrowUpAZ } from "lucide-react";
 import type { Job } from "../../../types";
@@ -176,23 +182,33 @@ export default function JobsTable({
 								)}
 								{displayColumns.status && (
 									<TableCell>
-										<Chip
-											label={job.status}
-											size="small"
-											sx={{
-												bgcolor: statusColors[job.status] ?? grey[300],
-												color: "white",
-												textTransform: "capitalize",
-												fontSize: "0.65rem",
-											}}
-											icon={
-												statusIcons[job.status]
-													? React.createElement(statusIcons[job.status], {
-															style: { color: "white", width: 16, height: 16 },
-														})
-													: undefined
+										<Tooltip
+											title={
+												job.failure_reason
+													? `${failureReasonLabels[job.failure_reason] ?? job.failure_reason}${
+															job.failure_message ? `: ${job.failure_message}` : ""
+														}`
+													: ""
 											}
-										/>
+										>
+											<Chip
+												label={job.status}
+												size="small"
+												sx={{
+													bgcolor: statusColors[job.status] ?? grey[300],
+													color: "white",
+													textTransform: "capitalize",
+													fontSize: "0.65rem",
+												}}
+												icon={
+													statusIcons[job.status]
+														? React.createElement(statusIcons[job.status], {
+																style: { color: "white", width: 16, height: 16 },
+															})
+														: undefined
+												}
+											/>
+										</Tooltip>
 									</TableCell>
 								)}
 								{displayColumns.calculation_type && (
