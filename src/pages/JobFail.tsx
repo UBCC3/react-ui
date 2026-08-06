@@ -59,12 +59,7 @@ function JobFail() {
 				setJob(jobData);
 
 				// Fetch presigned URLs or file references for this job's result files.
-				const jobFilesUrlsResp = await fetchJobResultFiles(
-					token,
-					jobId as string,
-					jobData.calculation_type,
-					jobData.status,
-				);
+				const jobFilesUrlsResp = await fetchJobResultFiles(token, jobId as string);
 
 				let jobResultFiles: JobResult | null = null;
 				if (jobFilesUrlsResp) {

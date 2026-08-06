@@ -62,12 +62,7 @@ const ResultPage = () => {
 				// request S3 presign url to result files
 				let jobResultFiles: JobResult | null = null;
 				if (jobData.status === "completed") {
-					const jobFilesUrlsResp = await fetchJobResultFiles(
-						token,
-						jobId as string,
-						jobData.calculation_type,
-						jobData.status,
-					);
+					const jobFilesUrlsResp = await fetchJobResultFiles(token, jobId as string);
 
 					// Normalize the backend response into the JobResult shape used by viewer components.
 					jobResultFiles = {
