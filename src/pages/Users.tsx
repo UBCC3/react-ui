@@ -37,6 +37,7 @@ import {
 	MenuItem,
 	Paper,
 	Tab,
+	TablePagination,
 	Tabs,
 	TextField,
 	Tooltip,
@@ -156,6 +157,20 @@ const Users = () => {
 	// Stores users after applying the search filter.
 	const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
 
+	// User pagination states
+	const [userPage, setUserPage] = useState(0);
+	const [userRowsPerPage, setUserRowsPerPage] = useState(12);
+	const [groupPage, setGroupPage] = useState(0);
+	const [groupRowsPerPage, setGroupRowsPerPage] = useState(5);
+	const paginatedUsers = filteredUsers.slice(
+		userPage * userRowsPerPage,
+		userPage * userRowsPerPage + userRowsPerPage,
+	);
+	const paginatedGroups = groups.slice(
+		groupPage * groupRowsPerPage,
+		groupPage * groupRowsPerPage + groupRowsPerPage,
+	);
+
 	// Controls whether user and group data is still loading.
 	const [loading, setLoading] = useState(true);
 	// Controls whether the edit user dialog is open.
@@ -209,10 +224,22 @@ const Users = () => {
 						user.group?.toLowerCase().includes(keyword.toLowerCase()),
 				),
 			);
+			setUserPage(0);
 		} else {
 			setFilteredUsers(users);
+			setUserPage(0);
 		}
 	}, [keyword, users]);
+
+	useEffect(() => {
+		const lastPage = Math.max(0, Math.ceil(filteredUsers.length / userRowsPerPage) - 1);
+		if (userPage > lastPage) setUserPage(lastPage);
+	}, [filteredUsers.length, userRowsPerPage, userPage]);
+
+	useEffect(() => {
+		const lastPage = Math.max(0, Math.ceil(groups.length / groupRowsPerPage) - 1);
+		if (groupPage > lastPage) setGroupPage(lastPage);
+	}, [groups.length, groupRowsPerPage, groupPage]);
 
 	// Refetches users and groups, re-deriving the group name shown on each card.
 	const refreshUsersAndGroups = async (token: string) => {
@@ -525,7 +552,7 @@ const Users = () => {
 
 							{/* Card grid showing all filtered users. */}
 							<Grid container spacing={2}>
-								{filteredUsers.map((user) => (
+								{paginatedUsers.map((user) => (
 									<Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={user.user_sub}>
 										<Card sx={{ borderRadius: 2, bgcolor: grey[50] }} elevation={3}>
 											<CardContent>
@@ -614,6 +641,19 @@ const Users = () => {
 									</Grid>
 								))}
 							</Grid>
+							<TablePagination
+								component="div"
+								labelRowsPerPage="Users per page:"
+								count={filteredUsers.length}
+								page={userPage}
+								rowsPerPage={userRowsPerPage}
+								onPageChange={(_, newPage: any) => setUserPage(newPage)}
+								onRowsPerPageChange={(e: any) => {
+									setUserRowsPerPage(+e.target.value);
+									setUserPage(0);
+								}}
+								rowsPerPageOptions={[12, 24, 48]}
+							/>
 						</>
 					)}
 				</CustomTabPanel>
@@ -701,7 +741,7 @@ const Users = () => {
 						</Typography>
 
 						{/* One accordion is rendered for each group. */}
-						{groups.map((group) => (
+						{paginatedGroups.map((group) => (
 							<Accordion key={group.group_id}>
 								<AccordionSummary expandIcon={<ExpandMore />} sx={{ bgcolor: grey[100] }}>
 									<Typography
@@ -750,6 +790,19 @@ const Users = () => {
 								</AccordionActions>
 							</Accordion>
 						))}
+						<TablePagination
+							component="div"
+							labelRowsPerPage="Groups per page:"
+							count={groups.length}
+							page={groupPage}
+							rowsPerPage={groupRowsPerPage}
+							onPageChange={(_, newPage: any) => setGroupPage(newPage)}
+							onRowsPerPageChange={(e: any) => {
+								setGroupRowsPerPage(+e.target.value);
+								setGroupPage(0);
+							}}
+							rowsPerPageOptions={[5, 10, 25]}
+						/>
 					</Paper>
 				</CustomTabPanel>
 			</Box>
