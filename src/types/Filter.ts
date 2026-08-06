@@ -1,6 +1,15 @@
 import Job from "./Job";
 
-export type FilterExtent = "contains" | "equals" | "startsWith" | "before" | "after" | "between";
+export type FilterExtent =
+	| "contains"
+	| "equals"
+	| "startsWith"
+	| "before"
+	| "after"
+	| "between"
+	| "greaterThan"
+	| "lessThan"
+	| "is";
 
 interface Filter {
 	column: keyof Job;

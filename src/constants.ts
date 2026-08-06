@@ -61,7 +61,7 @@ export const calculationTypes = {
 	"Intrinsic Reaction Coordinate": "irc",
 };
 
-export type ColumnKind = "string" | "date" | "runtime";
+export type ColumnKind = "string" | "date" | "runtime" | "boolean";
 
 export const columnKinds: Record<string, ColumnKind> = {
 	job_id: "string",
@@ -77,12 +77,14 @@ export const columnKinds: Record<string, ColumnKind> = {
 	runtime: "runtime",
 	submitted_at: "date",
 	completed_at: "date",
+	is_public: "boolean",
 };
 
 export const extentsByKind: Record<ColumnKind, FilterExtent[]> = {
 	string: ["contains", "equals", "startsWith"],
 	date: ["before", "after", "between"],
-	runtime: ["before", "after", "between"],
+	runtime: ["greaterThan", "between", "lessThan"],
+	boolean: ["is"],
 };
 
 export const extentDisplayNames: Record<FilterExtent, string> = {
@@ -92,4 +94,7 @@ export const extentDisplayNames: Record<FilterExtent, string> = {
 	before: "Before",
 	after: "After",
 	between: "Between",
+	greaterThan: "Greater Than",
+	lessThan: "Less Than",
+	is: "Is",
 };
