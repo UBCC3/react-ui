@@ -326,40 +326,6 @@ export const cancelJob = async (jobId: string, token: string): Promise<Response>
 };
 
 /**
- * Fetches the latest SLURM status for a job and normalizes the state to lowercase.
- */
-export const getJobStatusBySlurmID = async (slurmId: string, token: any): Promise<Response> => {
-	try {
-		const API = createClusterAPI(token);
-		const response = await API.get(`/status/${slurmId}`);
-		if (response.status !== 200) {
-			throw new Error(`HTTP ${response.status}`);
-		}
-		const raw = response.data.state as string;
-		const parsed = JSON.parse(raw) as {
-			slurm_id: string;
-			state: string;
-			elapsed: string;
-		};
-
-		return {
-			status: response.status,
-			data: {
-				slurm_id: parsed.slurm_id,
-				state: parsed.state.toLowerCase(),
-				elapsed: parsed.elapsed,
-			},
-		};
-	} catch (error) {
-		console.error("Failed to fetch job status", error);
-		return {
-			status: 500,
-			error: `Failed to fetch job status: ${getErrorMessage(error)}`,
-		};
-	}
-};
-
-/**
  * Submits a standard-analysis job. The backend uploads to the cluster and
  * advances the job status in the background.
  */
@@ -704,13 +670,6 @@ export const fetchJobError = async (jobId: string, token: string): Promise<Respo
 		};
 	}
 };
-
-interface UpdateJobResponse {
-	job_id: string;
-	runtime: string; // if you’re using INTERVAL it’ll come back as "HH:MM:SS"
-	state: string;
-	message?: string;
-}
 
 /**
  * Deletes a ob record by job ID.
