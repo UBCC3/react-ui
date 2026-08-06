@@ -264,7 +264,11 @@ export default function AdminJobsTable({
 									</TableCell>
 								)}
 								{displayColumns.runtime && (
-									<TableCell>{formatRuntime(job.runtime_seconds) ? formatRuntime(job.runtime_seconds) : "unavailable"}</TableCell>
+									<TableCell>
+										{formatRuntime(job.runtime_seconds)
+											? formatRuntime(job.runtime_seconds)
+											: "unavailable"}
+									</TableCell>
 								)}
 								{displayColumns.submitted_at && (
 									<TableCell>{new Date(job.submitted_at).toLocaleString()}</TableCell>

@@ -1,10 +1,5 @@
 export type JobStatus =
-	| "submitting"
-	| "submitted"
-	| "running"
-	| "completed"
-	| "failed"
-	| "cancelled";
+	"submitting" | "submitted" | "running" | "completed" | "failed" | "cancelled";
 
 export type JobFailureReason =
 	| "out_of_memory"

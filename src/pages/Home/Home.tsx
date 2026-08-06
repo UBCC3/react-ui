@@ -9,7 +9,7 @@ import {
 	deleteJob,
 	upsertCurrentUser,
 	getZipPresignedUrl,
-    cancelJob,
+	cancelJob,
 } from "../../services/api";
 import { JobStatus } from "../../constants";
 import JobsToolbar from "./components/JobsToolbar";
@@ -141,7 +141,6 @@ export default function Home() {
 		return () => clearInterval(id);
 	}, [getAccessTokenSilently]);
 
-
 	// load jobs & structures
 	useEffect(() => {
 		const loadData = async () => {
@@ -238,18 +237,18 @@ export default function Home() {
 			}
 
 			const response = await cancelJob(jobToCancel.job_id, token);
-            if (response.error) {
-                setAlertMsg(response.error);
-                setAlertSeverity("error");
-                setAlertShow(true);
-                return;
-            }
+			if (response.error) {
+				setAlertMsg(response.error);
+				setAlertSeverity("error");
+				setAlertShow(true);
+				return;
+			}
 
-            // The backend returns the updated job; cancellation completes in the background.
-            await handleRefresh();
-            setAlertMsg(`Job ${jobToCancel.job_name} cancellation requested.`);
-            setAlertSeverity("success");
-            setAlertShow(true);
+			// The backend returns the updated job; cancellation completes in the background.
+			await handleRefresh();
+			setAlertMsg(`Job ${jobToCancel.job_name} cancellation requested.`);
+			setAlertSeverity("success");
+			setAlertShow(true);
 		} catch (err) {
 			setAlertMsg("Failed to cancel the job");
 			setAlertSeverity("error");
