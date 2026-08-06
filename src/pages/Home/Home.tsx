@@ -4,14 +4,12 @@ import { useNavigate } from "react-router-dom";
 import { Box, Paper, TablePagination, Snackbar } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import {
-	cancelJobBySlurmID,
 	getAllJobs,
-	getJobStatusBySlurmID,
 	getLibraryStructures,
-	updateJob,
 	deleteJob,
 	upsertCurrentUser,
 	getZipPresignedUrl,
+    cancelJob,
 } from "../../services/api";
 import { JobStatus } from "../../constants";
 import JobsToolbar from "./components/JobsToolbar";
@@ -238,21 +236,20 @@ export default function Home() {
 				setLoading(false);
 				return;
 			}
-			jobs.find((job: Job) => job.job_id === selectedJobId)!.status = JobStatus.CANCELLED;
-			if (!jobToCancel.slurm_id) {
-				setAlertMsg("Job Slurm ID is missing.");
-				setAlertSeverity("error");
-				setAlertShow(true);
-				setLoading(false);
-				return;
-			}
-			const response = await cancelJobBySlurmID(jobToCancel.slurm_id, token);
 
-			if (response.data === "cancelled") {
-				setAlertMsg(`Job ${jobToCancel.job_name} cancelled successfully!`);
-				setAlertSeverity("success");
-				setAlertShow(true);
-			}
+			const response = await cancelJob(jobToCancel.job_id, token);
+            if (response.error) {
+                setAlertMsg(response.error);
+                setAlertSeverity("error");
+                setAlertShow(true);
+                return;
+            }
+
+            // The backend returns the updated job; cancellation completes in the background.
+            await handleRefresh();
+            setAlertMsg(`Job ${jobToCancel.job_name} cancellation requested.`);
+            setAlertSeverity("success");
+            setAlertShow(true);
 		} catch (err) {
 			setAlertMsg("Failed to cancel the job");
 			setAlertSeverity("error");

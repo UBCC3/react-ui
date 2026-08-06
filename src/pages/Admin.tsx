@@ -4,13 +4,11 @@ import { useNavigate } from "react-router-dom";
 import { Box, Paper, TablePagination, Snackbar } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import {
-	cancelJobBySlurmID,
 	adminGetAllJobs,
-	getJobStatusBySlurmID,
 	getLibraryStructures,
-	updateJob,
 	deleteJob,
 	getZipPresignedUrl,
+    cancelJob,
 } from "../services/api";
 import { JobStatus } from "../constants";
 import JobsToolbar from "./Home/components/JobsToolbar";
@@ -121,90 +119,13 @@ export default function Admin() {
 		return Array.from(tagSet).sort((a, b) => a.localeCompare(b));
 	}, [jobs]);
 
-	// poll statuses every 5s
+    // The backend advances job status; just refetch periodically.
 	useEffect(() => {
-		const tick = async () => {
-			try {
-				const token = await getAccessTokenSilently();
-
-				// Gather all the changes we need to apply
-				const toUpdate: Array<{
-					jobId: string;
-					newStatus?: string;
-					newRuntime?: string;
-					userSub?: string;
-				}> = [];
-
-				for (const job of jobsRef.current) {
-					// skip terminal jobs
-					if (
-						[
-							JobStatus.COMPLETED,
-							JobStatus.FAILED,
-							JobStatus.CANCELLED,
-							JobStatus.OUT_OF_MEMORY,
-							JobStatus.TIMEOUT,
-						].includes(job.status)
-					) {
-						continue;
-					}
-
-					// fetch latest from backend
-					const resp = await getJobStatusBySlurmID(job.slurm_id!, token);
-					if (resp.error) {
-						console.warn(`Failed to fetch status for job ${job.job_id}:`, resp.error);
-						continue;
-					}
-					const fetchedStatus = resp.data.state;
-					const fetchedRuntime = resp.data.elapsed;
-
-					// if anything changed, queue it up
-					if (fetchedStatus !== job.status || fetchedRuntime !== job.runtime) {
-						toUpdate.push({
-							jobId: job.job_id,
-							userSub: job.user_sub,
-							newStatus: fetchedStatus,
-							newRuntime: fetchedRuntime,
-						});
-					}
-				}
-
-				// Do nothing if every tracked job is already up to date.
-				if (toUpdate.length === 0) {
-					return;
-				}
-
-				// Apply updates on the server
-				await Promise.all(
-					toUpdate.map(({ jobId, newStatus, newRuntime, userSub }) =>
-						updateJob(jobId ?? "", newStatus ?? "", newRuntime ?? "", userSub ?? "", token),
-					),
-				);
-
-				// And mirror them in local state
-				setJobs((prev) =>
-					prev.map((j) => {
-						const upd = toUpdate.find((u) => u.jobId === j.job_id);
-						return upd
-							? {
-									...j,
-									status: upd.newStatus ?? j.status,
-									runtime: upd.newRuntime ?? j.runtime,
-								}
-							: j;
-					}),
-				);
-			} catch (err: any) {
-				console.error("Polling error:", err);
-				setError("Failed to refresh job statuses.");
-			}
-		};
-
-		// start polling every 5 seconds
-		const id = setInterval(tick, 5000);
-		// run immediately once
-		tick();
-
+		const id = setInterval(async () => {
+			const token = await getAccessTokenSilently();
+			const resp = await adminGetAllJobsPaged(token);
+			if (!resp.error) setJobs(resp.data ?? []);
+		}, 20000);
 		return () => clearInterval(id);
 	}, [getAccessTokenSilently]);
 
@@ -303,22 +224,21 @@ export default function Admin() {
 				setLoading(false);
 				return;
 			}
-			if (!jobToCancel.slurm_id) {
-				setAlertMsg("Job Slurm ID is missing.");
-				setAlertSeverity("error");
-				setAlertShow(true);
-				setLoading(false);
-				return;
-			}
 
-			// Request cancellation from the backend or Slurm service.
-			const response = await cancelJobBySlurmID(jobToCancel.slurm_id, token);
+			// Ask the backend or Slurm service to cancel the job.
+			const response = await cancelJob(jobToCancel.job_id, token);
+            if (response.error) {
+                setAlertMsg(response.error);
+                setAlertSeverity("error");
+                setAlertShow(true);
+                return;
+            }
 
-			if (response.data === "cancelled") {
-				setAlertMsg(`Job ${jobToCancel.job_name} cancelled successfully!`);
-				setAlertSeverity("success");
-				setAlertShow(true);
-			}
+            // The backend returns the updated job; cancellation completes in the background.
+            await handleRefresh();
+            setAlertMsg(`Job ${jobToCancel.job_name} cancellation requested.`);
+            setAlertSeverity("success");
+            setAlertShow(true);
 		} catch (err) {
 			setAlertMsg("Failed to cancel the job");
 			setAlertSeverity("error");
