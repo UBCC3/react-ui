@@ -162,6 +162,8 @@ const Users = () => {
 	const [openEditDialog, setOpenEditDialog] = useState(false);
 	// Controls whether the delete user confirmation dialog is open.
 	const [deleteUserConfirmation, setDeleteUserConfirmation] = useState(false);
+	// Controls whether the demember confirmation dialog is open.
+	const [deMemberConfirmation, setDeMemberConfirmation] = useState(false);
 	// Stores the currently selected user for editing, de-membering, or deleting.
 	const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
@@ -230,18 +232,21 @@ const Users = () => {
 	}, [keyword, users]);
 
 	// Removes a user from their group without touching job or structure ownership.
-	const handleDeMember = async (userSub: string) => {
+	const handleDeMember = async () => {
+		if (!selectedUser) return;
+		const userSub = selectedUser.user_sub;
 		try {
 			const token = await getAccessTokenSilently();
 			const resp = await removeGroupUser(userSub, token);
+			setDeMemberConfirmation(false);
 			if (resp.error) {
 				setAlertMessage(resp.error);
 				return;
 			}
 
 			// The backend demotes group admins to member and leaves other roles alone.
-			setUsers(
-				users.map((user) =>
+			setUsers((prev) =>
+				prev.map((user) =>
 					user.user_sub === userSub
 						? {
 								...user,
@@ -252,10 +257,17 @@ const Users = () => {
 						: user,
 				),
 			);
+
+			// The Group Management tab lists members per group, so refresh it too.
+			const groupResponse = await getAllGroupsPaged(token);
+			if (!groupResponse.error) setGroups(groupResponse.data ?? []);
+
+			setSelectedUser(null);
 			setAlertMessage("User removed from group successfully.");
 			setTimeout(() => setAlertMessage(""), 3000);
 		} catch (error) {
 			console.error("Error removing user from group:", error);
+			setDeMemberConfirmation(false);
 		}
 	};
 
@@ -590,7 +602,7 @@ const Users = () => {
 														aria-label="de-member"
 														onClick={() => {
 															setSelectedUser(user);
-															handleDeMember(user.user_sub);
+															setDeMemberConfirmation(true);
 														}}
 														color="warning"
 													>
@@ -918,6 +930,62 @@ const Users = () => {
 							variant="contained"
 						>
 							Delete User
+						</Button>
+					</DialogActions>
+				</Dialog>
+			)}
+
+			{/* Demember user confirmation dialog */}
+			{deMemberConfirmation && (
+				<Dialog
+					open={deMemberConfirmation}
+					onClose={() => setDeMemberConfirmation(false)}
+					sx={{ borderRadius: 2 }}
+				>
+					<DialogTitle
+						sx={{
+							color: grey[800],
+							fontWeight: "bold",
+							fontSize: "1.1rem",
+							px: 2,
+							pb: 1,
+							pt: 3,
+							bgcolor: grey[50],
+							display: "flex",
+							alignItems: "center",
+						}}
+					>
+						<UserRoundX style={{ marginRight: 10, color: blue[600], width: 24, height: 24 }} />
+						Remove From Group
+					</DialogTitle>
+
+					<DialogContent sx={{ px: 2, bgcolor: grey[50] }}>
+						<Typography variant="body1" color="textPrimary">
+							Remove <strong>{selectedUser?.email}</strong> from{" "}
+							<strong>{selectedUser?.group || "their group"}</strong>?
+						</Typography>
+						<Typography>
+							Their jobs and structures keep their current ownership and are not deleted.
+						</Typography>
+					</DialogContent>
+
+					<DialogActions sx={{ px: 2, pb: 3, pt: 0, bgcolor: grey[50] }}>
+						<Button
+							onClick={() => setDeMemberConfirmation(false)}
+							variant="outlined"
+							color="inherit"
+							sx={{ textTransform: "none", borderRadius: 2 }}
+						>
+							Cancel
+						</Button>
+						<Button
+							onClick={handleDeMember}
+							color="warning"
+							variant="contained"
+							sx={{ ml: 1, textTransform: "none", borderRadius: 2 }}
+							startIcon={<RemoveCircleOutline />}
+						>
+							Remove
 						</Button>
 					</DialogActions>
 				</Dialog>
