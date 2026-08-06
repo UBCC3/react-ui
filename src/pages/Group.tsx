@@ -604,6 +604,7 @@ export default function Group() {
 					{/* Main group jobs table section. */}
 					<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50], mb: 4 }}>
 						<JobsToolbar
+							title="Group Jobs"
 							selectedJobId={selectedJobId}
 							onViewDetails={() => navigate(`/jobs/${selectedJobId}`)}
 							onFilterByStructure={() => {
@@ -685,6 +686,7 @@ export default function Group() {
 
 					{/* Group structure library — separate Paper, styled like the personal library. */}
 					<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50], mb: 4 }}>
+						{/* Group structure toolbar */}
 						<Toolbar
 							sx={{
 								justifyContent: "space-between",
@@ -703,9 +705,11 @@ export default function Group() {
 								}}
 							>
 								<Pyramid style={{ marginRight: 10, color: blue[600] }} />
-								Structures
+								Group Structures
 							</Typography>
 						</Toolbar>
+
+						{/* Group structure table */}
 						<TableContainer>
 							<Table>
 								<TableHead>
@@ -719,6 +723,7 @@ export default function Group() {
 									</TableRow>
 								</TableHead>
 								<TableBody>
+									{/* Table placeholder for 0 group structures */}
 									{groupStructures.length === 0 && (
 										<TableRow>
 											<TableCell colSpan={userRole === "group_admin" ? 6 : 5} align="center">
@@ -728,6 +733,8 @@ export default function Group() {
 											</TableCell>
 										</TableRow>
 									)}
+
+									{/* Group structure table content */}
 									{groupStructures
 										.slice(
 											structPage * structRowsPerPage,
@@ -786,6 +793,8 @@ export default function Group() {
 								</TableBody>
 							</Table>
 						</TableContainer>
+
+						{/* Table pagination for group structure control */}
 						<TablePagination
 							component="div"
 							rowsPerPageOptions={[5, 10, 25]}
