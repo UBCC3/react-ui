@@ -9,10 +9,7 @@ import {
 	TableHead,
 	TablePagination,
 	TableRow,
-	Divider,
-	Button,
 	GlobalStyles,
-	Autocomplete,
 } from "@mui/material";
 import { Job, JobResult, Orbital } from "../../types";
 import { grey, blueGrey } from "@mui/material/colors";
@@ -22,24 +19,16 @@ import {
 	DataObjectOutlined,
 	ContrastOutlined,
 	CalculateOutlined,
-	AddPhotoAlternateOutlined,
 } from "@mui/icons-material";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogActions from "@mui/material/DialogActions";
-import TextField from "@mui/material/TextField";
 import MolmakerLoading from "../custom/MolmakerLoading";
 import CalculatedQuantities from "./CalculatedQuantities";
 import PartialCharge from "./PartialCharge";
-import { useAuth0 } from "@auth0/auth0-react";
-import { MolmakerTextField } from "../custom";
-import { AddAndUploadStructureToS3 } from "../../services/api";
 import { useResultDrawer } from "../../hooks/UseResultDrawer";
 import { useJsmolViewer } from "../../hooks/UseJsmolViewer";
 import { useJobResult } from "../../hooks/UseJobResult";
 import { ResultDrawer } from "../results/ResultDrawer";
 import { ResultDrawerSection } from "../results/ResultDrawerSection";
+import AddStructureToLibrary from "./AddStructureToLibrary";
 
 /**
  * Props for the OrbitalViewer component
@@ -65,8 +54,6 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	viewerObjId,
 	setError,
 }) => {
-	const { getAccessTokenSilently } = useAuth0();
-
 	const resultURL = jobResultFiles.urls["result"];
 	const { result, loading } = useJobResult(resultURL, "molecular orbitals", setError);
 
@@ -97,74 +84,6 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	// orbital display options
 	const [meshOrFill, setMeshOrFill] = useState<"fill" | "mesh">("fill");
 	const [showIsosurface, setShowIsosurface] = useState(true);
-
-	// add-to-library dialog state
-	const [addDialogOpen, setAddDialogOpen] = useState(false);
-	const options: string[] = [];
-	const [moleculeName, setMoleculeName] = useState("");
-	const [chemicalFormula, setChemicalFormula] = useState("");
-	const [moleculeNotes, setMoleculeNotes] = useState("");
-	const [structureTags, setStructureTags] = useState<string[]>([]);
-	const [submitAttempted, setSubmitAttempted] = useState(false);
-
-	/**
-	 * Save the currently displayed structure to the user's library
-	 *
-	 * The current JSmol canvas is captured as a PNG preview image, and the
-	 * current molecular structure is exported from JSmol as an XYZ file. Both
-	 * are then uploaded with the structure metadata.
-	 */
-	const handleSubmit = async () => {
-		setSubmitAttempted(true);
-		const canvas = viewerRef.current?.querySelector("canvas");
-		const imageDataUrl = canvas?.toDataURL("image/png") || "";
-
-		const xyzString = window.Jmol.evaluate(viewerObj, 'write("xyz")');
-		const xyzBlob = new Blob([xyzString], { type: "chemical/x-xyz" });
-		const xyzFile = new File([xyzBlob], `${moleculeName || "structure"}.xyz`, {
-			type: "chemical/x-xyz",
-		});
-
-		const token = await getAccessTokenSilently();
-
-		await AddAndUploadStructureToS3(
-			xyzFile,
-			moleculeName,
-			chemicalFormula,
-			moleculeNotes,
-			imageDataUrl,
-			token,
-			structureTags,
-		);
-
-		setAddDialogOpen(false);
-		setMoleculeName("");
-		setChemicalFormula("");
-		setMoleculeNotes("");
-		setStructureTags([]);
-		setSubmitAttempted(false);
-	};
-
-	/**
-	 * Update the text input for the molecule name
-	 */
-	const onMoleculeNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-		setMoleculeName(event.target.value);
-	};
-
-	/**
-	 * Update the text input for the chemical formula
-	 */
-	const onChemicalFormulaChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-		setChemicalFormula(event.target.value);
-	};
-
-	/**
-	 * Update the multiline notes field for the molecule
-	 */
-	const onMoleculeNotesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-		setMoleculeNotes(event.target.value);
-	};
 
 	// Render the selected molecular orbital whenever the orbital or display mode changes
 	useEffect(() => {
@@ -219,6 +138,9 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 				}}
 			/>
 			<Grid container spacing={2} sx={{ width: "100%" }}>
+				<Grid sx={{ width: "100%" }}>
+					<AddStructureToLibrary viewerObj={viewerObj} viewerRef={viewerRef} />
+				</Grid>
 				<Grid
 					sx={{ display: "flex", flexDirection: "column", flex: "1 0 auto", position: "relative" }}
 				>
@@ -324,106 +246,8 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 					>
 						<PartialCharge frameNo={2} viewerObj={viewerObj} />
 					</ResultDrawerSection>
-					<Button
-						variant="contained"
-						color="primary"
-						sx={{
-							m: 2,
-							width: "calc(100% - 32px)",
-							alignSelf: "center",
-							display: open ? "flex" : "none",
-							textTransform: "none",
-						}}
-						startIcon={<AddPhotoAlternateOutlined />}
-						onClick={() => setAddDialogOpen(true)}
-					>
-						Add Structure to My Library
-					</Button>
 				</ResultDrawer>
 			</Grid>
-			<Dialog
-				open={addDialogOpen}
-				onClose={() => setAddDialogOpen(false)}
-				container={typeof window !== "undefined" ? document.body : undefined}
-				sx={{ zIndex: 9999 }}
-				disableEnforceFocus
-			>
-				<DialogTitle
-					sx={{ bgcolor: blueGrey[300], color: grey[800], display: "flex", alignItems: "center" }}
-				>
-					<AddPhotoAlternateOutlined sx={{ mr: 1 }} />
-					Add Structure to My Library
-				</DialogTitle>
-				<Divider />
-				<DialogContent sx={{ display: "flex", flexDirection: "column", p: 2, minWidth: 500 }}>
-					<MolmakerTextField
-						fullWidth
-						label="Structure Name"
-						value={moleculeName}
-						onChange={onMoleculeNameChange}
-						required
-						error={submitAttempted && !moleculeName}
-						helperText={submitAttempted && !moleculeName ? "Please enter a name" : ""}
-						sx={{ mt: 1 }}
-					/>
-					<MolmakerTextField
-						fullWidth
-						label="Chemical Formula"
-						value={chemicalFormula}
-						onChange={onChemicalFormulaChange}
-						required
-						error={submitAttempted && !chemicalFormula}
-						helperText={
-							submitAttempted && !chemicalFormula ? "Please enter a chemical formula" : ""
-						}
-						sx={{ mt: 2 }}
-					/>
-					<MolmakerTextField
-						fullWidth
-						label="Structure Notes"
-						value={moleculeNotes}
-						onChange={onMoleculeNotesChange}
-						multiline
-						rows={3}
-						sx={{ mt: 2 }}
-					/>
-					<Autocomplete
-						multiple
-						freeSolo
-						disablePortal
-						options={options}
-						value={structureTags}
-						onChange={(_, newValue) => setStructureTags(newValue)}
-						renderInput={(params) => (
-							<TextField
-								{...params}
-								variant="outlined"
-								label="Structure Tags"
-								placeholder="Press enter to add tags"
-							/>
-						)}
-						sx={{ mt: 2 }}
-					/>
-				</DialogContent>
-				<DialogActions sx={{ pr: 2, pb: 2 }}>
-					<Button
-						onClick={() => setAddDialogOpen(false)}
-						variant="outlined"
-						color="primary"
-						sx={{ textTransform: "none" }}
-					>
-						Cancel
-					</Button>
-					<Button
-						onClick={handleSubmit}
-						variant="contained"
-						color="primary"
-						sx={{ textTransform: "none" }}
-					>
-						Submit
-					</Button>
-				</DialogActions>
-			</Dialog>
 		</>
 	);
 };
