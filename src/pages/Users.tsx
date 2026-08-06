@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import {
+	adminGetAllJobsPaged,
 	createGroup,
 	deleteGroup,
 	deleteUser,
 	getAllGroupsPaged,
-	getAllJobsPaged,
 	getAllUsersPaged,
 	removeGroupUser,
 	updateUser,
@@ -188,28 +188,11 @@ const Users = () => {
 			try {
 				setLoading(true);
 				const token = await getAccessTokenSilently();
-
-				// Fetch all groups so users can be matched with their group names.
-				const groupResponse = await getAllGroupsPaged(token);
-				setGroups(groupResponse.data);
-
-				// Fetch all users and jobs for the management view.
-				const userResponse = await getAllUsersPaged(token);
-				const jobResponse = await getAllJobsPaged(token);
-
-				// Add derived fields to each user for easier rendering.
-				setUsers(
-					userResponse.data.map((user: User) => ({
-						...user,
-						group:
-							groupResponse.data.find((group: Group) => group.group_id === user.group_id)?.name ||
-							"No Group",
-						jobCount: jobResponse.data.filter((job: Job) => job.user_sub === user.user_sub).length,
-					})),
-				);
-				setLoading(false);
+				await refreshUsersAndGroups(token);
 			} catch (error) {
 				console.error("Error fetching users:", error);
+			} finally {
+				setLoading(false);
 			}
 		};
 
@@ -231,6 +214,28 @@ const Users = () => {
 		}
 	}, [keyword, users]);
 
+	// Refetches users and groups, re-deriving the group name shown on each card.
+	const refreshUsersAndGroups = async (token: string) => {
+		const [groupResponse, userResponse, jobResponse] = await Promise.all([
+			getAllGroupsPaged(token),
+			getAllUsersPaged(token),
+			adminGetAllJobsPaged(token),
+		]);
+		if (groupResponse.error || userResponse.error) return;
+
+		setGroups(groupResponse.data ?? []);
+		setUsers(
+			(userResponse.data ?? []).map((user: User) => ({
+				...user,
+				group:
+					(groupResponse.data ?? []).find((group: Group) => group.group_id === user.group_id)
+						?.name || "No Group",
+				job_count: (jobResponse.data ?? []).filter((job: Job) => job.user_sub === user.user_sub)
+					.length,
+			})),
+		);
+	};
+
 	// Removes a user from their group without touching job or structure ownership.
 	const handleDeMember = async () => {
 		if (!selectedUser) return;
@@ -244,24 +249,7 @@ const Users = () => {
 				return;
 			}
 
-			// The backend demotes group admins to member and leaves other roles alone.
-			setUsers((prev) =>
-				prev.map((user) =>
-					user.user_sub === userSub
-						? {
-								...user,
-								role: user.role === "group_admin" ? "member" : user.role,
-								group_id: undefined,
-								group: "No Group",
-							}
-						: user,
-				),
-			);
-
-			// The Group Management tab lists members per group, so refresh it too.
-			const groupResponse = await getAllGroupsPaged(token);
-			if (!groupResponse.error) setGroups(groupResponse.data ?? []);
-
+			await refreshUsersAndGroups(token);
 			setSelectedUser(null);
 			setAlertMessage("User removed from group successfully.");
 			setTimeout(() => setAlertMessage(""), 3000);
@@ -284,7 +272,7 @@ const Users = () => {
 			setAlertMessage(resp.error);
 			return;
 		}
-		setUsers(users.map((u) => (u.user_sub === user.user_sub ? user : u)));
+		await refreshUsersAndGroups(token);
 		setAlertMessage("User updated successfully.");
 		setTimeout(() => setAlertMessage(""), 3000);
 	};
@@ -342,8 +330,11 @@ const Users = () => {
 			alert(`Group created, but assigning the group admin failed: ${promote.error}`);
 		}
 
+		await refreshUsersAndGroups(token);
 		setGroupName("");
 		setGroupAdmin("");
+		setAlertMessage("Group created successfully.");
+		setTimeout(() => setAlertMessage(""), 3000);
 	};
 
 	// Deletes a selected group from the system.
@@ -352,11 +343,8 @@ const Users = () => {
 		try {
 			const token = await getAccessTokenSilently();
 
-			// Delete the group from the backend.
 			await deleteGroup(token, groupId);
-			// Remove the deleted group from local state.
-			setGroups(groups.filter((g) => g.group_id !== groupId));
-
+			await refreshUsersAndGroups(token);
 			setAlertMessage("Group deleted successfully.");
 			setTimeout(() => setAlertMessage(""), 3000);
 		} catch (error) {
