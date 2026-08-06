@@ -11,7 +11,12 @@ import {
 	getZipPresignedUrl,
 	cancelJob,
 } from "../../services/api";
-import { JobStatus } from "../../constants";
+import {
+	CANCELLABLE_JOB_STATUSES,
+	DOWNLOADABLE_JOB_STATUSES,
+	JobStatus,
+	TERMINAL_JOB_STATUSES,
+} from "../../constants";
 import JobsToolbar from "./components/JobsToolbar";
 import JobsTable from "./components/JobsTable";
 import { MolmakerLoading, MolmakerAlert, MolmakerConfirm } from "../../components/custom";
@@ -355,82 +360,31 @@ export default function Home() {
 	 * Returns true when the selected job archive should not be downloadable.
 	 */
 	const downloadDisabled = (selectedJobId: string | null): boolean => {
-		if (!selectedJobId) {
-			return true;
-		}
-
-		const jobToDownloadZip = jobs.find((j) => j.job_id === selectedJobId);
-		if (!jobToDownloadZip) {
-			return true;
-		}
-
-		// Archives are not downloadable while jobs are active, pending, cancelled, unknown, out of memory, or timeout.
-		if (
-			[
-				JobStatus.CANCELLED,
-				JobStatus.PENDING,
-				JobStatus.RUNNING,
-				JobStatus.UNKNOWN,
-				JobStatus.OUT_OF_MEMORY,
-				JobStatus.TIMEOUT,
-			].includes(jobToDownloadZip.status)
-		) {
-			return true;
-		}
-
-		return false;
+		if (!selectedJobId) return true;
+		const job = jobs.find((j) => j.job_id === selectedJobId);
+		if (!job) return true;
+		return !DOWNLOADABLE_JOB_STATUSES.includes(job.status);
 	};
 
 	/**
 	 * Returns true when the selected job cannot be cancelled.
 	 */
 	const cancelDisabled = (selectedJobId: string | null): boolean => {
-		if (!selectedJobId) {
-			return true;
-		}
-
-		const jobToCancel = jobs.find((j) => j.job_id === selectedJobId);
-		if (!jobToCancel) {
-			return true;
-		}
-		if (
-			[
-				JobStatus.COMPLETED,
-				JobStatus.FAILED,
-				JobStatus.CANCELLED,
-				JobStatus.OUT_OF_MEMORY,
-				JobStatus.TIMEOUT,
-			].includes(jobToCancel.status)
-		) {
-			return true;
-		}
-
-		return false;
+		if (!selectedJobId) return true;
+		const job = jobs.find((j) => j.job_id === selectedJobId);
+		if (!job) return true;
+		if (job.cancel_requested) return true;
+		return !CANCELLABLE_JOB_STATUSES.includes(job.status);
 	};
 
 	/**
 	 * Returns true when the selected job cannot be deleted.
 	 */
 	const deleteDisabled = (selectedJobId: string | null): boolean => {
-		if (!selectedJobId) {
-			return true;
-		}
-		const jobToDelete = jobs.find((j) => j.job_id === selectedJobId);
-		if (!jobToDelete) {
-			return true;
-		}
-		if (
-			[
-				JobStatus.COMPLETED,
-				JobStatus.FAILED,
-				JobStatus.CANCELLED,
-				JobStatus.OUT_OF_MEMORY,
-				JobStatus.TIMEOUT,
-			].includes(jobToDelete.status)
-		) {
-			return false;
-		}
-		return true;
+		if (!selectedJobId) return true;
+		const job = jobs.find((j) => j.job_id === selectedJobId);
+		if (!job) return true;
+		return !TERMINAL_JOB_STATUSES.includes(job.status);
 	};
 
 	// Show the full-page loading component while data is being fetched.

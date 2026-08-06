@@ -20,35 +20,48 @@ export const DRAWER_FULL_WIDTH = 400;
 export const DRAWER_MINI_WIDTH = 80;
 
 export const JobStatus = {
-	PENDING: "pending",
+	SUBMITTING: "submitting",
+	SUBMITTED: "submitted",
 	RUNNING: "running",
+	FINALISING: "finalising",
 	COMPLETED: "completed",
 	FAILED: "failed",
 	CANCELLED: "cancelled",
-	UNKNOWN: "unknown",
-	OUT_OF_MEMORY: "out_of_memory",
-	TIMEOUT: "timeout",
 };
+
+/** Jobs that have finished; nothing further will change. */
+export const TERMINAL_JOB_STATUSES = [JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED];
+
+/** Jobs the backend will still act on, so cancellation is possible. */
+export const CANCELLABLE_JOB_STATUSES = [
+	JobStatus.SUBMITTING,
+	JobStatus.SUBMITTED,
+	JobStatus.RUNNING,
+	JobStatus.FINALISING,
+];
+
+/** Jobs that may have result artifacts in storage. */
+export const DOWNLOADABLE_JOB_STATUSES = [JobStatus.COMPLETED, JobStatus.FAILED];
 
 export const statusColors: Record<string, string> = {
 	completed: green[500],
 	running: blue[500],
-	pending: orange[500],
+	submitting: orange[300],
+	submitted: orange[500],
+	finalising: blue[300],
 	failed: red[500],
 	cancelled: grey[500],
-	out_of_memory: deepOrange[500],
-	timeout: deepOrange[300],
 };
 
 export const statusIcons: Record<string, SvgIconComponent> = {
 	completed: CheckCircleOutlined,
 	running: RunCircleOutlined,
-	pending: PendingOutlined,
+	submitting: PendingOutlined,
+	submitted: PendingOutlined,
+	finalising: RunCircleOutlined,
 	failed: ErrorOutline,
 	cancelled: CancelOutlined,
 	unknown: HelpOutlineOutlined,
-	out_of_memory: ReportOutlined,
-	timeout: TimerOffOutlined,
 };
 
 export const calculationTypes = {

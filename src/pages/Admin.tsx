@@ -10,7 +10,12 @@ import {
 	getZipPresignedUrl,
 	cancelJob,
 } from "../services/api";
-import { JobStatus } from "../constants";
+import {
+	CANCELLABLE_JOB_STATUSES,
+	DOWNLOADABLE_JOB_STATUSES,
+	JobStatus,
+	TERMINAL_JOB_STATUSES,
+} from "../constants";
 import JobsToolbar from "./Home/components/JobsToolbar";
 import {
 	MolmakerPageTitle,
@@ -284,54 +289,19 @@ export default function Admin() {
 
 	// Determines whether the cancel button should be disable for the selected job
 	const cancelDisabled = (selectedJobId: string | null): boolean => {
-		if (!selectedJobId) {
-			return true;
-		}
-
-		const jobToCancel = jobs.find((j) => j.job_id === selectedJobId);
-		if (!jobToCancel) {
-			return true;
-		}
-
-		// Completed, failed, and cancelled jobs cannot be cancelled again.
-		if (
-			[
-				JobStatus.COMPLETED,
-				JobStatus.FAILED,
-				JobStatus.CANCELLED,
-				JobStatus.OUT_OF_MEMORY,
-				JobStatus.TIMEOUT,
-			].includes(jobToCancel.status)
-		) {
-			return true;
-		}
-
-		return false;
+		if (!selectedJobId) return true;
+		const job = jobs.find((j) => j.job_id === selectedJobId);
+		if (!job) return true;
+		if (job.cancel_requested) return true;
+		return !CANCELLABLE_JOB_STATUSES.includes(job.status);
 	};
 
 	// Determines whether the delete button should be disabled for the selected job.
 	const deleteDisabled = (selectedJobId: string | null): boolean => {
-		if (!selectedJobId) {
-			return true;
-		}
-		const jobToDelete = jobs.find((j) => j.job_id === selectedJobId);
-		if (!jobToDelete) {
-			return true;
-		}
-
-		// Only allow deletion for terminal jobs.
-		if (
-			[
-				JobStatus.COMPLETED,
-				JobStatus.FAILED,
-				JobStatus.CANCELLED,
-				JobStatus.OUT_OF_MEMORY,
-				JobStatus.TIMEOUT,
-			].includes(jobToDelete.status)
-		) {
-			return false;
-		}
-		return true;
+		if (!selectedJobId) return true;
+		const job = jobs.find((j) => j.job_id === selectedJobId);
+		if (!job) return true;
+		return !TERMINAL_JOB_STATUSES.includes(job.status);
 	};
 
 	// Downloads a ZIP file from a presigned S3 URL using a temporary browser blob link.
@@ -397,30 +367,10 @@ export default function Admin() {
 
 	// Determines whether the ZIP download button should be disabled for the selected job.
 	const downloadDisabled = (selectedJobId: string | null): boolean => {
-		if (!selectedJobId) {
-			return true;
-		}
-
-		const jobToDownloadZip = jobs.find((j) => j.job_id === selectedJobId);
-		if (!jobToDownloadZip) {
-			return true;
-		}
-
-		// Archives are not downloadable while jobs are active, pending, cancelled, unknown, out of memory, or timeout.
-		if (
-			[
-				JobStatus.CANCELLED,
-				JobStatus.PENDING,
-				JobStatus.RUNNING,
-				JobStatus.UNKNOWN,
-				JobStatus.OUT_OF_MEMORY,
-				JobStatus.TIMEOUT,
-			].includes(jobToDownloadZip.status)
-		) {
-			return true;
-		}
-
-		return false;
+		if (!selectedJobId) return true;
+		const job = jobs.find((j) => j.job_id === selectedJobId);
+		if (!job) return true;
+		return !DOWNLOADABLE_JOB_STATUSES.includes(job.status);
 	};
 
 	// Show a full-page loading component while data is being fetched or actions are running.
