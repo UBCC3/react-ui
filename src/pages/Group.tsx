@@ -293,7 +293,6 @@ export default function Group() {
 		const job = jobs.find((j) => j.job_id === selectedJobId);
 		if (!job) return true;
 		return !TERMINAL_JOB_STATUSES.includes(job.status);
-		s;
 	};
 
 	// Downloads a ZIP file from a presigned S3 URL using a temporary browser blob.
