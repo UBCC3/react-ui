@@ -56,7 +56,14 @@ import {
 import { MolmakerPageTitle } from "../components/custom";
 import { Group, Job, User } from "../types";
 import { green, red, blue, grey } from "@mui/material/colors";
-import { UserRound, UserRoundPen, UserRoundX, UsersRound } from "lucide-react";
+import {
+	ArrowDownAZ,
+	ArrowUpAZ,
+	UserRound,
+	UserRoundPen,
+	UserRoundX,
+	UsersRound,
+} from "lucide-react";
 
 /**
  * Props for the TabPanel
@@ -157,19 +164,15 @@ const Users = () => {
 	// Stores users after applying the search filter.
 	const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
 
+	// User sorting states
+	const [sortBy, setSortBy] = useState<"email" | "role" | "job_count">("email");
+	const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
 	// User pagination states
 	const [userPage, setUserPage] = useState(0);
 	const [userRowsPerPage, setUserRowsPerPage] = useState(12);
 	const [groupPage, setGroupPage] = useState(0);
 	const [groupRowsPerPage, setGroupRowsPerPage] = useState(5);
-	const paginatedUsers = filteredUsers.slice(
-		userPage * userRowsPerPage,
-		userPage * userRowsPerPage + userRowsPerPage,
-	);
-	const paginatedGroups = groups.slice(
-		groupPage * groupRowsPerPage,
-		groupPage * groupRowsPerPage + groupRowsPerPage,
-	);
 
 	// Controls whether user and group data is still loading.
 	const [loading, setLoading] = useState(true);
@@ -196,6 +199,33 @@ const Users = () => {
 	const [openConfirmation, setOpenConfirmation] = useState(false);
 	// Stores the currently selected group for deletion.
 	const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+
+	// Group admins rank above members, admins above both.
+	const roleRank: Record<string, number> = { admin: 2, group_admin: 1, member: 0 };
+
+	const sortedUsers = [...filteredUsers].sort((a, b) => {
+		let result = 0;
+		if (sortBy === "email") {
+			result = a.email.localeCompare(b.email);
+		} else if (sortBy === "role") {
+			result = (roleRank[a.role] ?? 99) - (roleRank[b.role] ?? 99);
+			// Same role: fall back to email so the order is stable.
+			if (result === 0) result = a.email.localeCompare(b.email);
+		} else {
+			result = (a.job_count ?? 0) - (b.job_count ?? 0);
+			if (result === 0) result = a.email.localeCompare(b.email);
+		}
+		return sortDir === "asc" ? result : -result;
+	});
+
+	const paginatedUsers = sortedUsers.slice(
+		userPage * userRowsPerPage,
+		userPage * userRowsPerPage + userRowsPerPage,
+	);
+	const paginatedGroups = groups.slice(
+		groupPage * groupRowsPerPage,
+		groupPage * groupRowsPerPage + groupRowsPerPage,
+	);
 
 	// Loads users, grouups, and jobs when the page first renders.
 	useEffect(() => {
@@ -516,31 +546,65 @@ const Users = () => {
 						</Box>
 					) : (
 						<>
-							{/* Search bar for filtering users by email or group. */}
-							<Paper
-								component="form"
-								sx={{
-									p: "4px 4px",
-									display: "flex",
-									alignItems: "center",
-									width: 400,
-									mb: 2,
-									borderRadius: 2,
-									bgcolor: grey[50],
-								}}
-								elevation={3}
-							>
-								<IconButton sx={{ p: "10px" }} aria-label="search">
-									<Search />
-								</IconButton>
-								<InputBase
-									sx={{ ml: 1, flex: 1 }}
-									placeholder="search users by email or group"
-									inputProps={{ "aria-label": "search users by email or group" }}
-									value={keyword}
-									onChange={(e) => setKeyword(e.target.value)}
-								/>
-							</Paper>
+							<Box display="flex" alignItems="center" gap={2} sx={{ mb: 2 }}>
+								{/* Search bar for filtering users by email or group. */}
+								<Paper
+									component="form"
+									sx={{
+										p: "4px 4px",
+										display: "flex",
+										alignItems: "center",
+										width: 400,
+										borderRadius: 2,
+										bgcolor: grey[50],
+									}}
+									elevation={3}
+								>
+									<IconButton sx={{ p: "10px" }} aria-label="search">
+										<Search />
+									</IconButton>
+									<InputBase
+										sx={{ ml: 1, flex: 1 }}
+										placeholder="search users by email or group"
+										inputProps={{ "aria-label": "search users by email or group" }}
+										value={keyword}
+										onChange={(e) => setKeyword(e.target.value)}
+									/>
+								</Paper>
+
+								{/* Users sorting control */}
+								<TextField
+									select
+									size="small"
+									label="Sort by"
+									value={sortBy}
+									onChange={(e: any) => {
+										setSortBy(e.target.value as "email" | "role" | "job_count");
+										setUserPage(0);
+									}}
+									sx={{ minWidth: 160 }}
+								>
+									<MenuItem value="email">Email</MenuItem>
+									<MenuItem value="role">Role</MenuItem>
+									<MenuItem value="job_count">Number of jobs</MenuItem>
+								</TextField>
+								<Tooltip title={sortDir === "asc" ? "Ascending" : "Descending"}>
+									<IconButton
+										size="small"
+										onClick={() => {
+											setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+											setUserPage(0);
+										}}
+										sx={{ color: grey[600] }}
+									>
+										{sortDir === "asc" ? (
+											<ArrowUpAZ style={{ width: 20, height: 20 }} />
+										) : (
+											<ArrowDownAZ style={{ width: 20, height: 20 }} />
+										)}
+									</IconButton>
+								</Tooltip>
+							</Box>
 
 							{/* Count of users matching the current filter. */}
 							<Typography
