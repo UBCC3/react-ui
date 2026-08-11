@@ -46,6 +46,8 @@ export function useJobResult(
 					onError?.(message);
 					return;
 				}
+
+                setResult(sectionResult);
 			})
 			.catch((err) => {
 				const message = "Failed to fetch job details or results";
