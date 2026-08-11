@@ -38,6 +38,21 @@ const WORKFLOWS: WorkflowOption[] = [
 		path: "/workflows/standard-analysis",
 		enabled: true,
 	},
+	{
+		id: "bond-angle-scan",
+		title: "Bond/Angle Scan",
+		subtitle: "Vary a bond, angle, or dihedral across a range of values.",
+		description:
+			"A scan takes a structure and steps one internal coordinate across a " +
+			"range of values, building a structure at each point and running a " +
+			"molecular orbital calculation on it. Pick two atoms to scan a bond " +
+			"length, three for a bond angle, or four for a dihedral angle. Each " +
+			"structure can optionally be relaxed, holding the scanned coordinate " +
+			"fixed while the rest of the molecule minimises. The result is an " +
+			"energy profile showing how the energy changes along that coordinate.",
+		path: "/workflows/bond-angle-scan",
+		enabled: true,
+	},
 ];
 
 export default function Workflows() {

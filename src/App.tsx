@@ -18,6 +18,7 @@ import JobFail from "./pages/JobFail";
 import { Box, CssBaseline } from "@mui/material";
 import Users from "./pages/Users";
 import Workflows from "./pages/SubmitJob/Workflows";
+import BondAngleScan from "./pages/SubmitJob/BondAngleScan";
 
 function App() {
 	return (
@@ -66,6 +67,14 @@ function App() {
 								element={
 									<RequireAuth>
 										<StandardAnalysis />
+									</RequireAuth>
+								}
+							/>
+							<Route
+								path="/workflows/bond-angle-scan"
+								element={
+									<RequireAuth>
+										<BondAngleScan />
 									</RequireAuth>
 								}
 							/>
