@@ -145,7 +145,7 @@ export default function JobsTable({
 							renderHeader("Calculation Type", "calculation_type")}
 						{displayColumns.structures && renderHeader("Library Structure", "structures")}
 						{displayColumns.tags && renderHeader("Job Tags", "tags")}
-						{displayColumns.runtime && renderHeader("Runtime", "runtime")}
+						{displayColumns.runtime && renderHeader("Runtime", "runtime_seconds")}
 						{displayColumns.submitted_at && renderHeader("Submitted At", "submitted_at")}
 						{displayColumns.completed_at && renderHeader("Completed At", "completed_at")}
 					</TableRow>

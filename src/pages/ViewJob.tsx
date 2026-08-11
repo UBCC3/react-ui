@@ -217,7 +217,7 @@ function ViewJob() {
 								<MolmakerTextField
 									fullWidth
 									label="Result"
-									value={JSON.stringify(job.result, null, 2) || "No result available"}
+									value={"No result available"}
 									onChange={() => {}}
 									sx={{ mb: 2 }}
 									slotProps={{

@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import {
+	adminGetAllJobsPaged,
 	createGroup,
 	deleteGroup,
 	deleteUser,
-	getAllGroups,
-	getAllJobs,
-	getAllUsers,
+	getAllGroupsPaged,
+	getAllUsersPaged,
+	removeGroupUser,
 	updateUser,
 } from "../services/api";
 import { useAuth0 } from "@auth0/auth0-react";
@@ -36,6 +37,7 @@ import {
 	MenuItem,
 	Paper,
 	Tab,
+	TablePagination,
 	Tabs,
 	TextField,
 	Tooltip,
@@ -54,7 +56,14 @@ import {
 import { MolmakerPageTitle } from "../components/custom";
 import { Group, Job, User } from "../types";
 import { green, red, blue, grey } from "@mui/material/colors";
-import { UserRound, UserRoundPen, UserRoundX, UsersRound } from "lucide-react";
+import {
+	ArrowDownAZ,
+	ArrowUpAZ,
+	UserRound,
+	UserRoundPen,
+	UserRoundX,
+	UsersRound,
+} from "lucide-react";
 
 /**
  * Props for the TabPanel
@@ -155,12 +164,24 @@ const Users = () => {
 	// Stores users after applying the search filter.
 	const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
 
+	// User sorting states
+	const [sortBy, setSortBy] = useState<"email" | "role" | "job_count">("email");
+	const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+	// User pagination states
+	const [userPage, setUserPage] = useState(0);
+	const [userRowsPerPage, setUserRowsPerPage] = useState(12);
+	const [groupPage, setGroupPage] = useState(0);
+	const [groupRowsPerPage, setGroupRowsPerPage] = useState(5);
+
 	// Controls whether user and group data is still loading.
 	const [loading, setLoading] = useState(true);
 	// Controls whether the edit user dialog is open.
 	const [openEditDialog, setOpenEditDialog] = useState(false);
 	// Controls whether the delete user confirmation dialog is open.
 	const [deleteUserConfirmation, setDeleteUserConfirmation] = useState(false);
+	// Controls whether the demember confirmation dialog is open.
+	const [deMemberConfirmation, setDeMemberConfirmation] = useState(false);
 	// Stores the currently selected user for editing, de-membering, or deleting.
 	const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
@@ -174,10 +195,43 @@ const Users = () => {
 	const [groupName, setGroupName] = useState("");
 	// Stores the email of the user who should become the new group's admin.
 	const [groupAdmin, setGroupAdmin] = useState("");
+	// State for group creation process
+	const [creatingGroup, setCreatingGroup] = useState(false);
 	// Controls whether the delete group confirmation dialog is open.
 	const [openConfirmation, setOpenConfirmation] = useState(false);
 	// Stores the currently selected group for deletion.
 	const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+
+	// Manage new group's admin who already exist in another group
+	const [moveAdminConfirmation, setMoveAdminConfirmation] = useState(false);
+	const [pendingGroupAdmin, setPendingGroupAdmin] = useState<User | null>(null);
+
+	// Group admins rank above members, admins above both.
+	const roleRank: Record<string, number> = { admin: 2, group_admin: 1, member: 0 };
+
+	const sortedUsers = [...filteredUsers].sort((a, b) => {
+		let result = 0;
+		if (sortBy === "email") {
+			result = a.email.localeCompare(b.email);
+		} else if (sortBy === "role") {
+			result = (roleRank[a.role] ?? 99) - (roleRank[b.role] ?? 99);
+			// Same role: fall back to email so the order is stable.
+			if (result === 0) result = a.email.localeCompare(b.email);
+		} else {
+			result = (a.job_count ?? 0) - (b.job_count ?? 0);
+			if (result === 0) result = a.email.localeCompare(b.email);
+		}
+		return sortDir === "asc" ? result : -result;
+	});
+
+	const paginatedUsers = sortedUsers.slice(
+		userPage * userRowsPerPage,
+		userPage * userRowsPerPage + userRowsPerPage,
+	);
+	const paginatedGroups = groups.slice(
+		groupPage * groupRowsPerPage,
+		groupPage * groupRowsPerPage + groupRowsPerPage,
+	);
 
 	// Loads users, grouups, and jobs when the page first renders.
 	useEffect(() => {
@@ -185,28 +239,11 @@ const Users = () => {
 			try {
 				setLoading(true);
 				const token = await getAccessTokenSilently();
-
-				// Fetch all groups so users can be matched with their group names.
-				const groupResponse = await getAllGroups(token);
-				setGroups(groupResponse.data);
-
-				// Fetch all users and jobs for the management view.
-				const userResponse = await getAllUsers(token);
-				const jobResponse = await getAllJobs(token);
-
-				// Add derived fields to each user for easier rendering.
-				setUsers(
-					userResponse.data.map((user: User) => ({
-						...user,
-						group:
-							groupResponse.data.find((group: Group) => group.group_id === user.group_id)?.name ||
-							"No Group",
-						jobCount: jobResponse.data.filter((job: Job) => job.user_sub === user.user_sub).length,
-					})),
-				);
-				setLoading(false);
+				await refreshUsersAndGroups(token);
 			} catch (error) {
 				console.error("Error fetching users:", error);
+			} finally {
+				setLoading(false);
 			}
 		};
 
@@ -223,49 +260,84 @@ const Users = () => {
 						user.group?.toLowerCase().includes(keyword.toLowerCase()),
 				),
 			);
+			setUserPage(0);
 		} else {
 			setFilteredUsers(users);
+			setUserPage(0);
 		}
 	}, [keyword, users]);
 
-	// Removes a user from their group and resets their role to member.
-	const handleDeMember = async (userSub: string) => {
+	useEffect(() => {
+		const lastPage = Math.max(0, Math.ceil(filteredUsers.length / userRowsPerPage) - 1);
+		if (userPage > lastPage) setUserPage(lastPage);
+	}, [filteredUsers.length, userRowsPerPage, userPage]);
+
+	useEffect(() => {
+		const lastPage = Math.max(0, Math.ceil(groups.length / groupRowsPerPage) - 1);
+		if (groupPage > lastPage) setGroupPage(lastPage);
+	}, [groups.length, groupRowsPerPage, groupPage]);
+
+	// Refetches users and groups, re-deriving the group name shown on each card.
+	const refreshUsersAndGroups = async (token: string) => {
+		const [groupResponse, userResponse, jobResponse] = await Promise.all([
+			getAllGroupsPaged(token),
+			getAllUsersPaged(token),
+			adminGetAllJobsPaged(token),
+		]);
+		if (groupResponse.error || userResponse.error) return;
+
+		setGroups(groupResponse.data ?? []);
+		setUsers(
+			(userResponse.data ?? []).map((user: User) => ({
+				...user,
+				group:
+					(groupResponse.data ?? []).find((group: Group) => group.group_id === user.group_id)
+						?.name || "No Group",
+				job_count: (jobResponse.data ?? []).filter((job: Job) => job.user_sub === user.user_sub)
+					.length,
+			})),
+		);
+	};
+
+	// Removes a user from their group without touching job or structure ownership.
+	const handleDeMember = async () => {
+		if (!selectedUser) return;
+		const userSub = selectedUser.user_sub;
 		try {
 			const token = await getAccessTokenSilently();
+			const resp = await removeGroupUser(userSub, token);
+			setDeMemberConfirmation(false);
+			if (resp.error) {
+				setAlertMessage(resp.error);
+				return;
+			}
 
-			// Update the backend user record.
-			await updateUser(token, userSub, "member", "");
-
-			// Update local state so the UI reflects the change immeediately.
-			setUsers(
-				users.map((user) =>
-					user.user_sub === userSub ? { ...user, role: "member", group_id: "" } : user,
-				),
-			);
-			setAlertMessage("User de-membered successfully.");
+			await refreshUsersAndGroups(token);
+			setSelectedUser(null);
+			setAlertMessage("User removed from group successfully.");
 			setTimeout(() => setAlertMessage(""), 3000);
 		} catch (error) {
-			console.error("Error de-membering user:", error);
+			console.error("Error removing user from group:", error);
+			setDeMemberConfirmation(false);
 		}
 	};
 
 	// Saves edits made to the selected user's role or group.
 	const handleEditUser = async (user: User | null) => {
 		if (!user) return;
-		try {
-			const token = await getAccessTokenSilently();
-
-			// Persist the edited user role and group to the backend.
-			await updateUser(token, user.user_sub, user.role, user.group_id);
-
-			// Replace the updated user in local state.
-			setUsers(users.map((u) => (u.user_sub === user.user_sub ? user : u)));
-
-			setAlertMessage("User updated successfully.");
-			setTimeout(() => setAlertMessage(""), 3000);
-		} catch (error) {
-			console.error("Error editing user:", error);
+		if (user.role === "group_admin" && !user.group_id) {
+			setAlertMessage("Group admins must be assigned to a group.");
+			return;
 		}
+		const token = await getAccessTokenSilently();
+		const resp = await updateUser(token, user.user_sub, user.role, user.group_id);
+		if (resp.error) {
+			setAlertMessage(resp.error);
+			return;
+		}
+		await refreshUsersAndGroups(token);
+		setAlertMessage("User updated successfully.");
+		setTimeout(() => setAlertMessage(""), 3000);
 	};
 
 	// Deletes a user from the system.
@@ -288,7 +360,7 @@ const Users = () => {
 
 	// Creates a new group and assigns the provided user as its group admin.
 	const handleGroupCreate = async () => {
-		const token = await getAccessTokenSilently();
+		if (creatingGroup) return;
 
 		// Require both group name and admin email before creating the group.
 		if (!groupName || !groupAdmin) {
@@ -296,25 +368,56 @@ const Users = () => {
 			return;
 		}
 
-		// Find the user thst should become the group admin.
+		// Find the user that should become the group admin.
 		const groupAdminUser = users.find((user) => user.email === groupAdmin);
 		if (!groupAdminUser) {
 			alert("Group admin email does not match any user.");
 			return;
 		}
 
-		// Create the group first so the returned group ID can be assigned to the admin.
-		const resp = await createGroup(groupName, token);
-		if (resp.status !== 200) {
-			alert("Failed to create group.");
-		} else {
-			// Promote the selected user to group admin for the newly created group.
-			await updateUser(token, groupAdminUser.user_sub, "group_admin", resp.data.group_id);
+		// Already in a group: confirm the move before creating anything.
+		if (groupAdminUser.group_id) {
+			setPendingGroupAdmin(groupAdminUser);
+			setMoveAdminConfirmation(true);
+			return;
 		}
 
-		// Reset the form after the create attempt.
-		setGroupName("");
-		setGroupAdmin("");
+		await performGroupCreate(groupAdminUser);
+	};
+
+	const performGroupCreate = async (groupAdminUser: User) => {
+		setCreatingGroup(true);
+		try {
+			const token = await getAccessTokenSilently();
+
+			// Create the group first so the returned group ID can be assigned to the admin.
+			const resp = await createGroup(groupName, token);
+			if (resp.error) {
+				alert("Failed to create group.");
+				return;
+			}
+
+			// Promote the selected user to group admin for the newly created group.
+			const promote = await updateUser(
+				token,
+				groupAdminUser.user_sub,
+				"group_admin",
+				resp.data.group_id,
+			);
+			if (promote.error) {
+				alert(`Group created, but assigning the group admin failed: ${promote.error}`);
+			}
+
+			await refreshUsersAndGroups(token);
+			setGroupName("");
+			setGroupAdmin("");
+			setAlertMessage("Group created successfully.");
+			setTimeout(() => setAlertMessage(""), 3000);
+		} finally {
+			setCreatingGroup(false);
+			setMoveAdminConfirmation(false);
+			setPendingGroupAdmin(null);
+		}
 	};
 
 	// Deletes a selected group from the system.
@@ -323,11 +426,8 @@ const Users = () => {
 		try {
 			const token = await getAccessTokenSilently();
 
-			// Delete the group from the backend.
 			await deleteGroup(token, groupId);
-			// Remove the deleted group from local state.
-			setGroups(groups.filter((g) => g.group_id !== groupId));
-
+			await refreshUsersAndGroups(token);
 			setAlertMessage("Group deleted successfully.");
 			setTimeout(() => setAlertMessage(""), 3000);
 		} catch (error) {
@@ -382,11 +482,12 @@ const Users = () => {
 
 					{/* Confirm group deletion for the selected group. */}
 					<Button
-						onClick={() => {
+						onClick={async () => {
 							if (selectedGroup) {
-								handleGroupDelete(selectedGroup.group_id);
+								await handleGroupDelete(selectedGroup.group_id);
 							}
-							setDeleteUserConfirmation(false);
+							setOpenConfirmation(false);
+							setSelectedGroup(null);
 						}}
 						color="error"
 						sx={{ ml: 1, textTransform: "none", borderRadius: 2 }}
@@ -472,31 +573,65 @@ const Users = () => {
 						</Box>
 					) : (
 						<>
-							{/* Search bar for filtering users by email or group. */}
-							<Paper
-								component="form"
-								sx={{
-									p: "4px 4px",
-									display: "flex",
-									alignItems: "center",
-									width: 400,
-									mb: 2,
-									borderRadius: 2,
-									bgcolor: grey[50],
-								}}
-								elevation={3}
-							>
-								<IconButton sx={{ p: "10px" }} aria-label="search">
-									<Search />
-								</IconButton>
-								<InputBase
-									sx={{ ml: 1, flex: 1 }}
-									placeholder="search users by email or group"
-									inputProps={{ "aria-label": "search users by email or group" }}
-									value={keyword}
-									onChange={(e) => setKeyword(e.target.value)}
-								/>
-							</Paper>
+							<Box display="flex" alignItems="center" gap={2} sx={{ mb: 2 }}>
+								{/* Search bar for filtering users by email or group. */}
+								<Paper
+									component="form"
+									sx={{
+										p: "4px 4px",
+										display: "flex",
+										alignItems: "center",
+										width: 400,
+										borderRadius: 2,
+										bgcolor: grey[50],
+									}}
+									elevation={3}
+								>
+									<IconButton sx={{ p: "10px" }} aria-label="search">
+										<Search />
+									</IconButton>
+									<InputBase
+										sx={{ ml: 1, flex: 1 }}
+										placeholder="search users by email or group"
+										inputProps={{ "aria-label": "search users by email or group" }}
+										value={keyword}
+										onChange={(e) => setKeyword(e.target.value)}
+									/>
+								</Paper>
+
+								{/* Users sorting control */}
+								<TextField
+									select
+									size="small"
+									label="Sort by"
+									value={sortBy}
+									onChange={(e: any) => {
+										setSortBy(e.target.value as "email" | "role" | "job_count");
+										setUserPage(0);
+									}}
+									sx={{ minWidth: 160 }}
+								>
+									<MenuItem value="email">Email</MenuItem>
+									<MenuItem value="role">Role</MenuItem>
+									<MenuItem value="job_count">Number of jobs</MenuItem>
+								</TextField>
+								<Tooltip title={sortDir === "asc" ? "Ascending" : "Descending"}>
+									<IconButton
+										size="small"
+										onClick={() => {
+											setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+											setUserPage(0);
+										}}
+										sx={{ color: grey[600] }}
+									>
+										{sortDir === "asc" ? (
+											<ArrowUpAZ style={{ width: 20, height: 20 }} />
+										) : (
+											<ArrowDownAZ style={{ width: 20, height: 20 }} />
+										)}
+									</IconButton>
+								</Tooltip>
+							</Box>
 
 							{/* Count of users matching the current filter. */}
 							<Typography
@@ -508,7 +643,7 @@ const Users = () => {
 
 							{/* Card grid showing all filtered users. */}
 							<Grid container spacing={2}>
-								{filteredUsers.map((user) => (
+								{paginatedUsers.map((user) => (
 									<Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={user.user_sub}>
 										<Card sx={{ borderRadius: 2, bgcolor: grey[50] }} elevation={3}>
 											<CardContent>
@@ -573,7 +708,7 @@ const Users = () => {
 														aria-label="de-member"
 														onClick={() => {
 															setSelectedUser(user);
-															handleDeMember(user.user_sub);
+															setDeMemberConfirmation(true);
 														}}
 														color="warning"
 													>
@@ -597,6 +732,19 @@ const Users = () => {
 									</Grid>
 								))}
 							</Grid>
+							<TablePagination
+								component="div"
+								labelRowsPerPage="Users per page:"
+								count={filteredUsers.length}
+								page={userPage}
+								rowsPerPage={userRowsPerPage}
+								onPageChange={(_, newPage: any) => setUserPage(newPage)}
+								onRowsPerPageChange={(e: any) => {
+									setUserRowsPerPage(+e.target.value);
+									setUserPage(0);
+								}}
+								rowsPerPageOptions={[12, 24, 48]}
+							/>
 						</>
 					)}
 				</CustomTabPanel>
@@ -646,10 +794,13 @@ const Users = () => {
 								variant="contained"
 								onClick={handleGroupCreate}
 								size="small"
-								disabled={!groupName || !groupAdmin}
+								disabled={!groupName || !groupAdmin || creatingGroup}
+								startIcon={
+									creatingGroup ? <CircularProgress size={16} color="inherit" /> : undefined
+								}
 								sx={{ textTransform: "none", borderRadius: 2 }}
 							>
-								Create Group
+								{creatingGroup ? "Creating..." : "Create Group"}
 							</Button>
 						</Box>
 					</Paper>
@@ -684,7 +835,7 @@ const Users = () => {
 						</Typography>
 
 						{/* One accordion is rendered for each group. */}
-						{groups.map((group) => (
+						{paginatedGroups.map((group) => (
 							<Accordion key={group.group_id}>
 								<AccordionSummary expandIcon={<ExpandMore />} sx={{ bgcolor: grey[100] }}>
 									<Typography
@@ -733,6 +884,19 @@ const Users = () => {
 								</AccordionActions>
 							</Accordion>
 						))}
+						<TablePagination
+							component="div"
+							labelRowsPerPage="Groups per page:"
+							count={groups.length}
+							page={groupPage}
+							rowsPerPage={groupRowsPerPage}
+							onPageChange={(_, newPage: any) => setGroupPage(newPage)}
+							onRowsPerPageChange={(e: any) => {
+								setGroupRowsPerPage(+e.target.value);
+								setGroupPage(0);
+							}}
+							rowsPerPageOptions={[5, 10, 25]}
+						/>
 					</Paper>
 				</CustomTabPanel>
 			</Box>
@@ -806,7 +970,9 @@ const Users = () => {
 								}}
 							>
 								<MenuItem value="admin">Administrator</MenuItem>
-								<MenuItem value="group_admin">Group Admin</MenuItem>
+								<MenuItem value="group_admin" disabled={!selectedUser?.group_id}>
+									Group Admin
+								</MenuItem>
 								<MenuItem value="member">Member</MenuItem>
 							</TextField>
 						</FormControl>
@@ -869,8 +1035,8 @@ const Users = () => {
 							Are you sure you want to delete the user <strong>{selectedUser?.email}</strong>?
 						</Typography>
 						<Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
-							This action cannot be undone. Any jobs and structures associated with this user will
-							also be deleted.
+							This action cannot be undone. Jobs and structures shared with a group stay with that
+							group; anything owned only by this user is deleted.
 						</Typography>
 					</DialogContent>
 
@@ -899,6 +1065,130 @@ const Users = () => {
 							variant="contained"
 						>
 							Delete User
+						</Button>
+					</DialogActions>
+				</Dialog>
+			)}
+
+			{/* Demember user confirmation dialog */}
+			{deMemberConfirmation && (
+				<Dialog
+					open={deMemberConfirmation}
+					onClose={() => setDeMemberConfirmation(false)}
+					sx={{ borderRadius: 2 }}
+				>
+					<DialogTitle
+						sx={{
+							color: grey[800],
+							fontWeight: "bold",
+							fontSize: "1.1rem",
+							px: 2,
+							pb: 1,
+							pt: 3,
+							bgcolor: grey[50],
+							display: "flex",
+							alignItems: "center",
+						}}
+					>
+						<UserRoundX style={{ marginRight: 10, color: blue[600], width: 24, height: 24 }} />
+						Remove From Group
+					</DialogTitle>
+
+					<DialogContent sx={{ px: 2, bgcolor: grey[50] }}>
+						<Typography variant="body1" color="textPrimary">
+							Remove <strong>{selectedUser?.email}</strong> from{" "}
+							<strong>{selectedUser?.group || "their group"}</strong>?
+						</Typography>
+						<Typography>
+							Their jobs and structures keep their current ownership and are not deleted.
+						</Typography>
+					</DialogContent>
+
+					<DialogActions sx={{ px: 2, pb: 3, pt: 0, bgcolor: grey[50] }}>
+						<Button
+							onClick={() => setDeMemberConfirmation(false)}
+							variant="outlined"
+							color="inherit"
+							sx={{ textTransform: "none", borderRadius: 2 }}
+						>
+							Cancel
+						</Button>
+						<Button
+							onClick={handleDeMember}
+							color="warning"
+							variant="contained"
+							sx={{ ml: 1, textTransform: "none", borderRadius: 2 }}
+							startIcon={<RemoveCircleOutline />}
+						>
+							Remove
+						</Button>
+					</DialogActions>
+				</Dialog>
+			)}
+
+			{/* Moving new group's admin from another group confirmation dialog */}
+			{moveAdminConfirmation && (
+				<Dialog
+					open={moveAdminConfirmation}
+					onClose={() => {
+						setMoveAdminConfirmation(false);
+						setPendingGroupAdmin(null);
+					}}
+					sx={{ borderRadius: 2 }}
+				>
+					<DialogTitle
+						sx={{
+							color: grey[800],
+							fontWeight: "bold",
+							fontSize: "1.1rem",
+							px: 2,
+							pb: 1,
+							pt: 3,
+							bgcolor: grey[50],
+							display: "flex",
+							alignItems: "center",
+						}}
+					>
+						<UserRoundPen style={{ marginRight: 10, color: blue[600], width: 24, height: 24 }} />
+						Move User to New Group
+					</DialogTitle>
+
+					<DialogContent sx={{ px: 2, bgcolor: grey[50] }}>
+						<Typography variant="body1" color="textPrimary">
+							<strong>{pendingGroupAdmin?.email}</strong> is currently in{" "}
+							<strong>{pendingGroupAdmin?.group}</strong>. Creating <strong>{groupName}</strong>{" "}
+							will move them out of <strong>{pendingGroupAdmin?.group}</strong> and make them its
+							group admin.
+						</Typography>
+						<Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
+							Their jobs and structures keep their current ownership. Any pending membership
+							requests involving their old group are cancelled.
+						</Typography>
+					</DialogContent>
+
+					<DialogActions sx={{ px: 2, pb: 3, pt: 0, bgcolor: grey[50] }}>
+						<Button
+							onClick={() => {
+								setMoveAdminConfirmation(false);
+								setPendingGroupAdmin(null);
+							}}
+							variant="outlined"
+							color="inherit"
+							sx={{ textTransform: "none", borderRadius: 2 }}
+						>
+							Cancel
+						</Button>
+						<Button
+							onClick={() => {
+								if (pendingGroupAdmin) performGroupCreate(pendingGroupAdmin);
+							}}
+							color="warning"
+							variant="contained"
+							disabled={creatingGroup}
+							sx={{ ml: 1, textTransform: "none", borderRadius: 2 }}
+							startIcon={<GroupAddOutlined />}
+						>
+							Create and move
 						</Button>
 					</DialogActions>
 				</Dialog>

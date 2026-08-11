@@ -49,8 +49,12 @@ const JobsStatus = ({ jobs }: JobsStatusProps) => {
 			</Grid>
 			<Grid size={{ xs: 12, md: 3 }}>
 				<StatusCard
-					status={capitalizeFirstLetter(JobStatus.PENDING)}
-					count={jobs.filter((job) => job.status === JobStatus.PENDING).length}
+					status="Pending"
+					count={
+						jobs.filter(
+							(job) => job.status === JobStatus.SUBMITTING || job.status === JobStatus.SUBMITTED,
+						).length
+					}
 					bgColor={orange[50]}
 					fgColor={orange[500]}
 					icon={

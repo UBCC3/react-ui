@@ -343,6 +343,26 @@ export default function JobsToolbar({
 											)}
 										</>
 									);
+								} else if (kind === "boolean") {
+									return (
+										<Select
+											value={filter.value}
+											size="small"
+											displayEmpty
+											onChange={(e) => {
+												const updated = [...filters];
+												updated[index] = { ...updated[index], value: e.target.value as string };
+												onFiltersChange(updated);
+											}}
+											sx={{ flexGrow: 1, mr: 1 }}
+										>
+											<MenuItem value="" disabled>
+												Select Visibility
+											</MenuItem>
+											<MenuItem value="true">Public</MenuItem>
+											<MenuItem value="false">Private</MenuItem>
+										</Select>
+									);
 								} else {
 									return (
 										<>

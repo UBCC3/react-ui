@@ -59,9 +59,9 @@ const matchesRuntimeFilter = (job: Job, filter: Filter): boolean => {
 		return true;
 	}
 
-	if (filter.extent === "before") {
+	if (filter.extent === "lessThan") {
 		return cellSeconds < filterSeconds;
-	} else if (filter.extent === "after") {
+	} else if (filter.extent === "greaterThan") {
 		return cellSeconds > filterSeconds;
 	} else if (filter.extent === "between") {
 		if (!filter.value2) {
@@ -123,6 +123,15 @@ const matchesStringFilter = (
 	}
 };
 
+const matchesBooleanFilter = (job: Job, filter: Filter): boolean => {
+	const cellValue = Boolean(job[filter.column]);
+	// The dropdown supplies "true" or "false".
+	if (filter.value !== "true" && filter.value !== "false") {
+		return true;
+	}
+	return cellValue === (filter.value === "true");
+};
+
 /**
  * Applies all custom filters to the jobs list.
  * Tags and structures are handled specially because they contain multiple values.
@@ -142,6 +151,8 @@ export const filterJobs = (jobs: Job[], filters: Filter[]): Job[] => {
 			filtered = filtered.filter((job) => matchesDateFilter(job, filter));
 		} else if (kind === "runtime") {
 			filtered = filtered.filter((job) => matchesRuntimeFilter(job, filter));
+		} else if (kind === "boolean") {
+			filtered = filtered.filter((job) => matchesBooleanFilter(job, filter));
 		} else {
 			filtered = filtered.filter((job) =>
 				matchesStringFilter(job, filter, reversedCalculationTypes),

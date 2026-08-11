@@ -10,11 +10,11 @@ import {
 	upsertCurrentUser,
 	getZipPresignedUrl,
 	cancelJob,
+	getAllJobsPaged,
 } from "../../services/api";
 import {
 	CANCELLABLE_JOB_STATUSES,
 	DOWNLOADABLE_JOB_STATUSES,
-	JobStatus,
 	TERMINAL_JOB_STATUSES,
 } from "../../constants";
 import JobsToolbar from "./components/JobsToolbar";
@@ -140,7 +140,7 @@ export default function Home() {
 	useEffect(() => {
 		const id = setInterval(async () => {
 			const token = await getAccessTokenSilently();
-			const resp = await getCurrentUserJobsPaged(token);
+			const resp = await getAllJobsPaged(token);
 			if (!resp.error) setJobs(resp.data ?? []);
 		}, 20000);
 		return () => clearInterval(id);

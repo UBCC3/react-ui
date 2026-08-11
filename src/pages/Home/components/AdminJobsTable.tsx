@@ -189,7 +189,10 @@ export default function AdminJobsTable({
 				<TableBody>
 					{paginatedJobs.length === 0 ? (
 						<TableRow>
-							<TableCell colSpan={8} align="center">
+							<TableCell
+								colSpan={Object.values(displayColumns).filter(Boolean).length}
+								align="center"
+							>
 								<Typography variant="body2" color="text.secondary">
 									Nothing here yet — run your first analysis from the sidebar.
 								</Typography>

@@ -5,15 +5,15 @@ import { Box, Paper, TablePagination, Snackbar } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import {
 	adminGetAllJobs,
-	getLibraryStructures,
-	deleteJob,
-	getZipPresignedUrl,
+	adminGetAllJobsPaged,
 	cancelJob,
+	deleteJob,
+	getLibraryStructuresPaged,
+	getZipPresignedUrl,
 } from "../services/api";
 import {
 	CANCELLABLE_JOB_STATUSES,
 	DOWNLOADABLE_JOB_STATUSES,
-	JobStatus,
 	TERMINAL_JOB_STATUSES,
 } from "../constants";
 import JobsToolbar from "./Home/components/JobsToolbar";
@@ -142,8 +142,8 @@ export default function Admin() {
 
 				// Fetch jobs and library structures in parallel.
 				const [jobsResponse, structuresResponse] = await Promise.all([
-					adminGetAllJobs(token),
-					getLibraryStructures(token),
+					adminGetAllJobsPaged(token),
+					getLibraryStructuresPaged(token),
 				]);
 
 				// Store jobs, excluding pending jobs from the main jobs list.
@@ -202,6 +202,7 @@ export default function Admin() {
 
 		try {
 			const token = await getAccessTokenSilently();
+			// TODO: move filter to backend
 			const response = await adminGetAllJobs(token);
 			setJobs(response.data);
 			setFilterStructureId("");

@@ -1,4 +1,4 @@
-import { green, blue, orange, red, grey, deepOrange } from "@mui/material/colors";
+import { green, blue, orange, red, grey } from "@mui/material/colors";
 import {
 	CheckCircleOutlined,
 	RunCircleOutlined,
@@ -6,8 +6,6 @@ import {
 	ErrorOutline,
 	CancelOutlined,
 	HelpOutlineOutlined,
-	ReportOutlined,
-	TimerOffOutlined,
 	SvgIconComponent,
 } from "@mui/icons-material";
 import type { FilterExtent } from "./types/Filter";
@@ -86,7 +84,7 @@ export const unpairedElectronOptions: { label: string; multiplicity: number }[] 
 	{ label: "3", multiplicity: 4 }, // quartet
 ];
 
-export type ColumnKind = "string" | "date" | "runtime";
+export type ColumnKind = "string" | "date" | "runtime" | "boolean";
 
 export const columnKinds: Record<string, ColumnKind> = {
 	job_id: "string",
@@ -102,12 +100,14 @@ export const columnKinds: Record<string, ColumnKind> = {
 	runtime: "runtime",
 	submitted_at: "date",
 	completed_at: "date",
+	is_public: "boolean",
 };
 
 export const extentsByKind: Record<ColumnKind, FilterExtent[]> = {
 	string: ["contains", "equals", "startsWith"],
 	date: ["before", "after", "between"],
-	runtime: ["before", "after", "between"],
+	runtime: ["greaterThan", "between", "lessThan"],
+	boolean: ["is"],
 };
 
 export const extentDisplayNames: Record<FilterExtent, string> = {
@@ -117,6 +117,9 @@ export const extentDisplayNames: Record<FilterExtent, string> = {
 	before: "Before",
 	after: "After",
 	between: "Between",
+	greaterThan: "Greater Than",
+	lessThan: "Less Than",
+	is: "Is",
 };
 
 export const failureReasonLabels: Record<string, string> = {

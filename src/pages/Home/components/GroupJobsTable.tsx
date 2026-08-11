@@ -174,7 +174,7 @@ export default function GroupJobsTable({
 						{displayColumns.calculation_type && renderHeader("Calculation Type", "structures")}
 						{displayColumns.structures && renderHeader("Library Structure", "structures")}
 						{displayColumns.tags && renderHeader("Job Tags", "tags")}
-						{displayColumns.runtime && renderHeader("Runtime", "runtime")}
+						{displayColumns.runtime && renderHeader("Runtime", "runtime_seconds")}
 						{displayColumns.submitted_at && renderHeader("Submitted At", "submitted_at")}
 						{displayColumns.completed_at && renderHeader("Completed At", "completed_at")}
 						{displayColumns.is_public && isGroupAdmin && renderHeader("Visibility", "is_public")}

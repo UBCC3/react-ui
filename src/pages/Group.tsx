@@ -1,20 +1,36 @@
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate } from "react-router-dom";
-import { Box, Paper, TablePagination, Snackbar } from "@mui/material";
-import { grey } from "@mui/material/colors";
 import {
-	getLibraryStructures,
+	Box,
+	Paper,
+	TablePagination,
+	Snackbar,
+	Typography,
+	TableContainer,
+	Table,
+	TableHead,
+	TableRow,
+	TableCell,
+	TableBody,
+	Toolbar,
+	Tooltip,
+	IconButton,
+} from "@mui/material";
+import { blue, grey } from "@mui/material/colors";
+import {
 	deleteJob,
-	getCurrentUserGroupJobs,
 	upsertCurrentUser,
 	getZipPresignedUrl,
+	getCurrentUserGroupJobsPaged,
+	getLibraryStructuresPaged,
+	getCurrentUserGroupStructuresPaged,
+	updateStructureVisibility,
 	cancelJob,
 } from "../services/api";
 import {
 	CANCELLABLE_JOB_STATUSES,
 	DOWNLOADABLE_JOB_STATUSES,
-	JobStatus,
 	TERMINAL_JOB_STATUSES,
 } from "../constants";
 import JobsToolbar from "./Home/components/JobsToolbar";
@@ -23,6 +39,9 @@ import type { Filter, Job, Structure } from "../types";
 import GroupPanel from "../components/GroupPanel";
 import GroupJobsTable from "./Home/components/GroupJobsTable";
 import { filterJobs } from "../utils";
+import { Pyramid } from "lucide-react";
+import { renderFormula } from "../utils/renderFormula";
+import { VisibilityOffOutlined, VisibilityOutlined } from "@mui/icons-material";
 
 export default function Group() {
 	// map column name to display name
@@ -61,10 +80,15 @@ export default function Group() {
 	const [adminPanelToken, setAdminPanelToken] = useState<string | null>(null);
 	const [userRole, setUserRole] = useState<string>("");
 
+	const [groupId, setGroupId] = useState<string>("");
+
 	// Data states
 	const [jobs, setJobs] = useState<Job[]>([]);
 	const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
 	const [structures, setStructures] = useState<Structure[]>([]);
+	const [groupStructures, setGroupStructures] = useState<Structure[]>([]);
+	const [structPage, setStructPage] = useState(0);
+	const [structRowsPerPage, setStructRowsPerPage] = useState(5);
 
 	// UI states
 	const [loading, setLoading] = useState(true);
@@ -99,6 +123,31 @@ export default function Group() {
 		jobsRef.current = jobs;
 	}, [jobs]);
 
+	// Mirrors can_write_asset on the backend: admins and group admins can write
+	// any job in the group, everyone else only their own.
+	const canWrite = useCallback(
+		(job: Job) =>
+			userRole === "admin" ||
+			userRole === "group_admin" ||
+			(!!job.user_sub && job.user_sub === user?.sub),
+		[userRole, user?.sub],
+	);
+
+	// Updates public/private visibility for one group structure.
+	const toggleStructureVisibility = async (structureId: string, makePublic: boolean) => {
+		const token = await getAccessTokenSilently();
+		const resp = await updateStructureVisibility(structureId, makePublic, token);
+		if (resp.error) {
+			setAlertMsg("Failed to update structure visibility");
+			setAlertSeverity("error");
+			setAlertShow(true);
+			return;
+		}
+		setGroupStructures((prev) =>
+			prev.map((s) => (s.structure_id === structureId ? { ...s, is_public: makePublic } : s)),
+		);
+	};
+
 	// Initialize token and role
 	useEffect(() => {
 		getAccessTokenSilently()
@@ -109,6 +158,7 @@ export default function Group() {
 			const token = await getAccessTokenSilently();
 			const { data: ud } = await upsertCurrentUser(token, user?.email || "");
 			setUserRole(ud.role || "");
+			setGroupId(ud.group_id || "");
 		})();
 	}, [getAccessTokenSilently, user?.email]);
 
@@ -131,23 +181,25 @@ export default function Group() {
 				const token = await getAccessTokenSilently();
 
 				// Fetch jobs and structures in parallel to reduce loading time.
-				const [jr, sr] = await Promise.all([
-					getCurrentUserGroupJobs(token),
-					getLibraryStructures(token),
+				const [jr, sr, gsr] = await Promise.all([
+					getCurrentUserGroupJobsPaged(token),
+					getLibraryStructuresPaged(token),
+					getCurrentUserGroupStructuresPaged(token),
 				]);
 
-				// Store all group jobs.
-				setJobs(jr.data);
+				// Store all group jobs. Members with no group get a 403 here.
+				const groupJobs: Job[] = jr.data ?? [];
+				setJobs(groupJobs);
 
 				// Apply structure filter if set
 				const initial = filterStructureId
-					? jr.data.filter((j: Job) =>
+					? groupJobs.filter((j: Job) =>
 							j.structures.some((s) => s.structure_id === filterStructureId),
 						)
-					: jr.data;
+					: groupJobs;
 				setFilteredJobs(initial);
 				// Prep structure list
-				const sortedStructs = sr.data.sort((a: Structure, b: Structure) =>
+				const sortedStructs = (sr.data ?? []).sort((a: Structure, b: Structure) =>
 					a.name.localeCompare(b.name),
 				);
 				setStructures([
@@ -161,6 +213,9 @@ export default function Group() {
 					},
 					...sortedStructs,
 				]);
+				setGroupStructures(
+					(gsr.data || []).sort((a: Structure, b: Structure) => a.name.localeCompare(b.name)),
+				);
 			} catch (e) {
 				console.error(e);
 				setError("Failed to load data");
@@ -178,7 +233,7 @@ export default function Group() {
 			if (!resp.error) setJobs(resp.data ?? []);
 		}, 20000);
 		return () => clearInterval(id);
-	}, [getAccessTokenSilently]);
+	}, [getAccessTokenSilently, canWrite]);
 
 	// applying the filter to the jobs
 	const handleFilterSubmit = () => {
@@ -192,8 +247,9 @@ export default function Group() {
 
 		try {
 			const token = await getAccessTokenSilently();
-			const response = await getCurrentUserGroupJobs(token);
-			setJobs(response.data);
+			// TODO: move filter to backend
+			const response = await getCurrentUserGroupJobsPaged(token);
+			setJobs(response.data ?? []);
 			setFilterStructureId("");
 		} catch (err) {
 			setError("Failed to refresh jobs");
@@ -292,6 +348,10 @@ export default function Group() {
 		if (!selectedJobId) return true;
 		const job = jobs.find((j) => j.job_id === selectedJobId);
 		if (!job) return true;
+
+		// The backend requires write access to delete.
+		if (!canWrite(job)) return true;
+
 		return !TERMINAL_JOB_STATUSES.includes(job.status);
 	};
 
@@ -406,97 +466,230 @@ export default function Group() {
 			<MolmakerPageTitle
 				title="Group Dashboard"
 				subtitle={
-					<>
-						Welcome to the group dashboard. Here you can manage jobs and structures within your
-						group.
-					</>
+					groupId ? (
+						<>
+							Welcome to the group dashboard. Here you can manage jobs and structures within your
+							group.
+						</>
+					) : (
+						<>You are not in a group yet. Request to join one below to share jobs and structures.</>
+					)
 				}
 			/>
 
 			{/* Show the group admin panel only after an access token is available. */}
 			{adminPanelToken && <GroupPanel token={adminPanelToken} />}
+			{groupId && (
+				<>
+					{/* Main group jobs table section. */}
+					<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50], mb: 4 }}>
+						<JobsToolbar
+							title="Group Jobs"
+							selectedJobId={selectedJobId}
+							onViewDetails={() => navigate(`/jobs/${selectedJobId}`)}
+							onFilterByStructure={() => {
+								const job = filteredJobs.find((j) => j.job_id === selectedJobId);
+								if (job?.structures.length) {
+									setFilterStructureId(job.structures[0].structure_id);
+								}
+							}}
+							cancelDisabled={cancelDisabled}
+							deleteDisabled={deleteDisabled}
+							onCancelJob={handleCancel}
+							onDeleteJob={confirmDelete}
+							onRefresh={handleRefresh}
+							structures={structures}
+							selectedStructure={filterStructureId}
+							onStructureChange={setFilterStructureId}
+							onZipDownload={handleZipDownload}
+							downloadDisabled={downloadDisabled}
+							isGroupAdmin={userRole === "group_admin"}
 
-			{/* Main group jobs table section. */}
-			<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50], mb: 4 }}>
-				<JobsToolbar
-					selectedJobId={selectedJobId}
-					onViewDetails={() => navigate(`/jobs/${selectedJobId}`)}
-					onFilterByStructure={() => {
-						const job = filteredJobs.find((j) => j.job_id === selectedJobId);
-						if (job?.structures.length) {
-							setFilterStructureId(job.structures[0].structure_id);
-						}
-					}}
-					cancelDisabled={cancelDisabled}
-					deleteDisabled={deleteDisabled}
-					onCancelJob={handleCancel}
-					onDeleteJob={confirmDelete}
-					onRefresh={handleRefresh}
-					structures={structures}
-					selectedStructure={filterStructureId}
-					onStructureChange={setFilterStructureId}
-					onZipDownload={handleZipDownload}
-					downloadDisabled={downloadDisabled}
-					isGroupAdmin={userRole === "group_admin"}
-
-					displayColumns={displayColumns}
-					columnDisplayNames={columnDisplayNames}
-					onColumnToggle={(col, checked) =>
-						setDisplayColumns((prev) => ({ ...prev, [col]: checked }))
-					}
-					filters={filters}
-					onFiltersChange={setFilters}
-					onFilterSubmit={handleFilterSubmit}
-					availableTags={availableTags}
-				/>
-
-				{/* Group jobs table with sorting, pagination, selection, and column visibility. */}
-				<GroupJobsTable
-					jobs={filteredJobs}
-					loading={loading}
-					page={page}
-					rowsPerPage={rowsPerPage}
-					order={order}
-					orderBy={orderBy}
-					selectedJobId={selectedJobId}
-					onSort={(col: keyof Job) => {
-						// Toggle direction when sorting by the same column again.
-						const isAsc = orderBy === col && order === "asc";
-						setOrder(isAsc ? "desc" : "asc");
-						setOrderBy(col);
-
-						// Sort dates numerically and other columns alphabetically.
-						const sorted = [...filteredJobs].sort((a, b) => {
-							if (col === "submitted_at") {
-								return isAsc
-									? new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime()
-									: new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime();
+							displayColumns={displayColumns}
+							columnDisplayNames={columnDisplayNames}
+							onColumnToggle={(col, checked) =>
+								setDisplayColumns((prev) => ({ ...prev, [col]: checked }))
 							}
-							const aVal = String(a[col]);
-							const bVal = String(b[col]);
-							return isAsc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-						});
-						setFilteredJobs(sorted);
-					}}
-					onRowClick={setSelectedJobId}
-					displayColumns={displayColumns}
-					isGroupAdmin={userRole === "group_admin"}
-				/>
+							filters={filters}
+							onFiltersChange={setFilters}
+							onFilterSubmit={handleFilterSubmit}
+							availableTags={availableTags}
+						/>
 
-				{/* Pagination controls for the jobs table. */}
-				<TablePagination
-					component="div"
-					count={filteredJobs.length}
-					page={page}
-					rowsPerPage={rowsPerPage}
-					onPageChange={(_, newPage) => setPage(newPage)}
-					onRowsPerPageChange={(e) => {
-						setRowsPerPage(+e.target.value);
-						setPage(0);
-					}}
-					rowsPerPageOptions={[5, 10, 25]}
-				/>
-			</Paper>
+						{/* Group jobs table with sorting, pagination, selection, and column visibility. */}
+						<GroupJobsTable
+							jobs={filteredJobs}
+							loading={loading}
+							page={page}
+							rowsPerPage={rowsPerPage}
+							order={order}
+							orderBy={orderBy}
+							selectedJobId={selectedJobId}
+							onSort={(col: keyof Job) => {
+								// Toggle direction when sorting by the same column again.
+								const isAsc = orderBy === col && order === "asc";
+								setOrder(isAsc ? "desc" : "asc");
+								setOrderBy(col);
+
+								// Sort dates numerically and other columns alphabetically.
+								const sorted = [...filteredJobs].sort((a, b) => {
+									if (col === "submitted_at") {
+										return isAsc
+											? new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime()
+											: new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime();
+									}
+									const aVal = String(a[col]);
+									const bVal = String(b[col]);
+									return isAsc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+								});
+								setFilteredJobs(sorted);
+							}}
+							onRowClick={setSelectedJobId}
+							displayColumns={displayColumns}
+							isGroupAdmin={userRole === "group_admin"}
+						/>
+
+						{/* Pagination controls for the jobs table. */}
+						<TablePagination
+							component="div"
+							count={filteredJobs.length}
+							page={page}
+							rowsPerPage={rowsPerPage}
+							onPageChange={(_, newPage) => setPage(newPage)}
+							onRowsPerPageChange={(e) => {
+								setRowsPerPage(+e.target.value);
+								setPage(0);
+							}}
+							rowsPerPageOptions={[5, 10, 25]}
+						/>
+					</Paper>
+
+					{/* Group structure library — separate Paper, styled like the personal library. */}
+					<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50], mb: 4 }}>
+						{/* Group structure toolbar */}
+						<Toolbar
+							sx={{
+								justifyContent: "space-between",
+								borderTopLeftRadius: 5,
+								borderTopRightRadius: 5,
+							}}
+						>
+							<Typography
+								variant="h6"
+								color={grey[800]}
+								sx={{
+									display: "flex",
+									alignItems: "center",
+									fontWeight: "bold",
+									fontSize: "1.1rem",
+								}}
+							>
+								<Pyramid style={{ marginRight: 10, color: blue[600] }} />
+								Group Structures
+							</Typography>
+						</Toolbar>
+
+						{/* Group structure table */}
+						<TableContainer>
+							<Table>
+								<TableHead>
+									<TableRow sx={{ bgcolor: grey[200] }}>
+										<TableCell>Name</TableCell>
+										<TableCell>Chemical Formula</TableCell>
+										<TableCell>Notes</TableCell>
+										<TableCell>Tags</TableCell>
+										<TableCell>Uploaded At</TableCell>
+										{userRole === "group_admin" && <TableCell>Visibility</TableCell>}
+									</TableRow>
+								</TableHead>
+								<TableBody>
+									{/* Table placeholder for 0 group structures */}
+									{groupStructures.length === 0 && (
+										<TableRow>
+											<TableCell colSpan={userRole === "group_admin" ? 6 : 5} align="center">
+												<Typography variant="body2" color="text.secondary">
+													No structures in this group yet.
+												</Typography>
+											</TableCell>
+										</TableRow>
+									)}
+
+									{/* Group structure table content */}
+									{groupStructures
+										.slice(
+											structPage * structRowsPerPage,
+											structPage * structRowsPerPage + structRowsPerPage,
+										)
+										.map((structure) => (
+											<TableRow key={structure.structure_id}>
+												<TableCell>{structure.name}</TableCell>
+												<TableCell>{renderFormula(structure.formula)}</TableCell>
+												<TableCell>{structure.notes}</TableCell>
+												<TableCell>
+													{structure.tags && structure.tags.length > 0 ? (
+														structure.tags.join(", ")
+													) : (
+														<Typography variant="body2" color="text.secondary">
+															No tags
+														</Typography>
+													)}
+												</TableCell>
+												<TableCell>
+													{structure.uploaded_at
+														? new Date(structure.uploaded_at).toLocaleString()
+														: ""}
+												</TableCell>
+												{userRole === "group_admin" && (
+													<TableCell>
+														{structure.is_public ? (
+															<Tooltip title="Make Private">
+																<IconButton
+																	size="small"
+																	color="primary"
+																	onClick={() =>
+																		toggleStructureVisibility(structure.structure_id, false)
+																	}
+																>
+																	<VisibilityOutlined />
+																</IconButton>
+															</Tooltip>
+														) : (
+															<Tooltip title="Make Public">
+																<IconButton
+																	size="small"
+																	sx={{ color: grey[600] }}
+																	onClick={() =>
+																		toggleStructureVisibility(structure.structure_id, true)
+																	}
+																>
+																	<VisibilityOffOutlined />
+																</IconButton>
+															</Tooltip>
+														)}
+													</TableCell>
+												)}
+											</TableRow>
+										))}
+								</TableBody>
+							</Table>
+						</TableContainer>
+
+						{/* Table pagination for group structure control */}
+						<TablePagination
+							component="div"
+							rowsPerPageOptions={[5, 10, 25]}
+							count={groupStructures.length}
+							rowsPerPage={structRowsPerPage}
+							page={structPage}
+							onPageChange={(_, newPage) => setStructPage(newPage)}
+							onRowsPerPageChange={(e) => {
+								setStructRowsPerPage(+e.target.value);
+								setStructPage(0);
+							}}
+						/>
+					</Paper>
+				</>
+			)}
 		</Box>
 	);
 }
