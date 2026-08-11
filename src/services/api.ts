@@ -971,31 +971,10 @@ export const updateVisibility = async (
 		const formData = new FormData();
 		formData.append("is_public", isPublic.toString());
 		const API = createBackendAPI(token);
-		const res = await API.patch(`/jobs/${jobId}/visibility/`, formData);
+		const res = await API.patch(`/jobs/${jobId}/visibility`, formData);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error("Failed to update job visibility", error);
-		return {
-			status: error.response?.status || 500,
-			error: error.response?.data?.detail || error.message,
-		};
-	}
-};
-
-/**
- * Updates the stored runtime value for a job.
- */
-export const updateJobRuntime = async (
-	jobId: string,
-	runtime: string,
-	token: string,
-): Promise<Response> => {
-	try {
-		const API = createBackendAPI(token);
-		const res = await API.patch(`/jobs/${jobId}/${runtime}`);
-		return { status: res.status, data: res.data };
-	} catch (error: any) {
-		console.error("Failed to update job runtime", error);
 		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
