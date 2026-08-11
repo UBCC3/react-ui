@@ -4,7 +4,7 @@ interface User {
 	role: string;
 	group?: string;
 	group_id?: string;
-	member_since?: string;
+	role_or_group_updated_at?: string;
 	job_count?: number;
 }
 

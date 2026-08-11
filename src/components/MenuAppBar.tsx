@@ -1,4 +1,5 @@
-import { useEffect, useState, MouseEvent } from "react";
+import { useEffect, useState, MouseEvent, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
@@ -8,6 +9,7 @@ import Menu from "@mui/material/Menu";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
 	Avatar,
+	Badge,
 	Box,
 	Button,
 	Chip,
@@ -22,7 +24,6 @@ import {
 	Tooltip,
 } from "@mui/material";
 import {
-	CancelOutlined,
 	CheckCircleOutlineOutlined,
 	InboxOutlined,
 	PersonAddDisabledOutlined,
@@ -31,18 +32,26 @@ import {
 } from "@mui/icons-material";
 import { useDrawer } from "./DrawerContext";
 import logo from "../assets/logo.svg";
-import {
-	getSentRequests,
-	getRequests,
-	approveRequest,
-	rejectRequest,
-	deleteRequest,
-} from "../services/api";
+import { getSentRequests, getGroupRequests, cancelRequest } from "../services/api";
 import { grey } from "@mui/material/colors";
 import { APP_BAR_HEIGHT } from "../constants";
+import { GroupRequest } from "../types";
 
 // Height used to calculate the maximum visible height of the requests menu.
 const ITEM_HEIGHT = 48;
+
+const REQUEST_TYPE_LABELS: Record<string, string> = {
+	invite: "Group Invite",
+	join_request: "Join Request",
+	demember_request: "Leave-Group Request",
+};
+
+const formatExpiry = (iso: string) => {
+	const ms = new Date(iso).getTime() - Date.now();
+	if (ms <= 0) return "expired";
+	const days = Math.ceil(ms / 86_400_000);
+	return `expires in ${days} day${days === 1 ? "" : "s"}`;
+};
 
 /**
  * Main navigation bar component for the app.
@@ -55,23 +64,28 @@ const ITEM_HEIGHT = 48;
  * - Confirmation dialog state
  */
 export default function MenuAppBar() {
+	const navigate = useNavigate();
+
 	const { open, width } = useDrawer();
 	const { loginWithRedirect, logout, isAuthenticated, user, getAccessTokenSilently } = useAuth0();
 
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 	const [anchorRequestsEl, setAnchorRequestsEl] = useState<null | HTMLElement>(null);
 
-	const [sentRequests, setSentRequests] = useState<any[]>([]);
-	const [incomingRequests, setIncomingRequests] = useState<any[]>([]);
+	const [sentRequests, setSentRequests] = useState<GroupRequest[]>([]);
 
 	const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-	const [requestType, setRequestType] = useState<"approve" | "reject" | "delete" | null>(null);
+	const [requestType, setRequestType] = useState<"cancel" | null>(null);
 	const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
+
+	const [groupRequests, setGroupRequests] = useState<GroupRequest[]>([]);
 
 	const statusColors: Record<string, string> = {
 		pending: "orange",
 		approved: "green",
 		rejected: "red",
+		expired: "grey",
+		cancelled: "grey",
 	};
 
 	/**
@@ -99,36 +113,16 @@ export default function MenuAppBar() {
 	const handleRequestsClose = () => setAnchorRequestsEl(null);
 
 	/**
-	 * Approves an incoming request using the authenticated user's access token,
-	 * then removes the approved request from the local incoming requests state.
-	 */
-	const handleApproveRequest = async (requestId: string) => {
-		const token = await getAccessTokenSilently();
-		if (!token) return;
-		await approveRequest(requestId, token);
-		setIncomingRequests((prev) => prev.filter((r) => r.request_id !== requestId));
-	};
-
-	/**
-	 * Rejects an incoming request using the authenticated user's access token,
-	 * then removes the rejected request from the local incomng requests state.
-	 */
-	const handleRejectRequest = async (requestId: string) => {
-		const token = await getAccessTokenSilently();
-		if (!token) return;
-		await rejectRequest(requestId, token);
-		setIncomingRequests((prev) => prev.filter((r) => r.request_id !== requestId));
-	};
-
-	/**
 	 * Deletes a sent request using the authenticated user's access token,
 	 * then removes the deleted request from the local sent requests state.
 	 */
-	const handleDeleteRequest = async (requestId: string) => {
+	const handleCancelRequest = async (requestId: string) => {
 		const token = await getAccessTokenSilently();
 		if (!token) return;
-		await deleteRequest(requestId, token);
-		setSentRequests((prev) => prev.filter((r) => r.request_id !== requestId));
+		await cancelRequest(requestId, token);
+		setSentRequests((prev) =>
+			prev.map((r) => (r.request_id === requestId ? { ...r, status: "cancelled" } : r)),
+		);
 	};
 
 	/**
@@ -136,29 +130,65 @@ export default function MenuAppBar() {
 	 * Auth0 id becomes available or changes.
 	 */
 	useEffect(() => {
+		const SENT_STATUSES = ["pending", "rejected"] as const;
+
 		/**
 		 * Fetches requests sent by the current authenticated user.
 		 */
 		const fetchSent = async () => {
 			const token = await getAccessTokenSilently();
-			if (!token || !user?.sub) return;
-			const resp = await getSentRequests(user.sub, token);
-			setSentRequests(resp.data);
-		};
-
-		/**
-		 * Fetches requests received by the current authenticated user.
-		 */
-		const fetchIncoming = async () => {
-			const token = await getAccessTokenSilently();
-			if (!token || !user?.sub) return;
-			const resp = await getRequests(user.sub, token);
-			setIncomingRequests(resp.data);
+			if (!token) return;
+			const results = await Promise.all(
+				SENT_STATUSES.map((s) =>
+					s === "pending" ? getSentRequests(token, s) : getSentRequests(token, s, undefined, 30),
+				),
+			);
+			setSentRequests(results.flatMap((r) => r.data ?? []));
 		};
 
 		fetchSent();
-		fetchIncoming();
 	}, [user?.sub, getAccessTokenSilently]);
+
+	/**
+	 * Handles join/de-member requests to be visible from group admin page
+	 */
+	useEffect(() => {
+		const fetchGroupRequests = async () => {
+			const token = await getAccessTokenSilently();
+			if (!token) return;
+			const resp = await getGroupRequests(token, "pending");
+			// 403 for plain members / users with no group — treat as "nothing to show"
+			setGroupRequests(resp.error ? [] : (resp.data ?? []));
+		};
+		fetchGroupRequests();
+	}, [user?.sub, getAccessTokenSilently]);
+
+	// Requests arrive while the user sits on a page, so refresh the actionable
+	// lists on an interval. Sent history is fetched on mount only.
+	useEffect(() => {
+		const REFRESH_MS = 20000;
+
+		const refresh = async () => {
+			const token = await getAccessTokenSilently();
+			if (!token) return;
+
+			const group = await getGroupRequests(token, "pending");
+			setGroupRequests(group.error ? [] : (group.data ?? []));
+		};
+
+		const id = setInterval(refresh, REFRESH_MS);
+		return () => clearInterval(id);
+	}, [getAccessTokenSilently]);
+
+	// Invites already appear under Sent Requests, and only the invited user can
+	// act on them - so this section covers join and de-member requests only.
+	const groupOnlyRequests = groupRequests.filter((r) => r.request_type !== "invite");
+
+	// The number of unresponsed requests
+	const pendingCount = useMemo(
+		() => groupOnlyRequests.filter((r) => r.status === "pending").length,
+		[groupOnlyRequests],
+	);
 
 	return (
 		<Box className="bg-slate-100">
@@ -208,9 +238,11 @@ export default function MenuAppBar() {
 									aria-haspopup="true"
 									aria-expanded={anchorRequestsEl ? "true" : undefined}
 								>
-									<Avatar sx={{ bgcolor: grey[300], color: grey[700] }}>
-										<InboxOutlined fontSize="medium" />
-									</Avatar>
+									<Badge badgeContent={pendingCount} color="error" overlap="circular">
+										<Avatar sx={{ bgcolor: grey[300], color: grey[700] }}>
+											<InboxOutlined fontSize="medium" />
+										</Avatar>
+									</Badge>
 								</IconButton>
 							</Tooltip>
 							<IconButton
@@ -260,51 +292,6 @@ export default function MenuAppBar() {
 					paper: { style: { maxHeight: ITEM_HEIGHT * 4.5 } },
 				}}
 			>
-				<ListSubheader sx={{ fontWeight: "bold" }}>Incoming Requests</ListSubheader>
-				{incomingRequests.length === 0 ? (
-					<MenuItem disabled>No incoming requests</MenuItem>
-				) : (
-					incomingRequests.map((req) => (
-						<MenuItem
-							key={req.request_id}
-							sx={{ display: "flex", justifyContent: "space-between", gap: 1 }}
-						>
-							<Box>
-								<Typography variant="body2">{req.sender_name}</Typography>
-								<Typography variant="caption" color="text.secondary">
-									{req.group_name}
-								</Typography>
-							</Box>
-							{req.status === "pending" && (
-								<Box>
-									<IconButton
-										size="small"
-										onClick={() => {
-											setConfirmDialogOpen(true);
-											setRequestType("approve");
-											setSelectedRequest(req.request_id);
-										}}
-										color="success"
-									>
-										<CheckCircleOutlineOutlined />
-									</IconButton>
-									<IconButton
-										size="small"
-										onClick={() => {
-											setConfirmDialogOpen(true);
-											setRequestType("reject");
-											setSelectedRequest(req.request_id);
-										}}
-										color="error"
-									>
-										<CancelOutlined />
-									</IconButton>
-								</Box>
-							)}
-						</MenuItem>
-					))
-				)}
-				<Divider />
 				<ListSubheader sx={{ fontWeight: "bold" }}>Sent Requests</ListSubheader>
 				{sentRequests.length === 0 ? (
 					<MenuItem disabled>No sent requests</MenuItem>
@@ -315,30 +302,72 @@ export default function MenuAppBar() {
 							sx={{ display: "flex", justifyContent: "space-between", gap: 1 }}
 						>
 							<Box>
-								{req.receiver_name}
-								<Chip
-									label={req.status}
-									size="small"
-									sx={{
-										bgcolor: statusColors[req.status] ?? "grey.300",
-										color: "white",
-										textTransform: "capitalize",
-										ml: 1,
-									}}
-								/>
+								<Typography variant="body2" sx={{ fontWeight: 600 }}>
+									{REQUEST_TYPE_LABELS[req.request_type] ?? req.request_type}
+									<Chip
+										label={req.status}
+										size="small"
+										sx={{
+											bgcolor: statusColors[req.status] ?? "grey.300",
+											color: "white",
+											textTransform: "capitalize",
+											ml: 1,
+										}}
+									/>
+								</Typography>
+								<Typography variant="caption" color="text.secondary" display="block">
+									{req.group_name ?? "Unknown group"}
+									{req.receiver_name ? ` · to ${req.receiver_name}` : ""}
+								</Typography>
 							</Box>
 							{req.status === "pending" && (
 								<IconButton
 									size="small"
 									onClick={() => {
 										setConfirmDialogOpen(true);
-										setRequestType("delete");
+										setRequestType("cancel");
 										setSelectedRequest(req.request_id);
 									}}
 									color="primary"
 								>
 									<PersonAddDisabledOutlined />
 								</IconButton>
+							)}
+						</MenuItem>
+					))
+				)}
+				<Divider />
+				<ListSubheader sx={{ fontWeight: "bold" }}>Group Requests</ListSubheader>
+				{groupOnlyRequests.length === 0 ? (
+					<MenuItem disabled>No group requests</MenuItem>
+				) : (
+					groupOnlyRequests.map((req) => (
+						<MenuItem
+							key={req.request_id}
+							sx={{ display: "flex", justifyContent: "space-between", gap: 1 }}
+						>
+							<Box>
+								<Typography variant="body2" sx={{ fontWeight: 600 }}>
+									{REQUEST_TYPE_LABELS[req.request_type] ?? req.request_type}
+								</Typography>
+								<Typography variant="caption" color="text.secondary" display="block">
+									{req.sender_name ?? "Unknown user"}
+								</Typography>
+								<Typography variant="caption" color="text.secondary" display="block">
+									{formatExpiry(req.expires_at)}
+								</Typography>
+							</Box>
+							{req.status === "pending" && (
+								<Button
+									size="small"
+									sx={{ textTransform: "none" }}
+									onClick={() => {
+										handleRequestsClose();
+										navigate("/group");
+									}}
+								>
+									Review
+								</Button>
 							)}
 						</MenuItem>
 					))
@@ -354,11 +383,7 @@ export default function MenuAppBar() {
 				<DialogTitle id="confirm-dialog-title">Confirm Action</DialogTitle>
 				<DialogContent>
 					<DialogContentText id="confirm-dialog-description">
-						{requestType === "approve"
-							? "Are you sure you want to approve this request?"
-							: requestType === "reject"
-								? "Are you sure you want to reject this request?"
-								: "Are you sure you want to delete this request?"}
+						Are you sure you want to cancel this request?
 					</DialogContentText>
 				</DialogContent>
 				<DialogActions>
@@ -371,12 +396,8 @@ export default function MenuAppBar() {
 					</Button>
 					<Button
 						onClick={async () => {
-							if (requestType === "approve" && selectedRequest) {
-								await handleApproveRequest(selectedRequest);
-							} else if (requestType === "reject" && selectedRequest) {
-								await handleRejectRequest(selectedRequest);
-							} else if (requestType === "delete" && selectedRequest) {
-								await handleDeleteRequest(selectedRequest);
+							if (requestType === "cancel" && selectedRequest) {
+								await handleCancelRequest(selectedRequest);
 							}
 							setConfirmDialogOpen(false);
 						}}
