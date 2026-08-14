@@ -20,6 +20,7 @@ import {
 	ArchiveOutlined,
 	ManageSearchOutlined,
 	InfoOutlined,
+	EditOutlined,
 } from "@mui/icons-material";
 import { blue, grey } from "@mui/material/colors";
 import ViewColumnIcon from "@mui/icons-material/ViewColumn";
@@ -35,6 +36,7 @@ interface JobsToolbarProps {
 	title?: string;
 	selectedJobId: string | null;
 	onViewDetails: () => void;
+	onEditJob?: () => void;
 	onFilterByStructure: () => void;
 	cancelDisabled: (selectedJobId: string | null) => boolean;
 	deleteDisabled: (selectedJobId: string | null) => boolean;
@@ -76,6 +78,7 @@ export default function JobsToolbar({
 	title = "Jobs History",
 	selectedJobId,
 	onViewDetails,
+	onEditJob,
 	onFilterByStructure,
 	cancelDisabled,
 	deleteDisabled,
@@ -169,6 +172,15 @@ export default function JobsToolbar({
 								</IconButton>
 							</span>
 						</Tooltip>
+						{onEditJob && (
+							<Tooltip title="Edit job name, notes and tags">
+								<span>
+									<IconButton disabled={!selectedJobId} onClick={onEditJob}>
+										<EditOutlined />
+									</IconButton>
+								</span>
+							</Tooltip>
+						)}
 						<Tooltip title="Filter jobs with same structure">
 							<span>
 								<IconButton disabled={!selectedJobId} onClick={onFilterByStructure}>

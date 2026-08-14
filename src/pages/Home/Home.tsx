@@ -22,6 +22,7 @@ import JobsTable from "./components/JobsTable";
 import { MolmakerLoading, MolmakerAlert, MolmakerConfirm } from "../../components/custom";
 import type { Filter, Job, Structure } from "../../types";
 import { filterJobs } from "../../utils";
+import EditJobDialog from "../../components/EditJobDialog";
 
 export default function Home() {
 	const navigate = useNavigate();
@@ -56,6 +57,10 @@ export default function Home() {
 	const [alertSeverity, setAlertSeverity] = useState<"success" | "error" | "info" | "warning">(
 		"info",
 	);
+
+	// edit job dialog
+	const [editJobOpen, setEditJobOpen] = useState<boolean>(false);
+	const jobToEdit = jobs.find((j) => j.job_id === selectedJobId) ?? null;
 
 	// stores custom table filters entered by the user
 	const [filters, setFilters] = useState<Filter[]>([
@@ -404,6 +409,18 @@ export default function Home() {
 					setOpenConfirmDelete(false);
 				}}
 			/>
+			<EditJobDialog
+				open={editJobOpen}
+				job={jobToEdit}
+				availableTags={availableTags}
+				onClose={() => setEditJobOpen(false)}
+				onSaved={(updatedJob) => {
+					const replace = (list: Job[]) =>
+						list.map((j) => (j.job_id === updatedJob.job_id ? updatedJob : j));
+					setJobs(replace);
+					setFilteredJobs(replace);
+				}}
+			/>
 			<Box sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
 				<Snackbar
 					open={alertShow}
@@ -437,6 +454,7 @@ export default function Home() {
 					onViewDetails={() => {
 						navigate(`/jobs/${selectedJobId}`);
 					}}
+					onEditJob={() => setEditJobOpen(true)}
 					onFilterByStructure={() => {
 						const job = filteredJobs.find((j) => j.job_id === selectedJobId);
 						if (job?.structures.length) {
