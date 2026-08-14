@@ -21,6 +21,7 @@ interface MolmakerMoleculePreviewProp {
 	maxHeight?: number;
 	sx?: SxProps<Theme>;
 	submitConfirmed?: boolean;
+    showAtomNumbers?: boolean;
 	setStructureImageData?: (data: string) => void;
 }
 
@@ -53,6 +54,7 @@ const MolmakerMoleculePreview: React.FC<MolmakerMoleculePreviewProp> = ({
 	maxHeight,
 	sx = {},
 	submitConfirmed,
+    showAtomNumbers = false,
 	setStructureImageData,
 }) => {
 	const viewerRef = useRef<HTMLDivElement>(null);
@@ -76,11 +78,27 @@ const MolmakerMoleculePreview: React.FC<MolmakerMoleculePreviewProp> = ({
 		const viewer = window.$3Dmol.createViewer(element, { backgroundColor: "white" });
 		viewer.addModel(data, format);
 		viewer.setStyle({}, { stick: {}, sphere: { scale: 0.3 } });
+
+        // Atoms number help users pick the right indices for a scan. 3Dmol
+        // serials are 1-based and match the file's atom order.
+        if (showAtomNumbers) {
+            viewer.getModel().selectedAtoms({}).forEach((atom: any) => {
+                viewer.addLabel(String(atom.serial + 1), {
+                    position: { x: atom.x, y: atom.y, z: atom.z },
+                    fontSize: 12,
+                    fontColor: "black",
+                    backgroundColor: "white",
+                    backgroundOpacity: 0.7,
+                    inFront: true,
+                });
+            });
+        }
+
 		viewer.zoomTo();
 		viewer.resize();
 		viewer.zoomTo();
 		viewer.render();
-	}, [data, format]);
+	}, [data, format, showAtomNumbers]);
 
 	return (
 		<Paper

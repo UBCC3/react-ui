@@ -12,6 +12,8 @@ import {
 	Autocomplete,
 	TextField,
 	MenuItem,
+    FormControlLabel,
+    Checkbox,
 } from "@mui/material";
 import { PlayCircleOutlineOutlined, InfoOutline } from "@mui/icons-material";
 import {
@@ -65,6 +67,7 @@ export default function BondAngleScan() {
 
 	// state for structure preview
 	const [structureData, setStructureData] = useState<string>("");
+    const [showAtomNumbers, setShowAtomNumbers] = useState<boolean>(true);
 
 	// state for basic job information
 	const [jobName, setJobName] = useState<string>("");
@@ -489,7 +492,7 @@ export default function BondAngleScan() {
 
 								{/* Scan coordinate and atoms */}
 								<Grid sx={{ mx: 2 }}>
-									<MolmakerSectionHeader text="What do you want to scan?" sx={{ mb: 1 }} />
+									<MolmakerSectionHeader text="What do you want to scan?" sx={{ mb: 2 }} />
 									<TextField
 										select
 										fullWidth
@@ -518,6 +521,17 @@ export default function BondAngleScan() {
 										error={submitAttempted && !atomsValid}
 										helperText={`Enter ${expectedAtomCount} atom numbers separated by commas, in order, for example ${selectedCoordinate.example}`}
 									/>
+
+                                    <FormControlLabel
+                                        control={
+                                            <Checkbox
+                                                size="small"
+                                                checked={showAtomNumbers}
+                                                onChange={(e) => setShowAtomNumbers(e.target.checked)}
+                                            />
+                                        }
+                                        label="Show atom numbers in preview"
+                                    />
 								</Grid>
 
 								<Divider />
@@ -674,6 +688,7 @@ export default function BondAngleScan() {
 						source={source}
 						sx={{ maxHeight: 450 }}
 						submitConfirmed={submitConfirmed}
+                        showAtomNumbers={showAtomNumbers}
 						setStructureImageData={setStructureImageData}
 					/>
 				</Grid>

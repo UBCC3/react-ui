@@ -1,7 +1,9 @@
 import {
 	Alert,
 	Box,
+	Checkbox,
 	Chip,
+	FormControlLabel,
 	Grid,
 	Paper,
 	Tab,
@@ -88,6 +90,8 @@ const ScanViewer: React.FC<ScanViewerProps> = ({ jobResultFiles, viewerObjId, se
 	const [value, setValue] = useState<viewerTab>(viewerTab.structure);
 	const [selectedFrame, setSelectedFrame] = useState<number>(1);
 
+    const [showAtomNumbers, setShowAtomNumbers] = useState<boolean>(false);
+
 	const handleChange = (_event: React.SyntheticEvent, newValue: viewerTab) => {
 		setValue(newValue);
 	};
@@ -96,7 +100,7 @@ const ScanViewer: React.FC<ScanViewerProps> = ({ jobResultFiles, viewerObjId, se
 		viewerObjId,
 		src: xyzFileUrl,
 		loadScript: `load "XYZ::${xyzFileUrl}";`,
-		onReadyScript: `zoom 50; connect auto; set measurementUnits angstroms; set measurementLabels on;`,
+		onReadyScript: `zoom 50; connect auto; set measurementUnits angstroms; set measurementLabels on; set measureAllModels TRUE;`,
 		skip: loading || value !== viewerTab.structure,
 		cleanupOnChange: true,
 	});
@@ -124,10 +128,10 @@ const ScanViewer: React.FC<ScanViewerProps> = ({ jobResultFiles, viewerObjId, se
 		return energies.map((energy) => (energy - minimum) * HARTREE_TO_KCAL);
 	}, [successfulPoints]);
 
-	// Switch frames and annotate the scanned coordinate. No reset/zoom here so
-	// the user's chosen orientation survives stepping through points.
+	// Annotate the scanned coordinate once; measureAllModels keeps it visible
+	// across every frame.
 	useEffect(() => {
-		if (!viewerObj || !successfulPoints.length || value !== viewerTab.structure) return;
+		if (!viewerObj || !atoms.length || value !== viewerTab.structure) return;
 
 		const measureTargets = atoms.map((a) => `(atomno=${a})`).join(" ");
 		const atomSelection = atoms.map((a) => `atomno=${a}`).join(" or ");
@@ -135,14 +139,29 @@ const ScanViewer: React.FC<ScanViewerProps> = ({ jobResultFiles, viewerObjId, se
 		window.Jmol.script(
 			viewerObj,
 			`
-				model ${selectedFrame};
 				measures delete;
-				${atoms.length ? `measure ${measureTargets};` : ""}
-				${atoms.length ? `select ${atomSelection}; halos on; select none;` : ""}
+				measure ${measureTargets};
+				select ${atomSelection};
+				halos on;
+				select none;
 			`,
 		);
-	}, [selectedFrame, viewerObj, successfulPoints.length, atoms, value]);
+	}, [viewerObj, atoms, value]);
 
+	// Frame switching only.
+	useEffect(() => {
+		if (!viewerObj || !successfulPoints.length || value !== viewerTab.structure) return;
+		window.Jmol.script(viewerObj, `model ${selectedFrame};`);
+	}, [selectedFrame, viewerObj, successfulPoints.length, value]);
+
+    useEffect(() => {
+		if (!viewerObj || value !== viewerTab.structure) return;
+		window.Jmol.script(
+			viewerObj,
+			`select all; ${showAtomNumbers ? "label %[atomno]; color labels black; font label 14;" : "label off;"} select none;`,
+		);
+	}, [viewerObj, showAtomNumbers, value]);
+    
 	if (loading) {
 		return <MolmakerLoading />;
 	}
@@ -179,12 +198,22 @@ const ScanViewer: React.FC<ScanViewerProps> = ({ jobResultFiles, viewerObjId, se
 
 				{value === viewerTab.structure && (
 					<>
-						<Box sx={{ mt: 2, mb: 2 }}>
+                        <Box sx={{ mt: 2, mb: 2, display: "flex", alignItems: "center", gap: 2 }}>
 							<AddStructureToLibrary
 								viewerObj={viewerObj}
 								viewerRef={viewerRef}
 								infoText="The structure for the currently selected scan point is saved to your
 								library, not the whole scan."
+							/>
+							<FormControlLabel
+								control={
+									<Checkbox
+										size="small"
+										checked={showAtomNumbers}
+										onChange={(e) => setShowAtomNumbers(e.target.checked)}
+									/>
+								}
+								label="Show atom numbers"
 							/>
 						</Box>
 						<Paper
