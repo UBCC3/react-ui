@@ -2,6 +2,7 @@ export type JobStatus =
 	"submitting" | "submitted" | "running" | "completed" | "failed" | "cancelled";
 
 export type JobFailureReason =
+	| "calculation_failed"
 	| "out_of_memory"
 	| "timeout"
 	| "node_failure"

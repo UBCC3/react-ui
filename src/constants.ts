@@ -123,12 +123,13 @@ export const extentDisplayNames: Record<FilterExtent, string> = {
 };
 
 export const failureReasonLabels: Record<string, string> = {
+	calculation_failed: "The calculation failed",
 	out_of_memory: "Out of memory",
 	timeout: "Time limit exceeded",
 	node_failure: "Compute node failure",
 	submission_failed: "Could not be submitted to the cluster",
 	status_check_failed: "Lost track of the job on the cluster",
 	result_upload_failed: "Results could not be uploaded",
-	cluster_failed: "The calculation failed on the cluster",
+	cluster_failed: "Cluster infrastructure failure",
 	unknown: "Unknown failure",
 };
