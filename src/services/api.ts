@@ -46,22 +46,6 @@ export const createBackendAPI = (token: any) => {
 };
 
 /**
- * Creates an Axios instance for cluster-related API calls.
- * This is used for operations such as submitting, cancelling, and checking jobs.
- */
-export const createClusterAPI = (token: any) => {
-	return axios.create({
-		baseURL:
-			import.meta.env.VITE_MODE === "development"
-				? import.meta.env.VITE_CLUSTER_API_URL
-				: "https://ubchemica.com/ubchemica/api/cluster",
-		headers: {
-			Authorization: `Bearer ${token}`,
-		},
-	});
-};
-
-/**
  * Creates an Axios instance for storage-related API calls.
  * This is used for downloading files, archives, and presigned URLs.
  */
@@ -747,23 +731,6 @@ export const fetchJobResultFiles = async (token: string, jobId: string): Promise
 					: httpStatus === 503
 						? "File storage is temporarily unavailable. Please try again shortly."
 						: error.response?.data?.detail || error.message,
-		};
-	}
-};
-
-/**
- * Fetches error output for a failed or problematic cluster job.
- */
-export const fetchJobError = async (jobId: string, token: string): Promise<Response> => {
-	try {
-		const API = createClusterAPI(token);
-		const res = await API.get(`/error/${jobId}`);
-		return { status: res.status, data: res.data };
-	} catch (error: any) {
-		console.error("Failed to fetch job error", error);
-		return {
-			status: error.response?.status || 500,
-			error: error.response?.data?.detail || error.message,
 		};
 	}
 };
