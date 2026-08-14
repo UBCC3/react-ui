@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
@@ -12,8 +12,9 @@ import {
 	Autocomplete,
 	TextField,
 	MenuItem,
-    FormControlLabel,
-    Checkbox,
+	FormControlLabel,
+	Checkbox,
+	FormHelperText,
 } from "@mui/material";
 import { PlayCircleOutlineOutlined, InfoOutline } from "@mui/icons-material";
 import {
@@ -25,6 +26,7 @@ import {
 	MolmakerLoading,
 	MolmakerAlert,
 	MolmakerPageTitle,
+	MolmakerDropdown,
 } from "../../components/custom";
 import {
 	getLibraryStructures,
@@ -35,8 +37,9 @@ import {
 	submitBondAngleScan,
 } from "../../services/api";
 import { Structure } from "../../types";
-import { unpairedElectronOptions } from "../../constants";
+import { APP_BAR_HEIGHT, unpairedElectronOptions } from "../../constants";
 import { grey } from "@mui/material/colors";
+import { formatMeasurement, measureCoordinate, parseXyzAtoms } from "../../utils";
 
 /** Which internal coordinate the scan varies. */
 type ScanCoordinate = "bond" | "angle" | "dihedral";
@@ -55,6 +58,12 @@ const COORDINATE_OPTIONS: {
 	{ value: "dihedral", label: "Dihedral angle (4 atoms)", atomCount: 4, example: "3, 1, 2, 6" },
 ];
 
+const SLOT_LABELS: Record<ScanCoordinate, string[]> = {
+	bond: ["Atom 1", "Atom 2"],
+	angle: ["Atom 1", "Vertex atom", "Atom 3"],
+	dihedral: ["Atom 1", "Axis atom 1", "Axis atom 2", "Atom 4"],
+};
+
 export default function BondAngleScan() {
 	// used to redirect the user after the job is successfully submitted
 	const navigate = useNavigate();
@@ -67,7 +76,7 @@ export default function BondAngleScan() {
 
 	// state for structure preview
 	const [structureData, setStructureData] = useState<string>("");
-    const [showAtomNumbers, setShowAtomNumbers] = useState<boolean>(true);
+	const [showAtomNumbers, setShowAtomNumbers] = useState<boolean>(true);
 
 	// state for basic job information
 	const [jobName, setJobName] = useState<string>("");
@@ -95,7 +104,7 @@ export default function BondAngleScan() {
 
 	// state for the scan specification
 	const [coordinate, setCoordinate] = useState<ScanCoordinate>("bond");
-	const [atomInput, setAtomInput] = useState<string>("");
+	const [atomSlots, setAtomSlots] = useState<(number | "")[]>([]);
 	const [rangeMode, setRangeMode] = useState<RangeMode>("steps");
 	const [rangeMin, setRangeMin] = useState<string>("");
 	const [rangeMax, setRangeMax] = useState<string>("");
@@ -117,18 +126,24 @@ export default function BondAngleScan() {
 	const expectedAtomCount = selectedCoordinate.atomCount;
 	const unitLabel = coordinate === "bond" ? "Å" : "°";
 
-	const parsedAtoms = atomInput
-		.split(",")
-		.map((part) => parseInt(part.trim(), 10))
-		.filter((n) => Number.isFinite(n));
-
 	const parsedValues = rangeValues
 		.split(",")
 		.map((part) => parseFloat(part.trim()))
 		.filter((n) => Number.isFinite(n));
 
+	const atomOptions = useMemo(() => parseXyzAtoms(structureData), [structureData]);
+
+	// Order matters, so keep slot order and treat a partly-filled set as invalid.
+	const parsedAtoms = atomSlots.filter((a): a is number => a !== "");
+
 	const atomsValid =
 		parsedAtoms.length === expectedAtomCount && new Set(parsedAtoms).size === expectedAtomCount;
+
+	const currentValue = useMemo(() => {
+		if (!atomsValid) return null;
+		const points = parsedAtoms.map((i) => atomOptions.find((a) => a.index === i)!.position);
+		return measureCoordinate(coordinate, points);
+	}, [atomsValid, parsedAtoms, atomOptions, coordinate]);
 
 	/**
 	 * Continues job submission after the molecule preview image has been captured.
@@ -191,6 +206,11 @@ export default function BondAngleScan() {
 		fetchTags();
 	}, [getAccessTokenSilently]);
 
+	// Clear the picks whenever the atom set or the number of slots changes.
+	useEffect(() => {
+		setAtomSlots(Array(expectedAtomCount).fill(""));
+	}, [expectedAtomCount, structureData]);
+
 	// Handle switching between upload / library
 	const handleSourceChange = (source: "upload" | "library") => {
 		setSource(source);
@@ -252,6 +272,14 @@ export default function BondAngleScan() {
 			setError("Please upload a valid .xyz file.");
 			setStructureData("");
 		}
+	};
+
+	const handleAtomSlotChange = (slot: number, value: number | "") => {
+		setAtomSlots((prev) => {
+			const next = [...prev];
+			next[slot] = value;
+			return next;
+		});
 	};
 
 	/**
@@ -400,7 +428,7 @@ export default function BondAngleScan() {
 				subtitle="Vary a bond, angle, or dihedral across a range of values."
 			/>
 
-			<Grid container spacing={3}>
+			<Grid container spacing={3} alignItems="flex-start">
 				<Grid size={{ xs: 12, md: 6 }}>
 					<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50] }}>
 						<Box component="form" onSubmit={handleSubmitJob}>
@@ -500,7 +528,6 @@ export default function BondAngleScan() {
 										value={coordinate}
 										onChange={(e) => {
 											setCoordinate(e.target.value as ScanCoordinate);
-											setAtomInput("");
 										}}
 									>
 										{COORDINATE_OPTIONS.map((option) => (
@@ -510,28 +537,44 @@ export default function BondAngleScan() {
 										))}
 									</TextField>
 
-									<MolmakerTextField
-										label="Atom numbers"
-										value={atomInput}
-										onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-											setAtomInput(e.target.value)
-										}
-										required
-										sx={{ mt: 2 }}
-										error={submitAttempted && !atomsValid}
-										helperText={`Enter ${expectedAtomCount} atom numbers separated by commas, in order, for example ${selectedCoordinate.example}`}
-									/>
+									<Box display="flex" gap={2} sx={{ mt: 2 }}>
+										{Array.from({ length: expectedAtomCount }, (_, slot) => (
+											<MolmakerDropdown
+												key={slot}
+												label={SLOT_LABELS[coordinate][slot]}
+												value={atomSlots[slot] ?? ""}
+												onChange={(e) => handleAtomSlotChange(slot, e.target.value as number)}
+												options={atomOptions
+													// Hide atoms already taken by another slot, but keep this slot's own
+													// pick so it still renders as the selected value.
+													.filter(
+														(a) => a.index === atomSlots[slot] || !parsedAtoms.includes(a.index),
+													)
+													.map((a) => ({ value: a.index, label: a.label }))}
+												required
+												disabled={atomOptions.length === 0}
+												error={submitAttempted && !atomsValid}
+											/>
+										))}
+									</Box>
+									<FormHelperText sx={{ mt: 1 }}>
+										{atomOptions.length === 0
+											? "Upload or select a molecule to choose atoms."
+											: `Numbers match the preview — tick "Show atom numbers" to see them.`}
+										{currentValue !== null &&
+											` Current value: ${formatMeasurement(coordinate, currentValue)}.`}
+									</FormHelperText>
 
-                                    <FormControlLabel
-                                        control={
-                                            <Checkbox
-                                                size="small"
-                                                checked={showAtomNumbers}
-                                                onChange={(e) => setShowAtomNumbers(e.target.checked)}
-                                            />
-                                        }
-                                        label="Show atom numbers in preview"
-                                    />
+									<FormControlLabel
+										control={
+											<Checkbox
+												size="small"
+												checked={showAtomNumbers}
+												onChange={(e) => setShowAtomNumbers(e.target.checked)}
+											/>
+										}
+										label="Show atom numbers in preview"
+									/>
 								</Grid>
 
 								<Divider />
@@ -609,7 +652,7 @@ export default function BondAngleScan() {
 								<Box sx={{ mx: 2 }}>
 									<Grid container direction={{ xs: "column", md: "row" }} spacing={2}>
 										<Grid size={{ xs: 12, md: 6 }} sx={{ pr: { xs: 0, md: 3 } }}>
-											<MolmakerSectionHeader text="What is the total charge?" sx={{ mb: 1 }} />
+											<MolmakerSectionHeader text="What is the total charge?" sx={{ mb: 2 }} />
 											<MolmakerTextField
 												label="Charge"
 												type="number"
@@ -681,14 +724,22 @@ export default function BondAngleScan() {
 					</Paper>
 				</Grid>
 
-				<Grid size={{ xs: 12, md: 6 }}>
+				<Grid
+					size={{ xs: 12, md: 6 }}
+					sx={{
+						position: { md: "sticky" },
+						top: { md: `${APP_BAR_HEIGHT + 16}px` },
+					}}
+				>
 					<MolmakerMoleculePreview
 						data={structureData}
 						format="xyz"
 						source={source}
-						sx={{ maxHeight: 450 }}
+						maxHeight={450}
 						submitConfirmed={submitConfirmed}
-                        showAtomNumbers={showAtomNumbers}
+						showAtomNumbers={showAtomNumbers}
+						highlightAtoms={parsedAtoms}
+						highlightKind={coordinate}
 						setStructureImageData={setStructureImageData}
 					/>
 				</Grid>

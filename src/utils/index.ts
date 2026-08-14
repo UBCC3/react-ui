@@ -94,3 +94,9 @@ export const hasNoStoredArtifacts = (job: Job): boolean => {
 };
 
 export { filterJobs };
+
+export { parseXyzAtoms } from "./parseXyz";
+export type { XyzAtom } from "./parseXyz";
+
+export { measureCoordinate, formatMeasurement, centroid } from "./measure";
+export type { Vec3, MeasureKind } from "./measure";

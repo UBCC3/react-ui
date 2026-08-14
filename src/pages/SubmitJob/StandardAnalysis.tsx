@@ -339,7 +339,7 @@ export default function StandardAnalysis() {
 				}}
 			/>
 			<MolmakerPageTitle title="Standard Analysis" subtitle="Submit a job for standard analysis" />
-			<Grid container spacing={3}>
+			<Grid container spacing={3} alignItems="flex-start">
 				<Grid size={{ xs: 12, md: 6 }}>
 					<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50] }}>
 						<Box component="form" onSubmit={handleSubmitJob}>
@@ -515,12 +515,18 @@ export default function StandardAnalysis() {
 						</Box>
 					</Paper>
 				</Grid>
-				<Grid size={{ xs: 12, md: 6 }}>
+				<Grid
+					size={{ xs: 12, md: 6 }}
+					sx={{
+						position: { md: "sticky" },
+						top: { md: `${APP_BAR_HEIGHT + 16}px` },
+					}}
+				>
 					<MolmakerMoleculePreview
 						data={structureData}
 						format="xyz"
 						source={source}
-						sx={{ maxHeight: 450 }}
+						maxHeight={450}
 						submitConfirmed={submitConfirmed}
 						setStructureImageData={setStructureImageData}
 					/>

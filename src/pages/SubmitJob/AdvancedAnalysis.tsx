@@ -428,7 +428,7 @@ const AdvancedAnalysis = () => {
 				}}
 			/>
 			<MolmakerPageTitle title="Custom Job" subtitle="Submit a custom job for a molecule" />
-			<Grid container spacing={3}>
+			<Grid container spacing={3} alignItems="flex-start">
 				<Grid size={{ xs: 12, md: 6 }}>
 					<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50] }}>
 						<Box component="form" onSubmit={handleSubmitJob}>
@@ -695,12 +695,18 @@ const AdvancedAnalysis = () => {
 						</Box>
 					</Paper>
 				</Grid>
-				<Grid size={{ xs: 12, md: 6 }}>
+				<Grid
+					size={{ xs: 12, md: 6 }}
+					sx={{
+						position: { md: "sticky" },
+						top: { md: `${APP_BAR_HEIGHT + 16}px` },
+					}}
+				>
 					<MolmakerMoleculePreview
 						data={structureData}
 						format="xyz"
 						source={source}
-						sx={{ maxHeight: 437 }}
+						maxHeight={437}
 						submitConfirmed={submitConfirmed}
 						setStructureImageData={setStructureImageData}
 					/>

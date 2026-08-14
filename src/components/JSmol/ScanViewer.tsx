@@ -90,7 +90,7 @@ const ScanViewer: React.FC<ScanViewerProps> = ({ jobResultFiles, viewerObjId, se
 	const [value, setValue] = useState<viewerTab>(viewerTab.structure);
 	const [selectedFrame, setSelectedFrame] = useState<number>(1);
 
-    const [showAtomNumbers, setShowAtomNumbers] = useState<boolean>(false);
+	const [showAtomNumbers, setShowAtomNumbers] = useState<boolean>(false);
 
 	const handleChange = (_event: React.SyntheticEvent, newValue: viewerTab) => {
 		setValue(newValue);
@@ -154,14 +154,14 @@ const ScanViewer: React.FC<ScanViewerProps> = ({ jobResultFiles, viewerObjId, se
 		window.Jmol.script(viewerObj, `model ${selectedFrame};`);
 	}, [selectedFrame, viewerObj, successfulPoints.length, value]);
 
-    useEffect(() => {
+	useEffect(() => {
 		if (!viewerObj || value !== viewerTab.structure) return;
 		window.Jmol.script(
 			viewerObj,
 			`select all; ${showAtomNumbers ? "label %[atomno]; color labels black; font label 14;" : "label off;"} select none;`,
 		);
 	}, [viewerObj, showAtomNumbers, value]);
-    
+
 	if (loading) {
 		return <MolmakerLoading />;
 	}
@@ -198,7 +198,7 @@ const ScanViewer: React.FC<ScanViewerProps> = ({ jobResultFiles, viewerObjId, se
 
 				{value === viewerTab.structure && (
 					<>
-                        <Box sx={{ mt: 2, mb: 2, display: "flex", alignItems: "center", gap: 2 }}>
+						<Box sx={{ mt: 2, mb: 2, display: "flex", alignItems: "center", gap: 2 }}>
 							<AddStructureToLibrary
 								viewerObj={viewerObj}
 								viewerRef={viewerRef}
