@@ -42,39 +42,6 @@ const ResultPage = () => {
 			return;
 		}
 
-		// TEMP: local scan viewer development. Delete this block.
-		setJob({
-			job_id: 4,
-			job_name: "Mock ethane dihedral scan",
-			job_notes: null,
-			filename: "ethane.xyz",
-			status: "completed",
-			calculation_type: "scan",
-			method: "mp2",
-			basis_set: "6-311+G(2d,p)",
-			charge: 0,
-			multiplicity: 1,
-			submitted_at: new Date().toISOString(),
-			completed_at: new Date().toISOString(),
-			group_id: null,
-			is_public: false,
-			runtime_seconds: 42,
-			cancel_requested: false,
-			tags: [],
-			structures: [],
-		} as unknown as Job);
-		setJobResultFiles({
-			jobId,
-			calculation: "scan",
-			status: "completed",
-			urls: {
-				scan: `${window.location.origin}${import.meta.env.BASE_URL}mock/scan.xyz`,
-				result: `${window.location.origin}${import.meta.env.BASE_URL}mock/result.json`,
-			},
-		} as unknown as JobResult);
-		setLoading(false);
-		return;
-
 		const fetchJobAndFiles = async () => {
 			setLoading(true);
 			try {
