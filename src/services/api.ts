@@ -694,23 +694,6 @@ export const getAllJobsPaged = (token: string) =>
 	fetchAllPages<Job>((p) => getAllJobs(token, p), 100);
 
 /**
- * Fetches details for a single job by job ID.
- */
-export const getJobById = async (jobId: string, token: string): Promise<Response> => {
-	try {
-		const API = createBackendAPI(token);
-		const res = await API.get(`/jobs/${jobId}`);
-		return { status: res.status, data: res.data };
-	} catch (error: any) {
-		console.error("Failed to fetch job details", error);
-		return {
-			status: error.response?.status || 500,
-			error: error.response?.data?.detail || error.message,
-		};
-	}
-};
-
-/**
  * Fetches presigned artifact URLs for a finished job.
  * 409 = files not ready yet, 503 = storage temporarily unavailable.
  * Response: { job_id, calculation_type, status, urls }
