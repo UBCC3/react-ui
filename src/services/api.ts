@@ -330,7 +330,6 @@ export const updateUser = async (
 	if (role) formData.append("role", role);
 	if (group_id) formData.append("group_id", group_id);
 	try {
-		console.log("Updating user:", { userSub, role, group_id });
 		const API = createBackendAPI(token);
 		const res = await API.put(`/admin/users/${userSub}`, formData);
 		return { status: res.status, data: res.data };
@@ -504,7 +503,6 @@ export const AddAndUploadStructureToS3 = async (
 	token: any,
 	tags: string[] = [],
 ): Promise<Response> => {
-	console.log("Adding and uploading structure to S3:", { name, formula, notes, tags });
 	const imageBlob = dataURLToBlob(image);
 	const formData = new FormData();
 	formData.append("file", file);
@@ -515,11 +513,8 @@ export const AddAndUploadStructureToS3 = async (
 		tags.forEach((tag) => formData.append("tags", tag));
 	}
 	formData.append("image", imageBlob, `image.png`);
-	console.log("Form data prepared for structure upload:", formData);
-	console.log("Token for API:", token);
 	try {
 		const API = createBackendAPI(token);
-		console.log("Uploading structure to S3 here");
 		const response = await API.post("/structures/", formData);
 		return {
 			status: response.status,

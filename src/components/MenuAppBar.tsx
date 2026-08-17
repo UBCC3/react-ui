@@ -166,8 +166,6 @@ export default function MenuAppBar() {
 	// Requests arrive while the user sits on a page, so refresh the actionable
 	// lists on an interval. Sent history is fetched on mount only.
 	useEffect(() => {
-		const REFRESH_MS = GROUP_POLL_INTERVAL_MS;
-
 		const refresh = async () => {
 			const token = await getAccessTokenSilently();
 			if (!token) return;
@@ -176,7 +174,7 @@ export default function MenuAppBar() {
 			setGroupRequests(group.error ? [] : (group.data ?? []));
 		};
 
-		const id = setInterval(refresh, REFRESH_MS);
+		const id = setInterval(refresh, GROUP_POLL_INTERVAL_MS);
 		return () => clearInterval(id);
 	}, [getAccessTokenSilently]);
 

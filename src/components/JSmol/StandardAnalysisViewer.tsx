@@ -101,7 +101,6 @@ const StandardAnalysisViewer: React.FC<StandardAnalysisViewerProp> = ({
 	useEffect(() => {
 		fetchRawFileFromS3Url(resultURL, "json")
 			.then((res) => {
-				console.log(res);
 				setResult(res);
 			})
 			.catch((err) => {

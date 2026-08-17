@@ -122,7 +122,6 @@ const MoleculeInfo = ({
 			}
 		};
 
-		console.log("Selected Molecule:", selectedStructureId);
 		if (selectedStructureId) {
 			openMoleculeViewer(selectedStructureId);
 			fetchStructureInfo();

@@ -73,8 +73,6 @@ function JobFail() {
 							status: jobFilesUrlsResp.data.status,
 							urls: jobFilesUrlsResp.data.urls,
 						};
-						// console.log(jobResultFiles);
-
 						// Store the available result file URLs for the next effect to use.
 						setJobResultFiles(jobResultFiles);
 					}
@@ -100,12 +98,10 @@ function JobFail() {
 			try {
 				// Fetch the error JSON from the S3 URL stored under the "error" result file key.
 				const error: any = await fetchRawFileFromS3Url(jobResultFiles.urls["error"], "json");
-				// console.log(error);
 
 				// If the error file contains an error object, store it for display.
 				if (error.error) {
 					setJobError(error as JobError);
-					console.log("Error:", error as JobError);
 					setResultErrExists(true);
 				}
 			} catch (err) {

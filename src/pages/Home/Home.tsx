@@ -15,6 +15,7 @@ import {
 import {
 	CANCELLABLE_JOB_STATUSES,
 	DOWNLOADABLE_JOB_STATUSES,
+	JOB_POLL_INTERVAL_MS,
 	TERMINAL_JOB_STATUSES,
 } from "../../constants";
 import JobsToolbar from "./components/JobsToolbar";
@@ -147,7 +148,7 @@ export default function Home() {
 			const token = await getAccessTokenSilently();
 			const resp = await getAllJobsPaged(token);
 			if (!resp.error) setJobs(resp.data ?? []);
-		}, 20000);
+		}, JOB_POLL_INTERVAL_MS);
 		return () => clearInterval(id);
 	}, [getAccessTokenSilently]);
 

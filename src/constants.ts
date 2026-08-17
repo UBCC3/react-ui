@@ -22,10 +22,19 @@ export const APP_BAR_HEIGHT = 64;
  */
 export const MAX_PAGE_SIZE = 100;
 
-// How often job/status tables refetch while mounted.
-export const JOB_POLL_INTERVAL_MS = 5000;
-// How often slower group/request panels refetch.
+/**
+ * How often the Home, Admin and Group job tables refetch their full paged
+ * list while mounted. The backend advances job status in the background, so
+ * the client only has to re-read it; this is a whole-list fetch rather than a
+ * per-job poll, which is why it is deliberately slow.
+ */
+export const JOB_POLL_INTERVAL_MS = 20000;
+
+/** How often the slower group and request panels refetch. */
 export const GROUP_POLL_INTERVAL_MS = 20000;
+
+/** How long a transient alert stays on screen before dismissing itself. */
+export const ALERT_AUTO_HIDE_MS = 5000;
 
 // The expanded/collapsed width of the result drawer
 export const DRAWER_FULL_WIDTH = 400;

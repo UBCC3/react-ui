@@ -71,8 +71,6 @@ const ResultPage = () => {
 						status: jobFilesUrlsResp.data.status,
 						urls: jobFilesUrlsResp.data.urls,
 					};
-					console.log(jobResultFiles);
-
 					// Save the result file URLs for the selected viewer component.
 					setJobResultFiles(jobResultFiles);
 				}

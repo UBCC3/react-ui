@@ -64,6 +64,7 @@ import {
 	UserRoundX,
 	UsersRound,
 } from "lucide-react";
+import { ALERT_AUTO_HIDE_MS } from "../constants";
 
 /**
  * Props for the TabPanel
@@ -315,7 +316,7 @@ const Users = () => {
 			await refreshUsersAndGroups(token);
 			setSelectedUser(null);
 			setAlertMessage("User removed from group successfully.");
-			setTimeout(() => setAlertMessage(""), 3000);
+			setTimeout(() => setAlertMessage(""), ALERT_AUTO_HIDE_MS);
 		} catch (error) {
 			console.error("Error removing user from group:", error);
 			setDeMemberConfirmation(false);
@@ -337,7 +338,7 @@ const Users = () => {
 		}
 		await refreshUsersAndGroups(token);
 		setAlertMessage("User updated successfully.");
-		setTimeout(() => setAlertMessage(""), 3000);
+		setTimeout(() => setAlertMessage(""), ALERT_AUTO_HIDE_MS);
 	};
 
 	// Deletes a user from the system.
@@ -352,7 +353,7 @@ const Users = () => {
 			setUsers(users.filter((u) => u.user_sub !== userSub));
 
 			setAlertMessage("User deleted successfully.");
-			setTimeout(() => setAlertMessage(""), 3000);
+			setTimeout(() => setAlertMessage(""), ALERT_AUTO_HIDE_MS);
 		} catch (error) {
 			console.error("Error deleting user:", error);
 		}
@@ -412,7 +413,7 @@ const Users = () => {
 			setGroupName("");
 			setGroupAdmin("");
 			setAlertMessage("Group created successfully.");
-			setTimeout(() => setAlertMessage(""), 3000);
+			setTimeout(() => setAlertMessage(""), ALERT_AUTO_HIDE_MS);
 		} finally {
 			setCreatingGroup(false);
 			setMoveAdminConfirmation(false);
@@ -429,7 +430,7 @@ const Users = () => {
 			await deleteGroup(token, groupId);
 			await refreshUsersAndGroups(token);
 			setAlertMessage("Group deleted successfully.");
-			setTimeout(() => setAlertMessage(""), 3000);
+			setTimeout(() => setAlertMessage(""), ALERT_AUTO_HIDE_MS);
 		} catch (error) {
 			console.error("Error deleting group:", error);
 		}
