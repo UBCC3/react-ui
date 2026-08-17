@@ -1,6 +1,7 @@
 import axios from "axios";
 import { Group, Job, Response, Structure } from "../types";
 import { User } from "@auth0/auth0-react";
+import { MAX_PAGE_SIZE } from "../constants";
 
 type Paging = { limit?: number; offset?: number };
 
@@ -13,7 +14,7 @@ function getErrorMessage(error: unknown): string {
  */
 async function fetchAllPages<T>(
 	fetchPage: (paging: Required<Paging>) => Promise<Response>,
-	pageSize = 100,
+	pageSize = MAX_PAGE_SIZE,
 ): Promise<Response> {
 	const all: T[] = [];
 	let offset = 0;
@@ -1123,7 +1124,7 @@ export const getReceivedRequests = async (
 	status: string = "pending",
 	requestType?: string,
 	recentDays?: number,
-	limit: number = 100,
+	limit: number = MAX_PAGE_SIZE,
 	offset?: number,
 ): Promise<Response> => {
 	try {
@@ -1168,7 +1169,7 @@ export const getSentRequests = async (
 	status: string = "pending",
 	requestType?: string,
 	recentDays?: number,
-	limit: number = 100,
+	limit: number = MAX_PAGE_SIZE,
 	offset?: number,
 ): Promise<Response> => {
 	try {
@@ -1399,7 +1400,7 @@ export const getGroupRequests = async (
 	status: string = "pending",
 	requestType?: string,
 	recentDays?: number,
-	limit: number = 100,
+	limit: number = MAX_PAGE_SIZE,
 	offset?: number,
 ): Promise<Response> => {
 	try {

@@ -13,7 +13,7 @@ import {
 	upsertCurrentUser,
 	getZipPresignedUrl,
 } from "../../services/api";
-import { JobStatus } from "../../constants";
+import { JOB_POLL_INTERVAL_MS, JobStatus } from "../../constants";
 import JobsToolbar from "./components/JobsToolbar";
 import JobsTable from "./components/JobsTable";
 import { MolmakerLoading, MolmakerAlert, MolmakerConfirm } from "../../components/custom";
@@ -218,7 +218,7 @@ export default function Home() {
 		};
 
 		// start poll
-		const id = setInterval(tick, 5000);
+		const id = setInterval(tick, JOB_POLL_INTERVAL_MS);
 		// run immediately once
 		tick();
 
@@ -587,7 +587,7 @@ export default function Home() {
 					onStructureChange={setFilterStructureId}
 					onZipDownload={handleZipDownload}
 					downloadDisabled={downloadDisabled}
-					isGroupAdmin={true}
+					canManageJobs={true}
 
 					displayColumns={displayColumns}
 					columnDisplayNames={columnDisplayNames}

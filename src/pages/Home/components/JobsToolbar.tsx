@@ -46,7 +46,7 @@ interface JobsToolbarProps {
 	onStructureChange: (structureId: string) => void;
 	onZipDownload: () => void;
 	downloadDisabled: (selectedJobId: string | null) => boolean;
-	isGroupAdmin?: boolean;
+	canManageJobs?: boolean;
 
 	// Select Columns
 	displayColumns: Record<string, boolean>;
@@ -68,7 +68,7 @@ interface JobsToolbarProps {
  * - viewing structures,
  * - filtering jobs by structure,
  * - downloading job archives,
- * - cancelling or deleting jobs for group admins,
+ * - cancelling or deleting jobs, when the caller permits it,
  * - refreshing the jobs list,
  * - selecting a structure filter from the dropdown.
  */
@@ -87,7 +87,7 @@ export default function JobsToolbar({
 	onStructureChange,
 	onZipDownload,
 	downloadDisabled,
-	isGroupAdmin = false,
+	canManageJobs = false,
 	displayColumns,
 	columnDisplayNames,
 	onColumnToggle,
@@ -183,7 +183,7 @@ export default function JobsToolbar({
 								</IconButton>
 							</span>
 						</Tooltip>
-						{isGroupAdmin && (
+						{canManageJobs && (
 							<Tooltip title="Cancel job">
 								<span>
 									<IconButton disabled={cancelDisabled(selectedJobId)} onClick={onCancelJob}>
@@ -192,7 +192,7 @@ export default function JobsToolbar({
 								</span>
 							</Tooltip>
 						)}
-						{isGroupAdmin && (
+						{canManageJobs && (
 							<Tooltip title="Delete job">
 								<span>
 									<IconButton disabled={deleteDisabled(selectedJobId)} onClick={onDeleteJob}>

@@ -15,6 +15,20 @@ import type { FilterExtent } from "./types/Filter";
 // The constant height of the toolbar and the menu drawer header
 export const APP_BAR_HEIGHT = 64;
 
+/**
+ * Largest page size the API accepts on any paginated list endpoint.
+ *
+ * Mirrors the MAX_*_LIST_LIMIT constants in the backend's utils.py, which are
+ * all 100. These are validation bounds, so requesting more returns 422 rather
+ * than a clamped page. Lower this if the backend ever lowers its cap.
+ */
+export const MAX_PAGE_SIZE = 100;
+
+// How often job/status tables refetch while mounted.
+export const JOB_POLL_INTERVAL_MS = 5000;
+// How often slower group/request panels refetch.
+export const GROUP_POLL_INTERVAL_MS = 20000;
+
 // The expanded/collapsed width of the result drawer
 export const DRAWER_FULL_WIDTH = 400;
 export const DRAWER_MINI_WIDTH = 80;

@@ -34,7 +34,7 @@ import { useDrawer } from "./DrawerContext";
 import logo from "../assets/logo.svg";
 import { getSentRequests, getGroupRequests, cancelRequest } from "../services/api";
 import { grey } from "@mui/material/colors";
-import { APP_BAR_HEIGHT } from "../constants";
+import { APP_BAR_HEIGHT, GROUP_POLL_INTERVAL_MS } from "../constants";
 import { GroupRequest } from "../types";
 
 // Height used to calculate the maximum visible height of the requests menu.
@@ -166,7 +166,7 @@ export default function MenuAppBar() {
 	// Requests arrive while the user sits on a page, so refresh the actionable
 	// lists on an interval. Sent history is fetched on mount only.
 	useEffect(() => {
-		const REFRESH_MS = 20000;
+		const REFRESH_MS = GROUP_POLL_INTERVAL_MS;
 
 		const refresh = async () => {
 			const token = await getAccessTokenSilently();

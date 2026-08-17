@@ -60,6 +60,7 @@ import {
 	rejectRequest,
 } from "../services/api";
 import { type User, type Job, type Structure, GroupRequest } from "../types";
+import { GROUP_POLL_INTERVAL_MS } from "../constants";
 
 /**
  * Props for the GroupPanel
@@ -437,7 +438,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 			);
 		};
 
-		const id = setInterval(refresh, 20000);
+		const id = setInterval(refresh, GROUP_POLL_INTERVAL_MS);
 		return () => clearInterval(id);
 	}, [token, userRole]);
 
