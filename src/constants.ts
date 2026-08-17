@@ -15,6 +15,11 @@ import type { FilterExtent } from "./types/Filter";
 // The constant height of the toolbar and the menu drawer header
 export const APP_BAR_HEIGHT = 64;
 
+// How often job/status tables refetch while mounted.
+export const JOB_POLL_INTERVAL_MS = 5000;
+// How often slower group/request panels refetch.
+export const GROUP_POLL_INTERVAL_MS = 20000;
+
 // The expanded/collapsed width of the result drawer
 export const DRAWER_FULL_WIDTH = 400;
 export const DRAWER_MINI_WIDTH = 80;

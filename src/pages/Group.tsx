@@ -30,7 +30,7 @@ import {
 	getCurrentUserGroupStructuresPaged,
 	updateStructureVisibility,
 } from "../services/api";
-import { JobStatus } from "../constants";
+import { JOB_POLL_INTERVAL_MS, JobStatus } from "../constants";
 import JobsToolbar from "./Home/components/JobsToolbar";
 import { MolmakerPageTitle, MolmakerAlert, MolmakerConfirm } from "../components/custom";
 import type { Filter, Job, Structure } from "../types";
@@ -292,7 +292,7 @@ export default function Group() {
 
 		// Run immediately, then continue polling every 5 seconds.
 		tick();
-		const id = setInterval(tick, 5000);
+		const id = setInterval(tick, JOB_POLL_INTERVAL_MS);
 
 		// Stop polling when the component unmounts.
 		return () => clearInterval(id);

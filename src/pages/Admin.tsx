@@ -13,7 +13,7 @@ import {
 	adminGetAllJobsPaged,
 	getLibraryStructuresPaged,
 } from "../services/api";
-import { JobStatus } from "../constants";
+import { JOB_POLL_INTERVAL_MS, JobStatus } from "../constants";
 import JobsToolbar from "./Home/components/JobsToolbar";
 import {
 	MolmakerPageTitle,
@@ -202,7 +202,7 @@ export default function Admin() {
 		};
 
 		// start polling every 5 seconds
-		const id = setInterval(tick, 5000);
+		const id = setInterval(tick, JOB_POLL_INTERVAL_MS);
 		// run immediately once
 		tick();
 
