@@ -503,7 +503,7 @@ export default function Group() {
 							onStructureChange={setFilterStructureId}
 							onZipDownload={handleZipDownload}
 							downloadDisabled={downloadDisabled}
-							isGroupAdmin={userRole === "group_admin"}
+							canManageJobs={userRole === "group_admin"}
 
 							displayColumns={displayColumns}
 							columnDisplayNames={columnDisplayNames}
@@ -546,7 +546,7 @@ export default function Group() {
 							}}
 							onRowClick={setSelectedJobId}
 							displayColumns={displayColumns}
-							isGroupAdmin={userRole === "group_admin"}
+							canManageVisibility={userRole === "group_admin"}
 						/>
 
 						{/* Pagination controls for the jobs table. */}

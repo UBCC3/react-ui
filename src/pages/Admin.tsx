@@ -445,7 +445,7 @@ export default function Admin() {
 					onStructureChange={setFilterStructureId}
 					onZipDownload={handleZipDownload}
 					downloadDisabled={downloadDisabled}
-					isGroupAdmin={true}
+					canManageJobs={true}
 
 					displayColumns={displayColumns}
 					columnDisplayNames={columnDisplayNames}

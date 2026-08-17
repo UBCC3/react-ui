@@ -66,7 +66,7 @@ export function useJsmolViewer({
 			width: "100%",
 			height: "100%",
 			use: "HTML5",
-			j2sPath: "/ubchemica/jsmol/j2s",
+			j2sPath: `${import.meta.env.BASE_URL}jsmol/j2s`,
 			src,
 			serverURL: "https://chemapps.stolaf.edu/jmol/jsmol/php/jsmol.php", // TODO backend to proxy
 			script: loadScript,
