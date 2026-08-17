@@ -35,10 +35,7 @@ async function fetchAllPages<T>(
  */
 export const createBackendAPI = (token: any) => {
 	return axios.create({
-		baseURL:
-			import.meta.env.VITE_MODE === "development"
-				? import.meta.env.VITE_API_URL
-				: "https://ubchemica.com/ubchemica/api",
+		baseURL: import.meta.env.VITE_API_URL,
 		headers: {
 			Authorization: `Bearer ${token}`,
 		},
@@ -51,10 +48,7 @@ export const createBackendAPI = (token: any) => {
  */
 export const createClusterAPI = (token: any) => {
 	return axios.create({
-		baseURL:
-			import.meta.env.VITE_MODE === "development"
-				? import.meta.env.VITE_CLUSTER_API_URL
-				: "https://ubchemica.com/ubchemica/api/cluster",
+		baseURL: import.meta.env.VITE_CLUSTER_API_URL,
 		headers: {
 			Authorization: `Bearer ${token}`,
 		},
@@ -67,10 +61,7 @@ export const createClusterAPI = (token: any) => {
  */
 export const createStorageAPI = (token: any) => {
 	return axios.create({
-		baseURL:
-			import.meta.env.VITE_MODE === "development"
-				? import.meta.env.VITE_STORAGE_API_URL
-				: "https://ubchemica.com/ubchemica/api/storage",
+		baseURL: import.meta.env.VITE_STORAGE_API_URL,
 		headers: {
 			Authorization: `Bearer ${token}`,
 		},
