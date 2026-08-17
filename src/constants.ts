@@ -21,6 +21,8 @@ export const JobStatus = {
 	SUBMITTING: "submitting",
 	SUBMITTED: "submitted",
 	RUNNING: "running",
+    // Internal backend status only. serialize_job maps it to "running", so it
+	// never appears in an API response.
 	FINALISING: "finalising",
 	COMPLETED: "completed",
 	FAILED: "failed",
@@ -35,11 +37,19 @@ export const CANCELLABLE_JOB_STATUSES = [
 	JobStatus.SUBMITTING,
 	JobStatus.SUBMITTED,
 	JobStatus.RUNNING,
-	JobStatus.FINALISING,
 ];
 
-/** Jobs that may have result artifacts in storage. */
-export const DOWNLOADABLE_JOB_STATUSES = [JobStatus.COMPLETED, JobStatus.FAILED];
+/**
+ * Jobs that may have result artifacts in storage. Mirrors the backend's
+ * TERMINAL_JOB_STATUSES in s3/routes.py. Cancelled jobs are included because
+ * finalisation still uploads result.err and the archive for them; if a job was
+ * cancelled before producing anything, the endpoint returns 409 instead.
+ */
+export const DOWNLOADABLE_JOB_STATUSES = [
+	JobStatus.COMPLETED,
+	JobStatus.FAILED,
+	JobStatus.CANCELLED,
+];
 
 export const statusColors: Record<string, string> = {
 	completed: green[500],
