@@ -47,7 +47,7 @@ interface JobsTableProps {
 		completed_at: boolean;
 		is_public: boolean;
 	};
-	isGroupAdmin: boolean;
+	canManageVisibility?: boolean;
 }
 
 /**
@@ -71,7 +71,7 @@ export default function GroupJobsTable({
 	onSort,
 	onRowClick,
 	displayColumns,
-	isGroupAdmin = false,
+	canManageVisibility = false,
 }: JobsTableProps) {
 	const { getAccessTokenSilently } = useAuth0();
 
@@ -172,7 +172,9 @@ export default function GroupJobsTable({
 						{displayColumns.runtime && renderHeader("Runtime", "runtime")}
 						{displayColumns.submitted_at && renderHeader("Submitted At", "submitted_at")}
 						{displayColumns.completed_at && renderHeader("Completed At", "completed_at")}
-						{displayColumns.is_public && isGroupAdmin && renderHeader("Visibility", "is_public")}
+						{displayColumns.is_public &&
+							canManageVisibility &&
+							renderHeader("Visibility", "is_public")}
 					</TableRow>
 				</TableHead>
 				<TableBody>
@@ -276,7 +278,7 @@ export default function GroupJobsTable({
 													{job.completed_at ? new Date(job.completed_at).toLocaleString() : "N/A"}
 												</TableCell>
 											)}
-											{displayColumns.is_public && isGroupAdmin && (
+											{displayColumns.is_public && canManageVisibility && (
 												<TableCell>
 													{job.is_public ? (
 														<Tooltip title="Make Private">
