@@ -42,6 +42,7 @@ import { filterJobs } from "../utils";
 import { Pyramid } from "lucide-react";
 import { renderFormula } from "../utils/renderFormula";
 import { VisibilityOffOutlined, VisibilityOutlined } from "@mui/icons-material";
+import EditJobDialog from "../components/EditJobDialog";
 
 export default function Group() {
 	// map column name to display name
@@ -98,6 +99,10 @@ export default function Group() {
 
 	// Selection & preview
 	const [selectedJobId, setSelectedJobId] = useState<string>("");
+
+	// Edit job dialog
+	const [editJobOpen, setEditJobOpen] = useState<boolean>(false);
+	const jobToEdit = jobs.find((j) => j.job_id === selectedJobId) ?? null;
 
 	// Filters
 	const [filterStructureId, setFilterStructureId] = useState<string>("");
@@ -440,6 +445,20 @@ export default function Group() {
 				textToShow="Are you sure you want to delete this job? This action cannot be undone."
 			/>
 
+			{/* Dialog to edit job informations */}
+			<EditJobDialog
+				open={editJobOpen}
+				job={jobToEdit}
+				availableTags={availableTags}
+				onClose={() => setEditJobOpen(false)}
+				onSaved={(updatedJob: Job) => {
+					const replace = (list: Job[]) =>
+						list.map((j) => (j.job_id === updatedJob.job_id ? updatedJob : j));
+					setJobs(replace);
+					setFilteredJobs(replace);
+				}}
+			/>
+
 			{/* Snackbar wrapper for success, error, info, and warning messages. */}
 			<Box sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
 				<Snackbar
@@ -502,6 +521,7 @@ export default function Group() {
 							selectedStructure={filterStructureId}
 							onStructureChange={setFilterStructureId}
 							onZipDownload={handleZipDownload}
+							onEditJob={() => setEditJobOpen(true)}
 							downloadDisabled={downloadDisabled}
 							isGroupAdmin={userRole === "group_admin"}
 

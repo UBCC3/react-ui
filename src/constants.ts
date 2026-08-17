@@ -21,7 +21,7 @@ export const JobStatus = {
 	SUBMITTING: "submitting",
 	SUBMITTED: "submitted",
 	RUNNING: "running",
-    // Internal backend status only. serialize_job maps it to "running", so it
+	// Internal backend status only. serialize_job maps it to "running", so it
 	// never appears in an API response.
 	FINALISING: "finalising",
 	COMPLETED: "completed",

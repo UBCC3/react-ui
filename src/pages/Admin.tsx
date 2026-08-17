@@ -26,6 +26,7 @@ import {
 import type { Job, Structure, Filter } from "../types";
 import AdminJobsTable from "./Home/components/AdminJobsTable";
 import { filterJobs } from "../utils";
+import EditJobDialog from "../components/EditJobDialog";
 
 export default function Admin() {
 	// used to redirect the user after the job is successfully submitted
@@ -54,6 +55,10 @@ export default function Admin() {
 	const [order, setOrder] = useState<"asc" | "desc">("desc");
 	const [orderBy, setOrderBy] = useState<keyof Job>("submitted_at");
 	const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
+
+	// edit job
+	const [editJobOpen, setEditJobOpen] = useState<boolean>(false);
+	const jobToEdit = jobs.find((j) => j.job_id === selectedJobId) ?? null;
 
 	// general alert
 	const [alertShow, setAlertShow] = useState<boolean>(false);
@@ -395,6 +400,20 @@ export default function Admin() {
 				}}
 			/>
 
+			{/* Dialog to edit job informations */}
+			<EditJobDialog
+				open={editJobOpen}
+				job={jobToEdit}
+				availableTags={availableTags}
+				onClose={() => setEditJobOpen(false)}
+				onSaved={(updatedJob: Job) => {
+					const replace = (list: Job[]) =>
+						list.map((j) => (j.job_id === updatedJob.job_id ? updatedJob : j));
+					setJobs(replace);
+					setFilteredJobs(replace);
+				}}
+			/>
+
 			{/* Snackbar container for success, error, info, and warning messages. */}
 			<Box sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
 				<Snackbar
@@ -444,6 +463,7 @@ export default function Admin() {
 					selectedStructure={filterStructureId}
 					onStructureChange={setFilterStructureId}
 					onZipDownload={handleZipDownload}
+					onEditJob={() => setEditJobOpen(true)}
 					downloadDisabled={downloadDisabled}
 					isGroupAdmin={true}
 
