@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Group, Job, Response, Structure } from "../types";
+import { Group, Job, JobArtifactKind, Response, Structure } from "../types";
 import { User } from "@auth0/auth0-react";
 import { MAX_PAGE_SIZE } from "../constants";
 
@@ -703,6 +703,91 @@ export const fetchJobResultFiles = async (token: string, jobId: string): Promise
 					? "Job files are not ready yet."
 					: httpStatus === 503
 						? "File storage is temporarily unavailable. Please try again shortly."
+						: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+/**
+ * Fetches the parsed calculation result and error stored for a finished job.
+ *
+ * Results now live in the database rather than S3, so this returns the parsed
+ * JSON directly instead of a URL to fetch it from.
+ * 409 = the job has not finished, or its result has not been stored yet.
+ * Response: { job_id, result, error }
+ */
+export const fetchJobResult = async (jobId: string, token: string): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.get(`/jobs/${jobId}/result`);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		const httpStatus = error.response?.status;
+		console.error("Failed to fetch the job result", error);
+		return {
+			status: httpStatus || 500,
+			error:
+				httpStatus === 409
+					? "Job results are not ready yet."
+					: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+/**
+ * Lists which artifact kinds a finished job actually has, such as "trajectory"
+ * or "molden". Use fetchJobArtifact to read one of them.
+ * Response: { job_id, artifacts }
+ */
+export const fetchJobArtifactKinds = async (jobId: string, token: string): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.get(`/jobs/${jobId}/artifacts`);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		const httpStatus = error.response?.status;
+		console.error("Failed to fetch the job artifact list", error);
+		return {
+			status: httpStatus || 500,
+			error:
+				httpStatus === 409
+					? "Job results are not ready yet."
+					: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+/**
+ * Fetches the text of one job artifact.
+ *
+ * This endpoint requires a bearer token, so the content has to be read here
+ * and handed to a viewer inline. JSmol cannot load it by URL the way it could
+ * with the presigned S3 links this replaces.
+ * 404 = the job has no artifact of that kind.
+ */
+export const fetchJobArtifact = async (
+	jobId: string,
+	kind: JobArtifactKind,
+	token: string,
+): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.get(`/jobs/${jobId}/artifacts/${kind}`, {
+			// Artifacts are xyz/molden/cube text. Keep axios from parsing them.
+			responseType: "text",
+			transformResponse: [(data) => data],
+		});
+		return { status: res.status, data: res.data as string };
+	} catch (error: any) {
+		const httpStatus = error.response?.status;
+		console.error(`Failed to fetch the ${kind} job artifact`, error);
+		return {
+			status: httpStatus || 500,
+			error:
+				httpStatus === 404
+					? `This job has no ${kind} artifact.`
+					: httpStatus === 409
+						? "Job results are not ready yet."
 						: error.response?.data?.detail || error.message,
 		};
 	}
