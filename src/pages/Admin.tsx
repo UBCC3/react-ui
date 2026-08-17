@@ -465,7 +465,7 @@ export default function Admin() {
 					onZipDownload={handleZipDownload}
 					onEditJob={() => setEditJobOpen(true)}
 					downloadDisabled={downloadDisabled}
-					isGroupAdmin={true}
+					canManageJobs={true}
 
 					displayColumns={displayColumns}
 					columnDisplayNames={columnDisplayNames}

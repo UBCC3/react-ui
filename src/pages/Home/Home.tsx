@@ -471,7 +471,7 @@ export default function Home() {
 					onStructureChange={setFilterStructureId}
 					onZipDownload={handleZipDownload}
 					downloadDisabled={downloadDisabled}
-					isGroupAdmin={true}
+					canManageJobs={true}
 
 					displayColumns={displayColumns}
 					columnDisplayNames={columnDisplayNames}

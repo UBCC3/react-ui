@@ -17,7 +17,7 @@ const Auth0ProviderWithNavigate = ({ children }: React.PropsWithChildren) => {
 			domain={import.meta.env.VITE_AUTH0_DOMAIN}
 			clientId={import.meta.env.VITE_AUTH0_CLIENT_ID}
 			authorizationParams={{
-				redirect_uri: window.location.origin + "/ubchemica",
+				redirect_uri: window.location.origin + import.meta.env.VITE_BASE_URL_WITHOUT_SLASH,
 				audience: import.meta.env.VITE_AUTH0_AUDIENCE,
 			}}
 			useRefreshTokens={true}
@@ -29,10 +29,11 @@ const Auth0ProviderWithNavigate = ({ children }: React.PropsWithChildren) => {
 };
 
 const rootElement = document.getElementById("root");
+const base_element_without_slash = import.meta.env.VITE_BASE_URL_WITHOUT_SLASH;
 if (rootElement) {
 	createRoot(rootElement).render(
 		<StrictMode>
-			<BrowserRouter basename="/ubchemica">
+			<BrowserRouter basename={base_element_without_slash}>
 				<Auth0ProviderWithNavigate>
 					<App />
 				</Auth0ProviderWithNavigate>
