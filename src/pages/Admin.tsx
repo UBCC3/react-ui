@@ -13,7 +13,6 @@ import {
 } from "../services/api";
 import {
 	CANCELLABLE_JOB_STATUSES,
-	DOWNLOADABLE_JOB_STATUSES,
 	JOB_POLL_INTERVAL_MS,
 	TERMINAL_JOB_STATUSES,
 } from "../constants";
@@ -26,7 +25,7 @@ import {
 } from "../components/custom";
 import type { Job, Structure, Filter } from "../types";
 import AdminJobsTable from "./Home/components/AdminJobsTable";
-import { filterJobs } from "../utils";
+import { filterJobs, hasNoStoredArtifacts } from "../utils";
 import EditJobDialog from "../components/EditJobDialog";
 
 export default function Admin() {
@@ -377,7 +376,7 @@ export default function Admin() {
 		if (!selectedJobId) return true;
 		const job = jobs.find((j) => j.job_id === selectedJobId);
 		if (!job) return true;
-		return !DOWNLOADABLE_JOB_STATUSES.includes(job.status);
+		return hasNoStoredArtifacts(job);
 	};
 
 	// Show a full-page loading component while data is being fetched or actions are running.

@@ -1,4 +1,5 @@
-import { ComplexNumber } from "../types";
+import { ComplexNumber, Job } from "../types";
+import { DOWNLOADABLE_JOB_STATUSES, FAILURE_REASONS_WITHOUT_ARTIFACTS } from "../constants";
 import { filterJobs } from "./filterJobs";
 
 export const capitalizeFirstLetter = (str: string) => {
@@ -74,6 +75,22 @@ export const structureThumbnailDataUrl = (
 		? thumbnail.media_type
 		: "image/png";
 	return `data:${mediaType};base64,${thumbnail.base64}`;
+};
+
+/**
+ * Whether a job's stored results and archive are known to be unavailable.
+ *
+ * This can only ever be one-directional. Returning true means the endpoints
+ * will definitely 409, so the UI should not offer a download. Returning false
+ * means "not provably empty", not "ready": the backend also requires
+ * is_uploaded and a JobResult row, neither of which is serialized. Callers
+ * must still handle a 409 from the request itself.
+ */
+export const hasNoStoredArtifacts = (job: Job): boolean => {
+	if (!DOWNLOADABLE_JOB_STATUSES.includes(job.status)) return true;
+	return Boolean(
+		job.failure_reason && FAILURE_REASONS_WITHOUT_ARTIFACTS.includes(job.failure_reason),
+	);
 };
 
 export { filterJobs };

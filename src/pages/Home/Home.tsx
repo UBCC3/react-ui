@@ -14,7 +14,6 @@ import {
 } from "../../services/api";
 import {
 	CANCELLABLE_JOB_STATUSES,
-	DOWNLOADABLE_JOB_STATUSES,
 	JOB_POLL_INTERVAL_MS,
 	TERMINAL_JOB_STATUSES,
 } from "../../constants";
@@ -22,7 +21,7 @@ import JobsToolbar from "./components/JobsToolbar";
 import JobsTable from "./components/JobsTable";
 import { MolmakerLoading, MolmakerAlert, MolmakerConfirm } from "../../components/custom";
 import type { Filter, Job, Structure } from "../../types";
-import { filterJobs } from "../../utils";
+import { filterJobs, hasNoStoredArtifacts } from "../../utils";
 import EditJobDialog from "../../components/EditJobDialog";
 
 export default function Home() {
@@ -369,7 +368,7 @@ export default function Home() {
 		if (!selectedJobId) return true;
 		const job = jobs.find((j) => j.job_id === selectedJobId);
 		if (!job) return true;
-		return !DOWNLOADABLE_JOB_STATUSES.includes(job.status);
+		return hasNoStoredArtifacts(job);
 	};
 
 	/**

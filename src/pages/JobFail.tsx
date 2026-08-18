@@ -12,7 +12,7 @@ import NotFound from "./NotFound";
 import { JobError } from "../types/JSmol";
 import { Box, Grid, Paper } from "@mui/material";
 import { useAuth0 } from "@auth0/auth0-react";
-import { reverseMapping } from "../utils";
+import { hasNoStoredArtifacts, reverseMapping } from "../utils";
 import { calculationTypes, failureReasonLabels } from "../constants";
 
 function JobFail() {
@@ -55,8 +55,16 @@ function JobFail() {
 				setJob(response.data);
 
 				// The stored result carries the error object itself, so there is no
-				// separate result.err file to fetch afterwards.
+				// separate result.err file to fetch afterwards. Plenty of failures
+				// legitimately have nothing stored, though: a job that never reached
+				// the cluster, or never finished uploading, has no JobResult row and
+				// the endpoint answers 409. That is not an error to show the user,
+				// because the page's own failure_reason and failure_message already
+				// explain what happened.
+				if (hasNoStoredArtifacts(response.data)) return;
+
 				const resultResponse = await fetchJobResult(jobId as string, token);
+				if (resultResponse.status === 409) return;
 				if (resultResponse.error) {
 					setError(resultResponse.error);
 					return;
