@@ -1,4 +1,17 @@
 /**
+ * Wrap artifact text in a JSmol `load DATA` block.
+ *
+ * Job artifacts are served from an authenticated endpoint, so JSmol cannot
+ * fetch them by URL the way it did with presigned S3 links. Embedding the
+ * content in the load script is the supported alternative.
+ *
+ * @param name - Block label. Only has to be unique within the script.
+ * @param content - Raw artifact text, such as an xyz or molden file.
+ */
+export const jmolInlineLoadScript = (name: string, content: string): string =>
+	`load DATA "${name}"\n${content}\nend "${name}";`;
+
+/**
  * Fetch a raw file from an S3 presigned URL.
  *
  * The caller can choose how the response should be parsed by setting
