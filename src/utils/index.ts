@@ -1,4 +1,5 @@
-import { ComplexNumber } from "../types";
+import { ComplexNumber, Job } from "../types";
+import { DOWNLOADABLE_JOB_STATUSES, FAILURE_REASONS_WITHOUT_ARTIFACTS } from "../constants";
 import { filterJobs } from "./filterJobs";
 
 export const capitalizeFirstLetter = (str: string) => {
@@ -49,5 +50,47 @@ export const formatSymmetryLabel = (label: string): string => {
 // Reversing the mapping of a dict object
 export const reverseMapping = (obj: Record<string, string>): Record<string, string> =>
 	Object.fromEntries(Object.entries(obj).map(([k, v]) => [v, k]));
+
+/** Image types a stored structure thumbnail is allowed to be rendered as. */
+const ALLOWED_THUMBNAIL_MEDIA_TYPES = new Set([
+	"image/png",
+	"image/jpeg",
+	"image/gif",
+	"image/webp",
+]);
+
+/**
+ * Builds a data URL for a structure thumbnail, or null if there isn't one.
+ *
+ * The stored media type comes from the uploader's Content-Type header and the
+ * backend does not validate it, so a value like "text/html" would otherwise
+ * execute in this origin when used as a data URL. Anything outside the image
+ * allowlist is coerced to image/png, which simply fails to decode instead.
+ */
+export const structureThumbnailDataUrl = (
+	thumbnail?: { media_type: string; base64: string } | null,
+): string | null => {
+	if (!thumbnail?.base64) return null;
+	const mediaType = ALLOWED_THUMBNAIL_MEDIA_TYPES.has(thumbnail.media_type)
+		? thumbnail.media_type
+		: "image/png";
+	return `data:${mediaType};base64,${thumbnail.base64}`;
+};
+
+/**
+ * Whether a job's stored results and archive are known to be unavailable.
+ *
+ * This can only ever be one-directional. Returning true means the endpoints
+ * will definitely 409, so the UI should not offer a download. Returning false
+ * means "not provably empty", not "ready": the backend also requires
+ * is_uploaded and a JobResult row, neither of which is serialized. Callers
+ * must still handle a 409 from the request itself.
+ */
+export const hasNoStoredArtifacts = (job: Job): boolean => {
+	if (!DOWNLOADABLE_JOB_STATUSES.includes(job.status)) return true;
+	return Boolean(
+		job.failure_reason && FAILURE_REASONS_WITHOUT_ARTIFACTS.includes(job.failure_reason),
+	);
+};
 
 export { filterJobs };

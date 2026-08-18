@@ -30,7 +30,6 @@ import {
 } from "../services/api";
 import {
 	CANCELLABLE_JOB_STATUSES,
-	DOWNLOADABLE_JOB_STATUSES,
 	JOB_POLL_INTERVAL_MS,
 	TERMINAL_JOB_STATUSES,
 } from "../constants";
@@ -39,7 +38,7 @@ import { MolmakerPageTitle, MolmakerAlert, MolmakerConfirm } from "../components
 import type { Filter, Job, Structure } from "../types";
 import GroupPanel from "../components/GroupPanel";
 import GroupJobsTable from "./Home/components/GroupJobsTable";
-import { filterJobs } from "../utils";
+import { filterJobs, hasNoStoredArtifacts } from "../utils";
 import { Pyramid } from "lucide-react";
 import { renderFormula } from "../utils/renderFormula";
 import { VisibilityOffOutlined, VisibilityOutlined } from "@mui/icons-material";
@@ -427,7 +426,7 @@ export default function Group() {
 		if (!selectedJobId) return true;
 		const job = jobs.find((j) => j.job_id === selectedJobId);
 		if (!job) return true;
-		return !DOWNLOADABLE_JOB_STATUSES.includes(job.status);
+		return hasNoStoredArtifacts(job);
 	};
 
 	// Opens the delete confirmation dialog.

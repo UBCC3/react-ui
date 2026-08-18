@@ -74,6 +74,25 @@ export const DOWNLOADABLE_JOB_STATUSES = [
 	JobStatus.CANCELLED,
 ];
 
+/**
+ * Failure reasons that prove a job never produced stored artifacts.
+ *
+ * The backend gates both the result and the archive on is_job_result_ready,
+ * which needs is_uploaded and a JobResult row. Neither is serialized, so a
+ * terminal status alone does not mean anything is downloadable. These three
+ * reasons are the cases the job record does settle: the job either never
+ * reached the cluster or never finished uploading, so the endpoints will 409.
+ *
+ * Anything else is genuinely unknown here and has to be handled from the
+ * response. Explicit result_ready and archive_ready fields on JobResponse
+ * would remove the guesswork entirely.
+ */
+export const FAILURE_REASONS_WITHOUT_ARTIFACTS = [
+	"submission_failed",
+	"status_check_failed",
+	"result_upload_failed",
+];
+
 export const statusColors: Record<string, string> = {
 	completed: green[500],
 	running: blue[500],

@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { Box, Paper, TablePagination, Snackbar } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import {
-	adminGetAllJobs,
 	adminGetAllJobsPaged,
 	cancelJob,
 	deleteJob,
@@ -13,7 +12,6 @@ import {
 } from "../services/api";
 import {
 	CANCELLABLE_JOB_STATUSES,
-	DOWNLOADABLE_JOB_STATUSES,
 	JOB_POLL_INTERVAL_MS,
 	TERMINAL_JOB_STATUSES,
 } from "../constants";
@@ -26,7 +24,7 @@ import {
 } from "../components/custom";
 import type { Job, Structure, Filter } from "../types";
 import AdminJobsTable from "./Home/components/AdminJobsTable";
-import { filterJobs } from "../utils";
+import { filterJobs, hasNoStoredArtifacts } from "../utils";
 import EditJobDialog from "../components/EditJobDialog";
 
 export default function Admin() {
@@ -209,7 +207,7 @@ export default function Admin() {
 		try {
 			const token = await getAccessTokenSilently();
 			// TODO: move filter to backend
-			const response = await adminGetAllJobs(token);
+			const response = await adminGetAllJobsPaged(token);
 			setJobs(response.data);
 			setFilterStructureId("");
 		} catch (err) {
@@ -377,7 +375,7 @@ export default function Admin() {
 		if (!selectedJobId) return true;
 		const job = jobs.find((j) => j.job_id === selectedJobId);
 		if (!job) return true;
-		return !DOWNLOADABLE_JOB_STATUSES.includes(job.status);
+		return hasNoStoredArtifacts(job);
 	};
 
 	// Show a full-page loading component while data is being fetched or actions are running.

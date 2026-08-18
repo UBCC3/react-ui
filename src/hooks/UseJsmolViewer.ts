@@ -78,6 +78,10 @@ export function useJsmolViewer({
 			src,
 			serverURL: JSMOL_SERVER_URL,
 			script: loadScript,
+			// Defence in depth. Load scripts embed untrusted artifact text, so even
+			// though useJobArtifact rejects anything that could break out of the data
+			// block, Jmol must not be able to evaluate browser JavaScript.
+			allowJavaScript: false,
 			disableInitialConsole: true,
 			addSelectionOptions: false,
 			debug: false,

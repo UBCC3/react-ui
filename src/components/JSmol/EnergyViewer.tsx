@@ -8,6 +8,7 @@ import PartialCharge from "./PartialCharge";
 import { useResultDrawer } from "../../hooks/UseResultDrawer";
 import { useJsmolViewer } from "../../hooks/UseJsmolViewer";
 import { useJobResult } from "../../hooks/UseJobResult";
+import { useJobArtifact } from "../../hooks/UseJobArtifact";
 import { ResultDrawer } from "../results/ResultDrawer";
 import { ResultDrawerSection } from "../results/ResultDrawerSection";
 import AddStructureToLibrary from "./AddStructureToLibrary";
@@ -35,17 +36,23 @@ const EnergyViewer: React.FC<EnergyViewerProps> = ({
 	viewerObjId,
 	setError,
 }) => {
-	const xyzFileUrl = jobResultFiles.urls["mol"];
-	const resultURL = jobResultFiles.urls["result"];
+	const { result, loading } = useJobResult(jobResultFiles.jobId, undefined, setError);
 
-	const { result, loading } = useJobResult(resultURL, undefined, setError);
+	// An energy calculation does not move the atoms, so the structure shown here
+	// is the job's stored input geometry. The artifact endpoint needs a bearer
+	// token the applet cannot send, so the hook republishes it as a blob URL.
+	const { url: inputUrl, loading: inputLoading } = useJobArtifact(
+		jobResultFiles.jobId,
+		"input",
+		setError,
+	);
 
 	const { viewerRef, viewerObj } = useJsmolViewer({
 		viewerObjId,
-		src: xyzFileUrl,
-		loadScript: `load "XYZ::${xyzFileUrl}";`,
+		src: inputUrl ?? "",
+		loadScript: inputUrl ? `load "XYZ::${inputUrl}";` : "",
 		onReadyScript: `zoom 50; connect auto`,
-		skip: loading,
+		skip: loading || inputLoading || !inputUrl,
 	});
 
 	const { open, accordionOpen, toggle, handleAccordionChange } = useResultDrawer({

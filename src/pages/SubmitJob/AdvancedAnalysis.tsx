@@ -29,8 +29,8 @@ import {
 } from "../../components/custom";
 import {
 	getCalculationTypes,
-	getLibraryStructures,
-	getStructureDataFromS3,
+	getLibraryStructuresPaged,
+	getStructureContent,
 	getWavefunctionMethods,
 	getDensityFunctionalMethods,
 	getBasisSets,
@@ -178,7 +178,7 @@ const AdvancedAnalysis = () => {
 		const loadLibrary = async () => {
 			try {
 				const token = await getAccessTokenSilently();
-				const response = await getLibraryStructures(token);
+				const response = await getLibraryStructuresPaged(token);
 				if (response.error) {
 					setError("Failed to fetch library. Please try again later.");
 					return;
@@ -250,7 +250,7 @@ const AdvancedAnalysis = () => {
 		if (selected_structure_id) {
 			try {
 				const token = await getAccessTokenSilently();
-				const response = await getStructureDataFromS3(selected_structure_id, token);
+				const response = await getStructureContent(selected_structure_id, token);
 				if (response.error) {
 					setError("Failed to load structure. Please try again or select a different molecule.");
 					return;

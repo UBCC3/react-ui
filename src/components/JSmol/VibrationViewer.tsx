@@ -28,6 +28,7 @@ import { formatComplex, formatSymmetryLabel } from "../../utils";
 import { useResultDrawer } from "../../hooks/UseResultDrawer";
 import { useJsmolViewer } from "../../hooks/UseJsmolViewer";
 import { useJobResult } from "../../hooks/UseJobResult";
+import { useJobArtifact } from "../../hooks/UseJobArtifact";
 import { ResultDrawer } from "../results/ResultDrawer";
 import { ResultDrawerSection } from "../results/ResultDrawerSection";
 import AddStructureToLibrary from "./AddStructureToLibrary";
@@ -74,10 +75,19 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 	viewerObjId,
 	setError,
 }) => {
-	const xyzFileUrl = jobResultFiles.urls["vib"];
-	const resultURL = jobResultFiles.urls["result"];
+	const { result, loading } = useJobResult(
+		jobResultFiles.jobId,
+		"vibrational frequencies",
+		setError,
+	);
 
-	const { result, loading } = useJobResult(resultURL, "vibrational frequencies", setError);
+	// The artifact endpoint needs a bearer token the applet cannot send, so the
+	// hook fetches it and republishes it as a same-origin blob URL.
+	const { url: vibrationUrl, loading: vibrationLoading } = useJobArtifact(
+		jobResultFiles.jobId,
+		"vib",
+		setError,
+	);
 
 	// structure viewer & graph viewer tab
 	const [value, setValue] = useState<viewerTab>(viewerTab.structure);
@@ -85,10 +95,10 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 
 	const { viewerRef, viewerObj, appletRef } = useJsmolViewer({
 		viewerObjId,
-		src: xyzFileUrl,
-		loadScript: `load async "${xyzFileUrl}";`,
+		src: vibrationUrl ?? "",
+		loadScript: vibrationUrl ? `load "XYZ::${vibrationUrl}";` : "",
 		onReadyScript: `reset; zoom 50;`,
-		skip: loading || value !== viewerTab.structure,
+		skip: loading || vibrationLoading || !vibrationUrl || value !== viewerTab.structure,
 		cleanupOnChange: true,
 	});
 

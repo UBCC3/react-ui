@@ -7,7 +7,7 @@ import {
 	MolmakerConfirm,
 } from "../components/custom";
 import {
-	getStructureDataFromS3,
+	getStructureContent,
 	getStructureById,
 	updateStructure,
 	getStructuresTags,
@@ -178,8 +178,8 @@ const MoleculeInfo = ({
 	/**
 	 * Loads molecule geometry data for the selected structure.
 	 *
-	 * The molecule data is fetched from S3 and stored in `structureData`,
-	 * which is then passed into the molecule preview component.
+	 * The structure file is stored in the database and returned by the detail
+	 * endpoint, then held in `structureData` for the molecule preview.
 	 */
 	const openMoleculeViewer = async (structureId: string) => {
 		setLoading(true);
@@ -187,7 +187,7 @@ const MoleculeInfo = ({
 
 		try {
 			const token = await getAccessTokenSilently();
-			const response = await getStructureDataFromS3(structureId, token);
+			const response = await getStructureContent(structureId, token);
 			if (response.error) {
 				setError("Failed to load molecule structure. Please try again.");
 				return;
