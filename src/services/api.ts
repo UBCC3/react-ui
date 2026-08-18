@@ -684,31 +684,6 @@ export const getAllJobsPaged = (token: string) =>
 	fetchAllPages<Job>((p) => getAllJobs(token, p), 100);
 
 /**
- * Fetches presigned artifact URLs for a finished job.
- * 409 = files not ready yet, 503 = storage temporarily unavailable.
- * Response: { job_id, calculation_type, status, urls }
- */
-export const fetchJobResultFiles = async (token: string, jobId: string): Promise<Response> => {
-	try {
-		const API = createStorageAPI(token);
-		const res = await API.get(`/jobs/${jobId}`);
-		return { status: res.status, data: res.data };
-	} catch (error: any) {
-		const httpStatus = error.response?.status;
-		console.error("Failed to fetch presigned job file urls", error);
-		return {
-			status: httpStatus || 500,
-			error:
-				httpStatus === 409
-					? "Job files are not ready yet."
-					: httpStatus === 503
-						? "File storage is temporarily unavailable. Please try again shortly."
-						: error.response?.data?.detail || error.message,
-		};
-	}
-};
-
-/**
  * Fetches the parsed calculation result and error stored for a finished job.
  *
  * Results now live in the database rather than S3, so this returns the parsed

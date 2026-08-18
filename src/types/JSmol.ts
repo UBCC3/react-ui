@@ -38,11 +38,15 @@ export interface JobArtifactListPayload {
 	artifacts: JobArtifactKind[];
 }
 
+/**
+ * Identifies the finished job a result viewer is showing. Viewers fetch the
+ * result and any artifacts themselves using `jobId`; there are no longer
+ * presigned URLs to pass down.
+ */
 export interface JobResult {
 	jobId: string;
 	calculation: string;
 	status: string;
-	urls: { [key: string]: string };
 }
 
 export type VibrationMode = {
