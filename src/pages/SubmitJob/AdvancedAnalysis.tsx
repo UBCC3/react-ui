@@ -30,7 +30,7 @@ import {
 import {
 	getCalculationTypes,
 	getLibraryStructures,
-	getStructureDataFromS3,
+	getStructureContent,
 	getWavefunctionMethods,
 	getDensityFunctionalMethods,
 	getBasisSets,
@@ -250,7 +250,7 @@ const AdvancedAnalysis = () => {
 		if (selected_structure_id) {
 			try {
 				const token = await getAccessTokenSilently();
-				const response = await getStructureDataFromS3(selected_structure_id, token);
+				const response = await getStructureContent(selected_structure_id, token);
 				if (response.error) {
 					setError("Failed to load structure. Please try again or select a different molecule.");
 					return;

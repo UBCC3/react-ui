@@ -50,4 +50,30 @@ export const formatSymmetryLabel = (label: string): string => {
 export const reverseMapping = (obj: Record<string, string>): Record<string, string> =>
 	Object.fromEntries(Object.entries(obj).map(([k, v]) => [v, k]));
 
+/** Image types a stored structure thumbnail is allowed to be rendered as. */
+const ALLOWED_THUMBNAIL_MEDIA_TYPES = new Set([
+	"image/png",
+	"image/jpeg",
+	"image/gif",
+	"image/webp",
+]);
+
+/**
+ * Builds a data URL for a structure thumbnail, or null if there isn't one.
+ *
+ * The stored media type comes from the uploader's Content-Type header and the
+ * backend does not validate it, so a value like "text/html" would otherwise
+ * execute in this origin when used as a data URL. Anything outside the image
+ * allowlist is coerced to image/png, which simply fails to decode instead.
+ */
+export const structureThumbnailDataUrl = (
+	thumbnail?: { media_type: string; base64: string } | null,
+): string | null => {
+	if (!thumbnail?.base64) return null;
+	const mediaType = ALLOWED_THUMBNAIL_MEDIA_TYPES.has(thumbnail.media_type)
+		? thumbnail.media_type
+		: "image/png";
+	return `data:${mediaType};base64,${thumbnail.base64}`;
+};
+
 export { filterJobs };

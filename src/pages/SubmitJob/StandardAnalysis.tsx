@@ -26,7 +26,7 @@ import {
 } from "../../components/custom";
 import {
 	getLibraryStructures,
-	getStructureDataFromS3,
+	getStructureContent,
 	AddAndUploadStructureToS3,
 	getChemicalFormula,
 	getStructuresTags,
@@ -182,7 +182,7 @@ export default function StandardAnalysis() {
 		try {
 			setLoading(true);
 			const token = await getAccessTokenSilently();
-			const response = await getStructureDataFromS3(structure_id, token);
+			const response = await getStructureContent(structure_id, token);
 			if (response.error) {
 				setError("Failed to load structure. Please try again or select a different molecule.");
 				return;

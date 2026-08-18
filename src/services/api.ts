@@ -530,30 +530,28 @@ export const AddAndUploadStructureToS3 = async (
 };
 
 /**
- * Requests a presigned URL for a structure file, then downloads the file content from S3.
+ * Fetches the structure file text for one structure.
+ *
+ * Structure files now live in the database, so this reads the detail endpoint
+ * and returns its `content` field. The list endpoint returns metadata only.
  */
-export const getStructureDataFromS3 = async (
-	structureId: string,
-	token: any,
-): Promise<Response> => {
+export const getStructureContent = async (structureId: string, token: any): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get(`/structures/presigned/${structureId}`);
-		if (res.status !== 200) {
-			throw new Error(`HTTP ${res.status}`);
+		const res = await API.get(`/structures/${structureId}`);
+		const content = res.data?.content;
+		if (typeof content !== "string" || !content) {
+			return {
+				status: res.status,
+				error: "This structure has no stored file content.",
+			};
 		}
-		const { url } = res.data;
-		const fileRes = await fetch(url);
-		const text = await fileRes.text();
+		return { status: res.status, data: content };
+	} catch (error: any) {
+		console.error("Failed to fetch the structure content", error);
 		return {
-			status: fileRes.status,
-			data: text,
-		};
-	} catch (error) {
-		console.error("Failed to fetch structure from S3", error);
-		return {
-			status: 500,
-			error: `Failed to fetch structure from S3: ${getErrorMessage(error)}`,
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || getErrorMessage(error),
 		};
 	}
 };
