@@ -18,6 +18,8 @@ import CalculatedQuantities from "./CalculatedQuantities";
 import { useResultDrawer } from "../../hooks/UseResultDrawer";
 import { useJsmolViewer } from "../../hooks/UseJsmolViewer";
 import { useJobResult } from "../../hooks/UseJobResult";
+import { useJobArtifact } from "../../hooks/UseJobArtifact";
+import { jmolInlineLoadScript } from "./util";
 import { ResultDrawer } from "../results/ResultDrawer";
 import { ResultDrawerSection } from "../results/ResultDrawerSection";
 import AddStructureToLibrary from "./AddStructureToLibrary";
@@ -53,11 +55,17 @@ const OptimizationViewer: React.FC<VibrationViewerProps> = ({
 	viewerObjId,
 	setError,
 }) => {
-	const xyzFileUrl = jobResultFiles.urls["trajectory"];
-
 	const { result, loading } = useJobResult(
 		jobResultFiles.jobId,
 		"geometric optimization",
+		setError,
+	);
+
+	// The trajectory is fetched here and loaded into JSmol inline, because the
+	// artifact endpoint requires a bearer token the applet cannot send.
+	const { content: trajectoryXyz, loading: trajectoryLoading } = useJobArtifact(
+		jobResultFiles.jobId,
+		"trajectory",
 		setError,
 	);
 
@@ -69,10 +77,10 @@ const OptimizationViewer: React.FC<VibrationViewerProps> = ({
 
 	const { viewerRef, viewerObj } = useJsmolViewer({
 		viewerObjId,
-		src: xyzFileUrl,
-		loadScript: `load "XYZ::${xyzFileUrl}";`,
+		src: "",
+		loadScript: trajectoryXyz ? jmolInlineLoadScript("trajectory", trajectoryXyz) : "",
 		onReadyScript: `zoom 50; connect auto;`,
-		skip: loading,
+		skip: loading || trajectoryLoading || !trajectoryXyz,
 	});
 
 	const { open, accordionOpen, toggle, handleAccordionChange } = useResultDrawer({
