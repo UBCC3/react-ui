@@ -30,10 +30,10 @@ import {
 	AddAndUploadStructureToS3,
 	getChemicalFormula,
 	getStructuresTags,
+	getMultiplicities,
 	submitStandardAnalysisJob,
 } from "../../services/api";
 import { Structure } from "../../types";
-import { unpairedElectronOptions } from "../../constants";
 import { grey } from "@mui/material/colors";
 
 export default function StandardAnalysis() {
@@ -72,6 +72,8 @@ export default function StandardAnalysis() {
 	// state for calculation parameters
 	const [charge, setCharge] = useState<number>(0);
 	const [multiplicity, setMultiplicity] = useState<number>(1);
+	// Unpaired electron count mapped to spin multiplicity, from /enums/multiplicities.
+	const [multiplicities, setMultiplicities] = useState<Record<string, number>>({});
 	const [isTransitionState, setIsTransitionState] = useState<boolean>(false);
 
 	// available tag options shown in the autocomplete input
@@ -127,6 +129,19 @@ export default function StandardAnalysis() {
 			}
 		};
 
+		// Fetch the selectable spin states so the range lives only on the backend
+		const fetchMultiplicities = async () => {
+			try {
+				const token = await getAccessTokenSilently();
+				const response = await getMultiplicities(token);
+				if (response.data) {
+					setMultiplicities(response.data);
+				}
+			} catch (err) {
+				console.error("Failed to fetch multiplicities", err);
+			}
+		};
+
 		// Fetch existing structure tags for autocomplete suggestions
 		const fetchTags = async () => {
 			try {
@@ -144,6 +159,7 @@ export default function StandardAnalysis() {
 		setLoading(true);
 		loadLibraryStructures();
 		fetchTags();
+		fetchMultiplicities();
 	}, [getAccessTokenSilently]);
 
 	// Handle switching between upload / library
@@ -441,9 +457,9 @@ export default function StandardAnalysis() {
 												onChange={(_event: unknown, val: string) =>
 													setMultiplicity(parseInt(val, 10))
 												}
-												options={unpairedElectronOptions.map((o) => ({
-													value: String(o.multiplicity),
-													label: o.label,
+												options={Object.entries(multiplicities).map(([label, value]) => ({
+													value: String(value),
+													label,
 												}))}
 												row
 											/>

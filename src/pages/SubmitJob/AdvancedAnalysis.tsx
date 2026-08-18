@@ -34,12 +34,12 @@ import {
 	getWavefunctionMethods,
 	getDensityFunctionalMethods,
 	getBasisSets,
+	getMultiplicities,
 	AddAndUploadStructureToS3,
 	getStructuresTags,
 	submitCustomCalculation,
 } from "../../services/api";
 import { Structure } from "../../types";
-import { unpairedElectronOptions } from "../../constants";
 import { getChemicalFormula } from "../../services/api";
 import * as React from "react";
 import { Keyword, KeywordEditor } from "./KeywordEditor";
@@ -92,6 +92,8 @@ const AdvancedAnalysis = () => {
 	const [charge, setCharge] = useState<number>(0);
 	const [calculationType, setCalculationType] = useState<string>("energy");
 	const [multiplicity, setMultiplicity] = useState<number>(1);
+	// Unpaired electron count mapped to spin multiplicity, from /enums/multiplicities.
+	const [multiplicities, setMultiplicities] = useState<Record<string, number>>({});
 	const [theoryType, setTheoryType] = useState("wavefunction");
 	const [theory, setTheory] = useState<string>("scf");
 	const [basisSet, setBasisSet] = useState<string>("sto-3g");
@@ -164,6 +166,12 @@ const AdvancedAnalysis = () => {
 					return;
 				}
 				setBasisSets(response.data);
+				response = await getMultiplicities(token);
+				if (response.error) {
+					setError("Failed to load multiplicities. Please try again later.");
+					return;
+				}
+				setMultiplicities(response.data);
 			} catch (err) {
 				setError("Failed to load calculation types. Please try again later.");
 				console.error("Failed to load calculation types", err);
@@ -632,9 +640,9 @@ const AdvancedAnalysis = () => {
 												onChange={(_event: unknown, val: string) =>
 													setMultiplicity(parseInt(val, 10))
 												}
-												options={unpairedElectronOptions.map((o) => ({
-													value: String(o.multiplicity),
-													label: o.label,
+												options={Object.entries(multiplicities).map(([label, value]) => ({
+													value: String(value),
+													label,
 												}))}
 												row
 											/>
