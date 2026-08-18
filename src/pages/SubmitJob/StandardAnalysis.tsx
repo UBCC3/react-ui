@@ -25,7 +25,7 @@ import {
 	MolmakerConfirm,
 } from "../../components/custom";
 import {
-	getLibraryStructures,
+	getLibraryStructuresPaged,
 	getStructureContent,
 	AddAndUploadStructureToS3,
 	getChemicalFormula,
@@ -103,7 +103,7 @@ export default function StandardAnalysis() {
 			try {
 				setLoading(true);
 				const token = await getAccessTokenSilently();
-				const response = await getLibraryStructures(token);
+				const response = await getLibraryStructuresPaged(token);
 				if (response.error) {
 					setError("Failed to fetch library. Please try again later.");
 					return;

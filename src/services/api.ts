@@ -10,7 +10,19 @@ function getErrorMessage(error: unknown): string {
 }
 
 /**
+ * Highest number of pages fetchAllPages will request before giving up.
+ *
+ * Only a safety bound: a server that ignored `offset` and always returned a
+ * full page would otherwise loop forever. At MAX_PAGE_SIZE this is 100k rows.
+ */
+const MAX_PAGES = 1000;
+
+/**
  * Pulls every page of a paginated list endpoint.
+ *
+ * A failure on any page fails the whole call. Returning the pages collected so
+ * far as a success would silently drop the rest, and the caller has no way to
+ * tell a complete list from a truncated one.
  */
 async function fetchAllPages<T>(
 	fetchPage: (paging: Required<Paging>) => Promise<Response>,
@@ -18,15 +30,21 @@ async function fetchAllPages<T>(
 ): Promise<Response> {
 	const all: T[] = [];
 	let offset = 0;
-	for (;;) {
+
+	for (let requested = 0; requested < MAX_PAGES; requested++) {
 		const res = await fetchPage({ limit: pageSize, offset });
-		if (res.error) return all.length ? { status: 200, data: all } : res;
+		if (res.error) return res;
+
 		const page = (res.data ?? []) as T[];
 		all.push(...page);
-		if (page.length < pageSize) break;
+		if (page.length < pageSize) return { status: 200, data: all };
 		offset += pageSize;
 	}
-	return { status: 200, data: all };
+
+	return {
+		status: 500,
+		error: "The list was longer than expected and could not be loaded fully.",
+	};
 }
 
 /**
@@ -83,7 +101,7 @@ export const getCurrentUserGroupJobs = async (
  * All of the current user's group jobs, following pagination.
  */
 export const getCurrentUserGroupJobsPaged = (token: string) =>
-	fetchAllPages<Job>((p) => getCurrentUserGroupJobs(token, p), 100);
+	fetchAllPages<Job>((p) => getCurrentUserGroupJobs(token, p));
 
 /**
  * Fetches structures owned by the current user's group.
@@ -112,7 +130,7 @@ export const getCurrentUserGroupStructures = async (
  * All of the current user's group structures, following pagination.
  */
 export const getCurrentUserGroupStructuresPaged = (token: string) =>
-	fetchAllPages<Structure>((p) => getCurrentUserGroupStructures(token, p), 100);
+	fetchAllPages<Structure>((p) => getCurrentUserGroupStructures(token, p));
 
 /**
  * Fetches all members in the current user's group.
@@ -138,7 +156,7 @@ export const getCurrentUserMembers = async (token: any, paging: Paging = {}): Pr
  * All of the user's group members, following pagination.
  */
 export const getCurrentUserMembersPaged = (token: string) =>
-	fetchAllPages<User>((p) => getCurrentUserMembers(token, p), 100);
+	fetchAllPages<User>((p) => getCurrentUserMembers(token, p));
 
 /**
  * Creates or updates the currently authenticated user in the backend database.
@@ -181,7 +199,7 @@ export const getAllGroups = async (token: any, paging: Paging = {}): Promise<Res
  * All groups, following pagination.
  */
 export const getAllGroupsPaged = (token: string) =>
-	fetchAllPages<Group>((p) => getAllGroups(token, p), 100);
+	fetchAllPages<Group>((p) => getAllGroups(token, p));
 
 /**
  * Fetches a specific group using its group ID.
@@ -280,7 +298,7 @@ export const getAllUsers = async (token: any, paging: Paging = {}): Promise<Resp
  * All users, following pagination.
  */
 export const getAllUsersPaged = (token: string) =>
-	fetchAllPages<User>((p) => getAllUsers(token, p), 100);
+	fetchAllPages<User>((p) => getAllUsers(token, p));
 
 /**
  * Fetches a user record using the user's email address.
@@ -366,7 +384,7 @@ export const adminGetAllJobs = async (token: any, paging: Paging = {}): Promise<
  * All jobs, following pagination.
  */
 export const adminGetAllJobsPaged = (token: string) =>
-	fetchAllPages<Job>((p) => adminGetAllJobs(token, p), 100);
+	fetchAllPages<Job>((p) => adminGetAllJobs(token, p));
 
 /**
  * Cancels a running or queued cluster job using its SLURM ID.
@@ -580,7 +598,7 @@ export const getLibraryStructures = async (token: any, paging: Paging = {}): Pro
  * All of the user's structures, following pagination.
  */
 export const getLibraryStructuresPaged = (token: string) =>
-	fetchAllPages<Structure>((p) => getLibraryStructures(token, p), 100);
+	fetchAllPages<Structure>((p) => getLibraryStructures(token, p));
 
 /**
  * Fetches metadata/details ffor one structure by structure ID.
@@ -686,8 +704,7 @@ export const getAllJobs = async (token: string, paging: Paging = {}): Promise<Re
 /**
  * All of the user's jobs, following pagination.
  */
-export const getAllJobsPaged = (token: string) =>
-	fetchAllPages<Job>((p) => getAllJobs(token, p), 100);
+export const getAllJobsPaged = (token: string) => fetchAllPages<Job>((p) => getAllJobs(token, p));
 
 /**
  * Fetches the parsed calculation result and error stored for a finished job.

@@ -4,13 +4,12 @@ import { useNavigate } from "react-router-dom";
 import { Box, Paper, TablePagination, Snackbar } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import {
-	getAllJobs,
-	getLibraryStructures,
+	getAllJobsPaged,
+	getLibraryStructuresPaged,
 	deleteJob,
 	upsertCurrentUser,
 	getZipPresignedUrl,
 	cancelJob,
-	getAllJobsPaged,
 } from "../../services/api";
 import {
 	CANCELLABLE_JOB_STATUSES,
@@ -157,8 +156,8 @@ export default function Home() {
 			try {
 				const token = await getAccessTokenSilently();
 				const [jobsResponse, structuresResponse] = await Promise.all([
-					getAllJobs(token),
-					getLibraryStructures(token),
+					getAllJobsPaged(token),
+					getLibraryStructuresPaged(token),
 				]);
 
 				setJobs(jobsResponse.data);
@@ -215,7 +214,7 @@ export default function Home() {
 
 		try {
 			const token = await getAccessTokenSilently();
-			const response = await getAllJobs(token);
+			const response = await getAllJobsPaged(token);
 			setJobs(response.data);
 			setFilterStructureId("");
 		} catch (err) {

@@ -29,7 +29,7 @@ import {
 } from "../../components/custom";
 import {
 	getCalculationTypes,
-	getLibraryStructures,
+	getLibraryStructuresPaged,
 	getStructureContent,
 	getWavefunctionMethods,
 	getDensityFunctionalMethods,
@@ -178,7 +178,7 @@ const AdvancedAnalysis = () => {
 		const loadLibrary = async () => {
 			try {
 				const token = await getAccessTokenSilently();
-				const response = await getLibraryStructures(token);
+				const response = await getLibraryStructuresPaged(token);
 				if (response.error) {
 					setError("Failed to fetch library. Please try again later.");
 					return;

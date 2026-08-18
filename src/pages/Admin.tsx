@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { Box, Paper, TablePagination, Snackbar } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import {
-	adminGetAllJobs,
 	adminGetAllJobsPaged,
 	cancelJob,
 	deleteJob,
@@ -208,7 +207,7 @@ export default function Admin() {
 		try {
 			const token = await getAccessTokenSilently();
 			// TODO: move filter to backend
-			const response = await adminGetAllJobs(token);
+			const response = await adminGetAllJobsPaged(token);
 			setJobs(response.data);
 			setFilterStructureId("");
 		} catch (err) {
