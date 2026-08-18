@@ -2,8 +2,8 @@ import { Box, Tab, Tabs } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import { Job, JobResult } from "../../types";
-import React, { useEffect, useState } from "react";
-import { fetchRawFileFromS3Url } from "./util";
+import React, { useState } from "react";
+import { useJobResult } from "../../hooks/UseJobResult";
 import MolmakerLoading from "../custom/MolmakerLoading";
 import JobResultHeader from "./JobResultHeader";
 import OptimizationViewer from "./OptimizationViewer";
@@ -88,29 +88,12 @@ const StandardAnalysisViewer: React.FC<StandardAnalysisViewerProp> = ({
 	jobResultFiles,
 	setError,
 }) => {
-	const [loading, setLoading] = useState<boolean>(true);
-
-	// result.json
-	const resultURL = jobResultFiles.urls["result"];
-	const [result, setResult] = useState<any | null>(null);
+	// The standard workflow stores every calculation section in one payload, so
+	// this viewer takes the whole result rather than a single section.
+	const { result, loading } = useJobResult(jobResultFiles.jobId, undefined, setError);
 
 	// tabs
 	const [currentTab, setCurrentTab] = useState<ResultTab>(ResultTab.optimization);
-
-	// Fetch the standard analysis result JSON when the result URL changes.
-	useEffect(() => {
-		fetchRawFileFromS3Url(resultURL, "json")
-			.then((res) => {
-				setResult(res);
-			})
-			.catch((err) => {
-				setError("Failed to fetch job details or results");
-				console.error("Failed to fetch job details or results", err);
-			})
-			.finally(() => {
-				setLoading(false);
-			});
-	}, [resultURL]);
 
 	/**
 	 * Update the currently selected result tab.

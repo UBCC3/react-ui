@@ -54,9 +54,12 @@ const OptimizationViewer: React.FC<VibrationViewerProps> = ({
 	setError,
 }) => {
 	const xyzFileUrl = jobResultFiles.urls["trajectory"];
-	const resultURL = jobResultFiles.urls["result"];
 
-	const { result, loading } = useJobResult(resultURL, "geometric optimization", setError);
+	const { result, loading } = useJobResult(
+		jobResultFiles.jobId,
+		"geometric optimization",
+		setError,
+	);
 
 	// optimization iteration table
 	const rowsPerPage: number = 25;

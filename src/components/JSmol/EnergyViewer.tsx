@@ -36,9 +36,8 @@ const EnergyViewer: React.FC<EnergyViewerProps> = ({
 	setError,
 }) => {
 	const xyzFileUrl = jobResultFiles.urls["mol"];
-	const resultURL = jobResultFiles.urls["result"];
 
-	const { result, loading } = useJobResult(resultURL, undefined, setError);
+	const { result, loading } = useJobResult(jobResultFiles.jobId, undefined, setError);
 
 	const { viewerRef, viewerObj } = useJsmolViewer({
 		viewerObjId,

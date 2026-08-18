@@ -75,9 +75,12 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 	setError,
 }) => {
 	const xyzFileUrl = jobResultFiles.urls["vib"];
-	const resultURL = jobResultFiles.urls["result"];
 
-	const { result, loading } = useJobResult(resultURL, "vibrational frequencies", setError);
+	const { result, loading } = useJobResult(
+		jobResultFiles.jobId,
+		"vibrational frequencies",
+		setError,
+	);
 
 	// structure viewer & graph viewer tab
 	const [value, setValue] = useState<viewerTab>(viewerTab.structure);

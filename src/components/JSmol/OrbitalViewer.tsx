@@ -54,8 +54,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	viewerObjId,
 	setError,
 }) => {
-	const resultURL = jobResultFiles.urls["result"];
-	const { result, loading } = useJobResult(resultURL, "molecular orbitals", setError);
+	const { result, loading } = useJobResult(jobResultFiles.jobId, "molecular orbitals", setError);
 
 	const moldenFile = jobResultFiles.urls["molden"];
 	const espFile = jobResultFiles.urls["esp"];
