@@ -5,7 +5,7 @@ import { useParams } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useEffect, useState } from "react";
 import type { Job, JobResult } from "../types";
-import { fetchJobResultFiles, getJobByJobID } from "../services/api";
+import { getJobByJobID } from "../services/api";
 import MolmakerLoading from "../components/custom/MolmakerLoading";
 import NotFound from "./NotFound";
 import { MolmakerAlert } from "../components/custom";
@@ -59,27 +59,15 @@ const ResultPage = () => {
 				const jobData = response.data;
 				setJob(jobData);
 
-				// request S3 presign url to result files
-				let jobResultFiles: JobResult | null = null;
+				// Viewers fetch results and artifacts themselves by job ID, so this
+				// only has to describe which job they are looking at. No extra
+				// request is needed now that there are no presigned URLs to collect.
 				if (jobData.status === "completed") {
-					const jobFilesUrlsResp = await fetchJobResultFiles(
-						token,
-						jobId as string,
-						jobData.calculation_type,
-						jobData.status,
-					);
-
-					// Normalize the backend response into the JobResult shape used by viewer components.
-					jobResultFiles = {
-						jobId: jobFilesUrlsResp.data.job_id,
-						calculation: jobFilesUrlsResp.data.calculation,
-						status: jobFilesUrlsResp.data.status,
-						urls: jobFilesUrlsResp.data.urls,
-					};
-					console.log(jobResultFiles);
-
-					// Save the result file URLs for the selected viewer component.
-					setJobResultFiles(jobResultFiles);
+					setJobResultFiles({
+						jobId: jobData.job_id,
+						calculation: jobData.calculation_type,
+						status: jobData.status,
+					});
 				}
 			} catch (err) {
 				setError("Failed to fetch job files");

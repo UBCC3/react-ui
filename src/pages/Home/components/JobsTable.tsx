@@ -9,12 +9,18 @@ import {
 	Chip,
 	Box,
 	Typography,
+	Tooltip,
 } from "@mui/material";
-import { statusColors, statusIcons, calculationTypes } from "../../../constants";
+import {
+	statusColors,
+	statusIcons,
+	calculationTypes,
+	failureReasonLabels,
+} from "../../../constants";
 import { grey } from "@mui/material/colors";
 import { ArrowDownAZ, ArrowUpAZ } from "lucide-react";
 import type { Job } from "../../../types";
-import { reverseMapping } from "../../../utils";
+import { formatRuntime, reverseMapping } from "../../../utils";
 
 /**
  * Props for the JobsTable
@@ -139,7 +145,7 @@ export default function JobsTable({
 							renderHeader("Calculation Type", "calculation_type")}
 						{displayColumns.structures && renderHeader("Library Structure", "structures")}
 						{displayColumns.tags && renderHeader("Job Tags", "tags")}
-						{displayColumns.runtime && renderHeader("Runtime", "runtime")}
+						{displayColumns.runtime && renderHeader("Runtime", "runtime_seconds")}
 						{displayColumns.submitted_at && renderHeader("Submitted At", "submitted_at")}
 						{displayColumns.completed_at && renderHeader("Completed At", "completed_at")}
 					</TableRow>
@@ -176,23 +182,33 @@ export default function JobsTable({
 								)}
 								{displayColumns.status && (
 									<TableCell>
-										<Chip
-											label={job.status}
-											size="small"
-											sx={{
-												bgcolor: statusColors[job.status] ?? grey[300],
-												color: "white",
-												textTransform: "capitalize",
-												fontSize: "0.65rem",
-											}}
-											icon={
-												statusIcons[job.status]
-													? React.createElement(statusIcons[job.status], {
-															style: { color: "white", width: 16, height: 16 },
-														})
-													: undefined
+										<Tooltip
+											title={
+												job.failure_reason
+													? `${failureReasonLabels[job.failure_reason] ?? job.failure_reason}${
+															job.failure_message ? `: ${job.failure_message}` : ""
+														}`
+													: ""
 											}
-										/>
+										>
+											<Chip
+												label={job.status}
+												size="small"
+												sx={{
+													bgcolor: statusColors[job.status] ?? grey[300],
+													color: "white",
+													textTransform: "capitalize",
+													fontSize: "0.65rem",
+												}}
+												icon={
+													statusIcons[job.status]
+														? React.createElement(statusIcons[job.status], {
+																style: { color: "white", width: 16, height: 16 },
+															})
+														: undefined
+												}
+											/>
+										</Tooltip>
 									</TableCell>
 								)}
 								{displayColumns.calculation_type && (
@@ -237,8 +253,8 @@ export default function JobsTable({
 								)}
 								{displayColumns.runtime && (
 									<TableCell>
-										{job.runtime ? (
-											job.runtime
+										{formatRuntime(job.runtime_seconds) ? (
+											formatRuntime(job.runtime_seconds)
 										) : (
 											<Typography variant="caption" color="text.secondary">
 												N/A

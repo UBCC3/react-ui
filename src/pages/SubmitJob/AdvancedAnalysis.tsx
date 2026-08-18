@@ -29,18 +29,18 @@ import {
 } from "../../components/custom";
 import {
 	getCalculationTypes,
-	getLibraryStructures,
-	getStructureDataFromS3,
+	getLibraryStructuresPaged,
+	getStructureContent,
 	getWavefunctionMethods,
 	getDensityFunctionalMethods,
 	getBasisSets,
-	createJob,
+	getMultiplicities,
 	AddAndUploadStructureToS3,
 	getStructuresTags,
+	submitCustomCalculation,
 } from "../../services/api";
 import { Structure } from "../../types";
-import { unpairedElectronOptions } from "../../constants";
-import { submitAdvancedAnalysis, getChemicalFormula } from "../../services/api";
+import { getChemicalFormula } from "../../services/api";
 import * as React from "react";
 import { Keyword, KeywordEditor } from "./KeywordEditor";
 import { grey } from "@mui/material/colors";
@@ -92,6 +92,8 @@ const AdvancedAnalysis = () => {
 	const [charge, setCharge] = useState<number>(0);
 	const [calculationType, setCalculationType] = useState<string>("energy");
 	const [multiplicity, setMultiplicity] = useState<number>(1);
+	// Unpaired electron count mapped to spin multiplicity, from /enums/multiplicities.
+	const [multiplicities, setMultiplicities] = useState<Record<string, number>>({});
 	const [theoryType, setTheoryType] = useState("wavefunction");
 	const [theory, setTheory] = useState<string>("scf");
 	const [basisSet, setBasisSet] = useState<string>("sto-3g");
@@ -164,6 +166,12 @@ const AdvancedAnalysis = () => {
 					return;
 				}
 				setBasisSets(response.data);
+				response = await getMultiplicities(token);
+				if (response.error) {
+					setError("Failed to load multiplicities. Please try again later.");
+					return;
+				}
+				setMultiplicities(response.data);
 			} catch (err) {
 				setError("Failed to load calculation types. Please try again later.");
 				console.error("Failed to load calculation types", err);
@@ -178,7 +186,7 @@ const AdvancedAnalysis = () => {
 		const loadLibrary = async () => {
 			try {
 				const token = await getAccessTokenSilently();
-				const response = await getLibraryStructures(token);
+				const response = await getLibraryStructuresPaged(token);
 				if (response.error) {
 					setError("Failed to fetch library. Please try again later.");
 					return;
@@ -250,7 +258,7 @@ const AdvancedAnalysis = () => {
 		if (selected_structure_id) {
 			try {
 				const token = await getAccessTokenSilently();
-				const response = await getStructureDataFromS3(selected_structure_id, token);
+				const response = await getStructureContent(selected_structure_id, token);
 				if (response.error) {
 					setError("Failed to load structure. Please try again or select a different molecule.");
 					return;
@@ -286,7 +294,7 @@ const AdvancedAnalysis = () => {
 	};
 
 	/**
-	 * SUbmit sthe advanced analysis job.
+	 * Submit sthe advanced analysis job.
 	 *
 	 * This function:
 	 * 1. validates all required fields,
@@ -302,14 +310,14 @@ const AdvancedAnalysis = () => {
 		setError(null);
 
 		let structureIdToUse = selectedStructure;
-		let uploadFile = file;
+		const uploadFile = file;
 
 		// Validate required calculation and molecule fields.
 		if (!jobName || !structureData || !theory || !calculationType || !basisSet || !multiplicity) {
 			setError("Please fill in all required fields");
 			return;
 		}
-		if (source === "upload" && !file) {
+		if (source === "upload" && !uploadFile) {
 			setError("Please upload a file");
 			return;
 		}
@@ -318,61 +326,27 @@ const AdvancedAnalysis = () => {
 			return;
 		}
 
-		if (source === "library") {
-			const blob = new Blob([structureData], { type: "text/plain" });
-			uploadFile = new File([blob], `${structureIdToUse}.xyz`, {
-				type: "text/plain",
-			});
-		}
-
-		if (!uploadFile) {
-			setError("No file to upload.");
-			setLoading(false);
-			return;
-		}
-
-		const formData = new FormData();
-		formData.append("file", uploadFile);
-		formData.append("charge", charge.toString());
-		formData.append("multiplicity", multiplicity.toString());
-		formData.append("theory", theory);
-		formData.append("calculation_type", calculationType);
-		formData.append("basis_set", basisSet);
-
+		// Custom keywords travel as a JSON file alongside the calculation.
 		let keywordsJsonFile: File | undefined = undefined;
 		if (keywords.length > 0) {
 			const payload = keywords.reduce<Record<string, any>>((obj, { key, value }) => {
 				obj[key] = value;
 				return obj;
 			}, {});
-			const keywordsJsonStr = JSON.stringify(payload);
-			const keywordsBlob = new Blob([keywordsJsonStr], { type: "application/json" });
-			keywordsJsonFile = new File([keywordsBlob], `keywords.json`, {
-				type: "text/plain",
+			const keywordsBlob = new Blob([JSON.stringify(payload)], {
+				type: "application/json",
 			});
-			formData.append("keywords", keywordsJsonFile);
+			keywordsJsonFile = new File([keywordsBlob], `keywords.json`, {
+				type: "application/json",
+			});
 		}
+
 		setLoading(true);
 		try {
 			const token = await getAccessTokenSilently();
-			let response = await submitAdvancedAnalysis(
-				uploadFile,
-				calculationType,
-				theory,
-				basisSet,
-				charge,
-				multiplicity,
-				token,
-				keywordsJsonFile,
-			);
-			if (response.error) {
-				throw new Error(response.error);
-			}
 
-			const { job_id, slurm_id } = response.data;
-			if (uploadStructure && source === "upload") {
-				console.log("Uploading structure to S3");
-				response = await AddAndUploadStructureToS3(
+			if (uploadStructure && source === "upload" && uploadFile) {
+				const structureResponse = await AddAndUploadStructureToS3(
 					uploadFile,
 					structureName,
 					chemicalFormula,
@@ -381,33 +355,30 @@ const AdvancedAnalysis = () => {
 					token,
 					structureTags,
 				);
-				if (response.error) {
-					console.error("Failed to upload structure", response.error);
-					throw new Error(response.error);
+				if (structureResponse.error) {
+					throw new Error(structureResponse.error);
 				}
-				console.log("Structure uploaded successfully", response.data);
-				structureIdToUse = response.data.structure_id;
+				structureIdToUse = structureResponse.data.structure_id;
 			}
 
-			response = await createJob(
-				uploadFile,
-				job_id,
-				jobName,
-				jobNotes,
-				theory,
-				basisSet,
+			// One call creates the job and hands it to the backend orchestrator
+			const response = await submitCustomCalculation(token, {
+				file: source === "upload" && uploadFile ? uploadFile : undefined,
+				structureId: source === "library" ? structureIdToUse : undefined,
 				calculationType,
+				method: theory,
+				basisSet,
 				charge,
 				multiplicity,
-				structureIdToUse,
-				slurm_id,
-				token,
-				jobTags,
-			);
+				keywords: keywordsJsonFile,
+				jobName,
+				jobNotes: jobNotes ?? undefined,
+				tags: jobTags,
+			});
 			if (response.error) {
-				console.error("Failed to create job", response.error);
 				throw new Error(response.error);
 			}
+
 			// Job submitted successfully, redirect to job list
 			setSubmitAttempted(false);
 			navigate("/");
@@ -669,9 +640,9 @@ const AdvancedAnalysis = () => {
 												onChange={(_event: unknown, val: string) =>
 													setMultiplicity(parseInt(val, 10))
 												}
-												options={unpairedElectronOptions.map((o) => ({
-													value: String(o.multiplicity),
-													label: o.label,
+												options={Object.entries(multiplicities).map(([label, value]) => ({
+													value: String(value),
+													label,
 												}))}
 												row
 											/>

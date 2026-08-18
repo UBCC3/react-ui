@@ -26,6 +26,7 @@ import PartialCharge from "./PartialCharge";
 import { useResultDrawer } from "../../hooks/UseResultDrawer";
 import { useJsmolViewer } from "../../hooks/UseJsmolViewer";
 import { useJobResult } from "../../hooks/UseJobResult";
+import { useJobArtifact } from "../../hooks/UseJobArtifact";
 import { ResultDrawer } from "../results/ResultDrawer";
 import { ResultDrawerSection } from "../results/ResultDrawerSection";
 import AddStructureToLibrary from "./AddStructureToLibrary";
@@ -54,18 +55,31 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	viewerObjId,
 	setError,
 }) => {
-	const resultURL = jobResultFiles.urls["result"];
-	const { result, loading } = useJobResult(resultURL, "molecular orbitals", setError);
+	const { result, loading } = useJobResult(jobResultFiles.jobId, "molecular orbitals", setError);
 
-	const moldenFile = jobResultFiles.urls["molden"];
-	const espFile = jobResultFiles.urls["esp"];
+	// The artifact endpoint needs a bearer token the applet cannot send, so each
+	// hook fetches its artifact and republishes it as a same-origin blob URL.
+	// Order matters: the molden becomes model 1, which supplies the orbital data
+	// below, and the ESP cube becomes model 2, which OrbitalProperty maps its
+	// MEP surface onto.
+	const { url: moldenUrl, loading: moldenLoading } = useJobArtifact(
+		jobResultFiles.jobId,
+		"molden",
+		setError,
+	);
+	const { url: espUrl, loading: espLoading } = useJobArtifact(
+		jobResultFiles.jobId,
+		"esp",
+		setError,
+	);
+	const artifactsReady = Boolean(moldenUrl && espUrl);
 
 	const { viewerRef, viewerObj } = useJsmolViewer({
 		viewerObjId,
-		src: moldenFile,
-		loadScript: `load FILES "${moldenFile}" "${espFile}";`,
+		src: moldenUrl ?? "",
+		loadScript: artifactsReady ? `load FILES "${moldenUrl}" "${espUrl}";` : "",
 		onReadyScript: `reset; zoom 50;`,
-		skip: loading,
+		skip: loading || moldenLoading || espLoading || !artifactsReady,
 	});
 
 	const { open, accordionOpen, toggle, handleAccordionChange } = useResultDrawer({

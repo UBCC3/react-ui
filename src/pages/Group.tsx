@@ -19,9 +19,6 @@ import {
 } from "@mui/material";
 import { blue, grey } from "@mui/material/colors";
 import {
-	cancelJobBySlurmID,
-	getJobStatusBySlurmID,
-	updateJob,
 	deleteJob,
 	upsertCurrentUser,
 	getZipPresignedUrl,
@@ -29,17 +26,23 @@ import {
 	getLibraryStructuresPaged,
 	getCurrentUserGroupStructuresPaged,
 	updateStructureVisibility,
+	cancelJob,
 } from "../services/api";
-import { JOB_POLL_INTERVAL_MS, JobStatus } from "../constants";
+import {
+	CANCELLABLE_JOB_STATUSES,
+	JOB_POLL_INTERVAL_MS,
+	TERMINAL_JOB_STATUSES,
+} from "../constants";
 import JobsToolbar from "./Home/components/JobsToolbar";
 import { MolmakerPageTitle, MolmakerAlert, MolmakerConfirm } from "../components/custom";
 import type { Filter, Job, Structure } from "../types";
 import GroupPanel from "../components/GroupPanel";
 import GroupJobsTable from "./Home/components/GroupJobsTable";
-import { filterJobs } from "../utils";
+import { filterJobs, hasNoStoredArtifacts } from "../utils";
 import { Pyramid } from "lucide-react";
 import { renderFormula } from "../utils/renderFormula";
 import { VisibilityOffOutlined, VisibilityOutlined } from "@mui/icons-material";
+import EditJobDialog from "../components/EditJobDialog";
 
 export default function Group() {
 	// map column name to display name
@@ -96,6 +99,10 @@ export default function Group() {
 
 	// Selection & preview
 	const [selectedJobId, setSelectedJobId] = useState<string>("");
+
+	// Edit job dialog
+	const [editJobOpen, setEditJobOpen] = useState<boolean>(false);
+	const jobToEdit = jobs.find((j) => j.job_id === selectedJobId) ?? null;
 
 	// Filters
 	const [filterStructureId, setFilterStructureId] = useState<string>("");
@@ -223,78 +230,13 @@ export default function Group() {
 		})();
 	}, [getAccessTokenSilently, filterStructureId]);
 
-	// Poll job statuses every 5s
+	// The backend advances job status; just refetch periodically.
 	useEffect(() => {
-		const tick = async () => {
-			try {
-				const token = await getAccessTokenSilently();
-
-				// Stores jobs whose status or runtime changed since the last poll.
-				const toUpdate: Array<{
-					jobId: string;
-					newStatus: string;
-					newRuntime: string;
-					userSub: string;
-				}> = [];
-
-				for (const j of jobsRef.current) {
-					// Skip jobs this user cannot write; updateJob would 403.
-					if (!canWrite(j)) continue;
-
-					// Skip jobs that are alreadiy in a final state.
-					if (
-						[
-							JobStatus.COMPLETED,
-							JobStatus.FAILED,
-							JobStatus.CANCELLED,
-							JobStatus.OUT_OF_MEMORY,
-							JobStatus.TIMEOUT,
-						].includes(j.status)
-					)
-						continue;
-
-					// Fetch the latest Slurm status for this job.
-					const r = await getJobStatusBySlurmID(j.slurm_id!, token);
-
-					// Ignore failed polling results for this specific job.
-					if (r.error) continue;
-
-					const { state, elapsed } = r.data;
-
-					// Queue an update only when status or runtime has actually changed.
-					if (state !== j.status || elapsed !== j.runtime) {
-						toUpdate.push({
-							jobId: j.job_id,
-							newStatus: state,
-							newRuntime: elapsed,
-							userSub: j.user_sub ?? "",
-						});
-					}
-				}
-
-				// Persist changed statuses to the backend and update local state.
-				if (toUpdate.length) {
-					await Promise.all(
-						toUpdate.map((u) => updateJob(u.jobId, u.newStatus, u.newRuntime, u.userSub, token)),
-					);
-					setJobs((prev) =>
-						prev.map((j) => {
-							const u = toUpdate.find((x) => x.jobId === j.job_id);
-							return u ? { ...j, status: u.newStatus, runtime: u.newRuntime } : j;
-						}),
-					);
-				}
-			} catch (e) {
-				console.error(e);
-				setError("Failed to refresh job statuses.");
-			}
-		};
-
-		// Run immediately, then continue polling every 5 seconds.
-		tick();
-		const id = setInterval(tick, JOB_POLL_INTERVAL_MS);
-
-		// Stop polling when the component unmounts.
+		const id = setInterval(async () => {
+			const token = await getAccessTokenSilently();
+			const resp = await getCurrentUserGroupJobsPaged(token);
+			if (!resp.error) setJobs(resp.data ?? []);
+		}, JOB_POLL_INTERVAL_MS);
 		return () => clearInterval(id);
 	}, [getAccessTokenSilently, canWrite]);
 
@@ -338,22 +280,21 @@ export default function Group() {
 				setLoading(false);
 				return;
 			}
-			if (!jobToCancel.slurm_id) {
-				setAlertMsg("Job Slurm ID is missing.");
+
+			// Ask the backend or Slurm service to cancel the job.
+			const response = await cancelJob(jobToCancel.job_id, token);
+			if (response.error) {
+				setAlertMsg(response.error);
 				setAlertSeverity("error");
 				setAlertShow(true);
-				setLoading(false);
 				return;
 			}
 
-			// Ask the backend or Slurm service to cancel the job.
-			const response = await cancelJobBySlurmID(jobToCancel.slurm_id, token);
-
-			if (response.data === "cancelled") {
-				setAlertMsg(`Job ${jobToCancel.job_name} cancelled successfully!`);
-				setAlertSeverity("success");
-				setAlertShow(true);
-			}
+			// The backend returns the updated job; cancellation completes in the background.
+			await handleRefresh();
+			setAlertMsg(`Job ${jobToCancel.job_name} cancellation requested.`);
+			setAlertSeverity("success");
+			setAlertShow(true);
 		} catch (err) {
 			setAlertMsg("Failed to cancel the job");
 			setAlertSeverity("error");
@@ -400,59 +341,23 @@ export default function Group() {
 
 	// Returns true when the cancel action should be disabled.
 	const cancelDisabled = (selectedJobId: string | null): boolean => {
-		if (!selectedJobId) {
-			return true;
-		}
-
-		const jobToCancel = jobs.find((j) => j.job_id === selectedJobId);
-		if (!jobToCancel) {
-			return true;
-		}
-
-		// Final-state jobs cannot be cancelled again.
-		if (
-			[
-				JobStatus.COMPLETED,
-				JobStatus.FAILED,
-				JobStatus.CANCELLED,
-				JobStatus.OUT_OF_MEMORY,
-				JobStatus.TIMEOUT,
-			].includes(jobToCancel.status)
-		) {
-			return true;
-		}
-
-		return false;
+		if (!selectedJobId) return true;
+		const job = jobs.find((j) => j.job_id === selectedJobId);
+		if (!job) return true;
+		if (job.cancel_requested) return true;
+		return !CANCELLABLE_JOB_STATUSES.includes(job.status);
 	};
 
 	// Returns true when the delete action should be disabled.
 	const deleteDisabled = (selectedJobId: string | null): boolean => {
-		if (!selectedJobId) {
-			return true;
-		}
-		const jobToDelete = jobs.find((j) => j.job_id === selectedJobId);
-		if (!jobToDelete) {
-			return true;
-		}
+		if (!selectedJobId) return true;
+		const job = jobs.find((j) => j.job_id === selectedJobId);
+		if (!job) return true;
 
 		// The backend requires write access to delete.
-		if (!canWrite(jobToDelete)) {
-			return true;
-		}
+		if (!canWrite(job)) return true;
 
-		// Only completed, failed, or cancelled jobs can be deleted.
-		if (
-			[
-				JobStatus.COMPLETED,
-				JobStatus.FAILED,
-				JobStatus.CANCELLED,
-				JobStatus.OUT_OF_MEMORY,
-				JobStatus.TIMEOUT,
-			].includes(jobToDelete.status)
-		) {
-			return false;
-		}
-		return true;
+		return !TERMINAL_JOB_STATUSES.includes(job.status);
 	};
 
 	// Downloads a ZIP file from a presigned S3 URL using a temporary browser blob.
@@ -518,30 +423,10 @@ export default function Group() {
 
 	// Returns true when the ZIP download action should be disabled.
 	const downloadDisabled = (selectedJobId: string | null): boolean => {
-		if (!selectedJobId) {
-			return true;
-		}
-
-		const jobToDownloadZip = jobs.find((j) => j.job_id === selectedJobId);
-		if (!jobToDownloadZip) {
-			return true;
-		}
-
-		// Archives are not downloadable while jobs are active, pending, cancelled, unknown, out of memory, or timeout.
-		if (
-			[
-				JobStatus.CANCELLED,
-				JobStatus.PENDING,
-				JobStatus.RUNNING,
-				JobStatus.UNKNOWN,
-				JobStatus.OUT_OF_MEMORY,
-				JobStatus.TIMEOUT,
-			].includes(jobToDownloadZip.status)
-		) {
-			return true;
-		}
-
-		return false;
+		if (!selectedJobId) return true;
+		const job = jobs.find((j) => j.job_id === selectedJobId);
+		if (!job) return true;
+		return hasNoStoredArtifacts(job);
 	};
 
 	// Opens the delete confirmation dialog.
@@ -558,6 +443,20 @@ export default function Group() {
 				onClose={() => setConfirmDeleteOpen(false)}
 				onConfirm={handleDelete}
 				textToShow="Are you sure you want to delete this job? This action cannot be undone."
+			/>
+
+			{/* Dialog to edit job informations */}
+			<EditJobDialog
+				open={editJobOpen}
+				job={jobToEdit}
+				availableTags={availableTags}
+				onClose={() => setEditJobOpen(false)}
+				onSaved={(updatedJob: Job) => {
+					const replace = (list: Job[]) =>
+						list.map((j) => (j.job_id === updatedJob.job_id ? updatedJob : j));
+					setJobs(replace);
+					setFilteredJobs(replace);
+				}}
 			/>
 
 			{/* Snackbar wrapper for success, error, info, and warning messages. */}
@@ -622,6 +521,7 @@ export default function Group() {
 							selectedStructure={filterStructureId}
 							onStructureChange={setFilterStructureId}
 							onZipDownload={handleZipDownload}
+							onEditJob={() => setEditJobOpen(true)}
 							downloadDisabled={downloadDisabled}
 							canManageJobs={userRole === "group_admin"}
 

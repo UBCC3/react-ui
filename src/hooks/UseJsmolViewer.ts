@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 
+/**
+ * JSmol posts to this host for the few operations it cannot do in the browser.
+ * It is a third-party service we do not control, so it is overridable through
+ * the environment; the long-term fix is to proxy it from our own backend.
+ */
+const JSMOL_SERVER_URL =
+	import.meta.env.VITE_JSMOL_SERVER_URL || "https://chemapps.stolaf.edu/jmol/jsmol/php/jsmol.php";
+
 interface UseJsmolViewerOptions {
 	viewerObjId: string;
 	/**
@@ -68,8 +76,12 @@ export function useJsmolViewer({
 			use: "HTML5",
 			j2sPath: `${import.meta.env.BASE_URL}jsmol/j2s`,
 			src,
-			serverURL: "https://chemapps.stolaf.edu/jmol/jsmol/php/jsmol.php", // TODO backend to proxy
+			serverURL: JSMOL_SERVER_URL,
 			script: loadScript,
+			// Defence in depth. Load scripts embed untrusted artifact text, so even
+			// though useJobArtifact rejects anything that could break out of the data
+			// block, Jmol must not be able to evaluate browser JavaScript.
+			allowJavaScript: false,
 			disableInitialConsole: true,
 			addSelectionOptions: false,
 			debug: false,

@@ -1,7 +1,6 @@
 import Job from "../types/Job";
-import { fetchJobResultFiles, getJobByJobID } from "../services/api";
+import { fetchJobResult, getJobByJobID } from "../services/api";
 import { useState, useEffect } from "react";
-import type { JobResult } from "../types";
 import { useParams } from "react-router-dom";
 import {
 	MolmakerAlert,
@@ -11,11 +10,10 @@ import {
 } from "../components/custom";
 import NotFound from "./NotFound";
 import { JobError } from "../types/JSmol";
-import { fetchRawFileFromS3Url } from "../components/JSmol/util";
 import { Box, Grid, Paper } from "@mui/material";
 import { useAuth0 } from "@auth0/auth0-react";
-import { reverseMapping } from "../utils";
-import { calculationTypes } from "../constants";
+import { hasNoStoredArtifacts, reverseMapping } from "../utils";
+import { calculationTypes, failureReasonLabels } from "../constants";
 
 function JobFail() {
 	// Reads the job ID from the URL rout parameters.
@@ -28,7 +26,6 @@ function JobFail() {
 
 	// state for job details
 	const [job, setJob] = useState<Job | null>(null);
-	const [jobResultFiles, setJobResultFiles] = useState<JobResult | null>(null);
 	const [resultErrExist, setResultErrExists] = useState<boolean>(false);
 	const [jobError, setJobError] = useState<JobError | null>(null);
 
@@ -55,38 +52,32 @@ function JobFail() {
 				}
 
 				// Store the job data so it can be displayed in the form.
-				const jobData = response.data;
-				setJob(jobData);
+				setJob(response.data);
 
-				// Fetch presigned URLs or file references for this job's result files.
-				const jobFilesUrlsResp = await fetchJobResultFiles(
-					token,
-					jobId as string,
-					jobData.calculation_type,
-					jobData.status,
-				);
+				// The stored result carries the error object itself, so there is no
+				// separate result.err file to fetch afterwards. Plenty of failures
+				// legitimately have nothing stored, though: a job that never reached
+				// the cluster, or never finished uploading, has no JobResult row and
+				// the endpoint answers 409. That is not an error to show the user,
+				// because the page's own failure_reason and failure_message already
+				// explain what happened.
+				if (hasNoStoredArtifacts(response.data)) return;
 
-				let jobResultFiles: JobResult | null = null;
-				if (jobFilesUrlsResp) {
-					if (jobFilesUrlsResp.error) {
-						setError(jobFilesUrlsResp.error);
-					} else if (jobFilesUrlsResp.data) {
-						// Normalize the backend response into the JobResult shape used by this component.
-						jobResultFiles = {
-							jobId: jobFilesUrlsResp.data.job_id,
-							calculation: jobFilesUrlsResp.data.calculation,
-							status: jobFilesUrlsResp.data.status,
-							urls: jobFilesUrlsResp.data.urls,
-						};
-						// console.log(jobResultFiles);
+				const resultResponse = await fetchJobResult(jobId as string, token);
+				if (resultResponse.status === 409) return;
+				if (resultResponse.error) {
+					setError(resultResponse.error);
+					return;
+				}
 
-						// Store the available result file URLs for the next effect to use.
-						setJobResultFiles(jobResultFiles);
-					}
+				const storedError = resultResponse.data?.error;
+				if (storedError?.error) {
+					setJobError(storedError as JobError);
+					setResultErrExists(true);
 				}
 			} catch (err) {
-				setError("Failed to fetch job files");
-				console.error("Failed to fetch job files", err);
+				setError("Failed to fetch job details");
+				console.error("Failed to fetch job details", err);
 			} finally {
 				setLoading(false);
 			}
@@ -94,35 +85,6 @@ function JobFail() {
 
 		fetchJobAndError();
 	}, [jobId]);
-
-	// Fetches and parses the result.err file once the result file URLs are available.
-	useEffect(() => {
-		// Do nothing until the first effect has loadied the job result file URLs.
-		if (!jobResultFiles) return;
-
-		const fetchErrorFile = async () => {
-			setLoading(true);
-			try {
-				// Fetch the error JSON from the S3 URL stored under the "error" result file key.
-				const error: any = await fetchRawFileFromS3Url(jobResultFiles.urls["error"], "json");
-				// console.log(error);
-
-				// If the error file contains an error object, store it for display.
-				if (error.error) {
-					setJobError(error as JobError);
-					console.log("Error:", error as JobError);
-					setResultErrExists(true);
-				}
-			} catch (err) {
-				setError("Failed to fetch result.err");
-				console.error("Failed to fetch result.err", err);
-			} finally {
-				setLoading(false);
-			}
-		};
-
-		fetchErrorFile();
-	}, [jobResultFiles]);
 
 	// Show a loading screen while job details or error files are being fetched.
 	if (loading) return <MolmakerLoading />;
@@ -246,6 +208,20 @@ function JobFail() {
 								</Grid>
 							</Grid>
 
+							{/* Backend-recorded failure, available even when result.err does not exist. */}
+							{job.failure_reason && (
+								<Grid size={12}>
+									<MolmakerAlert
+										text={`${failureReasonLabels[job.failure_reason] ?? job.failure_reason}${
+											job.failure_message ? `: ${job.failure_message}` : ""
+										}`}
+										severity="error"
+										outline="error"
+										sx={{ mb: 3 }}
+									/>
+								</Grid>
+							)}
+
 							{/* Show parsed result.err details when the error file exists. */}
 							{resultErrExist ? (
 								<Grid size={12}>
@@ -285,7 +261,11 @@ function JobFail() {
 									<MolmakerTextField
 										fullWidth
 										label="Error Type"
-										value={"Result.err file not found!"}
+										value={
+											job.failure_reason
+												? "The job failed before producing a result file."
+												: "Result.err file not found!"
+										}
 										onChange={() => {}}
 										sx={{ mb: 2 }}
 										slotProps={{

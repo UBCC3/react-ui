@@ -19,11 +19,34 @@ export interface JobError {
 	extras: any;
 }
 
+/**
+ * Artifact kinds the backend can serve from /jobs/{job_id}/artifacts/{kind}.
+ * Mirrors ARTIFACT_FILES in the backend's asset_service.py.
+ */
+export type JobArtifactKind = "input" | "trajectory" | "vib" | "molden" | "esp";
+
+/** Payload of GET /jobs/{job_id}/result. */
+export interface JobResultPayload {
+	job_id: string;
+	result: any | null;
+	error: JobError | null;
+}
+
+/** Payload of GET /jobs/{job_id}/artifacts. */
+export interface JobArtifactListPayload {
+	job_id: string;
+	artifacts: JobArtifactKind[];
+}
+
+/**
+ * Identifies the finished job a result viewer is showing. Viewers fetch the
+ * result and any artifacts themselves using `jobId`; there are no longer
+ * presigned URLs to pass down.
+ */
 export interface JobResult {
 	jobId: string;
 	calculation: string;
 	status: string;
-	urls: { [key: string]: string };
 }
 
 export type VibrationMode = {

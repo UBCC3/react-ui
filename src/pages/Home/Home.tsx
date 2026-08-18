@@ -4,21 +4,24 @@ import { useNavigate } from "react-router-dom";
 import { Box, Paper, TablePagination, Snackbar } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import {
-	cancelJobBySlurmID,
-	getAllJobs,
-	getJobStatusBySlurmID,
-	getLibraryStructures,
-	updateJob,
+	getAllJobsPaged,
+	getLibraryStructuresPaged,
 	deleteJob,
 	upsertCurrentUser,
 	getZipPresignedUrl,
+	cancelJob,
 } from "../../services/api";
-import { JOB_POLL_INTERVAL_MS, JobStatus } from "../../constants";
+import {
+	CANCELLABLE_JOB_STATUSES,
+	JOB_POLL_INTERVAL_MS,
+	TERMINAL_JOB_STATUSES,
+} from "../../constants";
 import JobsToolbar from "./components/JobsToolbar";
 import JobsTable from "./components/JobsTable";
 import { MolmakerLoading, MolmakerAlert, MolmakerConfirm } from "../../components/custom";
 import type { Filter, Job, Structure } from "../../types";
-import { filterJobs } from "../../utils";
+import { filterJobs, hasNoStoredArtifacts } from "../../utils";
+import EditJobDialog from "../../components/EditJobDialog";
 
 export default function Home() {
 	const navigate = useNavigate();
@@ -53,6 +56,10 @@ export default function Home() {
 	const [alertSeverity, setAlertSeverity] = useState<"success" | "error" | "info" | "warning">(
 		"info",
 	);
+
+	// edit job dialog
+	const [editJobOpen, setEditJobOpen] = useState<boolean>(false);
+	const jobToEdit = jobs.find((j) => j.job_id === selectedJobId) ?? null;
 
 	// stores custom table filters entered by the user
 	const [filters, setFilters] = useState<Filter[]>([
@@ -133,99 +140,14 @@ export default function Home() {
 		loadUserProfile();
 	}, [user, getAccessTokenSilently]);
 
-	// poll statuses every 5s
+	// The backend advances job status; just refetch periodically.
 	useEffect(() => {
-		let stopped = false;
-
-		const tick = async () => {
-			if (stopped) return;
-			try {
-				const token = await getAccessTokenSilently();
-
-				// Gather all the changes we need to apply
-				const toUpdate: Array<{
-					jobId: string;
-					newStatus?: string;
-					newRuntime?: string;
-				}> = [];
-
-				for (const job of jobsRef.current) {
-					// skip terminal jobs
-					if (
-						[
-							JobStatus.COMPLETED,
-							JobStatus.FAILED,
-							JobStatus.CANCELLED,
-							JobStatus.OUT_OF_MEMORY,
-							JobStatus.TIMEOUT,
-						].includes(job.status)
-					) {
-						continue;
-					}
-
-					// fetch latest from backend
-					const resp = await getJobStatusBySlurmID(job.slurm_id!, token);
-					if (resp.error) {
-						console.warn(`Failed to fetch status for job ${job.job_id}:`, resp.error);
-						continue; // skip this job if there's an error
-					}
-					const fetchedStatus = resp.data.state;
-					const fetchedRuntime = resp.data.elapsed;
-
-					// if anything changed, queue it up
-					if (fetchedStatus !== job.status || fetchedRuntime !== job.runtime) {
-						toUpdate.push({
-							jobId: job.job_id,
-							newStatus: fetchedStatus,
-							newRuntime: fetchedRuntime,
-						});
-					}
-				}
-
-				if (toUpdate.length === 0) {
-					return; // nothing to do
-				}
-
-				// Apply updates on the server one by one (or you could Promise.all)
-				await Promise.all(
-					toUpdate.map(({ jobId, newStatus, newRuntime }) =>
-						updateJob(jobId ?? "", newStatus ?? "", newRuntime ?? "", user?.sub ?? "", token),
-					),
-				);
-
-				// And mirror them in local state
-				setJobs((prev) =>
-					prev.map((j) => {
-						const upd = toUpdate.find((u) => u.jobId === j.job_id);
-						return upd
-							? {
-									...j,
-									status: upd.newStatus ?? j.status,
-									runtime: upd.newRuntime ?? j.runtime,
-								}
-							: j;
-					}),
-				);
-			} catch (err: any) {
-				console.error("Polling error:", err);
-				if (err?.error === "login_required" || err?.error === "consent_required") {
-					stopped = true;
-					clearInterval(id);
-					return;
-				}
-				setError("Failed to refresh job statuses.");
-			}
-		};
-
-		// start poll
-		const id = setInterval(tick, JOB_POLL_INTERVAL_MS);
-		// run immediately once
-		tick();
-
-		return () => {
-			stopped = true;
-			clearInterval(id);
-		};
+		const id = setInterval(async () => {
+			const token = await getAccessTokenSilently();
+			const resp = await getAllJobsPaged(token);
+			if (!resp.error) setJobs(resp.data ?? []);
+		}, JOB_POLL_INTERVAL_MS);
+		return () => clearInterval(id);
 	}, [getAccessTokenSilently]);
 
 	// load jobs & structures
@@ -234,8 +156,8 @@ export default function Home() {
 			try {
 				const token = await getAccessTokenSilently();
 				const [jobsResponse, structuresResponse] = await Promise.all([
-					getAllJobs(token),
-					getLibraryStructures(token),
+					getAllJobsPaged(token),
+					getLibraryStructuresPaged(token),
 				]);
 
 				setJobs(jobsResponse.data);
@@ -292,7 +214,7 @@ export default function Home() {
 
 		try {
 			const token = await getAccessTokenSilently();
-			const response = await getAllJobs(token);
+			const response = await getAllJobsPaged(token);
 			setJobs(response.data);
 			setFilterStructureId("");
 		} catch (err) {
@@ -322,21 +244,20 @@ export default function Home() {
 				setLoading(false);
 				return;
 			}
-			jobs.find((job: Job) => job.job_id === selectedJobId)!.status = JobStatus.CANCELLED;
-			if (!jobToCancel.slurm_id) {
-				setAlertMsg("Job Slurm ID is missing.");
+
+			const response = await cancelJob(jobToCancel.job_id, token);
+			if (response.error) {
+				setAlertMsg(response.error);
 				setAlertSeverity("error");
 				setAlertShow(true);
-				setLoading(false);
 				return;
 			}
-			const response = await cancelJobBySlurmID(jobToCancel.slurm_id, token);
 
-			if (response.data === "cancelled") {
-				setAlertMsg(`Job ${jobToCancel.job_name} cancelled successfully!`);
-				setAlertSeverity("success");
-				setAlertShow(true);
-			}
+			// The backend returns the updated job; cancellation completes in the background.
+			await handleRefresh();
+			setAlertMsg(`Job ${jobToCancel.job_name} cancellation requested.`);
+			setAlertSeverity("success");
+			setAlertShow(true);
 		} catch (err) {
 			setAlertMsg("Failed to cancel the job");
 			setAlertSeverity("error");
@@ -443,82 +364,31 @@ export default function Home() {
 	 * Returns true when the selected job archive should not be downloadable.
 	 */
 	const downloadDisabled = (selectedJobId: string | null): boolean => {
-		if (!selectedJobId) {
-			return true;
-		}
-
-		const jobToDownloadZip = jobs.find((j) => j.job_id === selectedJobId);
-		if (!jobToDownloadZip) {
-			return true;
-		}
-
-		// Archives are not downloadable while jobs are active, pending, cancelled, unknown, out of memory, or timeout.
-		if (
-			[
-				JobStatus.CANCELLED,
-				JobStatus.PENDING,
-				JobStatus.RUNNING,
-				JobStatus.UNKNOWN,
-				JobStatus.OUT_OF_MEMORY,
-				JobStatus.TIMEOUT,
-			].includes(jobToDownloadZip.status)
-		) {
-			return true;
-		}
-
-		return false;
+		if (!selectedJobId) return true;
+		const job = jobs.find((j) => j.job_id === selectedJobId);
+		if (!job) return true;
+		return hasNoStoredArtifacts(job);
 	};
 
 	/**
 	 * Returns true when the selected job cannot be cancelled.
 	 */
 	const cancelDisabled = (selectedJobId: string | null): boolean => {
-		if (!selectedJobId) {
-			return true;
-		}
-
-		const jobToCancel = jobs.find((j) => j.job_id === selectedJobId);
-		if (!jobToCancel) {
-			return true;
-		}
-		if (
-			[
-				JobStatus.COMPLETED,
-				JobStatus.FAILED,
-				JobStatus.CANCELLED,
-				JobStatus.OUT_OF_MEMORY,
-				JobStatus.TIMEOUT,
-			].includes(jobToCancel.status)
-		) {
-			return true;
-		}
-
-		return false;
+		if (!selectedJobId) return true;
+		const job = jobs.find((j) => j.job_id === selectedJobId);
+		if (!job) return true;
+		if (job.cancel_requested) return true;
+		return !CANCELLABLE_JOB_STATUSES.includes(job.status);
 	};
 
 	/**
 	 * Returns true when the selected job cannot be deleted.
 	 */
 	const deleteDisabled = (selectedJobId: string | null): boolean => {
-		if (!selectedJobId) {
-			return true;
-		}
-		const jobToDelete = jobs.find((j) => j.job_id === selectedJobId);
-		if (!jobToDelete) {
-			return true;
-		}
-		if (
-			[
-				JobStatus.COMPLETED,
-				JobStatus.FAILED,
-				JobStatus.CANCELLED,
-				JobStatus.OUT_OF_MEMORY,
-				JobStatus.TIMEOUT,
-			].includes(jobToDelete.status)
-		) {
-			return false;
-		}
-		return true;
+		if (!selectedJobId) return true;
+		const job = jobs.find((j) => j.job_id === selectedJobId);
+		if (!job) return true;
+		return !TERMINAL_JOB_STATUSES.includes(job.status);
 	};
 
 	// Show the full-page loading component while data is being fetched.
@@ -536,6 +406,18 @@ export default function Home() {
 				onConfirm={() => {
 					handleDelete();
 					setOpenConfirmDelete(false);
+				}}
+			/>
+			<EditJobDialog
+				open={editJobOpen}
+				job={jobToEdit}
+				availableTags={availableTags}
+				onClose={() => setEditJobOpen(false)}
+				onSaved={(updatedJob) => {
+					const replace = (list: Job[]) =>
+						list.map((j) => (j.job_id === updatedJob.job_id ? updatedJob : j));
+					setJobs(replace);
+					setFilteredJobs(replace);
 				}}
 			/>
 			<Box sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
@@ -571,6 +453,7 @@ export default function Home() {
 					onViewDetails={() => {
 						navigate(`/jobs/${selectedJobId}`);
 					}}
+					onEditJob={() => setEditJobOpen(true)}
 					onFilterByStructure={() => {
 						const job = filteredJobs.find((j) => j.job_id === selectedJobId);
 						if (job?.structures.length) {

@@ -22,12 +22,13 @@ import { Refresh, VisibilityOutlined, DeleteOutlineOutlined, Add } from "@mui/ic
 import { ArrowUpAZ, ArrowDownAZ } from "lucide-react";
 import { grey, blue } from "@mui/material/colors";
 import { MolmakerPageTitle, MolmakerLoading, MolmakerConfirm } from "../components/custom";
-import { deleteStructure, getLibraryStructuresPaged } from "../services/api";
+import { deleteStructure, getLibraryStructuresPaged, getStructureById } from "../services/api";
 import type { Structure } from "../types";
 import MoleculeInfo from "../components/MoleculeInfo";
 import MoleculeUpload from "../components/MoleculeUpload";
 import { Pyramid } from "lucide-react";
 import { renderFormula } from "../utils/renderFormula";
+import { structureThumbnailDataUrl } from "../utils";
 
 const MoleculeLibrary = () => {
 	// Auth0 helper used to retrieve access tokens before calling protected APIs.
@@ -48,6 +49,43 @@ const MoleculeLibrary = () => {
 	// form state
 	const [libraryStructures, setLibraryStructures] = useState<Structure[]>([]);
 	const [selectedStructureId, setSelectedStructureId] = useState<string>("");
+
+	// Thumbnails are only returned by the structure detail endpoint, not by the
+	// list, so they are fetched for the visible page and cached by structure ID.
+	// null records "asked, nothing to show" so a row is never retried in a loop.
+	const [thumbnails, setThumbnails] = useState<Record<string, string | null>>({});
+
+	const visibleStructures = libraryStructures.slice(
+		page * rowsPerPage,
+		page * rowsPerPage + rowsPerPage,
+	);
+	const visibleIds = visibleStructures.map((structure) => structure.structure_id).join(",");
+
+	// Load thumbnails for whatever page is on screen, skipping any already known.
+	useEffect(() => {
+		const missing = visibleStructures
+			.map((structure) => structure.structure_id)
+			.filter((id) => id && !(id in thumbnails));
+		if (missing.length === 0) return;
+
+		let cancelled = false;
+
+		(async () => {
+			const token = await getAccessTokenSilently();
+			const loaded = await Promise.all(
+				missing.map(async (id) => {
+					const response = await getStructureById(id, token);
+					return [id, structureThumbnailDataUrl(response.data?.thumbnail)] as const;
+				}),
+			);
+			if (cancelled) return;
+			setThumbnails((previous) => ({ ...previous, ...Object.fromEntries(loaded) }));
+		})();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [visibleIds, getAccessTokenSilently]);
 
 	// Reloads the structure library from the backend.
 	const handleRefresh = async () => {
@@ -104,10 +142,8 @@ const MoleculeLibrary = () => {
 						name: item.name,
 						formula: item.formula || "",
 						notes: item.notes || "",
-						location: item.location,
 						uploaded_at: item.uploaded_at,
 						tags: item.tags || [],
-						imageS3URL: item.imageS3URL,
 					})),
 				);
 			} catch (err) {
@@ -314,7 +350,7 @@ const MoleculeLibrary = () => {
 							<Table>
 								<TableHead>
 									<TableRow sx={{ bgcolor: grey[200] }}>
-										{renderHeader("Thumbnail", "imageS3URL")}
+										<TableCell>Thumbnail</TableCell>
 										{renderHeader("Name", "name")}
 										{renderHeader("Chemical Formula", "formula")}
 										{renderHeader("Notes", "notes")}
@@ -345,56 +381,52 @@ const MoleculeLibrary = () => {
 									)}
 
 									{/* Render only the structures on the current pagination page. */}
-									{libraryStructures
-										.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-										.map((molecule) => (
-											<TableRow
-												key={molecule.structure_id}
-												onClick={() => {
-													setSelectedStructureId(
-														molecule.structure_id == selectedStructureId
-															? ""
-															: molecule.structure_id,
-													);
-												}}
-												sx={{
-													backgroundColor:
-														molecule.structure_id === selectedStructureId
-															? "rgba(0, 0, 0, 0.1)"
-															: "transparent",
-													cursor: "pointer",
-												}}
-											>
-												{/* Molecule thumbnail image. */}
-												<TableCell>
-													<Avatar
-														variant="rounded"
-														alt={`Thumbnail for ${molecule.name}`}
-														src={molecule.imageS3URL}
-														sx={{ width: 64, height: 64 }}
-													/>
-												</TableCell>
-												{/* Molecule display name. */}
-												<TableCell>{molecule.name}</TableCell>
-												{/* Chemical formula rendered with subscript and superscript formatting. */}
-												<TableCell>{renderFormula(molecule.formula)}</TableCell>
-												{/* Optional notes attached to the structure. */}
-												<TableCell>{molecule.notes}</TableCell>
-												{/* Tags shown as a comma-separated list, with a fallback if none exist. */}
-												<TableCell>
-													{molecule.tags.length > 0 ? (
-														molecule.tags.join(", ")
-													) : (
-														<Typography variant="body2" color="text.secondary">
-															No tags
-														</Typography>
-													)}
-												</TableCell>
+									{visibleStructures.map((molecule) => (
+										<TableRow
+											key={molecule.structure_id}
+											onClick={() => {
+												setSelectedStructureId(
+													molecule.structure_id == selectedStructureId ? "" : molecule.structure_id,
+												);
+											}}
+											sx={{
+												backgroundColor:
+													molecule.structure_id === selectedStructureId
+														? "rgba(0, 0, 0, 0.1)"
+														: "transparent",
+												cursor: "pointer",
+											}}
+										>
+											{/* Molecule thumbnail, loaded separately from the list response. */}
+											<TableCell>
+												<Avatar
+													variant="rounded"
+													alt={`Thumbnail for ${molecule.name}`}
+													src={thumbnails[molecule.structure_id] ?? undefined}
+													sx={{ width: 64, height: 64 }}
+												/>
+											</TableCell>
+											{/* Molecule display name. */}
+											<TableCell>{molecule.name}</TableCell>
+											{/* Chemical formula rendered with subscript and superscript formatting. */}
+											<TableCell>{renderFormula(molecule.formula)}</TableCell>
+											{/* Optional notes attached to the structure. */}
+											<TableCell>{molecule.notes}</TableCell>
+											{/* Tags shown as a comma-separated list, with a fallback if none exist. */}
+											<TableCell>
+												{molecule.tags.length > 0 ? (
+													molecule.tags.join(", ")
+												) : (
+													<Typography variant="body2" color="text.secondary">
+														No tags
+													</Typography>
+												)}
+											</TableCell>
 
-												{/* Upload timestamp formatted for the user's locale. */}
-												<TableCell>{new Date(molecule.uploaded_at).toLocaleString()}</TableCell>
-											</TableRow>
-										))}
+											{/* Upload timestamp formatted for the user's locale. */}
+											<TableCell>{new Date(molecule.uploaded_at).toLocaleString()}</TableCell>
+										</TableRow>
+									))}
 								</TableBody>
 							</Table>
 						</TableContainer>

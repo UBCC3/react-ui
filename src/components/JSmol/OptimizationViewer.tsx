@@ -18,6 +18,7 @@ import CalculatedQuantities from "./CalculatedQuantities";
 import { useResultDrawer } from "../../hooks/UseResultDrawer";
 import { useJsmolViewer } from "../../hooks/UseJsmolViewer";
 import { useJobResult } from "../../hooks/UseJobResult";
+import { useJobArtifact } from "../../hooks/UseJobArtifact";
 import { ResultDrawer } from "../results/ResultDrawer";
 import { ResultDrawerSection } from "../results/ResultDrawerSection";
 import AddStructureToLibrary from "./AddStructureToLibrary";
@@ -53,10 +54,19 @@ const OptimizationViewer: React.FC<VibrationViewerProps> = ({
 	viewerObjId,
 	setError,
 }) => {
-	const xyzFileUrl = jobResultFiles.urls["trajectory"];
-	const resultURL = jobResultFiles.urls["result"];
+	const { result, loading } = useJobResult(
+		jobResultFiles.jobId,
+		"geometric optimization",
+		setError,
+	);
 
-	const { result, loading } = useJobResult(resultURL, "geometric optimization", setError);
+	// The artifact endpoint needs a bearer token the applet cannot send, so the
+	// hook fetches it and republishes it as a same-origin blob URL.
+	const { url: trajectoryUrl, loading: trajectoryLoading } = useJobArtifact(
+		jobResultFiles.jobId,
+		"trajectory",
+		setError,
+	);
 
 	// optimization iteration table
 	const rowsPerPage: number = 25;
@@ -66,10 +76,10 @@ const OptimizationViewer: React.FC<VibrationViewerProps> = ({
 
 	const { viewerRef, viewerObj } = useJsmolViewer({
 		viewerObjId,
-		src: xyzFileUrl,
-		loadScript: `load "XYZ::${xyzFileUrl}";`,
+		src: trajectoryUrl ?? "",
+		loadScript: trajectoryUrl ? `load "XYZ::${trajectoryUrl}";` : "",
 		onReadyScript: `zoom 50; connect auto;`,
-		skip: loading,
+		skip: loading || trajectoryLoading || !trajectoryUrl,
 	});
 
 	const { open, accordionOpen, toggle, handleAccordionChange } = useResultDrawer({

@@ -9,12 +9,18 @@ import {
 	Chip,
 	Box,
 	Typography,
+	Tooltip,
 } from "@mui/material";
 import { ArrowDownAZ, ArrowUpAZ } from "lucide-react";
-import { calculationTypes, statusColors, statusIcons } from "../../../constants";
+import {
+	calculationTypes,
+	failureReasonLabels,
+	statusColors,
+	statusIcons,
+} from "../../../constants";
 import { blueGrey, grey } from "@mui/material/colors";
 import type { Job } from "../../../types";
-import { reverseMapping } from "../../../utils";
+import { formatRuntime, reverseMapping } from "../../../utils";
 
 /**
  * Props shared by job table components.
@@ -175,7 +181,7 @@ export default function AdminJobsTable({
 						{displayColumns.calculation_type && renderHeader("Calculation Type", "structures")}
 						{displayColumns.structures && renderHeader("Library Structure", "structures")}
 						{displayColumns.tags && renderHeader("Job Tags", "tags")}
-						{displayColumns.runtime && renderHeader("Runtime", "runtime")}
+						{displayColumns.runtime && renderHeader("Runtime", "runtime_seconds")}
 						{displayColumns.submitted_at && renderHeader("Submitted At", "submitted_at")}
 						{displayColumns.completed_at && renderHeader("Completed At", "completed_at")}
 					</TableRow>
@@ -211,23 +217,33 @@ export default function AdminJobsTable({
 								{displayColumns.job_notes && <TableCell>{job.job_notes || "N/A"}</TableCell>}
 								{displayColumns.status && (
 									<TableCell>
-										<Chip
-											label={job.status}
-											size="small"
-											sx={{
-												bgcolor: statusColors[job.status] ?? grey[300],
-												color: "white",
-												textTransform: "capitalize",
-												fontSize: "0.65rem",
-											}}
-											icon={
-												statusIcons[job.status]
-													? React.createElement(statusIcons[job.status], {
-															style: { color: "white", width: 16, height: 16 },
-														})
-													: undefined
+										<Tooltip
+											title={
+												job.failure_reason
+													? `${failureReasonLabels[job.failure_reason] ?? job.failure_reason}${
+															job.failure_message ? `: ${job.failure_message}` : ""
+														}`
+													: ""
 											}
-										/>
+										>
+											<Chip
+												label={job.status}
+												size="small"
+												sx={{
+													bgcolor: statusColors[job.status] ?? grey[300],
+													color: "white",
+													textTransform: "capitalize",
+													fontSize: "0.65rem",
+												}}
+												icon={
+													statusIcons[job.status]
+														? React.createElement(statusIcons[job.status], {
+																style: { color: "white", width: 16, height: 16 },
+															})
+														: undefined
+												}
+											/>
+										</Tooltip>
 									</TableCell>
 								)}
 								{displayColumns.calculation_type && (
@@ -267,7 +283,11 @@ export default function AdminJobsTable({
 									</TableCell>
 								)}
 								{displayColumns.runtime && (
-									<TableCell>{job.runtime ? job.runtime : "unavailable"}</TableCell>
+									<TableCell>
+										{formatRuntime(job.runtime_seconds)
+											? formatRuntime(job.runtime_seconds)
+											: "unavailable"}
+									</TableCell>
 								)}
 								{displayColumns.submitted_at && (
 									<TableCell>{new Date(job.submitted_at).toLocaleString()}</TableCell>

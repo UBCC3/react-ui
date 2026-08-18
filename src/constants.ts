@@ -1,4 +1,4 @@
-import { green, blue, orange, red, grey, deepOrange } from "@mui/material/colors";
+import { green, blue, orange, red, grey } from "@mui/material/colors";
 import {
 	CheckCircleOutlined,
 	RunCircleOutlined,
@@ -6,8 +6,6 @@ import {
 	ErrorOutline,
 	CancelOutlined,
 	HelpOutlineOutlined,
-	ReportOutlined,
-	TimerOffOutlined,
 	SvgIconComponent,
 } from "@mui/icons-material";
 import type { FilterExtent } from "./types/Filter";
@@ -24,45 +22,96 @@ export const APP_BAR_HEIGHT = 64;
  */
 export const MAX_PAGE_SIZE = 100;
 
-// How often job/status tables refetch while mounted.
-export const JOB_POLL_INTERVAL_MS = 5000;
-// How often slower group/request panels refetch.
+/**
+ * How often the Home, Admin and Group job tables refetch their full paged
+ * list while mounted. The backend advances job status in the background, so
+ * the client only has to re-read it; this is a whole-list fetch rather than a
+ * per-job poll, which is why it is deliberately slow.
+ */
+export const JOB_POLL_INTERVAL_MS = 20000;
+
+/** How often the slower group and request panels refetch. */
 export const GROUP_POLL_INTERVAL_MS = 20000;
+
+/** How long a transient alert stays on screen before dismissing itself. */
+export const ALERT_AUTO_HIDE_MS = 5000;
 
 // The expanded/collapsed width of the result drawer
 export const DRAWER_FULL_WIDTH = 400;
 export const DRAWER_MINI_WIDTH = 80;
 
 export const JobStatus = {
-	PENDING: "pending",
+	SUBMITTING: "submitting",
+	SUBMITTED: "submitted",
 	RUNNING: "running",
+	// Internal backend status only. serialize_job maps it to "running", so it
+	// never appears in an API response.
+	FINALISING: "finalising",
 	COMPLETED: "completed",
 	FAILED: "failed",
 	CANCELLED: "cancelled",
-	UNKNOWN: "unknown",
-	OUT_OF_MEMORY: "out_of_memory",
-	TIMEOUT: "timeout",
 };
+
+/** Jobs that have finished; nothing further will change. */
+export const TERMINAL_JOB_STATUSES = [JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED];
+
+/** Jobs the backend will still act on, so cancellation is possible. */
+export const CANCELLABLE_JOB_STATUSES = [
+	JobStatus.SUBMITTING,
+	JobStatus.SUBMITTED,
+	JobStatus.RUNNING,
+];
+
+/**
+ * Jobs that may have result artifacts in storage. Mirrors the backend's
+ * TERMINAL_JOB_STATUSES in s3/routes.py. Cancelled jobs are included because
+ * finalisation still uploads result.err and the archive for them; if a job was
+ * cancelled before producing anything, the endpoint returns 409 instead.
+ */
+export const DOWNLOADABLE_JOB_STATUSES = [
+	JobStatus.COMPLETED,
+	JobStatus.FAILED,
+	JobStatus.CANCELLED,
+];
+
+/**
+ * Failure reasons that prove a job never produced stored artifacts.
+ *
+ * The backend gates both the result and the archive on is_job_result_ready,
+ * which needs is_uploaded and a JobResult row. Neither is serialized, so a
+ * terminal status alone does not mean anything is downloadable. These three
+ * reasons are the cases the job record does settle: the job either never
+ * reached the cluster or never finished uploading, so the endpoints will 409.
+ *
+ * Anything else is genuinely unknown here and has to be handled from the
+ * response. Explicit result_ready and archive_ready fields on JobResponse
+ * would remove the guesswork entirely.
+ */
+export const FAILURE_REASONS_WITHOUT_ARTIFACTS = [
+	"submission_failed",
+	"status_check_failed",
+	"result_upload_failed",
+];
 
 export const statusColors: Record<string, string> = {
 	completed: green[500],
 	running: blue[500],
-	pending: orange[500],
+	submitting: orange[300],
+	submitted: orange[500],
+	finalising: blue[300],
 	failed: red[500],
 	cancelled: grey[500],
-	out_of_memory: deepOrange[500],
-	timeout: deepOrange[300],
 };
 
 export const statusIcons: Record<string, SvgIconComponent> = {
 	completed: CheckCircleOutlined,
 	running: RunCircleOutlined,
-	pending: PendingOutlined,
+	submitting: PendingOutlined,
+	submitted: PendingOutlined,
+	finalising: RunCircleOutlined,
 	failed: ErrorOutline,
 	cancelled: CancelOutlined,
 	unknown: HelpOutlineOutlined,
-	out_of_memory: ReportOutlined,
-	timeout: TimerOffOutlined,
 };
 
 export const calculationTypes = {
@@ -74,18 +123,6 @@ export const calculationTypes = {
 	"Transition State Optimization": "transition",
 	"Intrinsic Reaction Coordinate": "irc",
 };
-
-/**
- * Maps the number of unpaired electrons (shown to the user) to the spin
- * multiplicity value electronic structure programs expect on the backend.
- * multiplicity = unpaired electrons + 1.
- */
-export const unpairedElectronOptions: { label: string; multiplicity: number }[] = [
-	{ label: "0", multiplicity: 1 }, // singlet
-	{ label: "1", multiplicity: 2 }, // doublet
-	{ label: "2", multiplicity: 3 }, // triplet
-	{ label: "3", multiplicity: 4 }, // quartet
-];
 
 export type ColumnKind = "string" | "date" | "runtime" | "boolean";
 
@@ -123,4 +160,16 @@ export const extentDisplayNames: Record<FilterExtent, string> = {
 	greaterThan: "Greater Than",
 	lessThan: "Less Than",
 	is: "Is",
+};
+
+export const failureReasonLabels: Record<string, string> = {
+	calculation_failed: "The calculation failed",
+	out_of_memory: "Out of memory",
+	timeout: "Time limit exceeded",
+	node_failure: "Compute node failure",
+	submission_failed: "Could not be submitted to the cluster",
+	status_check_failed: "Lost track of the job on the cluster",
+	result_upload_failed: "Results could not be uploaded",
+	cluster_failed: "Cluster infrastructure failure",
+	unknown: "Unknown failure",
 };

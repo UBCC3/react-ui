@@ -25,16 +25,15 @@ import {
 	MolmakerConfirm,
 } from "../../components/custom";
 import {
-	createJob,
-	getLibraryStructures,
-	getStructureDataFromS3,
-	submitStandardAnalysis,
+	getLibraryStructuresPaged,
+	getStructureContent,
 	AddAndUploadStructureToS3,
 	getChemicalFormula,
 	getStructuresTags,
+	getMultiplicities,
+	submitStandardAnalysisJob,
 } from "../../services/api";
 import { Structure } from "../../types";
-import { unpairedElectronOptions } from "../../constants";
 import { grey } from "@mui/material/colors";
 
 export default function StandardAnalysis() {
@@ -73,6 +72,8 @@ export default function StandardAnalysis() {
 	// state for calculation parameters
 	const [charge, setCharge] = useState<number>(0);
 	const [multiplicity, setMultiplicity] = useState<number>(1);
+	// Unpaired electron count mapped to spin multiplicity, from /enums/multiplicities.
+	const [multiplicities, setMultiplicities] = useState<Record<string, number>>({});
 	const [isTransitionState, setIsTransitionState] = useState<boolean>(false);
 
 	// available tag options shown in the autocomplete input
@@ -104,7 +105,7 @@ export default function StandardAnalysis() {
 			try {
 				setLoading(true);
 				const token = await getAccessTokenSilently();
-				const response = await getLibraryStructures(token);
+				const response = await getLibraryStructuresPaged(token);
 				if (response.error) {
 					setError("Failed to fetch library. Please try again later.");
 					return;
@@ -128,6 +129,19 @@ export default function StandardAnalysis() {
 			}
 		};
 
+		// Fetch the selectable spin states so the range lives only on the backend
+		const fetchMultiplicities = async () => {
+			try {
+				const token = await getAccessTokenSilently();
+				const response = await getMultiplicities(token);
+				if (response.data) {
+					setMultiplicities(response.data);
+				}
+			} catch (err) {
+				console.error("Failed to fetch multiplicities", err);
+			}
+		};
+
 		// Fetch existing structure tags for autocomplete suggestions
 		const fetchTags = async () => {
 			try {
@@ -145,6 +159,7 @@ export default function StandardAnalysis() {
 		setLoading(true);
 		loadLibraryStructures();
 		fetchTags();
+		fetchMultiplicities();
 	}, [getAccessTokenSilently]);
 
 	// Handle switching between upload / library
@@ -183,7 +198,7 @@ export default function StandardAnalysis() {
 		try {
 			setLoading(true);
 			const token = await getAccessTokenSilently();
-			const response = await getStructureDataFromS3(structure_id, token);
+			const response = await getStructureContent(structure_id, token);
 			if (response.error) {
 				setError("Failed to load structure. Please try again or select a different molecule.");
 				return;
@@ -224,7 +239,7 @@ export default function StandardAnalysis() {
 		setError(null);
 
 		let structureIdToUse = selectedStructure;
-		let uploadFile = file;
+		const uploadFile = file;
 
 		// Validate upload mode
 		if (source === "upload" && !uploadFile) {
@@ -238,52 +253,13 @@ export default function StandardAnalysis() {
 			return;
 		}
 
-		// If the user selected a molecule from the library, convert the loaded text
-		// into a File object so it can be sent through the same submit API.
-		if (source === "library") {
-			const blob = new Blob([structureData], { type: "text/plain" });
-			uploadFile = new File([blob], `${structureIdToUse}.xyz`, {
-				type: "text/plain",
-			});
-		}
-
-		// Final guard in case no valid file exists
-		if (!uploadFile) {
-			setError("No file to upload.");
-			return;
-		}
-
-		// Prepare form data for submission
-		const formData = new FormData();
-		formData.append("file", uploadFile);
-		formData.append("job_name", jobName);
-		formData.append("charge", charge.toString());
-		formData.append("multiplicity", multiplicity.toString());
-
 		setLoading(true);
 		try {
 			const token = await getAccessTokenSilently();
 
-			// Submit the computational analysis job
-			let response = await submitStandardAnalysis(
-				jobName,
-				uploadFile,
-				charge,
-				multiplicity,
-				structureIdToUse,
-				token,
-				isTransitionState ? "ts" : "ground",
-			);
-			if (response.error) {
-				throw new Error(response.error);
-			}
-
-			// Backend returns both the internal job ID and Slurm job ID
-			const { job_id, slurm_id } = response.data;
-
-			// If requested, save the uploaded structure into the user's library
-			if (uploadStructure && source === "upload") {
-				response = await AddAndUploadStructureToS3(
+			// Save the uploaded structure first, so the job can be linked to it.
+			if (uploadStructure && source === "upload" && uploadFile) {
+				const structureResponse = await AddAndUploadStructureToS3(
 					uploadFile,
 					structureName,
 					chemicalFormula,
@@ -292,30 +268,23 @@ export default function StandardAnalysis() {
 					token,
 					structureTags,
 				);
-				if (response.error) {
-					throw new Error(response.error);
+				if (structureResponse.error) {
+					throw new Error(structureResponse.error);
 				}
-
-				// Use the newly created structure ID when creating the job record
-				structureIdToUse = response.data.structure_id;
+				structureIdToUse = structureResponse.data.structure_id;
 			}
 
-			// Create the job record in the app database
-			response = await createJob(
-				uploadFile,
-				job_id,
-				jobName,
-				jobNotes,
-				"mp2",
-				"6-311+G(2d,p)",
-				"standard",
+			// One call creates the job and hands it to the backend orchestrator.
+			const response = await submitStandardAnalysisJob(token, {
+				file: source === "upload" && uploadFile ? uploadFile : undefined,
+				structureId: source === "library" ? structureIdToUse : undefined,
 				charge,
 				multiplicity,
-				structureIdToUse,
-				slurm_id,
-				token,
-				jobTags,
-			);
+				optimizationType: isTransitionState ? "ts" : "ground",
+				jobName,
+				jobNotes: jobNotes ?? undefined,
+				tags: jobTags,
+			});
 			if (response.error) {
 				throw new Error(response.error);
 			}
@@ -488,9 +457,9 @@ export default function StandardAnalysis() {
 												onChange={(_event: unknown, val: string) =>
 													setMultiplicity(parseInt(val, 10))
 												}
-												options={unpairedElectronOptions.map((o) => ({
-													value: String(o.multiplicity),
-													label: o.label,
+												options={Object.entries(multiplicities).map(([label, value]) => ({
+													value: String(value),
+													label,
 												}))}
 												row
 											/>

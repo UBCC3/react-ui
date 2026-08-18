@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Group, Job, Response, Structure } from "../types";
+import { Group, Job, JobArtifactKind, Response, Structure } from "../types";
 import { User } from "@auth0/auth0-react";
 import { MAX_PAGE_SIZE } from "../constants";
 
@@ -10,7 +10,19 @@ function getErrorMessage(error: unknown): string {
 }
 
 /**
+ * Highest number of pages fetchAllPages will request before giving up.
+ *
+ * Only a safety bound: a server that ignored `offset` and always returned a
+ * full page would otherwise loop forever. At MAX_PAGE_SIZE this is 100k rows.
+ */
+const MAX_PAGES = 1000;
+
+/**
  * Pulls every page of a paginated list endpoint.
+ *
+ * A failure on any page fails the whole call. Returning the pages collected so
+ * far as a success would silently drop the rest, and the caller has no way to
+ * tell a complete list from a truncated one.
  */
 async function fetchAllPages<T>(
 	fetchPage: (paging: Required<Paging>) => Promise<Response>,
@@ -18,15 +30,21 @@ async function fetchAllPages<T>(
 ): Promise<Response> {
 	const all: T[] = [];
 	let offset = 0;
-	for (;;) {
+
+	for (let requested = 0; requested < MAX_PAGES; requested++) {
 		const res = await fetchPage({ limit: pageSize, offset });
-		if (res.error) return all.length ? { status: 200, data: all } : res;
+		if (res.error) return res;
+
 		const page = (res.data ?? []) as T[];
 		all.push(...page);
-		if (page.length < pageSize) break;
+		if (page.length < pageSize) return { status: 200, data: all };
 		offset += pageSize;
 	}
-	return { status: 200, data: all };
+
+	return {
+		status: 500,
+		error: "The list was longer than expected and could not be loaded fully.",
+	};
 }
 
 /**
@@ -37,19 +55,6 @@ async function fetchAllPages<T>(
 export const createBackendAPI = (token: any) => {
 	return axios.create({
 		baseURL: import.meta.env.VITE_API_URL,
-		headers: {
-			Authorization: `Bearer ${token}`,
-		},
-	});
-};
-
-/**
- * Creates an Axios instance for cluster-related API calls.
- * This is used for operations such as submitting, cancelling, and checking jobs.
- */
-export const createClusterAPI = (token: any) => {
-	return axios.create({
-		baseURL: import.meta.env.VITE_CLUSTER_API_URL,
 		headers: {
 			Authorization: `Bearer ${token}`,
 		},
@@ -96,7 +101,7 @@ export const getCurrentUserGroupJobs = async (
  * All of the current user's group jobs, following pagination.
  */
 export const getCurrentUserGroupJobsPaged = (token: string) =>
-	fetchAllPages<Job>((p) => getCurrentUserGroupJobs(token, p), 100);
+	fetchAllPages<Job>((p) => getCurrentUserGroupJobs(token, p));
 
 /**
  * Fetches structures owned by the current user's group.
@@ -125,7 +130,7 @@ export const getCurrentUserGroupStructures = async (
  * All of the current user's group structures, following pagination.
  */
 export const getCurrentUserGroupStructuresPaged = (token: string) =>
-	fetchAllPages<Structure>((p) => getCurrentUserGroupStructures(token, p), 100);
+	fetchAllPages<Structure>((p) => getCurrentUserGroupStructures(token, p));
 
 /**
  * Fetches all members in the current user's group.
@@ -151,7 +156,7 @@ export const getCurrentUserMembers = async (token: any, paging: Paging = {}): Pr
  * All of the user's group members, following pagination.
  */
 export const getCurrentUserMembersPaged = (token: string) =>
-	fetchAllPages<User>((p) => getCurrentUserMembers(token, p), 100);
+	fetchAllPages<User>((p) => getCurrentUserMembers(token, p));
 
 /**
  * Creates or updates the currently authenticated user in the backend database.
@@ -194,7 +199,7 @@ export const getAllGroups = async (token: any, paging: Paging = {}): Promise<Res
  * All groups, following pagination.
  */
 export const getAllGroupsPaged = (token: string) =>
-	fetchAllPages<Group>((p) => getAllGroups(token, p), 100);
+	fetchAllPages<Group>((p) => getAllGroups(token, p));
 
 /**
  * Fetches a specific group using its group ID.
@@ -293,7 +298,7 @@ export const getAllUsers = async (token: any, paging: Paging = {}): Promise<Resp
  * All users, following pagination.
  */
 export const getAllUsersPaged = (token: string) =>
-	fetchAllPages<User>((p) => getAllUsers(token, p), 100);
+	fetchAllPages<User>((p) => getAllUsers(token, p));
 
 /**
  * Fetches a user record using the user's email address.
@@ -343,7 +348,6 @@ export const updateUser = async (
 	if (role) formData.append("role", role);
 	if (group_id) formData.append("group_id", group_id);
 	try {
-		console.log("Updating user:", { userSub, role, group_id });
 		const API = createBackendAPI(token);
 		const res = await API.put(`/admin/users/${userSub}`, formData);
 		return { status: res.status, data: res.data };
@@ -380,142 +384,111 @@ export const adminGetAllJobs = async (token: any, paging: Paging = {}): Promise<
  * All jobs, following pagination.
  */
 export const adminGetAllJobsPaged = (token: string) =>
-	fetchAllPages<Job>((p) => adminGetAllJobs(token, p), 100);
+	fetchAllPages<Job>((p) => adminGetAllJobs(token, p));
 
 /**
  * Cancels a running or queued cluster job using its SLURM ID.
  */
-export const cancelJobBySlurmID = async (slurmId: string, token: any): Promise<Response> => {
+export const cancelJob = async (jobId: string, token: string): Promise<Response> => {
 	try {
-		const API = createClusterAPI(token);
-		const response = await API.post(`/cancel/${slurmId}`);
-		if (response.status !== 200) {
-			throw new Error(`HTTP ${response.status}`);
-		}
-		const success = response.data.success;
+		const API = createBackendAPI(token);
+		const response = await API.post(`/jobs/${jobId}/cancel`);
 		return {
 			status: response.status,
-			data: success.toLowerCase(),
+			data: response.data,
 		};
-	} catch (error) {
+	} catch (error: any) {
 		console.error("Failed to cancel the job", error);
 		return {
-			status: 500,
-			error: `Failed to cancel the job: ${getErrorMessage(error)}`,
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
 		};
 	}
 };
 
 /**
- * Fetches the latest SLURM status for a job and normalizes the state to lowercase.
+ * Submits a standard-analysis job. The backend uploads to the cluster and
+ * advances the job status in the background.
  */
-export const getJobStatusBySlurmID = async (slurmId: string, token: any): Promise<Response> => {
-	try {
-		const API = createClusterAPI(token);
-		const response = await API.get(`/status/${slurmId}`);
-		if (response.status !== 200) {
-			throw new Error(`HTTP ${response.status}`);
-		}
-		const raw = response.data.state as string;
-		const parsed = JSON.parse(raw) as {
-			slurm_id: string;
-			state: string;
-			elapsed: string;
-		};
-
-		return {
-			status: response.status,
-			data: {
-				slurm_id: parsed.slurm_id,
-				state: parsed.state.toLowerCase(),
-				elapsed: parsed.elapsed,
-			},
-		};
-	} catch (error) {
-		console.error("Failed to fetch job status", error);
-		return {
-			status: 500,
-			error: `Failed to fetch job status: ${getErrorMessage(error)}`,
-		};
-	}
-};
-
-/**
- * Submits an advanced analysis job to the cluster API.
- * The uploaded molecular file, calculation settings, and optional keyword file.
- * are sent as multipart form data.
- */
-export const submitAdvancedAnalysis = async (
-	file: File | Blob,
-	calculationType: string,
-	method: string,
-	basisSet: string,
-	charge: number,
-	multiplicity: number,
-	token: any,
-	keywords?: File,
+export const submitStandardAnalysisJob = async (
+	token: string,
+	params: {
+		file?: File | Blob;
+		structureId?: string;
+		charge: number;
+		multiplicity: number;
+		optimizationType?: "ground" | "ts";
+		jobName: string;
+		jobNotes?: string;
+		tags?: string[];
+	},
 ): Promise<Response> => {
 	const formData = new FormData();
-	formData.append("file", file);
-	formData.append("calculation_type", calculationType);
-	formData.append("method", method);
-	formData.append("basis_set", basisSet);
-	formData.append("charge", charge.toString());
-	formData.append("multiplicity", multiplicity.toString());
-	if (keywords !== undefined) {
-		formData.append("keywords", keywords);
-	}
-	try {
-		const API = createClusterAPI(token);
-		const response = await API.post("/run_advanced_analysis", formData);
-		return {
-			status: response.status,
-			data: response.data,
-		};
-	} catch (error) {
-		console.error("Advanced analysis submission failed", error);
-		return {
-			status: 500,
-			error: `Failed to submit advanced analysis: ${getErrorMessage(error)}`,
-		};
-	}
-};
+	if (params.file) formData.append("file", params.file);
+	if (params.structureId) formData.append("structure_id", params.structureId);
+	formData.append("charge", String(params.charge));
+	formData.append("multiplicity", String(params.multiplicity));
+	formData.append("optimization_type", params.optimizationType ?? "ground");
+	formData.append("job_name", params.jobName);
+	if (params.jobNotes) formData.append("job_notes", params.jobNotes);
+	(params.tags ?? []).forEach((t) => formData.append("tags", t));
 
-/**
- * Submits a standard analysis job to the cluster API.
- * If the optimization type is transition state, the opt_type field is included.
- */
-export const submitStandardAnalysis = async (
-	_jobName: string,
-	file: File | Blob,
-	charge: number,
-	multiplicity: number,
-	_structure_id: string,
-	token: any,
-	opt_type?: "ts" | "ground",
-): Promise<Response> => {
-	const formData = new FormData();
-	formData.append("file", file);
-	// formData.append("job_name", jobName);
-	formData.append("charge", charge.toString());
-	formData.append("multiplicity", multiplicity.toString());
-	// formData.append("structure_id", structure_id);
-
-	if (opt_type !== undefined && opt_type === "ts") {
-		formData.append("opt_type", opt_type);
-	}
 	try {
-		const API = createClusterAPI(token);
-		const response = await API.post("/run_standard_analysis", formData);
-		return {
-			status: response.status,
-			data: response.data,
-		};
-	} catch (error) {
+		const API = createBackendAPI(token);
+		const res = await API.post("/calculation/workflow/standard_analysis", formData);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
 		console.error("Standard analysis submission failed", error);
 		return {
-			status: 500,
-			error: `Failed to submit job: ${getErrorMessage(error)}`,
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+/**
+ * Submits a custom (advanced) calculation job.
+ */
+export const submitCustomCalculation = async (
+	token: string,
+	params: {
+		file?: File | Blob;
+		structureId?: string;
+		calculationType: string;
+		method: string;
+		basisSet: string;
+		charge: number;
+		multiplicity: number;
+		optimizationType?: "ground" | "ts";
+		keywords?: File;
+		jobName: string;
+		jobNotes?: string;
+		tags?: string[];
+	},
+): Promise<Response> => {
+	const formData = new FormData();
+	if (params.file) formData.append("file", params.file);
+	if (params.structureId) formData.append("structure_id", params.structureId);
+	formData.append("calculation_type", params.calculationType);
+	formData.append("method", params.method);
+	formData.append("basis_set", params.basisSet);
+	formData.append("charge", String(params.charge));
+	formData.append("multiplicity", String(params.multiplicity));
+	if (params.optimizationType) formData.append("optimization_type", params.optimizationType);
+	if (params.keywords) formData.append("keywords", params.keywords);
+	formData.append("job_name", params.jobName);
+	if (params.jobNotes) formData.append("job_notes", params.jobNotes);
+	(params.tags ?? []).forEach((t) => formData.append("tags", t));
+
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.post("/calculation/custom", formData);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error("Custom calculation submission failed", error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
 		};
 	}
 };
@@ -548,7 +521,6 @@ export const AddAndUploadStructureToS3 = async (
 	token: any,
 	tags: string[] = [],
 ): Promise<Response> => {
-	console.log("Adding and uploading structure to S3:", { name, formula, notes, tags });
 	const imageBlob = dataURLToBlob(image);
 	const formData = new FormData();
 	formData.append("file", file);
@@ -559,11 +531,8 @@ export const AddAndUploadStructureToS3 = async (
 		tags.forEach((tag) => formData.append("tags", tag));
 	}
 	formData.append("image", imageBlob, `image.png`);
-	console.log("Form data prepared for structure upload:", formData);
-	console.log("Token for API:", token);
 	try {
 		const API = createBackendAPI(token);
-		console.log("Uploading structure to S3 here");
 		const response = await API.post("/structures/", formData);
 		return {
 			status: response.status,
@@ -579,30 +548,28 @@ export const AddAndUploadStructureToS3 = async (
 };
 
 /**
- * Requests a presigned URL for a structure file, then downloads the file content from S3.
+ * Fetches the structure file text for one structure.
+ *
+ * Structure files now live in the database, so this reads the detail endpoint
+ * and returns its `content` field. The list endpoint returns metadata only.
  */
-export const getStructureDataFromS3 = async (
-	structureId: string,
-	token: any,
-): Promise<Response> => {
+export const getStructureContent = async (structureId: string, token: any): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get(`/structures/presigned/${structureId}`);
-		if (res.status !== 200) {
-			throw new Error(`HTTP ${res.status}`);
+		const res = await API.get(`/structures/${structureId}`);
+		const content = res.data?.content;
+		if (typeof content !== "string" || !content) {
+			return {
+				status: res.status,
+				error: "This structure has no stored file content.",
+			};
 		}
-		const { url } = res.data;
-		const fileRes = await fetch(url);
-		const text = await fileRes.text();
+		return { status: res.status, data: content };
+	} catch (error: any) {
+		console.error("Failed to fetch the structure content", error);
 		return {
-			status: fileRes.status,
-			data: text,
-		};
-	} catch (error) {
-		console.error("Failed to fetch structure from S3", error);
-		return {
-			status: 500,
-			error: `Failed to fetch structure from S3: ${getErrorMessage(error)}`,
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || getErrorMessage(error),
 		};
 	}
 };
@@ -631,7 +598,7 @@ export const getLibraryStructures = async (token: any, paging: Paging = {}): Pro
  * All of the user's structures, following pagination.
  */
 export const getLibraryStructuresPaged = (token: string) =>
-	fetchAllPages<Structure>((p) => getLibraryStructures(token, p), 100);
+	fetchAllPages<Structure>((p) => getLibraryStructures(token, p));
 
 /**
  * Fetches metadata/details ffor one structure by structure ID.
@@ -655,6 +622,10 @@ export const getStructureById = async (structureId: string, token: any): Promise
 
 /**
  * Updates an existing structure's metadata, including name, formula, notes, and tags.
+ *
+ * `tags` is treated as the complete replacement set, not an addition, so
+ * removing or clearing tags persists. Pass the full list the user should end up
+ * with; an empty list clears them.
  */
 export const updateStructure = async (
 	structureId: string,
@@ -668,9 +639,13 @@ export const updateStructure = async (
 	formData.append("name", name);
 	formData.append("formula", formula);
 	formData.append("notes", notes);
-	if (tags && tags.length > 0) {
-		tags.forEach((tag) => formData.append("tags", tag));
-	}
+
+	// `tags` is the complete edited set from the structure editor, so it has to
+	// replace what is stored. The backend is additive by default, which would
+	// silently keep any tag the user removed. Sending replace_tags with no tags
+	// is how it clears them all, so an empty list must not be skipped.
+	formData.append("replace_tags", "true");
+	tags.forEach((tag) => formData.append("tags", tag));
 
 	try {
 		const API = createBackendAPI(token);
@@ -729,159 +704,92 @@ export const getAllJobs = async (token: string, paging: Paging = {}): Promise<Re
 /**
  * All of the user's jobs, following pagination.
  */
-export const getAllJobsPaged = (token: string) =>
-	fetchAllPages<Job>((p) => getAllJobs(token, p), 100);
+export const getAllJobsPaged = (token: string) => fetchAllPages<Job>((p) => getAllJobs(token, p));
 
 /**
- * Fetches details for a single job by job ID.
+ * Fetches the parsed calculation result and error stored for a finished job.
+ *
+ * Results now live in the database rather than S3, so this returns the parsed
+ * JSON directly instead of a URL to fetch it from.
+ * 409 = the job has not finished, or its result has not been stored yet.
+ * Response: { job_id, result, error }
  */
-export const getJobById = async (jobId: string, token: string): Promise<Response> => {
+export const fetchJobResult = async (jobId: string, token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.get(`/jobs/${jobId}`);
+		const res = await API.get(`/jobs/${jobId}/result`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error("Failed to fetch job details", error);
+		const httpStatus = error.response?.status;
+		console.error("Failed to fetch the job result", error);
 		return {
-			status: error.response?.status || 500,
-			error: error.response?.data?.detail || error.message,
+			status: httpStatus || 500,
+			error:
+				httpStatus === 409
+					? "Job results are not ready yet."
+					: error.response?.data?.detail || error.message,
 		};
 	}
 };
 
 /**
- * Fetches computed result metadata for a completed cluster job.
+ * Lists which artifact kinds a finished job actually has, such as "trajectory"
+ * or "molden". Use fetchJobArtifact to read one of them.
+ * Response: { job_id, artifacts }
  */
-export const fetchJobResults = async (jobId: string, token: string): Promise<Response> => {
-	try {
-		const API = createClusterAPI(token);
-		const res = await API.get(`/result/${jobId}`);
-		return { status: res.status, data: res.data };
-	} catch (error: any) {
-		console.error("Failed to fetch job results", error);
-		return {
-			status: error.response?.status || 500,
-			error: error.response?.data?.detail || error.message,
-		};
-	}
-};
-
-/**
- * Fetches presigned URLs for files generated byb a specific job calculation.
- */
-export const fetchJobResultFiles = async (
-	token: string,
-	jobId: string,
-	calculation: string,
-	status: string,
-): Promise<Response> => {
-	try {
-		const API = createStorageAPI(token);
-		const res = await API.get(`/files/${jobId}/${calculation}/${status}`);
-		return { status: res.status, data: res.data };
-	} catch (error: any) {
-		console.error("Failed to fetch presigned job file urls", error);
-		return {
-			status: error.response?.status || 500,
-			error: error.response?.data?.detail || error.message,
-		};
-	}
-};
-
-/**
- * Fetches error output for a failed or problematic cluster job.
- */
-export const fetchJobError = async (jobId: string, token: string): Promise<Response> => {
-	try {
-		const API = createClusterAPI(token);
-		const res = await API.get(`/error/${jobId}`);
-		return { status: res.status, data: res.data };
-	} catch (error: any) {
-		console.error("Failed to fetch job error", error);
-		return {
-			status: error.response?.status || 500,
-			error: error.response?.data?.detail || error.message,
-		};
-	}
-};
-
-/**
- * Creates a job record in the backend database.
- * This stores the job file, calculation settings, optional structure link,
- * SLURM ID, notes, and tags.
- */
-export const createJob = async (
-	file: File | Blob,
-	jobId: string,
-	jobName: string,
-	jobNotes: string | null,
-	method: string,
-	basisSet: string,
-	calculationType: string,
-	charge: number,
-	multiplicity: number,
-	structureId: string | null,
-	slurmId: string | null,
-	token: string,
-	tags: string[] = [],
-): Promise<Response> => {
-	const formData = new FormData();
-	formData.append("file", file);
-	formData.append("job_id", jobId);
-	formData.append("job_name", jobName);
-	formData.append("method", method);
-	formData.append("basis_set", basisSet);
-	formData.append("calculation_type", calculationType);
-	formData.append("charge", charge.toString());
-	formData.append("multiplicity", multiplicity.toString());
-	if (structureId) formData.append("structure_id", structureId);
-	if (slurmId) formData.append("slurm_id", slurmId);
-	if (jobNotes) formData.append("job_notes", jobNotes);
-	tags.forEach((tag) => formData.append("tags", tag));
-
+export const fetchJobArtifactKinds = async (jobId: string, token: string): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.post("/jobs/", formData);
+		const res = await API.get(`/jobs/${jobId}/artifacts`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error("Job submission failed", error);
+		const httpStatus = error.response?.status;
+		console.error("Failed to fetch the job artifact list", error);
 		return {
-			status: error.response?.status || 500,
-			error: error.response?.data?.detail || error.message,
+			status: httpStatus || 500,
+			error:
+				httpStatus === 409
+					? "Job results are not ready yet."
+					: error.response?.data?.detail || error.message,
 		};
 	}
 };
 
 /**
- * Updates a job's status using one of the allowed status values.
+ * Fetches the text of one job artifact.
+ *
+ * This endpoint requires a bearer token, so the content has to be read here
+ * and handed to a viewer inline. JSmol cannot load it by URL the way it could
+ * with the presigned S3 links this replaces.
+ * 404 = the job has no artifact of that kind.
  */
-export const updateJobStatus = async (
+export const fetchJobArtifact = async (
 	jobId: string,
-	status:
-		"pending" | "running" | "completed" | "failed" | "cancelled" | "out_of_memory" | "timeout",
+	kind: JobArtifactKind,
 	token: string,
 ): Promise<Response> => {
 	try {
-		console.log("Updating job status:", { jobId, status });
 		const API = createBackendAPI(token);
-		const res = await API.patch(`/jobs/${jobId}/${status}`);
-		console.log("Job status updated successfully", res);
-		return { status: res.status, data: res.data };
+		const res = await API.get(`/jobs/${jobId}/artifacts/${kind}`, {
+			// Artifacts are xyz/molden/cube text. Keep axios from parsing them.
+			responseType: "text",
+			transformResponse: [(data) => data],
+		});
+		return { status: res.status, data: res.data as string };
 	} catch (error: any) {
-		console.error("Failed to update job status", error);
+		const httpStatus = error.response?.status;
+		console.error(`Failed to fetch the ${kind} job artifact`, error);
 		return {
-			status: error.response?.status || 500,
-			error: error.response?.data?.detail || error.message,
+			status: httpStatus || 500,
+			error:
+				httpStatus === 404
+					? `This job has no ${kind} artifact.`
+					: httpStatus === 409
+						? "Job results are not ready yet."
+						: error.response?.data?.detail || error.message,
 		};
 	}
 };
-
-interface UpdateJobResponse {
-	job_id: string;
-	runtime: string; // if you’re using INTERVAL it’ll come back as "HH:MM:SS"
-	state: string;
-	message?: string;
-}
 
 /**
  * Deletes a ob record by job ID.
@@ -918,33 +826,25 @@ export const deleteStructure = async (structureId: string, token: string): Promi
 };
 
 /**
- * Updates a job's state, runtime, and associated user in the backend.
- * Throws the error object instead of returning a Response when the request fails.
+ * Updates user-editable job metadata. Status and runtime are backend-managed.
  */
 export const updateJob = async (
 	jobId: string,
-	state: string,
-	runtime: string,
-	userSub: string,
 	token: string,
-): Promise<UpdateJobResponse> => {
-	console.log("Updating job:", { jobId, state, runtime });
-	const formData = new FormData();
-	formData.append("state", state);
-	formData.append("runtime", runtime);
-	formData.append("user_sub", userSub);
+	fields: {
+		job_name?: string;
+		job_notes?: string;
+		tags?: string[];
+		replace_tags?: boolean;
+	},
+): Promise<Response> => {
 	try {
 		const API = createBackendAPI(token);
-		const res = await API.patch(`/jobs/${jobId}`, formData);
-		return {
-			job_id: res.data.job_id,
-			runtime: res.data.runtime,
-			state: res.data.state,
-			message: res.data.message || "",
-		};
+		const res = await API.patch(`/jobs/${jobId}`, fields);
+		return { status: res.status, data: res.data };
 	} catch (error: any) {
 		console.error("Failed to update job", error);
-		throw {
+		return {
 			status: error.response?.status || 500,
 			error: error.response?.data?.detail || error.message,
 		};
@@ -1099,19 +999,25 @@ export const getChemicalFormula = async (file: File | Blob, token: string): Prom
 };
 
 /**
- * Requests a presigned URL for downloading a zipped archive of all result files
- * associated with a specific job.
+ * Fetches a presigned URL for the job's result archive.
+ * 409 = files not ready yet, 503 = storage temporarily unavailable.
  */
 export const getZipPresignedUrl = async (jobId: string, token: string): Promise<Response> => {
 	try {
 		const API = createStorageAPI(token);
-		const res = await API.get(`/download/archive/${jobId}`);
+		const res = await API.get(`/jobs/${jobId}/archive`);
 		return { status: res.status, data: res.data };
 	} catch (error: any) {
-		console.error("Failed to fetch presigned job file urls", error);
+		const httpStatus = error.response?.status;
+		console.error("Failed to fetch the job archive url", error);
 		return {
-			status: error.response?.status || 500,
-			error: error.response?.data?.detail || error.message,
+			status: httpStatus || 500,
+			error:
+				httpStatus === 409
+					? "Job files are not ready yet."
+					: httpStatus === 503
+						? "File storage is temporarily unavailable. Please try again shortly."
+						: error.response?.data?.detail || error.message,
 		};
 	}
 };

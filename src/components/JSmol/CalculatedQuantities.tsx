@@ -2,6 +2,7 @@ import React from "react";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 import { blueGrey, grey } from "@mui/material/colors";
 import { Job } from "../../types";
+import { formatRuntime } from "../../utils";
 
 /**
  * Props for the CalculatedQuantities component.
@@ -35,7 +36,7 @@ const CalculatedQuantities: React.FC<CalculatedQuantitiesProps> = ({ job, result
 		quantities.push({ label: "MP2 Energy", value: `${mp2_energy} Hartree` });
 	}
 
-	quantities.push({ label: "CPU time", value: job.runtime });
+	quantities.push({ label: "CPU time", value: formatRuntime(job.runtime_seconds) });
 
 	return (
 		<TableContainer sx={{ flex: 1 }}>

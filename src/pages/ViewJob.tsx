@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import { Box, Paper, Grid } from "@mui/material";
-import { fetchJobError, getJobByJobID } from "../services/api";
+import { getJobByJobID } from "../services/api";
 import { MolmakerPageTitle, MolmakerTextField, MolmakerAlert } from "../components/custom";
 import MolmakerLoading from "../components/custom/MolmakerLoading";
 import NotFound from "./NotFound";
@@ -51,9 +51,6 @@ function ViewJob() {
 				const jobData = response.data;
 				setJob(jobData);
 
-				// Fetch result or error only based on job status
-				let resultResponse: { data?: any; error?: string } | null = null;
-
 				// Completed jobs are redirected to the result viewer page.
 				if (jobData.status === "completed") {
 					navigate(`/result/${jobData.job_id}`);
@@ -61,19 +58,6 @@ function ViewJob() {
 				// Failed jobs are redirected to the failure details page.
 				else if (jobData.status === "failed") {
 					navigate(`/fail/${jobData.job_id}`);
-				}
-				// Error jobs can fetch error details directly.
-				else if (jobData.status === "error" || jobData.status === "failed") {
-					resultResponse = await fetchJobError(jobId as string, token);
-				}
-
-				// If extra result or error data was fetched, attach it to the current job state.
-				if (resultResponse) {
-					if (resultResponse.error) {
-						setError(resultResponse.error);
-					} else if (resultResponse.data) {
-						setJob((prevJob) => (prevJob ? { ...prevJob, result: resultResponse!.data } : prevJob));
-					}
 				}
 			} catch (err) {
 				setError("Failed to fetch job details or results");
@@ -217,7 +201,7 @@ function ViewJob() {
 								<MolmakerTextField
 									fullWidth
 									label="Result"
-									value={JSON.stringify(job.result, null, 2) || "No result available"}
+									value={"No result available"}
 									onChange={() => {}}
 									sx={{ mb: 2 }}
 									slotProps={{

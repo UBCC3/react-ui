@@ -63,6 +63,13 @@ import { type User, type Job, type Structure, GroupRequest } from "../types";
 import { GROUP_POLL_INTERVAL_MS } from "../constants";
 
 /**
+ * How long the "copied" affordance stays on the group ID button. This is
+ * button feedback rather than an alert, so it is deliberately shorter than
+ * ALERT_AUTO_HIDE_MS and not shared with it.
+ */
+const COPY_FEEDBACK_MS = 2000;
+
+/**
  * Props for the GroupPanel
  */
 interface GroupPanelProps {
@@ -248,7 +255,7 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 	const handleCopyGroupId = async () => {
 		await navigator.clipboard.writeText(groupId);
 		setCopiedGroupId(true);
-		setTimeout(() => setCopiedGroupId(false), 2000);
+		setTimeout(() => setCopiedGroupId(false), COPY_FEEDBACK_MS);
 	};
 
 	// Applies the chosen ownership policy to one member's jobs and structures.

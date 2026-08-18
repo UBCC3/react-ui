@@ -10,7 +10,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { CloudUploadOutlined, AddPhotoAlternateOutlined, Close } from "@mui/icons-material";
 import {
 	AddAndUploadStructureToS3,
-	getLibraryStructures,
+	getLibraryStructuresPaged,
 	getStructuresTags,
 	getChemicalFormula,
 } from "../services/api";
@@ -152,7 +152,7 @@ const MoleculeUpload: React.FC<MoleculeUploadProps> = ({ open, setOpen, setLibra
 			);
 
 			// Refresh the library after successful submission
-			const response = await getLibraryStructures(token);
+			const response = await getLibraryStructuresPaged(token);
 			setLibraryStructures(response.data);
 			// Reset form state
 			setUploadedFile(null);

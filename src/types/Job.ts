@@ -1,27 +1,52 @@
+export type JobStatus =
+	"submitting" | "submitted" | "running" | "completed" | "failed" | "cancelled";
+
+export type JobFailureReason =
+	| "calculation_failed"
+	| "out_of_memory"
+	| "timeout"
+	| "node_failure"
+	| "submission_failed"
+	| "status_check_failed"
+	| "result_upload_failed"
+	| "cluster_failed"
+	| "unknown";
+
 interface Job {
 	job_id: string;
-	job_name: string;
+	submitted_at: string;
+	group_id: string | null;
+	user_sub?: string | null;
+	is_public: boolean;
+	job_name: string | null;
 	job_notes: string | null;
 	filename: string;
-	status: string;
+	status: JobStatus;
 	calculation_type: string;
 	method: string;
 	basis_set: string;
 	charge: number;
 	multiplicity: number;
-	submitted_at: string;
+	optimization_type?: string | null;
 	completed_at: string | null;
-	user_sub?: string;
-	user_email: string;
-	group_id: string | null;
-	group_name: string | null;
-	slurm_id: string | null;
-	structures: Array<{ structure_id: string; name: string }>;
+	runtime_seconds: number | null;
+	cancel_requested: boolean;
+	failure_reason?: JobFailureReason | null;
+	failure_message?: string | null;
 	tags: string[];
-	runtime: string | null;
-	is_deleted: boolean;
-	is_public: boolean;
-	result(result: any, arg1: null, arg2: number): unknown;
+	structures: Array<{
+		structure_id: string;
+		uploaded_at: string;
+		group_id: string | null;
+		is_public: boolean;
+		name: string;
+		formula: string;
+		location: string;
+		notes: string | null;
+	}>;
+	// admin endpoints only
+	user_email?: string | null;
+	group_name?: string | null;
 }
 
 export default Job;
