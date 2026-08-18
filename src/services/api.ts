@@ -604,6 +604,10 @@ export const getStructureById = async (structureId: string, token: any): Promise
 
 /**
  * Updates an existing structure's metadata, including name, formula, notes, and tags.
+ *
+ * `tags` is treated as the complete replacement set, not an addition, so
+ * removing or clearing tags persists. Pass the full list the user should end up
+ * with; an empty list clears them.
  */
 export const updateStructure = async (
 	structureId: string,
@@ -617,9 +621,13 @@ export const updateStructure = async (
 	formData.append("name", name);
 	formData.append("formula", formula);
 	formData.append("notes", notes);
-	if (tags && tags.length > 0) {
-		tags.forEach((tag) => formData.append("tags", tag));
-	}
+
+	// `tags` is the complete edited set from the structure editor, so it has to
+	// replace what is stored. The backend is additive by default, which would
+	// silently keep any tag the user removed. Sending replace_tags with no tags
+	// is how it clears them all, so an empty list must not be skipped.
+	formData.append("replace_tags", "true");
+	tags.forEach((tag) => formData.append("tags", tag));
 
 	try {
 		const API = createBackendAPI(token);
