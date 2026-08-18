@@ -8,6 +8,8 @@ import PartialCharge from "./PartialCharge";
 import { useResultDrawer } from "../../hooks/UseResultDrawer";
 import { useJsmolViewer } from "../../hooks/UseJsmolViewer";
 import { useJobResult } from "../../hooks/UseJobResult";
+import { useJobArtifact } from "../../hooks/UseJobArtifact";
+import { jmolInlineLoadScript } from "./util";
 import { ResultDrawer } from "../results/ResultDrawer";
 import { ResultDrawerSection } from "../results/ResultDrawerSection";
 import AddStructureToLibrary from "./AddStructureToLibrary";
@@ -35,16 +37,23 @@ const EnergyViewer: React.FC<EnergyViewerProps> = ({
 	viewerObjId,
 	setError,
 }) => {
-	const xyzFileUrl = jobResultFiles.urls["mol"];
-
 	const { result, loading } = useJobResult(jobResultFiles.jobId, undefined, setError);
+
+	// An energy calculation does not move the atoms, so the structure shown here
+	// is the job's stored input geometry. It is fetched and loaded inline because
+	// the artifact endpoint requires a bearer token the applet cannot send.
+	const { content: inputXyz, loading: inputLoading } = useJobArtifact(
+		jobResultFiles.jobId,
+		"input",
+		setError,
+	);
 
 	const { viewerRef, viewerObj } = useJsmolViewer({
 		viewerObjId,
-		src: xyzFileUrl,
-		loadScript: `load "XYZ::${xyzFileUrl}";`,
+		src: "",
+		loadScript: inputXyz ? jmolInlineLoadScript("input", inputXyz) : "",
 		onReadyScript: `zoom 50; connect auto`,
-		skip: loading,
+		skip: loading || inputLoading || !inputXyz,
 	});
 
 	const { open, accordionOpen, toggle, handleAccordionChange } = useResultDrawer({
