@@ -7,9 +7,15 @@
  *
  * @param name - Block label. Only has to be unique within the script.
  * @param content - Raw artifact text, such as an xyz or molden file.
+ * @param append - Add the content as another model instead of replacing the
+ *   current one. Use this to reproduce a multi-file `load FILES`, where model
+ *   order determines which frame each file becomes.
  */
-export const jmolInlineLoadScript = (name: string, content: string): string =>
-	`load DATA "${name}"\n${content}\nend "${name}";`;
+export const jmolInlineLoadScript = (
+	name: string,
+	content: string,
+	{ append = false }: { append?: boolean } = {},
+): string => `load ${append ? "APPEND " : ""}DATA "${name}"\n${content}\nend "${name}";`;
 
 /**
  * Fetch a raw file from an S3 presigned URL.
