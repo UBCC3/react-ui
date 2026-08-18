@@ -27,7 +27,6 @@ import { useResultDrawer } from "../../hooks/UseResultDrawer";
 import { useJsmolViewer } from "../../hooks/UseJsmolViewer";
 import { useJobResult } from "../../hooks/UseJobResult";
 import { useJobArtifact } from "../../hooks/UseJobArtifact";
-import { jmolInlineLoadScript } from "./util";
 import { ResultDrawer } from "../results/ResultDrawer";
 import { ResultDrawerSection } from "../results/ResultDrawerSection";
 import AddStructureToLibrary from "./AddStructureToLibrary";
@@ -58,31 +57,27 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 }) => {
 	const { result, loading } = useJobResult(jobResultFiles.jobId, "molecular orbitals", setError);
 
-	// Both artifacts are fetched here and loaded inline, because the artifact
-	// endpoint requires a bearer token the applet cannot send. Order matters:
-	// the molden becomes model 1, which supplies the orbital data below, and the
-	// ESP cube becomes model 2, which OrbitalProperty maps its MEP surface onto.
-	const { content: moldenContent, loading: moldenLoading } = useJobArtifact(
+	// The artifact endpoint needs a bearer token the applet cannot send, so each
+	// hook fetches its artifact and republishes it as a same-origin blob URL.
+	// Order matters: the molden becomes model 1, which supplies the orbital data
+	// below, and the ESP cube becomes model 2, which OrbitalProperty maps its
+	// MEP surface onto.
+	const { url: moldenUrl, loading: moldenLoading } = useJobArtifact(
 		jobResultFiles.jobId,
 		"molden",
 		setError,
 	);
-	const { content: espContent, loading: espLoading } = useJobArtifact(
+	const { url: espUrl, loading: espLoading } = useJobArtifact(
 		jobResultFiles.jobId,
 		"esp",
 		setError,
 	);
-	const artifactsReady = Boolean(moldenContent && espContent);
+	const artifactsReady = Boolean(moldenUrl && espUrl);
 
 	const { viewerRef, viewerObj } = useJsmolViewer({
 		viewerObjId,
-		src: "",
-		loadScript: artifactsReady
-			? [
-					jmolInlineLoadScript("molden", moldenContent as string),
-					jmolInlineLoadScript("esp", espContent as string, { append: true }),
-				].join("\n")
-			: "",
+		src: moldenUrl ?? "",
+		loadScript: artifactsReady ? `load FILES "${moldenUrl}" "${espUrl}";` : "",
 		onReadyScript: `reset; zoom 50;`,
 		skip: loading || moldenLoading || espLoading || !artifactsReady,
 	});
