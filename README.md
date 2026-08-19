@@ -24,7 +24,22 @@ React UI for MolMaker
    > **NOTE:** Node.js and npm are pre-requistes. Install latest versions of both if not not installed already.
    > At the time of development, I used Node.js v18.20.8 and npm v10.8.2 (latest at the time).
    
-5. **Environment variables**
+5. **Git hooks (automatic)**
+
+   `npm ci` runs the `prepare` script, which installs the Husky pre-commit hook.
+   Nothing further to do. Confirm it worked with:
+
+   ```bash
+   git config core.hooksPath
+   ```
+
+   That should print `.husky/_`. If it prints nothing, run `npm run prepare`.
+
+   The hook runs ESLint and Prettier on staged files only. It fixes what it can
+   and re-stages the result, so a formatting slip will not block the commit.
+   Anything ESLint cannot fix automatically will.
+
+6. **Environment variables**
 
    Take a look at create a `.env` file and copy over the contents of `.env.example`. Fill in the missing details from Auth0.
    
@@ -55,4 +70,3 @@ the committed fixtures, pass their paths after `--`:
 ```bash
 npm run test:jsmol -- /path/to/orbitals.molden /path/to/ESP.cube
 ```
-   

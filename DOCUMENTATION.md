@@ -136,6 +136,71 @@ This document provides an overview of the main files, components, and their resp
 9. If you encounter any issues, check the console for errors and ensure your environment is correctly configured.
 ---
 
+## Code Quality and the Pre-Commit Hook
+
+CI runs four checks on every pull request: `format:check`, `lint`, `type-check`
+and `build`. A commit hook catches the first two locally so they do not fail in
+CI.
+
+### Setup
+
+Nothing manual. `npm ci` runs the `prepare` script, which installs the hook.
+Verify with:
+
+```bash
+git config core.hooksPath
+```
+
+It should print `.husky/_`. If it prints nothing, the `prepare` script did not
+run; fix it with:
+
+```bash
+npm run prepare
+```
+
+This is per-clone. The hook itself lives in `.git/`, which is not tracked, so
+every new clone needs `npm ci` before the hook exists.
+
+### What the hook does
+
+`.husky/pre-commit` runs `lint-staged`, configured in `package.json`:
+
+| Files | Commands |
+| --- | --- |
+| `*.{js,jsx,ts,tsx}` | `eslint --fix`, then `prettier --write` |
+| `*.{json,css,md,html,yml,yaml}` | `prettier --write` |
+
+ESLint runs first and Prettier second, so Prettier has the final say on
+formatting. That is what `eslint-config-prettier` in the dev dependencies
+assumes, and it keeps the two from fighting.
+
+`lint-staged` re-stages whatever it fixes, so formatting problems are corrected
+silently rather than blocking the commit. A commit only fails when ESLint
+reports something it cannot fix, which is the case worth stopping for.
+
+### What the hook does not do
+
+It does not run `type-check` or `build`. Both are whole-project and slow
+(`build` takes around two minutes), so they stay in CI. It also only inspects
+**staged** files, so it will not catch a problem in a file you did not touch.
+
+Before pushing, run the same checks CI does:
+
+```bash
+npm run format:check && npm run lint && npm run type-check
+```
+
+To bypass the hook deliberately, `git commit --no-verify`. That only moves the
+failure to CI, so it is rarely worth it.
+
+### Note on the other repositories
+
+`molmaker_backend` and `Cluster-API-QC` use the Python `pre-commit` tool with
+Ruff instead, and those require a manual `pre-commit install` per clone. This
+repository uses Husky so the hook installs itself as part of `npm ci`.
+
+---
+
 ## How to Deploy the App to Production
 1. Reach out to Mark to get the credentials for the EC2 instance where the app is hosted.
 2. ssh into the EC2 instance. This will prompt you for the password.
