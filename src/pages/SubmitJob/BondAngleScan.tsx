@@ -11,10 +11,6 @@ import {
 	IconButton,
 	Autocomplete,
 	TextField,
-	MenuItem,
-	FormControlLabel,
-	Checkbox,
-	FormHelperText,
 } from "@mui/material";
 import { PlayCircleOutlineOutlined, InfoOutline } from "@mui/icons-material";
 import {
@@ -26,7 +22,6 @@ import {
 	MolmakerLoading,
 	MolmakerAlert,
 	MolmakerPageTitle,
-	MolmakerDropdown,
 } from "../../components/custom";
 import {
 	getLibraryStructures,
@@ -39,30 +34,9 @@ import {
 import { Structure } from "../../types";
 import { APP_BAR_HEIGHT, unpairedElectronOptions } from "../../constants";
 import { grey } from "@mui/material/colors";
-import { formatMeasurement, measureCoordinate, parseXyzAtoms } from "../../utils";
-
-/** Which internal coordinate the scan varies. */
-type ScanCoordinate = "bond" | "angle" | "dihedral";
-
-/** How the user specifies the range of values to scan over. */
-type RangeMode = "steps" | "spacing" | "values";
-
-const COORDINATE_OPTIONS: {
-	value: ScanCoordinate;
-	label: string;
-	atomCount: number;
-	example: string;
-}[] = [
-	{ value: "bond", label: "Bond length (2 atoms)", atomCount: 2, example: "1, 2" },
-	{ value: "angle", label: "Bond angle (3 atoms)", atomCount: 3, example: "1, 2, 3" },
-	{ value: "dihedral", label: "Dihedral angle (4 atoms)", atomCount: 4, example: "3, 1, 2, 6" },
-];
-
-const SLOT_LABELS: Record<ScanCoordinate, string[]> = {
-	bond: ["Atom 1", "Atom 2"],
-	angle: ["Atom 1", "Vertex atom", "Atom 3"],
-	dihedral: ["Atom 1", "Axis atom 1", "Axis atom 2", "Atom 4"],
-};
+import { parseXyzAtoms } from "../../utils";
+import { useScanSpec } from "../../hooks/UseScanSpec";
+import ScanSpecFields from "../../components/ScanSpecFields";
 
 export default function BondAngleScan() {
 	// used to redirect the user after the job is successfully submitted
@@ -102,17 +76,6 @@ export default function BondAngleScan() {
 	const [charge, setCharge] = useState<number>(0);
 	const [multiplicity, setMultiplicity] = useState<number>(1);
 
-	// state for the scan specification
-	const [coordinate, setCoordinate] = useState<ScanCoordinate>("bond");
-	const [atomSlots, setAtomSlots] = useState<(number | "")[]>([]);
-	const [rangeMode, setRangeMode] = useState<RangeMode>("steps");
-	const [rangeMin, setRangeMin] = useState<string>("");
-	const [rangeMax, setRangeMax] = useState<string>("");
-	const [rangeSteps, setRangeSteps] = useState<string>("10");
-	const [rangeSpacing, setRangeSpacing] = useState<string>("");
-	const [rangeValues, setRangeValues] = useState<string>("");
-	const [relax, setRelax] = useState<boolean>(false);
-
 	// available tag options shown in the autocomplete input
 	const [options, setOptions] = useState<string[]>([]);
 
@@ -120,30 +83,11 @@ export default function BondAngleScan() {
 	const [submitConfirmed, setSubmitConfirmed] = useState(false);
 	const [structureImageData, setStructureImageData] = useState<string>("");
 
-	// derived scan helpers
-	const selectedCoordinate =
-		COORDINATE_OPTIONS.find((o) => o.value === coordinate) ?? COORDINATE_OPTIONS[0];
-	const expectedAtomCount = selectedCoordinate.atomCount;
-	const unitLabel = coordinate === "bond" ? "Å" : "°";
-
-	const parsedValues = rangeValues
-		.split(",")
-		.map((part) => parseFloat(part.trim()))
-		.filter((n) => Number.isFinite(n));
-
+	// The scan specification and its validation are shared with the custom job
+	// page; only the level of theory differs, and a workflow scan does not
+	// expose one.
 	const atomOptions = useMemo(() => parseXyzAtoms(structureData), [structureData]);
-
-	// Order matters, so keep slot order and treat a partly-filled set as invalid.
-	const parsedAtoms = atomSlots.filter((a): a is number => a !== "");
-
-	const atomsValid =
-		parsedAtoms.length === expectedAtomCount && new Set(parsedAtoms).size === expectedAtomCount;
-
-	const currentValue = useMemo(() => {
-		if (!atomsValid) return null;
-		const points = parsedAtoms.map((i) => atomOptions.find((a) => a.index === i)!.position);
-		return measureCoordinate(coordinate, points);
-	}, [atomsValid, parsedAtoms, atomOptions, coordinate]);
+	const scan = useScanSpec(atomOptions);
 
 	/**
 	 * Continues job submission after the molecule preview image has been captured.
@@ -205,11 +149,6 @@ export default function BondAngleScan() {
 		loadLibraryStructures();
 		fetchTags();
 	}, [getAccessTokenSilently]);
-
-	// Clear the picks whenever the atom set or the number of slots changes.
-	useEffect(() => {
-		setAtomSlots(Array(expectedAtomCount).fill(""));
-	}, [expectedAtomCount, structureData]);
 
 	// Handle switching between upload / library
 	const handleSourceChange = (source: "upload" | "library") => {
@@ -274,63 +213,6 @@ export default function BondAngleScan() {
 		}
 	};
 
-	const handleAtomSlotChange = (slot: number, value: number | "") => {
-		setAtomSlots((prev) => {
-			const next = [...prev];
-			next[slot] = value;
-			return next;
-		});
-	};
-
-	/**
-	 * Assembles the scan specification in the shape the cluster's
-	 * normalise_scan_values() accepts: an explicit value list, a min/max/steps
-	 * count, or a min/max/spacing increment.
-	 */
-	const buildScanSpec = () => {
-		const base = { coordinate, atoms: parsedAtoms, relax };
-
-		if (rangeMode === "values") {
-			return { ...base, values: parsedValues };
-		}
-		if (rangeMode === "steps") {
-			return {
-				...base,
-				min: parseFloat(rangeMin),
-				max: parseFloat(rangeMax),
-				steps: parseInt(rangeSteps, 10),
-			};
-		}
-		return {
-			...base,
-			min: parseFloat(rangeMin),
-			max: parseFloat(rangeMax),
-			spacing: parseFloat(rangeSpacing),
-		};
-	};
-
-	/** Returns an error message when the scan settings are incomplete. */
-	const validateScan = (): string | null => {
-		if (!atomsValid) {
-			return `Please enter ${expectedAtomCount} distinct atom numbers for a ${coordinate} scan.`;
-		}
-		if (rangeMode === "values") {
-			if (parsedValues.length < 2) return "Please enter at least two scan values.";
-			return null;
-		}
-		if (!rangeMin || !rangeMax) return "Please enter both a minimum and a maximum.";
-		if (parseFloat(rangeMin) === parseFloat(rangeMax)) {
-			return "The minimum and maximum must be different.";
-		}
-		if (rangeMode === "steps" && parseInt(rangeSteps, 10) < 2) {
-			return "A scan needs at least two steps.";
-		}
-		if (rangeMode === "spacing" && !(parseFloat(rangeSpacing) > 0)) {
-			return "The step size must be greater than zero.";
-		}
-		return null;
-	};
-
 	// Performs the full job submission process
 	async function performSubmitJob() {
 		setSubmitAttempted(true);
@@ -352,7 +234,7 @@ export default function BondAngleScan() {
 			return;
 		}
 
-		const scanError = validateScan();
+		const scanError = scan.validateScan();
 		if (scanError) {
 			setError(scanError);
 			return;
@@ -384,7 +266,7 @@ export default function BondAngleScan() {
 				structureId: source === "library" ? structureIdToUse : undefined,
 				charge,
 				multiplicity,
-				scan: buildScanSpec(),
+				scan: scan.buildScanSpec(),
 				jobName,
 				jobNotes: jobNotes || undefined,
 				tags: jobTags,
@@ -518,133 +400,13 @@ export default function BondAngleScan() {
 
 								<Divider />
 
-								{/* Scan coordinate and atoms */}
-								<Grid sx={{ mx: 2 }}>
-									<MolmakerSectionHeader text="What do you want to scan?" sx={{ mb: 2 }} />
-									<TextField
-										select
-										fullWidth
-										label="Scan type"
-										value={coordinate}
-										onChange={(e) => {
-											setCoordinate(e.target.value as ScanCoordinate);
-										}}
-									>
-										{COORDINATE_OPTIONS.map((option) => (
-											<MenuItem key={option.value} value={option.value}>
-												{option.label}
-											</MenuItem>
-										))}
-									</TextField>
-
-									<Box display="flex" gap={2} sx={{ mt: 2 }}>
-										{Array.from({ length: expectedAtomCount }, (_, slot) => (
-											<MolmakerDropdown
-												key={slot}
-												label={SLOT_LABELS[coordinate][slot]}
-												value={atomSlots[slot] ?? ""}
-												onChange={(e) => handleAtomSlotChange(slot, e.target.value as number)}
-												options={atomOptions
-													// Hide atoms already taken by another slot, but keep this slot's own
-													// pick so it still renders as the selected value.
-													.filter(
-														(a) => a.index === atomSlots[slot] || !parsedAtoms.includes(a.index),
-													)
-													.map((a) => ({ value: a.index, label: a.label }))}
-												required
-												disabled={atomOptions.length === 0}
-												error={submitAttempted && !atomsValid}
-											/>
-										))}
-									</Box>
-									<FormHelperText sx={{ mt: 1 }}>
-										{atomOptions.length === 0
-											? "Upload or select a molecule to choose atoms."
-											: `Numbers match the preview — tick "Show atom numbers" to see them.`}
-										{currentValue !== null &&
-											` Current value: ${formatMeasurement(coordinate, currentValue)}.`}
-									</FormHelperText>
-
-									<FormControlLabel
-										control={
-											<Checkbox
-												size="small"
-												checked={showAtomNumbers}
-												onChange={(e) => setShowAtomNumbers(e.target.checked)}
-											/>
-										}
-										label="Show atom numbers in preview"
-									/>
-								</Grid>
-
-								<Divider />
-
-								{/* Range of values */}
-								<Grid sx={{ mx: 2 }}>
-									<MolmakerSectionHeader text="Range of values" sx={{ mb: 1 }} />
-									<MolmakerRadioGroup
-										name="rangeMode"
-										value={rangeMode}
-										onChange={(_event: unknown, val: string) => setRangeMode(val as RangeMode)}
-										options={[
-											{ value: "steps", label: "Number of steps" },
-											{ value: "spacing", label: "Step size" },
-											{ value: "values", label: "Specific values" },
-										]}
-										row
-									/>
-
-									{rangeMode !== "values" ? (
-										<Box display="flex" gap={2} sx={{ mt: 2 }}>
-											<MolmakerTextField
-												label={`Minimum (${unitLabel})`}
-												value={rangeMin}
-												onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-													setRangeMin(e.target.value)
-												}
-												required
-											/>
-											<MolmakerTextField
-												label={`Maximum (${unitLabel})`}
-												value={rangeMax}
-												onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-													setRangeMax(e.target.value)
-												}
-												required
-											/>
-											{rangeMode === "steps" ? (
-												<MolmakerTextField
-													label="Number of steps"
-													value={rangeSteps}
-													onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-														setRangeSteps(e.target.value)
-													}
-													required
-												/>
-											) : (
-												<MolmakerTextField
-													label={`Step size (${unitLabel})`}
-													value={rangeSpacing}
-													onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-														setRangeSpacing(e.target.value)
-													}
-													required
-												/>
-											)}
-										</Box>
-									) : (
-										<MolmakerTextField
-											label={`Values (${unitLabel})`}
-											value={rangeValues}
-											onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-												setRangeValues(e.target.value)
-											}
-											required
-											sx={{ mt: 2 }}
-											helperText="Comma-separated, for example 23, 256, 300"
-										/>
-									)}
-								</Grid>
+								<ScanSpecFields
+									scan={scan}
+									atomOptions={atomOptions}
+									submitAttempted={submitAttempted}
+									showAtomNumbers={showAtomNumbers}
+									onShowAtomNumbersChange={setShowAtomNumbers}
+								/>
 
 								<Divider />
 
@@ -677,22 +439,6 @@ export default function BondAngleScan() {
 													value: String(o.multiplicity),
 													label: o.label,
 												}))}
-												row
-											/>
-										</Grid>
-										<Grid size={{ xs: 12, md: 6 }} sx={{ pr: { xs: 0, md: 3 } }}>
-											<MolmakerSectionHeader
-												text="Relax the structure during the scan?"
-												sx={{ mb: 1 }}
-											/>
-											<MolmakerRadioGroup
-												name="relax"
-												value={relax ? "yes" : "no"}
-												onChange={(_event: unknown, val: string) => setRelax(val === "yes")}
-												options={[
-													{ value: "no", label: "No" },
-													{ value: "yes", label: "Yes" },
-												]}
 												row
 											/>
 										</Grid>
@@ -738,8 +484,8 @@ export default function BondAngleScan() {
 						maxHeight={450}
 						submitConfirmed={submitConfirmed}
 						showAtomNumbers={showAtomNumbers}
-						highlightAtoms={parsedAtoms}
-						highlightKind={coordinate}
+						highlightAtoms={scan.parsedAtoms}
+						highlightKind={scan.coordinate}
 						setStructureImageData={setStructureImageData}
 					/>
 				</Grid>
