@@ -11,6 +11,7 @@ import AdvancedAnalysis from "./pages/SubmitJob/AdvancedAnalysis";
 import Admin from "./pages/Admin";
 import Group from "./pages/Group";
 import MainContent from "./components/MainContent";
+import ErrorBoundary from "./components/ErrorBoundary";
 import { DrawerProvider } from "./components/DrawerContext";
 import ResultPage from "./pages/ResultPage";
 import JobFail from "./pages/JobFail";
@@ -26,104 +27,106 @@ function App() {
 				<MenuDrawer />
 				<MenuAppBar />
 				<MainContent>
-					<Routes>
-						<Route
-							path="/"
-							element={
-								<RequireAuth>
-									<Home />
-								</RequireAuth>
-							}
-						/>
-						<Route
-							path="/result/:jobId"
-							element={
-								<RequireAuth>
-									<ResultPage />
-								</RequireAuth>
-							}
-						/>
-						<Route
-							path="/fail/:jobId"
-							element={
-								<RequireAuth>
-									<JobFail />
-								</RequireAuth>
-							}
-						/>
-						<Route
-							path="/workflows"
-							element={
-								<RequireAuth>
-									<Workflows />
-								</RequireAuth>
-							}
-						/>
-						<Route
-							path="/workflows/standard-analysis"
-							element={
-								<RequireAuth>
-									<StandardAnalysis />
-								</RequireAuth>
-							}
-						/>
-						<Route
-							path="/library"
-							element={
-								<RequireAuth>
-									<MoleculeLibrary />
-								</RequireAuth>
-							}
-						/>
-						<Route
-							path="/jobs/:jobId"
-							element={
-								<RequireAuth>
-									<ViewJob />
-								</RequireAuth>
-							}
-						/>
-						<Route
-							path="/advanced"
-							element={
-								<RequireAuth>
-									<AdvancedAnalysis />
-								</RequireAuth>
-							}
-						/>
-						<Route
-							path="/admin"
-							element={
-								<RequireAuth>
-									<Admin />
-								</RequireAuth>
-							}
-						/>
-						<Route
-							path="/users"
-							element={
-								<RequireAuth>
-									<Users />
-								</RequireAuth>
-							}
-						/>
-						<Route
-							path="/group"
-							element={
-								<RequireAuth>
-									<Group />
-								</RequireAuth>
-							}
-						/>
-						<Route
-							path="*"
-							element={
-								<RequireAuth>
-									<NotFound />
-								</RequireAuth>
-							}
-						/>
-					</Routes>
+					<ErrorBoundary>
+						<Routes>
+							<Route
+								path="/"
+								element={
+									<RequireAuth>
+										<Home />
+									</RequireAuth>
+								}
+							/>
+							<Route
+								path="/result/:jobId"
+								element={
+									<RequireAuth>
+										<ResultPage />
+									</RequireAuth>
+								}
+							/>
+							<Route
+								path="/fail/:jobId"
+								element={
+									<RequireAuth>
+										<JobFail />
+									</RequireAuth>
+								}
+							/>
+							<Route
+								path="/workflows"
+								element={
+									<RequireAuth>
+										<Workflows />
+									</RequireAuth>
+								}
+							/>
+							<Route
+								path="/workflows/standard-analysis"
+								element={
+									<RequireAuth>
+										<StandardAnalysis />
+									</RequireAuth>
+								}
+							/>
+							<Route
+								path="/library"
+								element={
+									<RequireAuth>
+										<MoleculeLibrary />
+									</RequireAuth>
+								}
+							/>
+							<Route
+								path="/jobs/:jobId"
+								element={
+									<RequireAuth>
+										<ViewJob />
+									</RequireAuth>
+								}
+							/>
+							<Route
+								path="/advanced"
+								element={
+									<RequireAuth>
+										<AdvancedAnalysis />
+									</RequireAuth>
+								}
+							/>
+							<Route
+								path="/admin"
+								element={
+									<RequireAuth>
+										<Admin />
+									</RequireAuth>
+								}
+							/>
+							<Route
+								path="/users"
+								element={
+									<RequireAuth>
+										<Users />
+									</RequireAuth>
+								}
+							/>
+							<Route
+								path="/group"
+								element={
+									<RequireAuth>
+										<Group />
+									</RequireAuth>
+								}
+							/>
+							<Route
+								path="*"
+								element={
+									<RequireAuth>
+										<NotFound />
+									</RequireAuth>
+								}
+							/>
+						</Routes>
+					</ErrorBoundary>
 				</MainContent>
 			</Box>
 		</DrawerProvider>
