@@ -93,7 +93,7 @@ const MoleculeLibrary = () => {
 		try {
 			const token = await getAccessTokenSilently();
 			const response = await getLibraryStructuresPaged(token);
-			setLibraryStructures(response.data);
+			setLibraryStructures(response.data ?? []);
 			setSelectedStructureId("");
 		} catch (err) {
 			console.error("Failed to refresh jobs", err);
@@ -136,7 +136,7 @@ const MoleculeLibrary = () => {
 
 				// Normalize the backend response into the Structure shape expected by the UI.
 				setLibraryStructures(
-					response.data.map((item: any) => ({
+					(response.data ?? []).map((item: any) => ({
 						structure_id: item.structure_id,
 						user_sub: item.user_sub,
 						name: item.name,

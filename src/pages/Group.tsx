@@ -162,8 +162,8 @@ export default function Group() {
 		(async () => {
 			const token = await getAccessTokenSilently();
 			const { data: ud } = await upsertCurrentUser(token, user?.email || "");
-			setUserRole(ud.role || "");
-			setGroupId(ud.group_id || "");
+			setUserRole(ud?.role || "");
+			setGroupId(ud?.group_id || "");
 		})();
 	}, [getAccessTokenSilently, user?.email]);
 

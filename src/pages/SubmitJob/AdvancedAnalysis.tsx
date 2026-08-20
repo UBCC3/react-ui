@@ -147,31 +147,31 @@ const AdvancedAnalysis = () => {
 					setError("Failed to load calculation types. Please try again later.");
 					return;
 				}
-				setCalculationTypes(response.data);
+				setCalculationTypes(response.data ?? {});
 				response = await getWavefunctionMethods(token);
 				if (response.error) {
 					setError("Failed to load wavefunction methods. Please try again later.");
 					return;
 				}
-				setWavefunctionTheory(response.data);
+				setWavefunctionTheory(response.data ?? {});
 				response = await getDensityFunctionalMethods(token);
 				if (response.error) {
 					setError("Failed to load density functional methods. Please try again later.");
 					return;
 				}
-				setDensityTheory(response.data);
+				setDensityTheory(response.data ?? []);
 				response = await getBasisSets(token);
 				if (response.error) {
 					setError("Failed to load basis sets. Please try again later.");
 					return;
 				}
-				setBasisSets(response.data);
+				setBasisSets(response.data ?? {});
 				response = await getMultiplicities(token);
 				if (response.error) {
 					setError("Failed to load multiplicities. Please try again later.");
 					return;
 				}
-				setMultiplicities(response.data);
+				setMultiplicities(response.data ?? {});
 			} catch (err) {
 				setError("Failed to load calculation types. Please try again later.");
 				console.error("Failed to load calculation types", err);
@@ -263,7 +263,7 @@ const AdvancedAnalysis = () => {
 					setError("Failed to load structure. Please try again or select a different molecule.");
 					return;
 				}
-				setStructureData(response.data);
+				setStructureData(response.data ?? "");
 			} catch (err) {
 				setError("Failed to load structure. Please try again or select a different molecule.");
 				console.error("Failed to load structure", err);

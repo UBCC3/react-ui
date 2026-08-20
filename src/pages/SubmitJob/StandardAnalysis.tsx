@@ -110,7 +110,7 @@ export default function StandardAnalysis() {
 					setError("Failed to fetch library. Please try again later.");
 					return;
 				}
-				let res = response.data;
+				let res = response.data ?? [];
 				res = [
 					{
 						structure_id: "",
@@ -203,7 +203,7 @@ export default function StandardAnalysis() {
 				setError("Failed to load structure. Please try again or select a different molecule.");
 				return;
 			}
-			setStructureData(response.data);
+			setStructureData(response.data ?? "");
 		} catch (err) {
 			setError("Failed to load structure. Please try again or select a different molecule.");
 			console.error("Failed to load structure", err);

@@ -52,7 +52,7 @@ function JobFail() {
 				}
 
 				// Store the job data so it can be displayed in the form.
-				setJob(response.data);
+				setJob(response.data ?? null);
 
 				// The stored result carries the error object itself, so there is no
 				// separate result.err file to fetch afterwards. Plenty of failures
