@@ -192,7 +192,7 @@ const MoleculeInfo = ({
 				setError("Failed to load molecule structure. Please try again.");
 				return;
 			}
-			setStructureData(response.data);
+			setStructureData(response.data ?? "");
 			setError(null);
 		} catch (err) {
 			setError("Failed to load molecule structure. Please try again.");

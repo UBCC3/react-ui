@@ -160,11 +160,16 @@ export default function Home() {
 					getLibraryStructuresPaged(token),
 				]);
 
-				setJobs(jobsResponse.data);
-				setFilteredJobs(jobsResponse.data);
+				if (jobsResponse.error || structuresResponse.error) {
+					setError(jobsResponse.error ?? structuresResponse.error ?? "Failed to load data");
+				}
 
-				const sortedStructures = structuresResponse.data.sort((a: Structure, b: Structure) =>
-					a.name.localeCompare(b.name),
+				const loadedJobs: Job[] = jobsResponse.data ?? [];
+				setJobs(loadedJobs);
+				setFilteredJobs(loadedJobs);
+
+				const sortedStructures = (structuresResponse.data ?? []).sort(
+					(a: Structure, b: Structure) => a.name.localeCompare(b.name),
 				);
 				setStructures([
 					{
@@ -215,7 +220,11 @@ export default function Home() {
 		try {
 			const token = await getAccessTokenSilently();
 			const response = await getAllJobsPaged(token);
-			setJobs(response.data);
+			if (response.error) {
+				setError(response.error);
+				return;
+			}
+			setJobs(response.data ?? []);
 			setFilterStructureId("");
 		} catch (err) {
 			setError("Failed to refresh jobs");

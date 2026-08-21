@@ -150,13 +150,18 @@ export default function Admin() {
 					getLibraryStructuresPaged(token),
 				]);
 
+				if (jobsResponse.error || structuresResponse.error) {
+					setError(jobsResponse.error ?? structuresResponse.error ?? "Failed to load data");
+				}
+
 				// Store jobs, excluding pending jobs from the main jobs list.
-				setJobs(jobsResponse.data);
-				setFilteredJobs(jobsResponse.data);
+				const loadedJobs: Job[] = jobsResponse.data ?? [];
+				setJobs(loadedJobs);
+				setFilteredJobs(loadedJobs);
 
 				// Sort structures alphabetically for easier dropdown navigation.
-				const sortedStructures = structuresResponse.data.sort((a: Structure, b: Structure) =>
-					a.name.localeCompare(b.name),
+				const sortedStructures = (structuresResponse.data ?? []).sort(
+					(a: Structure, b: Structure) => a.name.localeCompare(b.name),
 				);
 
 				// Add a default "All" option before the real structures.
@@ -208,7 +213,11 @@ export default function Admin() {
 			const token = await getAccessTokenSilently();
 			// TODO: move filter to backend
 			const response = await adminGetAllJobsPaged(token);
-			setJobs(response.data);
+			if (response.error) {
+				setError(response.error);
+				return;
+			}
+			setJobs(response.data ?? []);
 			setFilterStructureId("");
 		} catch (err) {
 			setError("Failed to refresh jobs");

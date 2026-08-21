@@ -73,8 +73,8 @@ export default function AdminGroupPanel({ token }: { token: string }) {
 				getAllGroupsPaged(token),
 				getAllUsersPaged(token),
 			]);
-			setGroups(groupResp.data);
-			setUsers(userResp.data);
+			setGroups(groupResp.data ?? []);
+			setUsers(userResp.data ?? []);
 		};
 		fetchData();
 	}, [token, reload]);

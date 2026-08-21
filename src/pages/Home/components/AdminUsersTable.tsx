@@ -34,7 +34,7 @@ export default function AdminUsersTable() {
 		const fetchUsers = async () => {
 			const token = await getAccessTokenSilently();
 			const response = await getAllUsersPaged(token);
-			setUsers(response.data);
+			setUsers(response.data ?? []);
 		};
 		fetchUsers();
 	}, [getAccessTokenSilently]);

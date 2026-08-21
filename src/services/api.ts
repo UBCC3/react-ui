@@ -23,6 +23,10 @@ const MAX_PAGES = 1000;
  * A failure on any page fails the whole call. Returning the pages collected so
  * far as a success would silently drop the rest, and the caller has no way to
  * tell a complete list from a truncated one.
+ *
+ * `data` is always an array, even on failure. Callers store it straight into
+ * array state, so a missing `data` would set that state to undefined and throw
+ * on the next render. The error is still reported through `error`.
  */
 async function fetchAllPages<T>(
 	fetchPage: (paging: Required<Paging>) => Promise<Response>,
@@ -33,7 +37,7 @@ async function fetchAllPages<T>(
 
 	for (let requested = 0; requested < MAX_PAGES; requested++) {
 		const res = await fetchPage({ limit: pageSize, offset });
-		if (res.error) return res;
+		if (res.error) return { ...res, data: [] };
 
 		const page = (res.data ?? []) as T[];
 		all.push(...page);
@@ -44,6 +48,7 @@ async function fetchAllPages<T>(
 	return {
 		status: 500,
 		error: "The list was longer than expected and could not be loaded fully.",
+		data: [],
 	};
 }
 

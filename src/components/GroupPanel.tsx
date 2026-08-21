@@ -188,12 +188,13 @@ export default function GroupPanel({ token }: GroupPanelProps) {
 
 			setLoadingMessage("Loading current user...");
 			const upsertResp = await upsertCurrentUser(token, user.email);
-			setUserRole(upsertResp.data.role || "");
+			const currentUser = upsertResp.data ?? {};
+			setUserRole(currentUser.role || "");
 
 			setLoadingMessage("Loading group info...");
-			if (upsertResp.data.group_id) {
-				setGroupId(upsertResp.data.group_id);
-				const grp = await getGroupById(upsertResp.data.group_id, token);
+			if (currentUser.group_id) {
+				setGroupId(currentUser.group_id);
+				const grp = await getGroupById(currentUser.group_id, token);
 				if (grp.data) setGroupName(grp.data.name);
 			}
 

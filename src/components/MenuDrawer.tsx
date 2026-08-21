@@ -131,8 +131,8 @@ export default function MenuDrawer() {
 			if (user) {
 				const token = await getAccessTokenSilently();
 				const result = await upsertCurrentUser(token, user.email || "");
-				setRole(result.data.role || "");
-				setGroupId(result.data.group_id || "");
+				setRole(result.data?.role || "");
+				setGroupId(result.data?.group_id || "");
 			}
 		};
 		fetchUserRoleAndGroup();

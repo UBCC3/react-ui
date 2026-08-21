@@ -153,7 +153,7 @@ const MoleculeUpload: React.FC<MoleculeUploadProps> = ({ open, setOpen, setLibra
 
 			// Refresh the library after successful submission
 			const response = await getLibraryStructuresPaged(token);
-			setLibraryStructures(response.data);
+			setLibraryStructures(response.data ?? []);
 			// Reset form state
 			setUploadedFile(null);
 			setStructureName("");
