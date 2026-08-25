@@ -19,6 +19,7 @@ import { useResultDrawer } from "../../hooks/UseResultDrawer";
 import { useJsmolViewer } from "../../hooks/UseJsmolViewer";
 import { useJobResult } from "../../hooks/UseJobResult";
 import { useJobArtifact } from "../../hooks/UseJobArtifact";
+import { jmolInlineLoadScript } from "./util";
 import { ResultDrawer } from "../results/ResultDrawer";
 import { ResultDrawerSection } from "../results/ResultDrawerSection";
 import AddStructureToLibrary from "./AddStructureToLibrary";
@@ -60,9 +61,9 @@ const OptimizationViewer: React.FC<VibrationViewerProps> = ({
 		setError,
 	);
 
-	// The artifact endpoint needs a bearer token the applet cannot send, so the
-	// hook fetches it and republishes it as a same-origin blob URL.
-	const { url: trajectoryUrl, loading: trajectoryLoading } = useJobArtifact(
+	// The trajectory is fetched here and loaded into JSmol inline, because the
+	// artifact endpoint requires a bearer token the applet cannot send.
+	const { content: trajectoryXyz, loading: trajectoryLoading } = useJobArtifact(
 		jobResultFiles.jobId,
 		"trajectory",
 		setError,
@@ -76,10 +77,10 @@ const OptimizationViewer: React.FC<VibrationViewerProps> = ({
 
 	const { viewerRef, viewerObj } = useJsmolViewer({
 		viewerObjId,
-		src: trajectoryUrl ?? "",
-		loadScript: trajectoryUrl ? `load "XYZ::${trajectoryUrl}";` : "",
+		src: "",
+		loadScript: trajectoryXyz ? jmolInlineLoadScript("trajectory", trajectoryXyz) : "",
 		onReadyScript: `zoom 50; connect auto;`,
-		skip: loading || trajectoryLoading || !trajectoryUrl,
+		skip: loading || trajectoryLoading || !trajectoryXyz,
 	});
 
 	const { open, accordionOpen, toggle, handleAccordionChange } = useResultDrawer({
@@ -107,17 +108,31 @@ const OptimizationViewer: React.FC<VibrationViewerProps> = ({
 		if (!viewerObj) return;
 
 		const models = window.Jmol.getPropertyAsArray(viewerObj, "auxiliaryInfo.models");
+
+		// Jmol returns a non-array when nothing loaded. Render an empty table
+		// rather than throwing during render.
+		if (!Array.isArray(models)) {
+			setIterations([]);
+			return;
+		}
+
 		const indexRegExp = /Iteration\s+(\d+)/;
 		const energyRegExp = /Energy\s+([+-]?\d+(?:\.\d+)?)/;
 
-		const parsedIterations: OptimizationIteration[] = models.map((m: any) => {
-			const index: RegExpMatchArray | null = (m.modelName as string).match(indexRegExp);
-			const energy: RegExpMatchArray | null = (m.modelName as string).match(energyRegExp);
+		// A model whose name carries neither field is not an optimization step,
+		// so skip it instead of asserting the match is non-null.
+		const parsedIterations: OptimizationIteration[] = models.flatMap((m: any) => {
+			const modelName = String(m?.modelName ?? "");
+			const index: RegExpMatchArray | null = modelName.match(indexRegExp);
+			const energy: RegExpMatchArray | null = modelName.match(energyRegExp);
+			if (!index || !energy) return [];
 
-			return {
-				index: parseInt(index![1]) + 1,
-				energy: parseFloat(energy![1]),
-			};
+			return [
+				{
+					index: parseInt(index[1]) + 1,
+					energy: parseFloat(energy[1]),
+				},
+			];
 		});
 
 		setIterations(parsedIterations);

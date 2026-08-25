@@ -70,7 +70,9 @@ const PartialCharge: React.FC<PartialChargeProps> = ({ viewerObj, frameNo }) => 
 
 		const timeoutId = setTimeout(() => {
 			const atomInfo = window.Jmol.getPropertyAsArray(viewerObj, "atomInfo");
-			setAtoms((atomInfo ?? []).map(toAtom));
+			// `?? []` does not cover it: Jmol returns a non-array object, not
+			// null, when nothing is loaded.
+			setAtoms(Array.isArray(atomInfo) ? atomInfo.map(toAtom) : []);
 		}, PARTIAL_CHARGE_READ_DELAY_MS);
 
 		return () => clearTimeout(timeoutId);

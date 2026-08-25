@@ -11,18 +11,32 @@ const JMOL_DATA_TERMINATOR = /^[ \t]*end[ \t]+"[^"]*"[ \t]*;?[ \t]*$/im;
 /**
  * Whether artifact text would be unsafe to embed in a JSmol `load DATA` block.
  *
- * Artifacts are loaded by URL rather than embedded, so this is not currently
- * reachable as an exploit. It is retained as a guard because `input` is a
- * user-uploaded file that the backend only validates as non-empty UTF-8
- * without NUL bytes, and because `Jmol.loadInline` internally builds a
- * `load DATA "model" ... END "model"` script with a fixed, guessable label.
- * Any future move back to inline loading would otherwise be injectable.
- *
- * Callers must refuse content this rejects rather than sanitising it: a
- * partial strip can still leave a working terminator.
+ * `input` is a user-uploaded file that the backend only validates as non-empty
+ * UTF-8 without NUL bytes, so its content reaches jmolInlineLoadScript
+ * unsanitised. Callers must refuse content this rejects rather than stripping
+ * it: a partial strip can still leave a working terminator.
  */
 export const containsJmolDataTerminator = (content: string): boolean =>
 	JMOL_DATA_TERMINATOR.test(content);
+
+/**
+ * Wrap artifact text in a JSmol `load DATA` block.
+ *
+ * Job artifacts are served from an authenticated endpoint, so JSmol cannot
+ * fetch them by URL the way it did with presigned S3 links. Embedding the
+ * content in the load script is the supported alternative.
+ *
+ * @param name - Block label. Only has to be unique within the script.
+ * @param content - Raw artifact text, such as an xyz or molden file.
+ * @param append - Add the content as another model instead of replacing the
+ *   current one. Use this to reproduce a multi-file `load FILES`, where model
+ *   order determines which frame each file becomes.
+ */
+export const jmolInlineLoadScript = (
+	name: string,
+	content: string,
+	{ append = false }: { append?: boolean } = {},
+): string => `load ${append ? "APPEND " : ""}DATA "${name}"\n${content}\nend "${name}";`;
 
 /**
  * Fetch a raw file from an S3 presigned URL.

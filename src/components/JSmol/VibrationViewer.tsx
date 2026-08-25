@@ -29,6 +29,7 @@ import { useResultDrawer } from "../../hooks/UseResultDrawer";
 import { useJsmolViewer } from "../../hooks/UseJsmolViewer";
 import { useJobResult } from "../../hooks/UseJobResult";
 import { useJobArtifact } from "../../hooks/UseJobArtifact";
+import { jmolInlineLoadScript } from "./util";
 import { ResultDrawer } from "../results/ResultDrawer";
 import { ResultDrawerSection } from "../results/ResultDrawerSection";
 import AddStructureToLibrary from "./AddStructureToLibrary";
@@ -81,9 +82,9 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 		setError,
 	);
 
-	// The artifact endpoint needs a bearer token the applet cannot send, so the
-	// hook fetches it and republishes it as a same-origin blob URL.
-	const { url: vibrationUrl, loading: vibrationLoading } = useJobArtifact(
+	// The vib.xyz trajectory is fetched here and loaded into JSmol inline,
+	// because the artifact endpoint requires a bearer token the applet cannot send.
+	const { content: vibrationXyz, loading: vibrationLoading } = useJobArtifact(
 		jobResultFiles.jobId,
 		"vib",
 		setError,
@@ -95,10 +96,10 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 
 	const { viewerRef, viewerObj, appletRef } = useJsmolViewer({
 		viewerObjId,
-		src: vibrationUrl ?? "",
-		loadScript: vibrationUrl ? `load "XYZ::${vibrationUrl}";` : "",
+		src: "",
+		loadScript: vibrationXyz ? jmolInlineLoadScript("vib", vibrationXyz) : "",
 		onReadyScript: `reset; zoom 50;`,
-		skip: loading || vibrationLoading || !vibrationUrl || value !== viewerTab.structure,
+		skip: loading || vibrationLoading || !vibrationXyz || value !== viewerTab.structure,
 		cleanupOnChange: true,
 	});
 

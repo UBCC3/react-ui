@@ -88,6 +88,12 @@ export function useJsmolViewer({
 			readyFunction: jsmolIsReady,
 		};
 
+		// JSmol enables an analytics tracker on any non-localhost page and fires
+		// it when the first applet is created, injecting a hidden iframe that
+		// reports document.location.href to the JSmol host. Result page URLs
+		// contain job IDs, so clear it before the applet is built.
+		(window.Jmol as { _tracker?: unknown })._tracker = null;
+
 		window.Jmol.getApplet(viewerObjId, Info);
 		viewerRef.current.innerHTML = window.Jmol.getAppletHtml(viewerObjId, Info);
 
