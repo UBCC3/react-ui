@@ -27,7 +27,7 @@ import { useResultDrawer } from "../../hooks/UseResultDrawer";
 import { useJsmolViewer } from "../../hooks/UseJsmolViewer";
 import { useJobResult } from "../../hooks/UseJobResult";
 import { useJobArtifact } from "../../hooks/UseJobArtifact";
-import { jmolInlineLoadScript } from "./util";
+import { JMOL_ARTIFACT_FILENAMES, jmolLoadFilesScript } from "./util";
 import { ResultDrawer } from "../results/ResultDrawer";
 import { ResultDrawerSection } from "../results/ResultDrawerSection";
 import AddStructureToLibrary from "./AddStructureToLibrary";
@@ -58,10 +58,11 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 }) => {
 	const { result, loading } = useJobResult(jobResultFiles.jobId, "molecular orbitals", setError);
 
-	// Both artifacts are fetched here and loaded inline, because the artifact
-	// endpoint requires a bearer token the applet cannot send. Order matters:
-	// the molden becomes model 1, which supplies the orbital data below, and the
-	// ESP cube becomes model 2, which OrbitalProperty maps its MEP surface onto.
+	// Both artifacts are fetched here and seeded into Jmol's file cache, because
+	// the artifact endpoint requires a bearer token the applet cannot send.
+	// Order matters: the molden becomes model 1, which supplies the orbital data
+	// below, and the ESP cube becomes model 2, which OrbitalProperty selects with
+	// `frame 2` before mapping its MEP surface.
 	const { content: moldenContent, loading: moldenLoading } = useJobArtifact(
 		jobResultFiles.jobId,
 		"molden",
@@ -78,11 +79,14 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 		viewerObjId,
 		src: "",
 		loadScript: artifactsReady
-			? [
-					jmolInlineLoadScript("molden", moldenContent as string),
-					jmolInlineLoadScript("esp", espContent as string, { append: true }),
-				].join("\n")
+			? jmolLoadFilesScript(JMOL_ARTIFACT_FILENAMES.molden, JMOL_ARTIFACT_FILENAMES.esp)
 			: "",
+		files: artifactsReady
+			? {
+					[JMOL_ARTIFACT_FILENAMES.molden]: moldenContent as string,
+					[JMOL_ARTIFACT_FILENAMES.esp]: espContent as string,
+				}
+			: undefined,
 		onReadyScript: `reset; zoom 50;`,
 		skip: loading || moldenLoading || espLoading || !artifactsReady,
 	});

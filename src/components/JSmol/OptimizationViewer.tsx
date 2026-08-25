@@ -19,7 +19,7 @@ import { useResultDrawer } from "../../hooks/UseResultDrawer";
 import { useJsmolViewer } from "../../hooks/UseJsmolViewer";
 import { useJobResult } from "../../hooks/UseJobResult";
 import { useJobArtifact } from "../../hooks/UseJobArtifact";
-import { jmolInlineLoadScript } from "./util";
+import { JMOL_ARTIFACT_FILENAMES, jmolLoadFilesScript } from "./util";
 import { ResultDrawer } from "../results/ResultDrawer";
 import { ResultDrawerSection } from "../results/ResultDrawerSection";
 import AddStructureToLibrary from "./AddStructureToLibrary";
@@ -78,7 +78,8 @@ const OptimizationViewer: React.FC<VibrationViewerProps> = ({
 	const { viewerRef, viewerObj } = useJsmolViewer({
 		viewerObjId,
 		src: "",
-		loadScript: trajectoryXyz ? jmolInlineLoadScript("trajectory", trajectoryXyz) : "",
+		loadScript: trajectoryXyz ? jmolLoadFilesScript(JMOL_ARTIFACT_FILENAMES.trajectory) : "",
+		files: trajectoryXyz ? { [JMOL_ARTIFACT_FILENAMES.trajectory]: trajectoryXyz } : undefined,
 		onReadyScript: `zoom 50; connect auto;`,
 		skip: loading || trajectoryLoading || !trajectoryXyz,
 	});
