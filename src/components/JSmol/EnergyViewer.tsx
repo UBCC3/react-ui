@@ -9,7 +9,7 @@ import { useResultDrawer } from "../../hooks/UseResultDrawer";
 import { useJsmolViewer } from "../../hooks/UseJsmolViewer";
 import { useJobResult } from "../../hooks/UseJobResult";
 import { useJobArtifact } from "../../hooks/UseJobArtifact";
-import { JMOL_ARTIFACT_FILENAMES, jmolLoadFilesScript } from "./util";
+import { jmolInlineLoadScript } from "./util";
 import { ResultDrawer } from "../results/ResultDrawer";
 import { ResultDrawerSection } from "../results/ResultDrawerSection";
 import AddStructureToLibrary from "./AddStructureToLibrary";
@@ -51,8 +51,7 @@ const EnergyViewer: React.FC<EnergyViewerProps> = ({
 	const { viewerRef, viewerObj } = useJsmolViewer({
 		viewerObjId,
 		src: "",
-		loadScript: inputXyz ? jmolLoadFilesScript(JMOL_ARTIFACT_FILENAMES.input) : "",
-		files: inputXyz ? { [JMOL_ARTIFACT_FILENAMES.input]: inputXyz } : undefined,
+		loadScript: inputXyz ? jmolInlineLoadScript("input", inputXyz) : "",
 		onReadyScript: `zoom 50; connect auto`,
 		skip: loading || inputLoading || !inputXyz,
 	});

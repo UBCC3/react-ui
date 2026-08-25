@@ -29,7 +29,7 @@ import { useResultDrawer } from "../../hooks/UseResultDrawer";
 import { useJsmolViewer } from "../../hooks/UseJsmolViewer";
 import { useJobResult } from "../../hooks/UseJobResult";
 import { useJobArtifact } from "../../hooks/UseJobArtifact";
-import { JMOL_ARTIFACT_FILENAMES, jmolLoadFilesScript } from "./util";
+import { jmolInlineLoadScript } from "./util";
 import { ResultDrawer } from "../results/ResultDrawer";
 import { ResultDrawerSection } from "../results/ResultDrawerSection";
 import AddStructureToLibrary from "./AddStructureToLibrary";
@@ -97,8 +97,7 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 	const { viewerRef, viewerObj, appletRef } = useJsmolViewer({
 		viewerObjId,
 		src: "",
-		loadScript: vibrationXyz ? jmolLoadFilesScript(JMOL_ARTIFACT_FILENAMES.vib) : "",
-		files: vibrationXyz ? { [JMOL_ARTIFACT_FILENAMES.vib]: vibrationXyz } : undefined,
+		loadScript: vibrationXyz ? jmolInlineLoadScript("vib", vibrationXyz) : "",
 		onReadyScript: `reset; zoom 50;`,
 		skip: loading || vibrationLoading || !vibrationXyz || value !== viewerTab.structure,
 		cleanupOnChange: true,

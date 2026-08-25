@@ -19,16 +19,6 @@ interface UseJsmolViewerOptions {
 	 */
 	loadScript: string;
 	/**
-	 * Artifact text keyed by the filename `loadScript` refers to.
-	 *
-	 * Artifacts come from an authenticated endpoint, so JSmol cannot fetch them
-	 * itself, and handing it a blob URL does not work either: it treats anything
-	 * that is not a plain same-origin path as remote and proxies the load through
-	 * a third-party server, which cannot resolve a blob. Seeding Jmol's own file
-	 * cache lets `load FILES "name"` resolve without any request at all.
-	 */
-	files?: Record<string, string>;
-	/**
 	 * Extra script run once the applet reports ready (e.g. "zoom 50; connect auto;")
 	 */
 	onReadyScript?: string;
@@ -59,7 +49,6 @@ export function useJsmolViewer({
 	viewerObjId,
 	src,
 	loadScript,
-	files,
 	onReadyScript,
 	skip = false,
 	cleanupOnChange = false,
@@ -68,12 +57,6 @@ export function useJsmolViewer({
 	const viewerRef = useRef<HTMLDivElement>(null);
 	const appletRef = useRef<any>(null);
 	const [viewerObj, setViewerObj] = useState<any>(null);
-
-	// Read through a ref so a new object identity each render does not force the
-	// applet to rebuild. `loadScript` changes when the content arrives, which is
-	// what should drive the effect.
-	const filesRef = useRef(files);
-	filesRef.current = files;
 
 	useEffect(() => {
 		if (skip) return;
@@ -95,12 +78,9 @@ export function useJsmolViewer({
 			src,
 			serverURL: JSMOL_SERVER_URL,
 			script: loadScript,
-			// Lets Jmol resolve `load FILES "name"` from _fileCache instead of
-			// fetching. Seeded below, after getApplet, because applet setup resets
-			// the cache when this flag is on.
-			cacheFiles: true,
-			// Defence in depth. Artifact text is untrusted, so Jmol must not be able
-			// to evaluate browser JavaScript regardless of how content reaches it.
+			// Defence in depth. Load scripts embed untrusted artifact text, so even
+			// though useJobArtifact rejects anything that could break out of the data
+			// block, Jmol must not be able to evaluate browser JavaScript.
 			allowJavaScript: false,
 			disableInitialConsole: true,
 			addSelectionOptions: false,
@@ -115,16 +95,6 @@ export function useJsmolViewer({
 		(window.Jmol as { _tracker?: unknown })._tracker = null;
 
 		window.Jmol.getApplet(viewerObjId, Info);
-
-		// Applet setup does `Jmol._fileCache = {}` when cacheFiles is on, so the
-		// entries have to go in after getApplet and before the applet starts and
-		// runs Info.script.
-		const jmol = window.Jmol as { _fileCache?: Record<string, string> };
-		jmol._fileCache = jmol._fileCache ?? {};
-		for (const [name, content] of Object.entries(filesRef.current ?? {})) {
-			jmol._fileCache[name] = content;
-		}
-
 		viewerRef.current.innerHTML = window.Jmol.getAppletHtml(viewerObjId, Info);
 
 		if (!cleanupOnChange) return;

@@ -1,5 +1,3 @@
-import type { JobArtifactKind } from "../../types";
-
 /**
  * Matches a line that would close a JSmol `load DATA` block.
  *
@@ -13,42 +11,32 @@ const JMOL_DATA_TERMINATOR = /^[ \t]*end[ \t]+"[^"]*"[ \t]*;?[ \t]*$/im;
 /**
  * Whether artifact text would be unsafe to embed in a JSmol `load DATA` block.
  *
- * Artifacts now reach Jmol through its file cache rather than a load script, so
- * this is not currently reachable as an exploit. It is retained because `input`
- * is a user-uploaded file the backend only validates as non-empty UTF-8 without
- * NUL bytes, and any future return to inline `load DATA` would otherwise be
- * injectable. Callers must refuse content this rejects rather than stripping
+ * `input` is a user-uploaded file that the backend only validates as non-empty
+ * UTF-8 without NUL bytes, so its content reaches jmolInlineLoadScript
+ * unsanitised. Callers must refuse content this rejects rather than stripping
  * it: a partial strip can still leave a working terminator.
  */
 export const containsJmolDataTerminator = (content: string): boolean =>
 	JMOL_DATA_TERMINATOR.test(content);
 
 /**
- * Filename JSmol should see for each artifact kind.
+ * Wrap artifact text in a JSmol `load DATA` block.
  *
- * The extension is how Jmol chooses a reader, so these mirror the names the
- * backend serves in its Content-Disposition header. They double as the keys
- * artifact text is stored under in Jmol's file cache.
- */
-export const JMOL_ARTIFACT_FILENAMES: Record<JobArtifactKind, string> = {
-	input: "input.xyz",
-	trajectory: "trajectory.xyz",
-	vib: "vib.xyz",
-	molden: "orbitals.molden",
-	esp: "ESP.cube",
-};
-
-/**
- * Build a `load FILES` script for one or more cached artifact filenames.
+ * Job artifacts are served from an authenticated endpoint, so JSmol cannot
+ * fetch them by URL the way it did with presigned S3 links. Embedding the
+ * content in the load script is the supported alternative.
  *
- * Inline `load DATA` cannot express more than one model: `load APPEND DATA` and
- * the literal `append` label both replace the current model rather than adding
- * to it. `load FILES` does create one model per file, and reaches the cache
- * rather than the network, so it is how OrbitalViewer gets its molden as model
- * 1 and its ESP cube as model 2.
+ * @param name - Block label. Only has to be unique within the script.
+ * @param content - Raw artifact text, such as an xyz or molden file.
+ * @param append - Add the content as another model instead of replacing the
+ *   current one. Use this to reproduce a multi-file `load FILES`, where model
+ *   order determines which frame each file becomes.
  */
-export const jmolLoadFilesScript = (...filenames: string[]): string =>
-	`load FILES ${filenames.map((name) => `"${name}"`).join(" ")};`;
+export const jmolInlineLoadScript = (
+	name: string,
+	content: string,
+	{ append = false }: { append?: boolean } = {},
+): string => `load ${append ? "APPEND " : ""}DATA "${name}"\n${content}\nend "${name}";`;
 
 /**
  * Fetch a raw file from an S3 presigned URL.

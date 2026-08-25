@@ -9,8 +9,7 @@ import type { JobArtifactKind } from "../types";
  *
  * Artifacts are served from an authenticated endpoint, so they cannot be handed
  * to JSmol as a URL the way presigned S3 links could be. Callers read the text
- * here and pass it to useJsmolViewer as `files`, which seeds Jmol's file cache
- * so `load FILES` resolves without a request.
+ * here and pass it to the applet inline; see jmolInlineLoadScript.
  */
 export function useJobArtifact(
 	jobId: string,
