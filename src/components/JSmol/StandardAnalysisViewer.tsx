@@ -199,7 +199,7 @@ const StandardAnalysisViewer: React.FC<StandardAnalysisViewerProp> = ({
 					job={job}
 					jobResultFiles={jobResultFiles}
 					setError={setError}
-					viewerObjId={"JSmolSAVibrationViewer"}
+					viewerObjId={"JSmolSAOrbitalViewer"}
 				/>
 			</CustomTabPanel>
 		</Box>
