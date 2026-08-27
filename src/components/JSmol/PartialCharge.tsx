@@ -14,18 +14,12 @@ import { Atom } from "../../types/JSmol";
 import React, { useEffect, useState } from "react";
 
 /**
- * How long to wait after issuing "calculate PARTIALCHARGE" before reading the
- * result. Jmol.script() does not report completion, so this is a fixed guess
- * rather than a real handshake; raise it if large structures come back empty.
- */
-const PARTIAL_CHARGE_READ_DELAY_MS = 500;
-
-/**
  * Props for the PartialCharge component.
  */
 interface PartialChargeProps {
 	viewerObj: any;
 	frameNo: number;
+	onError?: (message: string) => void;
 }
 
 /** Narrow one raw JSmol atomInfo entry into the app's Atom shape. */
@@ -49,32 +43,44 @@ const toAtom = (info: any): Atom => ({
  * information from the viewer, and displays the charges in a table. Clicking
  * an atom row labels that atom in the viewer with its partial charge.
  */
-const PartialCharge: React.FC<PartialChargeProps> = ({ viewerObj, frameNo }) => {
+const PartialCharge: React.FC<PartialChargeProps> = ({ viewerObj, frameNo, onError }) => {
 	// Atom information extracted from JSmol after partial charge calculation.
 	const [atoms, setAtoms] = useState<Atom[]>([]);
 
 	// Currently selected atom to highlight/label in the viewer.
 	const [selectAtom, setSelectAtom] = useState<Atom | null>(null);
 
-	// Ask JSmol to calculate partial charges, then read them back once it has
-	// had time to finish. Jmol.script() is fire-and-forget with no completion
-	// callback, so the delay below is the only available handshake.
+	// Run the calculation synchronously so atomInfo is read only after the Jmol
+	// script queue reports completion.
 	useEffect(() => {
 		if (!viewerObj) return;
 
-		window.Jmol.script(
-			viewerObj,
-			`frame ${frameNo}
-			calculate PARTIALCHARGE;`,
-		);
+		try {
+			const scriptResult = window.Jmol.scriptWait(
+				viewerObj,
+				`frame ${frameNo};
+				calculate PARTIALCHARGE;`,
+			);
+			if (
+				typeof scriptResult === "string" &&
+				/script (?:compiler )?error|terminated unsuccessfully/i.test(scriptResult)
+			) {
+				throw new Error("JSmol reported a partial-charge script error");
+			}
 
-		const timeoutId = setTimeout(() => {
 			const atomInfo = window.Jmol.getPropertyAsArray(viewerObj, "atomInfo");
-			setAtoms((atomInfo ?? []).map(toAtom));
-		}, PARTIAL_CHARGE_READ_DELAY_MS);
-
-		return () => clearTimeout(timeoutId);
-	}, [viewerObj, frameNo]);
+			if (!Array.isArray(atomInfo) || atomInfo.length === 0) {
+				setAtoms([]);
+				onError?.("JSmol could not calculate partial charges for this model.");
+				return;
+			}
+			setAtoms(atomInfo.map(toAtom));
+		} catch (error) {
+			console.error("Failed to calculate JSmol partial charges", error);
+			setAtoms([]);
+			onError?.("JSmol could not calculate partial charges for this model.");
+		}
+	}, [viewerObj, frameNo, onError]);
 
 	// Label the selected atom with its partial charge in the JSmol viewer.
 	useEffect(() => {

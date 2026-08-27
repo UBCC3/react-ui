@@ -9,6 +9,7 @@ import { useResultDrawer } from "../../hooks/UseResultDrawer";
 import { useJsmolViewer } from "../../hooks/UseJsmolViewer";
 import { useJobResult } from "../../hooks/UseJobResult";
 import { useJobArtifact } from "../../hooks/UseJobArtifact";
+import { jmolInlineLoadScript } from "./util";
 import { ResultDrawer } from "../results/ResultDrawer";
 import { ResultDrawerSection } from "../results/ResultDrawerSection";
 import AddStructureToLibrary from "./AddStructureToLibrary";
@@ -39,9 +40,9 @@ const EnergyViewer: React.FC<EnergyViewerProps> = ({
 	const { result, loading } = useJobResult(jobResultFiles.jobId, undefined, setError);
 
 	// An energy calculation does not move the atoms, so the structure shown here
-	// is the job's stored input geometry. The artifact endpoint needs a bearer
-	// token the applet cannot send, so the hook republishes it as a blob URL.
-	const { url: inputUrl, loading: inputLoading } = useJobArtifact(
+	// is the job's stored input geometry. It is fetched and loaded inline because
+	// the artifact endpoint requires a bearer token the applet cannot send.
+	const { content: inputXyz, loading: inputLoading } = useJobArtifact(
 		jobResultFiles.jobId,
 		"input",
 		setError,
@@ -49,10 +50,12 @@ const EnergyViewer: React.FC<EnergyViewerProps> = ({
 
 	const { viewerRef, viewerObj } = useJsmolViewer({
 		viewerObjId,
-		src: inputUrl ?? "",
-		loadScript: inputUrl ? `load "XYZ::${inputUrl}";` : "",
+		src: "",
+		loadScript: inputXyz ? jmolInlineLoadScript("input", inputXyz) : "",
 		onReadyScript: `zoom 50; connect auto`,
-		skip: loading || inputLoading || !inputUrl,
+		skip: loading || inputLoading || !inputXyz,
+		expectedLoadCount: 1,
+		onLoadError: setError,
 	});
 
 	const { open, accordionOpen, toggle, handleAccordionChange } = useResultDrawer({
@@ -104,7 +107,7 @@ const EnergyViewer: React.FC<EnergyViewerProps> = ({
 					ariaId="panel4"
 					detailsSx={{ bgcolor: "grey.50" }}
 				>
-					<PartialCharge frameNo={2} viewerObj={viewerObj} />
+					<PartialCharge frameNo={2} viewerObj={viewerObj} onError={setError} />
 				</ResultDrawerSection>
 			</ResultDrawer>
 		</Grid>

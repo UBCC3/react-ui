@@ -27,6 +27,7 @@ import { useResultDrawer } from "../../hooks/UseResultDrawer";
 import { useJsmolViewer } from "../../hooks/UseJsmolViewer";
 import { useJobResult } from "../../hooks/UseJobResult";
 import { useJobArtifact } from "../../hooks/UseJobArtifact";
+import { jmolInlineLoadScript } from "./util";
 import { ResultDrawer } from "../results/ResultDrawer";
 import { ResultDrawerSection } from "../results/ResultDrawerSection";
 import AddStructureToLibrary from "./AddStructureToLibrary";
@@ -57,29 +58,37 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 }) => {
 	const { result, loading } = useJobResult(jobResultFiles.jobId, "molecular orbitals", setError);
 
-	// The artifact endpoint needs a bearer token the applet cannot send, so each
-	// hook fetches its artifact and republishes it as a same-origin blob URL.
-	// Order matters: the molden becomes model 1, which supplies the orbital data
-	// below, and the ESP cube becomes model 2, which OrbitalProperty maps its
-	// MEP surface onto.
-	const { url: moldenUrl, loading: moldenLoading } = useJobArtifact(
+	// Both artifacts are fetched here and loaded inline, because the artifact
+	// endpoint requires a bearer token the applet cannot send. Order matters:
+	// the molden becomes model 1, which supplies the orbital data below, and the
+	// ESP cube becomes model 2, which OrbitalProperty maps its MEP surface onto.
+	const { content: moldenContent, loading: moldenLoading } = useJobArtifact(
 		jobResultFiles.jobId,
 		"molden",
 		setError,
 	);
-	const { url: espUrl, loading: espLoading } = useJobArtifact(
+	const { content: espContent, loading: espLoading } = useJobArtifact(
 		jobResultFiles.jobId,
 		"esp",
 		setError,
 	);
-	const artifactsReady = Boolean(moldenUrl && espUrl);
+	const artifactsReady = Boolean(moldenContent && espContent);
 
 	const { viewerRef, viewerObj } = useJsmolViewer({
 		viewerObjId,
-		src: moldenUrl ?? "",
-		loadScript: artifactsReady ? `load FILES "${moldenUrl}" "${espUrl}";` : "",
+		src: "",
+		loadScript: artifactsReady
+			? [
+					// Current Jmol releases only populate moData.mos when the
+					// Molden reader receives a filter. "*" retains every orbital.
+					jmolInlineLoadScript("molden", moldenContent as string, { filter: "*" }),
+					jmolInlineLoadScript("esp", espContent as string, { append: true }),
+				].join("\n")
+			: "",
 		onReadyScript: `reset; zoom 50;`,
 		skip: loading || moldenLoading || espLoading || !artifactsReady,
+		expectedLoadCount: 2,
+		onLoadError: setError,
 	});
 
 	const { open, accordionOpen, toggle, handleAccordionChange } = useResultDrawer({
@@ -121,10 +130,26 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	useEffect(() => {
 		if (!viewerObj) return;
 
+		const models = window.Jmol.getPropertyAsArray(viewerObj, "auxiliaryInfo.models");
+		if (!Array.isArray(models) || models.length !== 2) {
+			setOrbitals([]);
+			setSelectedOrbital(null);
+			setError("JSmol did not load both the Molden and ESP molecular-orbital models.");
+			return;
+		}
+
 		const mos = window.Jmol.getPropertyAsArray(
 			viewerObj,
 			"auxiliaryInfo.models[1].moData.mos", // models[1] map to loaded file 1
 		);
+
+		if (!Array.isArray(mos) || mos.length === 0) {
+			setOrbitals([]);
+			setSelectedOrbital(null);
+			setError("The Molden artifact loaded, but it did not contain readable orbital data.");
+			return;
+		}
+
 		const orbitalsArray: Orbital[] = mos.map((mo: any): Orbital => ({
 			index: mo.index,
 			energy: mo.energy,
@@ -134,7 +159,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 			type: mo.type,
 		}));
 		setOrbitals(orbitalsArray);
-	}, [viewerObj]);
+	}, [viewerObj, setError]);
 
 	const handleChangePage = (_: any, newPage: number) => setPage(newPage);
 
@@ -258,7 +283,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 						ariaId="panel4"
 						detailsSx={{ bgcolor: grey[50] }}
 					>
-						<PartialCharge frameNo={2} viewerObj={viewerObj} />
+						<PartialCharge frameNo={2} viewerObj={viewerObj} onError={setError} />
 					</ResultDrawerSection>
 				</ResultDrawer>
 			</Grid>
