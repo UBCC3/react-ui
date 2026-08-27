@@ -158,8 +158,9 @@ run; fix it with:
 npm run prepare
 ```
 
-This is per-clone. The hook itself lives in `.git/`, which is not tracked, so
-every new clone needs `npm ci` before the hook exists.
+This is per-clone. The tracked hook lives at `.husky/pre-commit`; `npm ci`
+generates Husky's shims under `.husky/_` and configures `core.hooksPath` for the
+clone.
 
 ### What the hook does
 
@@ -187,7 +188,7 @@ It does not run `type-check` or `build`. Both are whole-project and slow
 Before pushing, run the same checks CI does:
 
 ```bash
-npm run format:check && npm run lint && npm run type-check
+npm run format:check && npm run lint && npm run type-check && npm run build
 ```
 
 To bypass the hook deliberately, `git commit --no-verify`. That only moves the
