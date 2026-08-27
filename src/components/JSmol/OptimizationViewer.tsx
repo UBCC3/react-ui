@@ -81,8 +81,6 @@ const OptimizationViewer: React.FC<VibrationViewerProps> = ({
 		loadScript: trajectoryXyz ? jmolInlineLoadScript("trajectory", trajectoryXyz) : "",
 		onReadyScript: `zoom 50; connect auto;`,
 		skip: loading || trajectoryLoading || !trajectoryXyz,
-		expectedLoadCount: 1,
-		onLoadError: setError,
 	});
 
 	const { open, accordionOpen, toggle, handleAccordionChange } = useResultDrawer({

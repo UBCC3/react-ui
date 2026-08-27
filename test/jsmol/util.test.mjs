@@ -8,7 +8,7 @@ let util;
 before(async () => {
 	server = await createServer({
 		configFile: false,
-		server: { middlewareMode: true },
+		server: { middlewareMode: true, hmr: false },
 		appType: "custom",
 		optimizeDeps: { noDiscovery: true },
 	});
