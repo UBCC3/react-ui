@@ -12,7 +12,17 @@
 		"type-check": "tsc --noEmit",
 		"preview": "vite preview",
 		"format": "prettier --write .",
-		"format:check": "prettier --check ."
+		"format:check": "prettier --check .",
+		"prepare": "husky"
+	},
+	"lint-staged": {
+		"*.{js,jsx,ts,tsx}": [
+			"eslint --fix",
+			"prettier --write"
+		],
+		"*.{json,css,md,html,yml,yaml}": [
+			"prettier --write"
+		]
 	},
 	"dependencies": {
 		"@auth0/auth0-react": "^2.3.0",
@@ -43,6 +53,8 @@
 		"eslint-plugin-react-hooks": "^5.2.0",
 		"eslint-plugin-react-refresh": "^0.4.19",
 		"globals": "^16.0.0",
+		"husky": "^9.1.7",
+		"lint-staged": "^15.5.2",
 		"prettier": "^3.9.5",
 		"react-test-renderer": "19.1.0",
 		"typescript": "^6.0.3",
