@@ -19,7 +19,7 @@ interface UseJsmolViewerOptions {
 	 */
 	loadScript: string;
 	/**
-	 * Extra script run once the applet is ready and expected model loads complete.
+	 * Extra script run once the applet and its startup script are ready.
 	 */
 	onReadyScript?: string;
 	/**
@@ -33,21 +33,15 @@ interface UseJsmolViewerOptions {
 	 * left running in the background.
 	 */
 	cleanupOnChange?: boolean;
-	/**
-	 * Number of successful file-load callbacks required before exposing the
-	 * viewer object. Inline `load DATA` blocks each produce one callback.
-	 */
-	expectedLoadCount?: number;
-	/** Report a failed or timed-out JSmol model load to the owning viewer. */
-	onLoadError?: (message: string) => void;
 	onReady?: (viewerObj: any) => void;
 }
 
-const JSMOL_LOAD_TIMEOUT_MS = 30_000;
-
 /**
  * Initializes a JSmol applet inside a container div and exposes the
- * resulting viewer object once ready and its expected model loads complete.
+ * resulting viewer object once ready. For an inline `Info.script`, the
+ * installed JSmol runtime invokes `readyFunction` after the script has loaded
+ * its models. It does not emit `loadStructCallback` for `load DATA`, so callers
+ * validate the loaded model metadata after the viewer is published.
  *
  * Encapsulates the applet bootstrapping boilerplate (Info config, applet
  * mount, ready callback, optional teardown) that was previously duplicated
@@ -61,17 +55,13 @@ export function useJsmolViewer({
 	onReadyScript,
 	skip = false,
 	cleanupOnChange = false,
-	expectedLoadCount = 0,
-	onLoadError,
 	onReady,
 }: UseJsmolViewerOptions) {
 	const viewerRef = useRef<HTMLDivElement>(null);
 	const appletRef = useRef<any>(null);
 	const [viewerObj, setViewerObj] = useState<any>(null);
-	const onLoadErrorRef = useRef(onLoadError);
 	const onReadyRef = useRef(onReady);
 
-	onLoadErrorRef.current = onLoadError;
 	onReadyRef.current = onReady;
 
 	useEffect(() => {
@@ -79,64 +69,13 @@ export function useJsmolViewer({
 		if (!viewerRef.current) return;
 
 		let cancelled = false;
-		let loadFinished = false;
-		let readyViewerObj: any = null;
-		let successfulLoadCount = 0;
-		let loadTimeoutId: ReturnType<typeof setTimeout> | null = null;
-
-		const clearLoadTimeout = () => {
-			if (loadTimeoutId !== null) clearTimeout(loadTimeoutId);
-			loadTimeoutId = null;
-		};
-
-		const reportLoadFailure = (message: string) => {
-			if (cancelled || loadFinished) return;
-			loadFinished = true;
-			clearLoadTimeout();
-			setViewerObj(null);
-			onLoadErrorRef.current?.(message);
-		};
-
-		const publishViewerWhenLoaded = () => {
-			if (cancelled || loadFinished || !readyViewerObj) return;
-			if (successfulLoadCount < expectedLoadCount) return;
-
-			loadFinished = true;
-			clearLoadTimeout();
-			if (onReadyScript) window.Jmol.script(readyViewerObj, onReadyScript);
-			setViewerObj(readyViewerObj);
-			onReadyRef.current?.(readyViewerObj);
-		};
 
 		const jsmolIsReady = (obj: any) => {
 			if (cancelled || !obj) return;
 			appletRef.current = obj;
-			readyViewerObj = obj;
-			publishViewerWhenLoaded();
-		};
-
-		const jsmolLoadStruct = (
-			_appletName: string,
-			_url: string,
-			filename: string,
-			_modelName: string,
-			errorMessage: unknown,
-			status: number | string,
-		) => {
-			if (cancelled || loadFinished) return;
-
-			const numericStatus = Number(status);
-			const detail = typeof errorMessage === "string" ? errorMessage.trim() : "";
-			if (numericStatus === -1 || detail) {
-				const subject = filename ? ` ${filename}` : " the molecular data";
-				reportLoadFailure(`JSmol failed to load${subject}${detail ? `: ${detail}` : "."}`);
-				return;
-			}
-
-			// Status 0 is emitted when an existing model is zapped. Only status 3
-			// represents a successfully processed file.
-			if (numericStatus === 3) successfulLoadCount += 1;
-			publishViewerWhenLoaded();
+			if (onReadyScript) window.Jmol.script(obj, onReadyScript);
+			setViewerObj(obj);
+			onReadyRef.current?.(obj);
 		};
 
 		const Info = {
@@ -156,15 +95,7 @@ export function useJsmolViewer({
 			addSelectionOptions: false,
 			debug: false,
 			readyFunction: jsmolIsReady,
-			loadStructCallback: jsmolLoadStruct,
 		};
-
-		if (expectedLoadCount > 0) {
-			loadTimeoutId = setTimeout(
-				() => reportLoadFailure("JSmol timed out while loading the molecular data."),
-				JSMOL_LOAD_TIMEOUT_MS,
-			);
-		}
 
 		// JSmol enables an analytics tracker on any non-localhost page and fires
 		// it when the first applet is created, injecting a hidden iframe that
@@ -172,12 +103,13 @@ export function useJsmolViewer({
 		// contain job IDs, so clear it before the applet is built.
 		(window.Jmol as { _tracker?: unknown })._tracker = null;
 
-		window.Jmol.getApplet(viewerObjId, Info);
+		// getAppletHtml creates the applet internally when passed an id and Info.
+		// Calling getApplet first creates a second applet and can fire readiness
+		// callbacks twice.
 		viewerRef.current.innerHTML = window.Jmol.getAppletHtml(viewerObjId, Info);
 
 		return () => {
 			cancelled = true;
-			clearLoadTimeout();
 			if (!cleanupOnChange) return;
 
 			try {
@@ -194,7 +126,7 @@ export function useJsmolViewer({
 			appletRef.current = null;
 			setViewerObj(null);
 		};
-	}, [viewerObjId, src, loadScript, skip, cleanupOnChange, expectedLoadCount, onReadyScript]);
+	}, [viewerObjId, src, loadScript, skip, cleanupOnChange, onReadyScript]);
 
 	return { viewerRef, viewerObj, setViewerObj, appletRef };
 }
