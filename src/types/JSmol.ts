@@ -23,7 +23,7 @@ export interface JobError {
  * Artifact kinds the backend can serve from /jobs/{job_id}/artifacts/{kind}.
  * Mirrors ARTIFACT_FILES in the backend's asset_service.py.
  */
-export type JobArtifactKind = "input" | "trajectory" | "vib" | "molden" | "esp";
+export type JobArtifactKind = "input" | "trajectory" | "vib" | "molden" | "esp" | "scan";
 
 /** Payload of GET /jobs/{job_id}/result. */
 export interface JobResultPayload {

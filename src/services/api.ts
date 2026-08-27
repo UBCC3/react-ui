@@ -500,10 +500,6 @@ export const submitCustomCalculation = async (
 
 /**
  * Submits a bond/angle/dihedral scan job.
- *
- * NOTE: the backend endpoint does not exist yet. Expected shape mirrors the
- * other calculation endpoints: multipart form with either a file or a
- * structure_id, plus the scan specification as a JSON string.
  */
 export const submitBondAngleScan = async (
 	token: string,

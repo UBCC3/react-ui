@@ -34,6 +34,7 @@ import {
 	submitStandardAnalysisJob,
 } from "../../services/api";
 import { Structure } from "../../types";
+import { APP_BAR_HEIGHT } from "../../constants";
 import { grey } from "@mui/material/colors";
 
 export default function StandardAnalysis() {

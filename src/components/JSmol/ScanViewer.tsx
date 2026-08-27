@@ -23,11 +23,13 @@ import { grey } from "@mui/material/colors";
 import { Job, JobResult } from "../../types";
 import MolmakerLoading from "../custom/MolmakerLoading";
 import { useJsmolViewer } from "../../hooks/UseJsmolViewer";
+import { useJobArtifact } from "../../hooks/UseJobArtifact";
 import { useJobResult } from "../../hooks/UseJobResult";
 import { useResultDrawer } from "../../hooks/UseResultDrawer";
 import { ResultDrawer } from "../results/ResultDrawer";
 import { ResultDrawerSection } from "../results/ResultDrawerSection";
 import AddStructureToLibrary from "./AddStructureToLibrary";
+import { jmolInlineLoadScript } from "./util";
 
 /**
  * Generate accessibility props for a Material UI Tab.
@@ -81,10 +83,12 @@ const COORDINATE_LABELS: Record<string, string> = {
  * right-side drawer; selecting a point switches the displayed structure.
  */
 const ScanViewer: React.FC<ScanViewerProps> = ({ jobResultFiles, viewerObjId, setError }) => {
-	const xyzFileUrl = jobResultFiles.urls["scan"];
-	const resultURL = jobResultFiles.urls["result"];
-
-	const { result, loading } = useJobResult(resultURL, "bond angle scan", setError);
+	const { result, loading } = useJobResult(jobResultFiles.jobId, "bond angle scan", setError);
+	const { content: scanXyz, loading: scanLoading } = useJobArtifact(
+		jobResultFiles.jobId,
+		"scan",
+		setError,
+	);
 
 	// structure viewer & graph viewer tab
 	const [value, setValue] = useState<viewerTab>(viewerTab.structure);
@@ -98,10 +102,10 @@ const ScanViewer: React.FC<ScanViewerProps> = ({ jobResultFiles, viewerObjId, se
 
 	const { viewerRef, viewerObj } = useJsmolViewer({
 		viewerObjId,
-		src: xyzFileUrl,
-		loadScript: `load "XYZ::${xyzFileUrl}";`,
+		src: "",
+		loadScript: scanXyz ? jmolInlineLoadScript("scan", scanXyz) : "",
 		onReadyScript: `zoom 50; connect auto; set measurementUnits angstroms; set measurementLabels on; set measureAllModels TRUE;`,
-		skip: loading || value !== viewerTab.structure,
+		skip: loading || scanLoading || !scanXyz || value !== viewerTab.structure,
 		cleanupOnChange: true,
 	});
 
@@ -162,7 +166,7 @@ const ScanViewer: React.FC<ScanViewerProps> = ({ jobResultFiles, viewerObjId, se
 		);
 	}, [viewerObj, showAtomNumbers, value]);
 
-	if (loading) {
+	if (loading || scanLoading) {
 		return <MolmakerLoading />;
 	}
 

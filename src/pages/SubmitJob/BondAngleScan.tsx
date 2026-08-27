@@ -24,15 +24,16 @@ import {
 	MolmakerPageTitle,
 } from "../../components/custom";
 import {
-	getLibraryStructures,
-	getStructureDataFromS3,
+	getLibraryStructuresPaged,
+	getStructureContent,
 	AddAndUploadStructureToS3,
 	getChemicalFormula,
+	getMultiplicities,
 	getStructuresTags,
 	submitBondAngleScan,
 } from "../../services/api";
 import { Structure } from "../../types";
-import { APP_BAR_HEIGHT, unpairedElectronOptions } from "../../constants";
+import { APP_BAR_HEIGHT } from "../../constants";
 import { grey } from "@mui/material/colors";
 import { parseXyzAtoms } from "../../utils";
 import { useScanSpec } from "../../hooks/UseScanSpec";
@@ -75,6 +76,7 @@ export default function BondAngleScan() {
 	// state for calculation parameters
 	const [charge, setCharge] = useState<number>(0);
 	const [multiplicity, setMultiplicity] = useState<number>(1);
+	const [multiplicities, setMultiplicities] = useState<Record<string, number>>({});
 
 	// available tag options shown in the autocomplete input
 	const [options, setOptions] = useState<string[]>([]);
@@ -109,12 +111,12 @@ export default function BondAngleScan() {
 			try {
 				setLoading(true);
 				const token = await getAccessTokenSilently();
-				const response = await getLibraryStructures(token);
+				const response = await getLibraryStructuresPaged(token);
 				if (response.error) {
 					setError("Failed to fetch library. Please try again later.");
 					return;
 				}
-				let res = response.data;
+				let res = response.data ?? [];
 				res = [
 					{
 						structure_id: "",
@@ -133,6 +135,21 @@ export default function BondAngleScan() {
 			}
 		};
 
+		const fetchMultiplicities = async () => {
+			try {
+				const token = await getAccessTokenSilently();
+				const response = await getMultiplicities(token);
+				if (response.error) {
+					setError("Failed to load multiplicities. Please try again later.");
+					return;
+				}
+				setMultiplicities(response.data ?? {});
+			} catch (err) {
+				setError("Failed to load multiplicities. Please try again later.");
+				console.error("Failed to load multiplicities", err);
+			}
+		};
+
 		const fetchTags = async () => {
 			try {
 				const token = await getAccessTokenSilently();
@@ -147,6 +164,7 @@ export default function BondAngleScan() {
 
 		setLoading(true);
 		loadLibraryStructures();
+		fetchMultiplicities();
 		fetchTags();
 	}, [getAccessTokenSilently]);
 
@@ -179,12 +197,12 @@ export default function BondAngleScan() {
 		try {
 			setLoading(true);
 			const token = await getAccessTokenSilently();
-			const response = await getStructureDataFromS3(structure_id, token);
+			const response = await getStructureContent(structure_id, token);
 			if (response.error) {
 				setError("Failed to load structure. Please try again or select a different molecule.");
 				return;
 			}
-			setStructureData(response.data);
+			setStructureData(response.data ?? "");
 		} catch (err) {
 			setError("Failed to load structure. Please try again or select a different molecule.");
 			console.error("Failed to load structure", err);
@@ -435,9 +453,9 @@ export default function BondAngleScan() {
 												onChange={(_event: unknown, val: string) =>
 													setMultiplicity(parseInt(val, 10))
 												}
-												options={unpairedElectronOptions.map((o) => ({
-													value: String(o.multiplicity),
-													label: o.label,
+												options={Object.entries(multiplicities).map(([label, value]) => ({
+													value: String(value),
+													label,
 												}))}
 												row
 											/>
