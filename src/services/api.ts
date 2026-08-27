@@ -499,6 +499,54 @@ export const submitCustomCalculation = async (
 };
 
 /**
+ * Submits a bond/angle/dihedral scan job.
+ */
+export const submitBondAngleScan = async (
+	token: string,
+	params: {
+		file?: File | Blob;
+		structureId?: string;
+		charge: number;
+		multiplicity: number;
+		scan: {
+			coordinate: "bond" | "angle" | "dihedral";
+			atoms: number[];
+			relax: boolean;
+			values?: number[];
+			min?: number;
+			max?: number;
+			steps?: number;
+			spacing?: number;
+		};
+		jobName: string;
+		jobNotes?: string;
+		tags?: string[];
+	},
+): Promise<Response> => {
+	const formData = new FormData();
+	if (params.file) formData.append("file", params.file);
+	if (params.structureId) formData.append("structure_id", params.structureId);
+	formData.append("charge", String(params.charge));
+	formData.append("multiplicity", String(params.multiplicity));
+	formData.append("scan", JSON.stringify(params.scan));
+	formData.append("job_name", params.jobName);
+	if (params.jobNotes) formData.append("job_notes", params.jobNotes);
+	(params.tags ?? []).forEach((t) => formData.append("tags", t));
+
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.post("/calculation/workflow/bond_angle_scan", formData);
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error("Bond/angle scan submission failed", error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+/**
  * Converts a base64 data URL into a Blob object.
  * This is used to upload generated structure images as normal files.
  */

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import {
@@ -22,22 +22,24 @@ import {
 	MolmakerLoading,
 	MolmakerAlert,
 	MolmakerPageTitle,
-	MolmakerConfirm,
 } from "../../components/custom";
 import {
 	getLibraryStructuresPaged,
 	getStructureContent,
 	AddAndUploadStructureToS3,
 	getChemicalFormula,
-	getStructuresTags,
 	getMultiplicities,
-	submitStandardAnalysisJob,
+	getStructuresTags,
+	submitBondAngleScan,
 } from "../../services/api";
 import { Structure } from "../../types";
 import { APP_BAR_HEIGHT } from "../../constants";
 import { grey } from "@mui/material/colors";
+import { parseXyzAtoms } from "../../utils";
+import { useScanSpec } from "../../hooks/UseScanSpec";
+import ScanSpecFields from "../../components/ScanSpecFields";
 
-export default function StandardAnalysis() {
+export default function BondAngleScan() {
 	// used to redirect the user after the job is successfully submitted
 	const navigate = useNavigate();
 	const { getAccessTokenSilently } = useAuth0();
@@ -49,6 +51,7 @@ export default function StandardAnalysis() {
 
 	// state for structure preview
 	const [structureData, setStructureData] = useState<string>("");
+	const [showAtomNumbers, setShowAtomNumbers] = useState<boolean>(true);
 
 	// state for basic job information
 	const [jobName, setJobName] = useState<string>("");
@@ -73,17 +76,20 @@ export default function StandardAnalysis() {
 	// state for calculation parameters
 	const [charge, setCharge] = useState<number>(0);
 	const [multiplicity, setMultiplicity] = useState<number>(1);
-	// Unpaired electron count mapped to spin multiplicity, from /enums/multiplicities.
 	const [multiplicities, setMultiplicities] = useState<Record<string, number>>({});
-	const [isTransitionState, setIsTransitionState] = useState<boolean>(false);
 
 	// available tag options shown in the autocomplete input
 	const [options, setOptions] = useState<string[]>([]);
 
 	// structure preview snapshot confirm
-	const [openConfirmImage, setOpenConfirmImage] = useState<boolean>(false);
 	const [submitConfirmed, setSubmitConfirmed] = useState(false);
 	const [structureImageData, setStructureImageData] = useState<string>("");
+
+	// The scan specification and its validation are shared with the custom job
+	// page; only the level of theory differs, and a workflow scan does not
+	// expose one.
+	const atomOptions = useMemo(() => parseXyzAtoms(structureData), [structureData]);
+	const scan = useScanSpec(atomOptions);
 
 	/**
 	 * Continues job submission after the molecule preview image has been captured.
@@ -101,7 +107,6 @@ export default function StandardAnalysis() {
 
 	// fetch library
 	useEffect(() => {
-		// Fetch structures saved in the user's molecule l
 		const loadLibraryStructures = async () => {
 			try {
 				setLoading(true);
@@ -130,20 +135,21 @@ export default function StandardAnalysis() {
 			}
 		};
 
-		// Fetch the selectable spin states so the range lives only on the backend
 		const fetchMultiplicities = async () => {
 			try {
 				const token = await getAccessTokenSilently();
 				const response = await getMultiplicities(token);
-				if (response.data) {
-					setMultiplicities(response.data);
+				if (response.error) {
+					setError("Failed to load multiplicities. Please try again later.");
+					return;
 				}
+				setMultiplicities(response.data ?? {});
 			} catch (err) {
-				console.error("Failed to fetch multiplicities", err);
+				setError("Failed to load multiplicities. Please try again later.");
+				console.error("Failed to load multiplicities", err);
 			}
 		};
 
-		// Fetch existing structure tags for autocomplete suggestions
 		const fetchTags = async () => {
 			try {
 				const token = await getAccessTokenSilently();
@@ -156,11 +162,10 @@ export default function StandardAnalysis() {
 			}
 		};
 
-		// Load all required data for the form
 		setLoading(true);
 		loadLibraryStructures();
-		fetchTags();
 		fetchMultiplicities();
+		fetchTags();
 	}, [getAccessTokenSilently]);
 
 	// Handle switching between upload / library
@@ -178,13 +183,6 @@ export default function StandardAnalysis() {
 		setStructureData("");
 		setError(null);
 	};
-
-	// const handleFileChange = async (text, f) => {
-	// 	setFile(f);
-	// 	setSelectedStructure('');
-	// 	setStructureData(text);
-	// 	setError(null);
-	// };
 
 	// Handles selecting a molecule from the user's library
 	const handleLibrarySelect = async (structure_id: string) => {
@@ -218,7 +216,6 @@ export default function StandardAnalysis() {
 		setStructureData(data);
 		setFile(file);
 
-		// Only .xyz files are accepted for this workflow
 		if (file && file.name.endsWith(".xyz")) {
 			try {
 				const token = await getAccessTokenSilently();
@@ -242,15 +239,22 @@ export default function StandardAnalysis() {
 		let structureIdToUse = selectedStructure;
 		const uploadFile = file;
 
-		// Validate upload mode
+		if (!jobName) {
+			setError("Please enter a job name.");
+			return;
+		}
 		if (source === "upload" && !uploadFile) {
 			setError("Please upload a structure file.");
 			return;
 		}
-
-		// Validate library mode
 		if (source === "library" && !structureIdToUse) {
 			setError("Please select a molecule from the library.");
+			return;
+		}
+
+		const scanError = scan.validateScan();
+		if (scanError) {
+			setError(scanError);
 			return;
 		}
 
@@ -275,26 +279,25 @@ export default function StandardAnalysis() {
 				structureIdToUse = structureResponse.data.structure_id;
 			}
 
-			// One call creates the job and hands it to the backend orchestrator.
-			const response = await submitStandardAnalysisJob(token, {
+			const response = await submitBondAngleScan(token, {
 				file: source === "upload" && uploadFile ? uploadFile : undefined,
 				structureId: source === "library" ? structureIdToUse : undefined,
 				charge,
 				multiplicity,
-				optimizationType: isTransitionState ? "ts" : "ground",
+				scan: scan.buildScanSpec(),
 				jobName,
-				jobNotes: jobNotes ?? undefined,
+				jobNotes: jobNotes || undefined,
 				tags: jobTags,
 			});
 			if (response.error) {
 				throw new Error(response.error);
 			}
 
-			// Return to the home page after successful submission
+			setSubmitAttempted(false);
 			navigate("/");
 		} catch (err) {
-			setError("Submit failed. Please check your input and try again.");
-			console.error("Submit failed:", err);
+			setError("Failed to submit job. Please try again later.");
+			console.error("Failed to submit job", err);
 		} finally {
 			setLoading(false);
 		}
@@ -304,42 +307,27 @@ export default function StandardAnalysis() {
 	const handleSubmitJob = (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 
-		// If the user wants to save an uploaded structure, first ask them
-		// to confirm the molecule preview orientation for the snapshot
+		// If the user wants to save an uploaded structure, first capture the
+		// molecule preview snapshot, then continue in the effect above.
 		if (uploadStructure && source === "upload") {
-			setOpenConfirmImage(true);
+			setSubmitConfirmed(true);
 			return;
 		}
 
-		// Otherwise, submit immediately
 		performSubmitJob();
 	};
 
-	// Show loading screen while initial data or submission is in progress
 	if (loading) {
 		return <MolmakerLoading />;
 	}
 
 	return (
 		<Box p={4} className="bg-stone-100" sx={{ minHeight: `calc(100vh - 64px)` }}>
-			<MolmakerConfirm
-				open={openConfirmImage}
-				onClose={() => setOpenConfirmImage(false)}
-				textToShow={
-					<>
-						Confirm the current zoom and orientation to capture the structure image.
-						<br />
-						This view will be captured and saved as the snapshot for this structure.
-						<br />
-						You can scroll to zoom and drag to rotate the molecule before confirming.
-					</>
-				}
-				onConfirm={async () => {
-					setSubmitConfirmed(true);
-					setOpenConfirmImage(false);
-				}}
+			<MolmakerPageTitle
+				title="Bond/Angle Scan"
+				subtitle="Vary a bond, angle, or dihedral across a range of values."
 			/>
-			<MolmakerPageTitle title="Standard Analysis" subtitle="Submit a job for standard analysis" />
+
 			<Grid container spacing={3} alignItems="flex-start">
 				<Grid size={{ xs: 12, md: 6 }}>
 					<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50] }}>
@@ -347,11 +335,13 @@ export default function StandardAnalysis() {
 							<Grid container direction="column" spacing={2}>
 								{/* Error message */}
 								{error && <MolmakerAlert text={error} severity="error" outline="error" />}
+
 								{/* Info message */}
 								<Grid sx={{ mx: 2, mt: 3 }}>
 									<MolmakerSectionHeader text="Required fields are marked with *" />
 								</Grid>
-								{/* Job name */}
+
+								{/* Job name, notes, tags */}
 								<Grid sx={{ mx: 2 }}>
 									<MolmakerTextField
 										label="Job Name"
@@ -393,7 +383,9 @@ export default function StandardAnalysis() {
 										sx={{ mt: 2 }}
 									/>
 								</Grid>
+
 								<Divider />
+
 								{/* Molecule selector */}
 								<MolmakerMoleculeSelector
 									source={source as "upload" | "library"}
@@ -417,34 +409,37 @@ export default function StandardAnalysis() {
 									onMoleculeNotesChange={(e: React.ChangeEvent<HTMLInputElement>) =>
 										setStructureNotes(e.target.value)
 									}
-									submitAttempted={submitAttempted}
 									structureTags={structureTags}
-									onStructureTagsChange={(_: unknown, newValue: string[]) => {
-										setStructureTags(newValue.filter((tag) => tag.trim() !== ""));
-									}}
+									onStructureTagsChange={(_event: React.SyntheticEvent, value: string[]) =>
+										setStructureTags(value)
+									}
+									submitAttempted={submitAttempted}
 								/>
+
 								<Divider />
+
+								<ScanSpecFields
+									scan={scan}
+									atomOptions={atomOptions}
+									submitAttempted={submitAttempted}
+									showAtomNumbers={showAtomNumbers}
+									onShowAtomNumbersChange={setShowAtomNumbers}
+								/>
+
+								<Divider />
+
 								{/* Calculation parameters */}
 								<Box sx={{ mx: 2 }}>
-									<Grid>
-										<MolmakerSectionHeader
-											text="Calculation Parameters"
-											sx={{ fontWeight: "bold", mb: 3 }}
-										/>
-									</Grid>
-									<Grid container spacing={2} sx={{ mt: 2 }}>
-										<Grid size={12}>
+									<Grid container direction={{ xs: "column", md: "row" }} spacing={2}>
+										<Grid size={{ xs: 12, md: 6 }} sx={{ pr: { xs: 0, md: 3 } }}>
+											<MolmakerSectionHeader text="What is the total charge?" sx={{ mb: 2 }} />
 											<MolmakerTextField
 												label="Charge"
 												type="number"
-												value={charge}
-												onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-													const val = e.target.value;
-													if (/^-?\d*$/.test(val)) {
-														setCharge(parseInt(val));
-													}
-												}}
-												required
+												value={String(charge)}
+												onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+													setCharge(parseInt(e.target.value, 10) || 0)
+												}
 											/>
 										</Grid>
 										<Grid size={{ xs: 12, md: 6 }} sx={{ pr: { xs: 0, md: 3 } }}>
@@ -465,33 +460,9 @@ export default function StandardAnalysis() {
 												row
 											/>
 										</Grid>
-										<Grid
-											size={{ xs: 12, md: 6 }}
-											sx={{
-												borderLeft: { xs: 0, md: 1 },
-												borderColor: "divider",
-												pl: { xs: 0, md: 3 },
-											}}
-										>
-											<MolmakerSectionHeader
-												text="Is the structure a transition state?"
-												sx={{ mb: 1 }}
-											/>
-											<MolmakerRadioGroup
-												name="isTransitionState"
-												value={isTransitionState ? "yes" : "no"}
-												onChange={(_event: unknown, val: string) =>
-													setIsTransitionState(val === "yes")
-												}
-												options={[
-													{ value: "no", label: "No" },
-													{ value: "yes", label: "Yes" },
-												]}
-												row
-											/>
-										</Grid>
 									</Grid>
 								</Box>
+
 								{/* Submit button */}
 								<Grid sx={{ mx: 2, mb: 3 }}>
 									<Box display="flex" alignItems="center" gap={1}>
@@ -503,9 +474,9 @@ export default function StandardAnalysis() {
 											fullWidth
 											sx={{ textTransform: "none", borderRadius: 2 }}
 										>
-											Run Standard Analysis
+											Run Bond/Angle Scan
 										</Button>
-										<Tooltip title="This will run a three step calculation: Geometry Optimization, Vibrational Frequency Analysis, and Molecular Orbital Analysis.">
+										<Tooltip title="This builds a structure at each value in the range and runs a molecular orbital calculation on it. With relaxation enabled, every structure is also minimised while the scanned coordinate is held fixed.">
 											<IconButton>
 												<InfoOutline />
 											</IconButton>
@@ -516,6 +487,7 @@ export default function StandardAnalysis() {
 						</Box>
 					</Paper>
 				</Grid>
+
 				<Grid
 					size={{ xs: 12, md: 6 }}
 					sx={{
@@ -529,6 +501,9 @@ export default function StandardAnalysis() {
 						source={source}
 						maxHeight={450}
 						submitConfirmed={submitConfirmed}
+						showAtomNumbers={showAtomNumbers}
+						highlightAtoms={scan.parsedAtoms}
+						highlightKind={scan.coordinate}
 						setStructureImageData={setStructureImageData}
 					/>
 				</Grid>

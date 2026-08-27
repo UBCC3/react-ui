@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -41,6 +41,10 @@ import {
 } from "../../services/api";
 import { Structure } from "../../types";
 import { getChemicalFormula } from "../../services/api";
+import { APP_BAR_HEIGHT } from "../../constants";
+import { useScanSpec } from "../../hooks/UseScanSpec";
+import ScanSpecFields from "../../components/ScanSpecFields";
+import { parseXyzAtoms } from "../../utils/parseXyz";
 import * as React from "react";
 import { Keyword, KeywordEditor } from "./KeywordEditor";
 import { grey } from "@mui/material/colors";
@@ -67,6 +71,7 @@ const AdvancedAnalysis = () => {
 
 	// state for structure preview
 	const [structureData, setStructureData] = useState<string>("");
+	const [showAtomNumbers, setShowAtomNumbers] = useState<boolean>(true);
 
 	// state for basic job information
 	const [jobName, setJobName] = useState<string>("");
@@ -91,6 +96,13 @@ const AdvancedAnalysis = () => {
 	// state for calculation parameters
 	const [charge, setCharge] = useState<number>(0);
 	const [calculationType, setCalculationType] = useState<string>("energy");
+
+	// Scan is the one calculation type that needs a specification beyond the
+	// level of theory. The fields only render when it is selected.
+	const atomOptions = useMemo(() => parseXyzAtoms(structureData), [structureData]);
+	const scan = useScanSpec(atomOptions);
+	const isScan = calculationType === "scan";
+
 	const [multiplicity, setMultiplicity] = useState<number>(1);
 	// Unpaired electron count mapped to spin multiplicity, from /enums/multiplicities.
 	const [multiplicities, setMultiplicities] = useState<Record<string, number>>({});
@@ -321,6 +333,13 @@ const AdvancedAnalysis = () => {
 			setError("Please upload a file");
 			return;
 		}
+		if (isScan) {
+			const scanError = scan.validateScan();
+			if (scanError) {
+				setError(scanError);
+				return;
+			}
+		}
 		if (source === "library" && !structureIdToUse) {
 			setError("Please select a molecule from the library");
 			return;
@@ -328,11 +347,14 @@ const AdvancedAnalysis = () => {
 
 		// Custom keywords travel as a JSON file alongside the calculation.
 		let keywordsJsonFile: File | undefined = undefined;
-		if (keywords.length > 0) {
+		// A scan sends its specification through the same keywords file the
+		// cluster already stages, so no extra transport is needed.
+		if (keywords.length > 0 || isScan) {
 			const payload = keywords.reduce<Record<string, any>>((obj, { key, value }) => {
 				obj[key] = value;
 				return obj;
 			}, {});
+			if (isScan) Object.assign(payload, scan.buildScanSpec());
 			const keywordsBlob = new Blob([JSON.stringify(payload)], {
 				type: "application/json",
 			});
@@ -428,7 +450,7 @@ const AdvancedAnalysis = () => {
 				}}
 			/>
 			<MolmakerPageTitle title="Custom Job" subtitle="Submit a custom job for a molecule" />
-			<Grid container spacing={3}>
+			<Grid container spacing={3} alignItems="flex-start">
 				<Grid size={{ xs: 12, md: 6 }}>
 					<Paper elevation={3} sx={{ borderRadius: 2, bgcolor: grey[50] }}>
 						<Box component="form" onSubmit={handleSubmitJob}>
@@ -649,6 +671,21 @@ const AdvancedAnalysis = () => {
 										</Grid>
 									</Grid>
 								</Box>
+
+								{/* Scan specification, only for scan calculations. */}
+								{isScan && (
+									<>
+										<Divider />
+										<ScanSpecFields
+											scan={scan}
+											atomOptions={atomOptions}
+											submitAttempted={submitAttempted}
+											showAtomNumbers={showAtomNumbers}
+											onShowAtomNumbersChange={setShowAtomNumbers}
+										/>
+									</>
+								)}
+
 								{/* Calculation Keywords */}
 								<Accordion disableGutters elevation={0} sx={{ bgcolor: "transparent", px: 2 }}>
 									<AccordionSummary
@@ -695,13 +732,22 @@ const AdvancedAnalysis = () => {
 						</Box>
 					</Paper>
 				</Grid>
-				<Grid size={{ xs: 12, md: 6 }}>
+				<Grid
+					size={{ xs: 12, md: 6 }}
+					sx={{
+						position: { md: "sticky" },
+						top: { md: `${APP_BAR_HEIGHT + 16}px` },
+					}}
+				>
 					<MolmakerMoleculePreview
 						data={structureData}
 						format="xyz"
 						source={source}
-						sx={{ maxHeight: 437 }}
+						maxHeight={437}
 						submitConfirmed={submitConfirmed}
+						showAtomNumbers={isScan && showAtomNumbers}
+						highlightAtoms={isScan ? scan.parsedAtoms : []}
+						highlightKind={scan.coordinate}
 						setStructureImageData={setStructureImageData}
 					/>
 				</Grid>

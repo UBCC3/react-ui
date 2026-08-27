@@ -14,6 +14,7 @@ import {
 	OptimizationViewer,
 	StandardAnalysisViewer,
 	EnergyViewer,
+	ScanViewer,
 } from "../components/JSmol";
 import { DrawerWidthProvider, useDrawerWidth } from "../contexts/DrawerWidthContext";
 import JobResultHeader from "../components/JSmol/JobResultHeader";
@@ -189,6 +190,19 @@ const ResultPageContent = ({
 					viewerObjId={"JSmolStandardAnalysisViewer"}
 					setError={setError}
 				/>
+			)}
+
+			{/* Render the scan viewer for bond/angle/dihedral scan jobs. */}
+			{job && job.calculation_type === "scan" && (
+				<>
+					<JobResultHeader job={job} />
+					<ScanViewer
+						job={job}
+						jobResultFiles={jobResultFiles!}
+						viewerObjId={"JSmolApplet1"}
+						setError={setError}
+					/>
+				</>
 			)}
 		</Box>
 	);

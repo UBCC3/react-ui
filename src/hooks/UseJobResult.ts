@@ -6,6 +6,7 @@ const WORKFLOW_KEYS = [
 	"geometric optimization",
 	"molecular orbitals",
 	"vibrational frequencies",
+	"bond angle scan",
 ] as const;
 type WorkflowSection = (typeof WORKFLOW_KEYS)[number];
 
