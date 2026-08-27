@@ -6,6 +6,8 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "vite build",
+		"test": "node --test test/jsmol/util.test.mjs",
+		"test:jsmol": "./scripts/verify-jsmol.sh",
 		"lint": "eslint .",
 		"type-check": "tsc --noEmit",
 		"preview": "vite preview",

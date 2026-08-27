@@ -26,17 +26,25 @@ export const containsJmolDataTerminator = (content: string): boolean =>
  * fetch them by URL the way it did with presigned S3 links. Embedding the
  * content in the load script is the supported alternative.
  *
- * @param name - Block label. Only has to be unique within the script.
+ * @param name - Model identifier. Only has to be unique within the script.
  * @param content - Raw artifact text, such as an xyz or molden file.
  * @param append - Add the content as another model instead of replacing the
  *   current one. Use this to reproduce a multi-file `load FILES`, where model
  *   order determines which frame each file becomes.
+ * @param filter - Optional Jmol file-reader filter. Passing `"*"` is required
+ *   for current Jmol releases to retain all Molden molecular-orbital data.
  */
 export const jmolInlineLoadScript = (
 	name: string,
 	content: string,
-	{ append = false }: { append?: boolean } = {},
-): string => `load ${append ? "APPEND " : ""}DATA "${name}"\n${content}\nend "${name}";`;
+	{ append = false, filter }: { append?: boolean; filter?: string } = {},
+): string => {
+	const label = `${append ? "append" : "model"} ${name}`;
+	const prepareAppend = append ? "set appendNew true;\n" : "";
+	const filterClause = filter ? ` FILTER "${filter}"` : "";
+
+	return `${prepareAppend}load DATA "${label}"\n${content}\nend "${label}"${filterClause};`;
+};
 
 /**
  * Fetch a raw file from an S3 presigned URL.

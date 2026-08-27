@@ -79,12 +79,16 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 		src: "",
 		loadScript: artifactsReady
 			? [
-					jmolInlineLoadScript("molden", moldenContent as string),
+					// Current Jmol releases only populate moData.mos when the
+					// Molden reader receives a filter. "*" retains every orbital.
+					jmolInlineLoadScript("molden", moldenContent as string, { filter: "*" }),
 					jmolInlineLoadScript("esp", espContent as string, { append: true }),
 				].join("\n")
 			: "",
 		onReadyScript: `reset; zoom 50;`,
 		skip: loading || moldenLoading || espLoading || !artifactsReady,
+		expectedLoadCount: 2,
+		onLoadError: setError,
 	});
 
 	const { open, accordionOpen, toggle, handleAccordionChange } = useResultDrawer({
@@ -126,15 +130,23 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 	useEffect(() => {
 		if (!viewerObj) return;
 
+		const models = window.Jmol.getPropertyAsArray(viewerObj, "auxiliaryInfo.models");
+		if (!Array.isArray(models) || models.length !== 2) {
+			setOrbitals([]);
+			setSelectedOrbital(null);
+			setError("JSmol did not load both the Molden and ESP molecular-orbital models.");
+			return;
+		}
+
 		const mos = window.Jmol.getPropertyAsArray(
 			viewerObj,
 			"auxiliaryInfo.models[1].moData.mos", // models[1] map to loaded file 1
 		);
 
-		// Jmol returns a non-array when the molden did not load, or loaded
-		// without orbital data. Show an empty list rather than throwing.
-		if (!Array.isArray(mos)) {
+		if (!Array.isArray(mos) || mos.length === 0) {
 			setOrbitals([]);
+			setSelectedOrbital(null);
+			setError("The Molden artifact loaded, but it did not contain readable orbital data.");
 			return;
 		}
 
@@ -147,7 +159,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 			type: mo.type,
 		}));
 		setOrbitals(orbitalsArray);
-	}, [viewerObj]);
+	}, [viewerObj, setError]);
 
 	const handleChangePage = (_: any, newPage: number) => setPage(newPage);
 
@@ -271,7 +283,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 						ariaId="panel4"
 						detailsSx={{ bgcolor: grey[50] }}
 					>
-						<PartialCharge frameNo={2} viewerObj={viewerObj} />
+						<PartialCharge frameNo={2} viewerObj={viewerObj} onError={setError} />
 					</ResultDrawerSection>
 				</ResultDrawer>
 			</Grid>

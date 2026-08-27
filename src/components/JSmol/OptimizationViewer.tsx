@@ -81,6 +81,8 @@ const OptimizationViewer: React.FC<VibrationViewerProps> = ({
 		loadScript: trajectoryXyz ? jmolInlineLoadScript("trajectory", trajectoryXyz) : "",
 		onReadyScript: `zoom 50; connect auto;`,
 		skip: loading || trajectoryLoading || !trajectoryXyz,
+		expectedLoadCount: 1,
+		onLoadError: setError,
 	});
 
 	const { open, accordionOpen, toggle, handleAccordionChange } = useResultDrawer({
@@ -109,10 +111,10 @@ const OptimizationViewer: React.FC<VibrationViewerProps> = ({
 
 		const models = window.Jmol.getPropertyAsArray(viewerObj, "auxiliaryInfo.models");
 
-		// Jmol returns a non-array when nothing loaded. Render an empty table
-		// rather than throwing during render.
 		if (!Array.isArray(models)) {
 			setIterations([]);
+			setSelectedIteration(null);
+			setError("The optimization trajectory could not be read by JSmol.");
 			return;
 		}
 
@@ -135,8 +137,15 @@ const OptimizationViewer: React.FC<VibrationViewerProps> = ({
 			];
 		});
 
+		if (parsedIterations.length === 0) {
+			setIterations([]);
+			setSelectedIteration(null);
+			setError("The optimization trajectory did not contain readable iteration metadata.");
+			return;
+		}
+
 		setIterations(parsedIterations);
-	}, [viewerObj]);
+	}, [viewerObj, setError]);
 
 	if (loading) {
 		return <MolmakerLoading />;

@@ -54,6 +54,8 @@ const EnergyViewer: React.FC<EnergyViewerProps> = ({
 		loadScript: inputXyz ? jmolInlineLoadScript("input", inputXyz) : "",
 		onReadyScript: `zoom 50; connect auto`,
 		skip: loading || inputLoading || !inputXyz,
+		expectedLoadCount: 1,
+		onLoadError: setError,
 	});
 
 	const { open, accordionOpen, toggle, handleAccordionChange } = useResultDrawer({
@@ -105,7 +107,7 @@ const EnergyViewer: React.FC<EnergyViewerProps> = ({
 					ariaId="panel4"
 					detailsSx={{ bgcolor: "grey.50" }}
 				>
-					<PartialCharge frameNo={2} viewerObj={viewerObj} />
+					<PartialCharge frameNo={2} viewerObj={viewerObj} onError={setError} />
 				</ResultDrawerSection>
 			</ResultDrawer>
 		</Grid>

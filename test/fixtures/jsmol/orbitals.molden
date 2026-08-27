@@ -1,0 +1,26 @@
+[Molden Format]
+[Atoms] (AU)
+O 1 8 0.0 0.0 -1.1861683465
+O 2 8 0.0 0.0 1.1861683465
+[GTO]
+1 0
+s 1 1.00
+ 1.0 1.0
+
+2 0
+s 1 1.00
+ 1.0 1.0
+
+[MO]
+Sym= SigmaG
+Ene= -0.5
+Spin= Alpha
+Occup= 2.0
+1 0.70710678
+2 0.70710678
+Sym= SigmaU
+Ene= 0.25
+Spin= Alpha
+Occup= 0.0
+1 0.70710678
+2 -0.70710678

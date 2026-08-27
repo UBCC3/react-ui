@@ -32,4 +32,27 @@ React UI for MolMaker
    
    ```bash
    npm run dev
+   ```
+
+## JSmol result-viewer checks
+
+Run the fast TypeScript regression tests with:
+
+```bash
+npm test
+```
+
+Run the headless Molden/ESP integration check with:
+
+```bash
+npm run test:jsmol
+```
+
+The first integration-test run downloads and verifies the pinned Jmol runtime
+and requires Java, `curl`, and `unzip`. To check actual job artifacts instead of
+the committed fixtures, pass their paths after `--`:
+
+```bash
+npm run test:jsmol -- /path/to/orbitals.molden /path/to/ESP.cube
+```
    
