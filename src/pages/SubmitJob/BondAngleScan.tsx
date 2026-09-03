@@ -296,7 +296,9 @@ export default function BondAngleScan() {
 			setSubmitAttempted(false);
 			navigate("/");
 		} catch (err) {
-			setError("Failed to submit job. Please try again later.");
+			setError(
+				err instanceof Error ? err.message : "Failed to submit job. Please try again later.",
+			);
 			console.error("Failed to submit job", err);
 		} finally {
 			setLoading(false);
