@@ -293,7 +293,11 @@ export default function StandardAnalysis() {
 			// Return to the home page after successful submission
 			navigate("/");
 		} catch (err) {
-			setError("Submit failed. Please check your input and try again.");
+			setError(
+				err instanceof Error
+					? err.message
+					: "Submit failed. Please check your input and try again.",
+			);
 			console.error("Submit failed:", err);
 		} finally {
 			setLoading(false);
