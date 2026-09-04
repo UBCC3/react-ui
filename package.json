@@ -4,8 +4,11 @@
 	"version": "0.0.0",
 	"type": "module",
 	"scripts": {
+		"prepare:jsmol": "./scripts/prepare-jsmol.sh",
+		"predev": "npm run prepare:jsmol",
 		"dev": "vite",
-		"build": "vite build",
+		"prebuild": "npm run prepare:jsmol",
+		"build": "vite build && ./scripts/verify-jsmol-build.sh",
 		"test": "node --test --test-concurrency=1 test/jsmol/*.test.mjs test/utils/*.test.mjs",
 		"test:jsmol": "./scripts/verify-jsmol.sh",
 		"lint": "eslint .",

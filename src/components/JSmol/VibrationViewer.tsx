@@ -101,6 +101,7 @@ const VibrationViewer: React.FC<VibrationViewerProps> = ({
 		onReadyScript: `reset; zoom 50;`,
 		skip: loading || vibrationLoading || !vibrationXyz || value !== viewerTab.structure,
 		cleanupOnChange: true,
+		onError: setError,
 	});
 
 	const { open, accordionOpen, toggle, handleAccordionChange } = useResultDrawer({

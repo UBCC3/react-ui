@@ -230,20 +230,45 @@ npm ci
 ```bash
 npm run build
 ```
+This command verifies the Git-tracked JSmol archive, unpacks it into the Vite
+public directory, and refuses to finish unless the complete viewer runtime is
+present in `dist/vendor/jsmol/16.3.33/`.
+
 If it fails or takes too long, run this instead:
 ```bash
 NODE_OPTIONS=--max-old-space-size=4096 npm run build
 ```
-8. Deploy the entire build output, replacing everything under `/var/www/html/ubchemica/`. Do not hand-copy individual files or hand-edit `index.html`.
+8. Deploy the entire verified build output, replacing everything under
+`/var/www/html/ubchemica/`. Do not hand-copy JSmol, individual application
+files, or hand-edit `index.html`. The `--delete` is safe only after the build
+and its JSmol verification have succeeded.
 ```bash
-cd dist
-cp -r . /var/www/html/ubchemica/
+rsync -a --delete dist/ /var/www/html/ubchemica/
 ```
 9. Restart the web server to apply the changes (Optional! Only needed if you change nginx's own config):
 ```bash
 sudo systemctl restart nginx
 ```
 10. Open your browser and navigate to `https://www.ubchemica.com` to see the updated app.
+
+### Deploying to Orcinus or another server
+
+No server-specific JSmol installation is required. Pull the repository,
+install dependencies, run `npm run build`, and deploy the complete `dist/`
+directory exactly as above. The pinned archive travels with Git and the build
+extracts it automatically on EC2, Orcinus, developer machines, and CI.
+
+After deployment, verify that the runtime URL returns JavaScript rather than
+the single-page application's HTML fallback:
+
+```bash
+curl -fsS -o /dev/null \
+  -w '%{http_code} %{content_type} %{size_download}\n' \
+  https://ubchemica.com/ubchemica/vendor/jsmol/16.3.33/JSmol.min.js
+```
+
+The response should be HTTP 200, use a JavaScript content type, and be larger
+than 100,000 bytes.
 ---
 
 ## Onboarding New Developers

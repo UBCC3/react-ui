@@ -20,6 +20,7 @@ before(async () => {
 
 after(async () => {
 	delete globalThis.window;
+	delete globalThis.document;
 	delete globalThis.IS_REACT_ACT_ENVIRONMENT;
 	await server.close();
 });
@@ -85,4 +86,76 @@ test("publishes the viewer from readyFunction without a loadStruct callback", as
 	assert.deepEqual(calls.script, [[viewer, "zoom 50;"]]);
 
 	await act(async () => renderer.unmount());
+});
+
+test("reports a friendly error instead of crashing when the JSmol runtime is unavailable", async () => {
+	const container = { innerHTML: "" };
+	const listeners = {};
+	let removed = false;
+	let publishedError = null;
+	let callbackError = null;
+
+	const script = {
+		dataset: {},
+		addEventListener(name, listener) {
+			listeners[name] = listener;
+		},
+		remove() {
+			removed = true;
+		},
+	};
+
+	globalThis.window = {};
+	globalThis.document = {
+		createElement() {
+			return script;
+		},
+		head: {
+			appendChild() {
+				queueMicrotask(() => listeners.error(new Error("missing runtime")));
+			},
+		},
+	};
+
+	function Harness() {
+		const { viewerRef, viewerError } = useJsmolViewer({
+			viewerObjId: "missingRuntimeApplet",
+			src: "",
+			loadScript: 'load DATA "model test"\n1\n\nH 0 0 0\nend "model test";',
+			onError: (message) => {
+				callbackError = message;
+			},
+		});
+
+		useEffect(() => {
+			publishedError = viewerError;
+		}, [viewerError]);
+
+		return React.createElement("div", { ref: viewerRef });
+	}
+
+	const originalConsoleError = console.error;
+	console.error = () => {};
+	let renderer;
+	try {
+		await act(async () => {
+			renderer = create(React.createElement(Harness), {
+				createNodeMock: () => container,
+			});
+			await new Promise((resolve) => setTimeout(resolve, 0));
+		});
+	} finally {
+		console.error = originalConsoleError;
+	}
+
+	assert.equal(
+		publishedError,
+		"Molecular viewer failed to load. Please refresh the page and try again.",
+	);
+	assert.equal(callbackError, publishedError);
+	assert.equal(container.innerHTML, "");
+	assert.equal(removed, true, "the failed script should be removed so a later attempt can retry");
+
+	await act(async () => renderer.unmount());
+	delete globalThis.document;
 });

@@ -107,6 +107,7 @@ const ScanViewer: React.FC<ScanViewerProps> = ({ jobResultFiles, viewerObjId, se
 		onReadyScript: `zoom 50; connect auto; set measurementUnits angstroms; set measurementLabels on; set measureAllModels TRUE;`,
 		skip: loading || scanLoading || !scanXyz || value !== viewerTab.structure,
 		cleanupOnChange: true,
+		onError: setError,
 	});
 
 	const { open, accordionOpen, toggle, handleAccordionChange } = useResultDrawer({

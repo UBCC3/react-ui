@@ -8,6 +8,52 @@ import { useEffect, useRef, useState } from "react";
 const JSMOL_SERVER_URL =
 	import.meta.env.VITE_JSMOL_SERVER_URL || "https://chemapps.stolaf.edu/jmol/jsmol/php/jsmol.php";
 
+const JSMOL_VERSION = "16.3.33";
+const JSMOL_ASSET_BASE = `${import.meta.env.BASE_URL}vendor/jsmol/${JSMOL_VERSION}`;
+const JSMOL_RUNTIME_URL = `${JSMOL_ASSET_BASE}/JSmol.min.js`;
+
+export const JSMOL_LOAD_ERROR =
+	"Molecular viewer failed to load. Please refresh the page and try again.";
+
+let jsmolRuntimePromise: Promise<any> | null = null;
+
+/** Load the pinned runtime once and reject if the asset did not define Jmol. */
+const loadJsmolRuntime = (): Promise<any> => {
+	if (typeof window.Jmol !== "undefined") return Promise.resolve(window.Jmol);
+	if (jsmolRuntimePromise) return jsmolRuntimePromise;
+
+	const script = document.createElement("script");
+	script.src = JSMOL_RUNTIME_URL;
+	script.async = true;
+	script.dataset.molmakerJsmolRuntime = JSMOL_VERSION;
+
+	jsmolRuntimePromise = new Promise((resolve, reject) => {
+		script.addEventListener(
+			"load",
+			() => {
+				if (typeof window.Jmol !== "undefined") {
+					resolve(window.Jmol);
+					return;
+				}
+				reject(new Error("JSmol asset loaded without defining window.Jmol"));
+			},
+			{ once: true },
+		);
+		script.addEventListener("error", () => reject(new Error("JSmol asset request failed")), {
+			once: true,
+		});
+		document.head.appendChild(script);
+	}).catch((error) => {
+		// A later retry (for example, after connectivity returns) must create a
+		// fresh script instead of reusing a permanently rejected promise.
+		script.remove();
+		jsmolRuntimePromise = null;
+		throw error;
+	});
+
+	return jsmolRuntimePromise;
+};
+
 interface UseJsmolViewerOptions {
 	viewerObjId: string;
 	/**
@@ -34,6 +80,8 @@ interface UseJsmolViewerOptions {
 	 */
 	cleanupOnChange?: boolean;
 	onReady?: (viewerObj: any) => void;
+	/** Receives a user-facing error instead of allowing a missing runtime to crash React. */
+	onError?: (message: string) => void;
 }
 
 /**
@@ -56,13 +104,17 @@ export function useJsmolViewer({
 	skip = false,
 	cleanupOnChange = false,
 	onReady,
+	onError,
 }: UseJsmolViewerOptions) {
 	const viewerRef = useRef<HTMLDivElement>(null);
 	const appletRef = useRef<any>(null);
 	const [viewerObj, setViewerObj] = useState<any>(null);
+	const [viewerError, setViewerError] = useState<string | null>(null);
 	const onReadyRef = useRef(onReady);
+	const onErrorRef = useRef(onError);
 
 	onReadyRef.current = onReady;
+	onErrorRef.current = onError;
 
 	useEffect(() => {
 		if (skip) return;
@@ -70,43 +122,61 @@ export function useJsmolViewer({
 
 		let cancelled = false;
 
-		const jsmolIsReady = (obj: any) => {
-			if (cancelled || !obj) return;
-			appletRef.current = obj;
-			if (onReadyScript) window.Jmol.script(obj, onReadyScript);
-			setViewerObj(obj);
-			onReadyRef.current?.(obj);
+		const reportFailure = (error: unknown) => {
+			console.error("Failed to initialize the molecular viewer", error);
+			if (cancelled) return;
+			setViewerObj(null);
+			setViewerError(JSMOL_LOAD_ERROR);
+			onErrorRef.current?.(JSMOL_LOAD_ERROR);
 		};
 
-		const Info = {
-			color: "#FFFFFF",
-			width: "100%",
-			height: "100%",
-			use: "HTML5",
-			j2sPath: `${import.meta.env.BASE_URL}jsmol/j2s`,
-			src,
-			serverURL: JSMOL_SERVER_URL,
-			script: loadScript,
-			// Defence in depth. Load scripts embed untrusted artifact text, so even
-			// though useJobArtifact rejects anything that could break out of the data
-			// block, Jmol must not be able to evaluate browser JavaScript.
-			allowJavaScript: false,
-			disableInitialConsole: true,
-			addSelectionOptions: false,
-			debug: false,
-			readyFunction: jsmolIsReady,
-		};
+		void loadJsmolRuntime().then((jmol) => {
+			if (cancelled || !viewerRef.current) return;
 
-		// JSmol enables an analytics tracker on any non-localhost page and fires
-		// it when the first applet is created, injecting a hidden iframe that
-		// reports document.location.href to the JSmol host. Result page URLs
-		// contain job IDs, so clear it before the applet is built.
-		(window.Jmol as { _tracker?: unknown })._tracker = null;
+			try {
+				setViewerError(null);
 
-		// getAppletHtml creates the applet internally when passed an id and Info.
-		// Calling getApplet first creates a second applet and can fire readiness
-		// callbacks twice.
-		viewerRef.current.innerHTML = window.Jmol.getAppletHtml(viewerObjId, Info);
+				const jsmolIsReady = (obj: any) => {
+					if (cancelled || !obj) return;
+					appletRef.current = obj;
+					if (onReadyScript) jmol.script(obj, onReadyScript);
+					setViewerObj(obj);
+					onReadyRef.current?.(obj);
+				};
+
+				const Info = {
+					color: "#FFFFFF",
+					width: "100%",
+					height: "100%",
+					use: "HTML5",
+					j2sPath: `${JSMOL_ASSET_BASE}/j2s`,
+					src,
+					serverURL: JSMOL_SERVER_URL,
+					script: loadScript,
+					// Defence in depth. Load scripts embed untrusted artifact text, so even
+					// though useJobArtifact rejects anything that could break out of the data
+					// block, Jmol must not be able to evaluate browser JavaScript.
+					allowJavaScript: false,
+					disableInitialConsole: true,
+					addSelectionOptions: false,
+					debug: false,
+					readyFunction: jsmolIsReady,
+				};
+
+				// JSmol enables an analytics tracker on any non-localhost page and fires
+				// it when the first applet is created, injecting a hidden iframe that
+				// reports document.location.href to the JSmol host. Result page URLs
+				// contain job IDs, so clear it before the applet is built.
+				(jmol as { _tracker?: unknown })._tracker = null;
+
+				// getAppletHtml creates the applet internally when passed an id and Info.
+				// Calling getApplet first creates a second applet and can fire readiness
+				// callbacks twice.
+				viewerRef.current.innerHTML = jmol.getAppletHtml(viewerObjId, Info);
+			} catch (error) {
+				reportFailure(error);
+			}
+		}, reportFailure);
 
 		return () => {
 			cancelled = true;
@@ -128,5 +198,5 @@ export function useJsmolViewer({
 		};
 	}, [viewerObjId, src, loadScript, skip, cleanupOnChange, onReadyScript]);
 
-	return { viewerRef, viewerObj, setViewerObj, appletRef };
+	return { viewerRef, viewerObj, viewerError, setViewerObj, appletRef };
 }

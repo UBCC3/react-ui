@@ -87,6 +87,7 @@ const OrbitalViewer: React.FC<OrbitalViewerProp> = ({
 			: "",
 		onReadyScript: `reset; zoom 50;`,
 		skip: loading || moldenLoading || espLoading || !artifactsReady,
+		onError: setError,
 	});
 
 	const { open, accordionOpen, toggle, handleAccordionChange } = useResultDrawer({
