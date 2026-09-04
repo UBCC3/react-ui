@@ -39,7 +39,8 @@ export default function Home() {
 	const [error, setError] = useState<string | null>(null);
 	const [page, setPage] = useState<number>(0);
 	const [rowsPerPage, setRowsPerPage] = useState<number>(5);
-	const [loading, setLoading] = useState<boolean>(true);
+	const [loading, setLoading] = useState<boolean>(false);
+	const [jobsLoading, setJobsLoading] = useState<boolean>(true);
 
 	// selection
 	const [selectedJobId, setSelectedJobId] = useState<string>("");
@@ -186,17 +187,16 @@ export default function Home() {
 				setError("Failed to load data");
 				console.error("Failed to load data", err);
 			} finally {
-				setLoading(false);
+				setJobsLoading(false);
 			}
 		};
 
-		setLoading(true);
+		setJobsLoading(true);
 		loadData();
 	}, []);
 
 	// filter jobs when structure filter changes
 	useEffect(() => {
-		setLoading(true);
 		try {
 			const filtered = filterStructureId
 				? jobs.filter((job) => job.structures.some((s) => s.structure_id === filterStructureId))
@@ -206,8 +206,6 @@ export default function Home() {
 		} catch (err) {
 			setError("Failed to filter jobs");
 			console.error("Failed to filter jobs:", err);
-		} finally {
-			setLoading(false);
 		}
 	}, [filterStructureId, jobs]);
 
@@ -215,7 +213,7 @@ export default function Home() {
 	 * Reloads all jobs from the backend and clears the structure filter.
 	 */
 	const handleRefresh = async () => {
-		setLoading(true);
+		setJobsLoading(true);
 
 		try {
 			const token = await getAccessTokenSilently();
@@ -230,7 +228,7 @@ export default function Home() {
 			setError("Failed to refresh jobs");
 			console.error("Failed to refresh jobs", err);
 		} finally {
-			setLoading(false);
+			setJobsLoading(false);
 		}
 	};
 
@@ -499,6 +497,7 @@ export default function Home() {
 					order={order}
 					orderBy={orderBy}
 					selectedJobId={selectedJobId}
+					loading={jobsLoading}
 					onSort={(col: keyof Job) => {
 						const isAsc = orderBy === col && order === "asc";
 						setOrder(isAsc ? "desc" : "asc");
