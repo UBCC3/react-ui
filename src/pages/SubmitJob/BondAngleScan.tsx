@@ -1,17 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
-import {
-	Box,
-	Paper,
-	Divider,
-	Grid,
-	Button,
-	Tooltip,
-	IconButton,
-	Autocomplete,
-	TextField,
-} from "@mui/material";
+import { Box, Paper, Divider, Grid, Button, Tooltip, IconButton } from "@mui/material";
 import { PlayCircleOutlineOutlined, InfoOutline } from "@mui/icons-material";
 import {
 	MolmakerTextField,
@@ -38,6 +28,8 @@ import { grey } from "@mui/material/colors";
 import { parseXyzAtoms } from "../../utils";
 import { useScanSpec } from "../../hooks/UseScanSpec";
 import ScanSpecFields from "../../components/ScanSpecFields";
+import JobTagsInput from "../../components/JobTagsInput";
+import { hasUncommittedTag } from "../../utils";
 
 export default function BondAngleScan() {
 	// used to redirect the user after the job is successfully submitted
@@ -57,6 +49,7 @@ export default function BondAngleScan() {
 	const [jobName, setJobName] = useState<string>("");
 	const [jobNotes, setJobNotes] = useState<string>("");
 	const [jobTags, setJobTags] = useState<string[]>([]);
+	const [jobTagInput, setJobTagInput] = useState<string>("");
 
 	// controls the source of the molecule
 	const [source, setSource] = useState<"upload" | "library">("upload");
@@ -235,6 +228,7 @@ export default function BondAngleScan() {
 	async function performSubmitJob() {
 		setSubmitAttempted(true);
 		setError(null);
+		if (hasUncommittedTag(jobTagInput)) return;
 
 		let structureIdToUse = selectedStructure;
 		const uploadFile = file;
@@ -308,6 +302,8 @@ export default function BondAngleScan() {
 	// Handles the form submit event
 	const handleSubmitJob = (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
+		setSubmitAttempted(true);
+		if (hasUncommittedTag(jobTagInput)) return;
 
 		// If the user wants to save an uploaded structure, first capture the
 		// molecule preview snapshot, then continue in the effect above.
@@ -365,23 +361,13 @@ export default function BondAngleScan() {
 										rows={3}
 										sx={{ mt: 2 }}
 									/>
-									<Autocomplete
-										multiple
-										freeSolo
-										id="tags-input"
+									<JobTagsInput
 										options={options}
 										value={jobTags}
-										onChange={(_, newValue) => {
-											setJobTags(newValue.filter((tag) => tag.trim() !== ""));
-										}}
-										renderInput={(params) => (
-											<TextField
-												{...params}
-												variant="outlined"
-												label="Tags"
-												placeholder="Press enter to add tags"
-											/>
-										)}
+										inputValue={jobTagInput}
+										onChange={setJobTags}
+										onInputChange={setJobTagInput}
+										showUncommittedWarning={submitAttempted && hasUncommittedTag(jobTagInput)}
 										sx={{ mt: 2 }}
 									/>
 								</Grid>

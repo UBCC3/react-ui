@@ -1,6 +1,6 @@
-import { reverseMapping } from ".";
-import { calculationTypes, columnKinds } from "../constants";
+import { columnKinds } from "../constants";
 import { Filter, Job } from "../types";
+import { formatCalculationType } from "./jobPresentation";
 
 const matchesDateFilter = (job: Job, filter: Filter): boolean => {
 	const cellValue = String(job[filter.column] ?? "");
@@ -80,11 +80,7 @@ const matchesRuntimeFilter = (job: Job, filter: Filter): boolean => {
 	}
 };
 
-const matchesStringFilter = (
-	job: Job,
-	filter: Filter,
-	reversedCalculationTypes: Record<string, string>,
-): boolean => {
+const matchesStringFilter = (job: Job, filter: Filter): boolean => {
 	let jobValue = "";
 
 	if (filter.column === "structures") {
@@ -93,9 +89,7 @@ const matchesStringFilter = (
 			.join(", ")
 			.toLocaleLowerCase();
 	} else if (filter.column === "calculation_type") {
-		jobValue = (
-			reversedCalculationTypes[job.calculation_type] ?? job.calculation_type
-		).toLocaleLowerCase();
+		jobValue = formatCalculationType(job.calculation_type).toLocaleLowerCase();
 	} else {
 		jobValue = String(job[filter.column] ?? "").toLowerCase();
 	}
@@ -137,7 +131,6 @@ const matchesBooleanFilter = (job: Job, filter: Filter): boolean => {
  * Tags and structures are handled specially because they contain multiple values.
  */
 export const filterJobs = (jobs: Job[], filters: Filter[]): Job[] => {
-	const reversedCalculationTypes = reverseMapping(calculationTypes);
 	let filtered = [...jobs];
 
 	for (const filter of filters) {
@@ -154,9 +147,7 @@ export const filterJobs = (jobs: Job[], filters: Filter[]): Job[] => {
 		} else if (kind === "boolean") {
 			filtered = filtered.filter((job) => matchesBooleanFilter(job, filter));
 		} else {
-			filtered = filtered.filter((job) =>
-				matchesStringFilter(job, filter, reversedCalculationTypes),
-			);
+			filtered = filtered.filter((job) => matchesStringFilter(job, filter));
 		}
 	}
 

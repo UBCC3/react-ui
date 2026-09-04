@@ -10,8 +10,6 @@ import {
 	Accordion,
 	AccordionSummary,
 	AccordionDetails,
-	Autocomplete,
-	TextField,
 } from "@mui/material";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -48,6 +46,8 @@ import { parseXyzAtoms } from "../../utils/parseXyz";
 import * as React from "react";
 import { Keyword, KeywordEditor } from "./KeywordEditor";
 import { grey } from "@mui/material/colors";
+import JobTagsInput from "../../components/JobTagsInput";
+import { hasUncommittedTag } from "../../utils";
 
 /**
  * AdvancedAnalysis renders the advanced job submission page.
@@ -77,6 +77,7 @@ const AdvancedAnalysis = () => {
 	const [jobName, setJobName] = useState<string>("");
 	const [jobNotes, setJobNotes] = useState<string>("");
 	const [jobTags, setJobTags] = useState<string[]>([]);
+	const [jobTagInput, setJobTagInput] = useState<string>("");
 
 	// controls the source of the molecule
 	const [source, setSource] = useState<"upload" | "library">("upload");
@@ -116,7 +117,7 @@ const AdvancedAnalysis = () => {
 	// dropdown options state
 	const [wavefunctionTheory, setWavefunctionTheory] = useState<{ [key: string]: string }>({});
 	const [densityTheory, setDensityTheory] = useState<string[]>([]);
-	const [calculationTypes, setCalculationTypes] = useState<{ [key: string]: number }>({});
+	const [calculationTypes, setCalculationTypes] = useState<Record<string, string>>({});
 	const [basisSets, setBasisSets] = useState<{ [key: string]: string }>({});
 
 	// structure preview snapshot confirm
@@ -320,6 +321,7 @@ const AdvancedAnalysis = () => {
 	async function performSubmitJob(): Promise<void> {
 		setSubmitAttempted(true);
 		setError(null);
+		if (hasUncommittedTag(jobTagInput)) return;
 
 		let structureIdToUse = selectedStructure;
 		const uploadFile = file;
@@ -419,6 +421,8 @@ const AdvancedAnalysis = () => {
 	 */
 	const handleSubmitJob = (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
+		setSubmitAttempted(true);
+		if (hasUncommittedTag(jobTagInput)) return;
 		if (uploadStructure && source === "upload") {
 			setOpenConfirmImage(true);
 			return;
@@ -485,23 +489,13 @@ const AdvancedAnalysis = () => {
 										rows={3}
 										sx={{ mt: 2 }}
 									/>
-									<Autocomplete
-										multiple
-										freeSolo
-										id="tags-input"
+									<JobTagsInput
 										options={options}
 										value={jobTags}
-										onChange={(_event, newValue) => {
-											setJobTags(newValue.filter((tag) => tag.trim() !== ""));
-										}}
-										renderInput={(params) => (
-											<TextField
-												{...params}
-												variant="outlined"
-												label="Tags"
-												placeholder="Press enter to add tags"
-											/>
-										)}
+										inputValue={jobTagInput}
+										onChange={setJobTags}
+										onInputChange={setJobTagInput}
+										showUncommittedWarning={submitAttempted && hasUncommittedTag(jobTagInput)}
 										sx={{ mt: 2 }}
 									/>
 								</Grid>

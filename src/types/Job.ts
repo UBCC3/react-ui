@@ -12,6 +12,8 @@ export type JobFailureReason =
 	| "cluster_failed"
 	| "unknown";
 
+export type JobArchiveUploadStatus = "pending" | "disabled" | "uploaded" | "unavailable";
+
 interface Job {
 	job_id: string;
 	submitted_at: string;
@@ -33,6 +35,9 @@ interface Job {
 	cancel_requested: boolean;
 	failure_reason?: JobFailureReason | null;
 	failure_message?: string | null;
+	upload_archive: boolean;
+	archive_uploaded: boolean;
+	archive_upload_status: JobArchiveUploadStatus;
 	tags: string[];
 	structures: Array<{
 		structure_id: string;

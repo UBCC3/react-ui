@@ -24,7 +24,7 @@ import {
 } from "../components/custom";
 import type { Job, Structure, Filter } from "../types";
 import AdminJobsTable from "./Home/components/AdminJobsTable";
-import { filterJobs, hasNoStoredArtifacts } from "../utils";
+import { filterJobs, isJobArchiveAvailable } from "../utils";
 import EditJobDialog from "../components/EditJobDialog";
 
 export default function Admin() {
@@ -384,7 +384,7 @@ export default function Admin() {
 		if (!selectedJobId) return true;
 		const job = jobs.find((j) => j.job_id === selectedJobId);
 		if (!job) return true;
-		return hasNoStoredArtifacts(job);
+		return !isJobArchiveAvailable(job);
 	};
 
 	// Show a full-page loading component while data is being fetched or actions are running.
