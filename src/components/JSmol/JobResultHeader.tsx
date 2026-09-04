@@ -6,32 +6,11 @@ import { Job } from "../../types";
 import { MolmakerPageTitle } from "../custom";
 import ViewerTipsCard from "./ViewerTipsCard";
 import { useDrawerWidth } from "../../contexts/DrawerWidthContext";
+import { formatCalculationType } from "../../utils";
 
 interface JobResultHeaderProps {
 	job: Job;
 }
-
-/**
- * Convert the backend calculation type value into a user-facing label.
- */
-const renderCalculationType = (type: string) => {
-	switch (type) {
-		case "standard":
-			return "Standard Analysis";
-		case "optimization":
-			return "Geometric Optimization";
-		case "frequency":
-			return "Vibration Frequency";
-		case "orbitals":
-			return "Molecular Orbital";
-		case "energy":
-			return "Molecular Energy";
-		case "transition":
-			return "Transition State Optimization";
-		case "irc":
-			return "Intrinsic Reaction Coordinate";
-	}
-};
 
 /**
  * Job details header (title, tags, notes) and viewer tips card, shown above
@@ -55,7 +34,7 @@ const JobResultHeader: React.FC<JobResultHeaderProps> = ({ job }) => {
 			<Box sx={{ flex: 1, minWidth: 0 }}>
 				<MolmakerPageTitle
 					title={job.job_name}
-					subtitle={renderCalculationType(job.calculation_type)}
+					subtitle={formatCalculationType(job.calculation_type)}
 					removeBottomPadding={true}
 				/>
 

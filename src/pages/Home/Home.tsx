@@ -20,7 +20,7 @@ import JobsToolbar from "./components/JobsToolbar";
 import JobsTable from "./components/JobsTable";
 import { MolmakerLoading, MolmakerAlert, MolmakerConfirm } from "../../components/custom";
 import type { Filter, Job, Structure } from "../../types";
-import { filterJobs, hasNoStoredArtifacts } from "../../utils";
+import { filterJobs, isJobArchiveAvailable } from "../../utils";
 import EditJobDialog from "../../components/EditJobDialog";
 
 export default function Home() {
@@ -376,7 +376,7 @@ export default function Home() {
 		if (!selectedJobId) return true;
 		const job = jobs.find((j) => j.job_id === selectedJobId);
 		if (!job) return true;
-		return hasNoStoredArtifacts(job);
+		return !isJobArchiveAvailable(job);
 	};
 
 	/**

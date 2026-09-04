@@ -119,6 +119,7 @@ export const calculationTypes = {
 	"Geometric Optimization": "optimization",
 	"Vibrational Frequency": "frequency",
 	"Molecular Orbitals": "orbitals",
+	"Bond/Angle Scan": "scan",
 	"Standard Analysis": "standard",
 	"Transition State Optimization": "transition",
 	"Intrinsic Reaction Coordinate": "irc",

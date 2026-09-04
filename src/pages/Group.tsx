@@ -38,7 +38,7 @@ import { MolmakerPageTitle, MolmakerAlert, MolmakerConfirm } from "../components
 import type { Filter, Job, Structure } from "../types";
 import GroupPanel from "../components/GroupPanel";
 import GroupJobsTable from "./Home/components/GroupJobsTable";
-import { filterJobs, hasNoStoredArtifacts } from "../utils";
+import { filterJobs, isJobArchiveAvailable } from "../utils";
 import { Pyramid } from "lucide-react";
 import { renderFormula } from "../utils/renderFormula";
 import { VisibilityOffOutlined, VisibilityOutlined } from "@mui/icons-material";
@@ -426,7 +426,7 @@ export default function Group() {
 		if (!selectedJobId) return true;
 		const job = jobs.find((j) => j.job_id === selectedJobId);
 		if (!job) return true;
-		return hasNoStoredArtifacts(job);
+		return !isJobArchiveAvailable(job);
 	};
 
 	// Opens the delete confirmation dialog.

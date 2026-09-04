@@ -14,7 +14,7 @@ import { AddPhotoAlternateOutlined } from "@mui/icons-material";
 import { grey, blueGrey } from "@mui/material/colors";
 import { useAuth0 } from "@auth0/auth0-react";
 import { MolmakerTextField } from "../custom";
-import { AddAndUploadStructureToS3 } from "../../services/api";
+import { AddAndUploadStructureToS3, getChemicalFormula } from "../../services/api";
 
 interface AddStructureToLibraryProps {
 	viewerObj: any;
@@ -43,6 +43,43 @@ const AddStructureToLibrary = ({
 	const [moleculeNotes, setMoleculeNotes] = useState("");
 	const [structureTags, setStructureTags] = useState<string[]>([]);
 	const [submitAttempted, setSubmitAttempted] = useState(false);
+	const [formulaLoading, setFormulaLoading] = useState(false);
+	const [formulaError, setFormulaError] = useState<string | null>(null);
+
+	const exportDisplayedStructure = (filename: string) => {
+		const xyzString = String(window.Jmol.evaluate(viewerObj, 'write("xyz")'));
+		if (!xyzString.trim()) throw new Error("The displayed structure could not be exported.");
+
+		const xyzBlob = new Blob([xyzString], { type: "chemical/x-xyz" });
+		return new File([xyzBlob], filename, { type: "chemical/x-xyz" });
+	};
+
+	const handleOpen = async () => {
+		onDialogOpen?.();
+		setAddDialogOpen(true);
+		setChemicalFormula("");
+		setFormulaError(null);
+		setSubmitAttempted(false);
+		setFormulaLoading(true);
+
+		try {
+			// Calculate from the same displayed result structure that will be saved.
+			window.Jmol.script(viewerObj, "vibration OFF; frame last;");
+			const xyzFile = exportDisplayedStructure("result-structure.xyz");
+			const token = await getAccessTokenSilently();
+			const response = await getChemicalFormula(xyzFile, token);
+			const formula = response.data?.formula;
+			if (response.error || typeof formula !== "string" || !formula.trim()) {
+				throw new Error(response.error || "No chemical formula was returned.");
+			}
+			setChemicalFormula(formula);
+		} catch (error) {
+			console.error("Failed to calculate the result structure formula", error);
+			setFormulaError("Formula could not be calculated automatically. Enter it manually.");
+		} finally {
+			setFormulaLoading(false);
+		}
+	};
 
 	const handleSubmit = async () => {
 		setSubmitAttempted(true);
@@ -56,11 +93,7 @@ const AddStructureToLibrary = ({
 		const canvas = viewerRef.current?.querySelector("canvas");
 		const imageDataUrl = canvas?.toDataURL("image/png") || "";
 
-		const xyzString = window.Jmol.evaluate(viewerObj, 'write("xyz")');
-		const xyzBlob = new Blob([xyzString], { type: "chemical/x-xyz" });
-		const xyzFile = new File([xyzBlob], `${moleculeName || "structure"}.xyz`, {
-			type: "chemical/x-xyz",
-		});
+		const xyzFile = exportDisplayedStructure(`${moleculeName || "structure"}.xyz`);
 
 		const token = await getAccessTokenSilently();
 
@@ -89,10 +122,7 @@ const AddStructureToLibrary = ({
 				color="primary"
 				sx={{ textTransform: "none " }}
 				startIcon={<AddPhotoAlternateOutlined />}
-				onClick={() => {
-					onDialogOpen?.();
-					setAddDialogOpen(true);
-				}}
+				onClick={handleOpen}
 				disabled={!viewerObj}
 			>
 				Add Structure to My Library
@@ -131,13 +161,18 @@ const AddStructureToLibrary = ({
 						fullWidth
 						label="Chemical Formula"
 						value={chemicalFormula}
-						onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-							setChemicalFormula(e.target.value)
-						}
+						onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+							setChemicalFormula(e.target.value);
+							setFormulaError(null);
+						}}
 						required
-						error={submitAttempted && !chemicalFormula}
+						disabled={formulaLoading}
+						error={Boolean(formulaError) || (submitAttempted && !chemicalFormula)}
 						helperText={
-							submitAttempted && !chemicalFormula ? "Please enter a chemical formula" : ""
+							formulaLoading
+								? "Calculating formula from the displayed structure..."
+								: formulaError ||
+									(submitAttempted && !chemicalFormula ? "Please enter a chemical formula" : "")
 						}
 						sx={{ mt: 2 }}
 					/>
@@ -172,7 +207,12 @@ const AddStructureToLibrary = ({
 					<Button onClick={() => setAddDialogOpen(false)} sx={{ textTransform: "none" }}>
 						Cancel
 					</Button>
-					<Button variant="contained" onClick={handleSubmit} sx={{ textTransform: "none" }}>
+					<Button
+						variant="contained"
+						onClick={handleSubmit}
+						disabled={formulaLoading}
+						sx={{ textTransform: "none" }}
+					>
 						Save
 					</Button>
 				</DialogActions>

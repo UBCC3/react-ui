@@ -9,18 +9,12 @@ import {
 	Chip,
 	Box,
 	Typography,
-	Tooltip,
 } from "@mui/material";
-import {
-	statusColors,
-	statusIcons,
-	calculationTypes,
-	failureReasonLabels,
-} from "../../../constants";
 import { grey } from "@mui/material/colors";
 import { ArrowDownAZ, ArrowUpAZ } from "lucide-react";
 import type { Job } from "../../../types";
-import { formatRuntime, reverseMapping } from "../../../utils";
+import { formatCalculationType, formatRuntime } from "../../../utils";
+import JobStatusDisplay from "./JobStatusDisplay";
 
 /**
  * Props for the JobsTable
@@ -101,9 +95,6 @@ export default function JobsTable({
 	// Then slice for pagination
 	const paginatedJobs = sortedJobs.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
-	// Reverse the calculation types mapping
-	const reversedCalculationTypes = reverseMapping(calculationTypes);
-
 	/**
 	 * Renders a sortable table header cell.
 	 */
@@ -182,39 +173,13 @@ export default function JobsTable({
 								)}
 								{displayColumns.status && (
 									<TableCell>
-										<Tooltip
-											title={
-												job.failure_reason
-													? `${failureReasonLabels[job.failure_reason] ?? job.failure_reason}${
-															job.failure_message ? `: ${job.failure_message}` : ""
-														}`
-													: ""
-											}
-										>
-											<Chip
-												label={job.status}
-												size="small"
-												sx={{
-													bgcolor: statusColors[job.status] ?? grey[300],
-													color: "white",
-													textTransform: "capitalize",
-													fontSize: "0.65rem",
-												}}
-												icon={
-													statusIcons[job.status]
-														? React.createElement(statusIcons[job.status], {
-																style: { color: "white", width: 16, height: 16 },
-															})
-														: undefined
-												}
-											/>
-										</Tooltip>
+										<JobStatusDisplay job={job} />
 									</TableCell>
 								)}
 								{displayColumns.calculation_type && (
 									<TableCell>
 										<Chip
-											label={reversedCalculationTypes[job.calculation_type]}
+											label={formatCalculationType(job.calculation_type)}
 											variant="outlined"
 											size="small"
 											sx={{ mr: 0.5, mb: 0.5 }}

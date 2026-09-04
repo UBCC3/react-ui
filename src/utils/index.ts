@@ -47,10 +47,6 @@ export const formatSymmetryLabel = (label: string): string => {
 	}
 };
 
-// Reversing the mapping of a dict object
-export const reverseMapping = (obj: Record<string, string>): Record<string, string> =>
-	Object.fromEntries(Object.entries(obj).map(([k, v]) => [v, k]));
-
 /** Image types a stored structure thumbnail is allowed to be rendered as. */
 const ALLOWED_THUMBNAIL_MEDIA_TYPES = new Set([
 	"image/png",
@@ -94,6 +90,14 @@ export const hasNoStoredArtifacts = (job: Job): boolean => {
 };
 
 export { filterJobs };
+
+export {
+	formatCalculationType,
+	hasPendingCancellation,
+	isJobArchiveAvailable,
+} from "./jobPresentation";
+
+export { hasUncommittedTag } from "./tagInput";
 
 export { parseXyzAtoms } from "./parseXyz";
 export type { XyzAtom } from "./parseXyz";

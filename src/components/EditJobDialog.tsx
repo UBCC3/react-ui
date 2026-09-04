@@ -1,20 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-	Autocomplete,
-	Button,
-	Dialog,
-	DialogActions,
-	DialogContent,
-	DialogTitle,
-	Divider,
-	TextField,
-} from "@mui/material";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider } from "@mui/material";
 import { EditOutlined } from "@mui/icons-material";
 import { blue } from "@mui/material/colors";
 import { useAuth0 } from "@auth0/auth0-react";
 import { MolmakerAlert, MolmakerTextField } from "./custom";
 import { updateJob } from "../services/api";
 import type { Job } from "../types";
+import { hasUncommittedTag } from "../utils";
+import JobTagsInput from "./JobTagsInput";
 
 interface EditJobDialogProps {
 	open: boolean;
@@ -45,6 +38,8 @@ const EditJobDialog = ({ open, job, availableTags, onClose, onSaved }: EditJobDi
 	const [jobName, setJobName] = useState<string>("");
 	const [jobNotes, setJobNotes] = useState<string>("");
 	const [tags, setTags] = useState<string[]>([]);
+	const [tagInput, setTagInput] = useState<string>("");
+	const [saveAttempted, setSaveAttempted] = useState<boolean>(false);
 	const [saving, setSaving] = useState<boolean>(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -54,10 +49,13 @@ const EditJobDialog = ({ open, job, availableTags, onClose, onSaved }: EditJobDi
 		setJobName(job.job_name ?? "");
 		setJobNotes(job.job_notes ?? "");
 		setTags(job.tags ?? []);
+		setTagInput("");
+		setSaveAttempted(false);
 		setError(null);
 	}, [open, job]);
 
 	const nameIsBlank = jobName.trim() === "";
+	const hasPendingTag = hasUncommittedTag(tagInput);
 
 	const hasChanges = useMemo(() => {
 		if (!job) return false;
@@ -69,7 +67,9 @@ const EditJobDialog = ({ open, job, availableTags, onClose, onSaved }: EditJobDi
 	}, [job, jobName, jobNotes, tags]);
 
 	const handleSave = async () => {
-		if (!job || !hasChanges || nameIsBlank) return;
+		if (!job || nameIsBlank) return;
+		setSaveAttempted(true);
+		if (hasPendingTag || !hasChanges) return;
 
 		const fields: {
 			job_name?: string;
@@ -134,21 +134,14 @@ const EditJobDialog = ({ open, job, availableTags, onClose, onSaved }: EditJobDi
 					helperText="Leave empty to clear the notes."
 					sx={{ mt: 2 }}
 				/>
-				<Autocomplete
-					multiple
-					freeSolo
-					disablePortal
+				<JobTagsInput
 					options={availableTags}
 					value={tags}
-					onChange={(_, newValue) => setTags(newValue.filter((tag) => tag.trim() !== ""))}
-					renderInput={(params) => (
-						<TextField
-							{...params}
-							variant="outlined"
-							label="Tags"
-							placeholder="Press enter to add tags"
-						/>
-					)}
+					inputValue={tagInput}
+					disablePortal
+					onChange={setTags}
+					onInputChange={setTagInput}
+					showUncommittedWarning={saveAttempted && hasPendingTag}
 					sx={{ mt: 2 }}
 				/>
 			</DialogContent>
@@ -159,7 +152,7 @@ const EditJobDialog = ({ open, job, availableTags, onClose, onSaved }: EditJobDi
 				<Button
 					variant="contained"
 					onClick={handleSave}
-					disabled={saving || !hasChanges || nameIsBlank}
+					disabled={saving || (!hasChanges && !hasPendingTag) || nameIsBlank}
 					sx={{ textTransform: "none" }}
 				>
 					Save

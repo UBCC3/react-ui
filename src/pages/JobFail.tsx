@@ -12,8 +12,8 @@ import NotFound from "./NotFound";
 import { JobError } from "../types/JSmol";
 import { Box, Grid, Paper } from "@mui/material";
 import { useAuth0 } from "@auth0/auth0-react";
-import { hasNoStoredArtifacts, reverseMapping } from "../utils";
-import { calculationTypes, failureReasonLabels } from "../constants";
+import { formatCalculationType, hasNoStoredArtifacts } from "../utils";
+import { failureReasonLabels } from "../constants";
 
 function JobFail() {
 	// Reads the job ID from the URL rout parameters.
@@ -92,9 +92,6 @@ function JobFail() {
 	// Show a not-found page if the job could not be loaded.
 	if (!job) return <NotFound subject="Job" />;
 
-	// Reverse the calculation types mapping
-	const reversedCalculationTypes = reverseMapping(calculationTypes);
-
 	return (
 		<Box bgcolor="rgb(247, 249, 252)" p={4}>
 			{/* Display a page-level error alert if any fetch or parsing step fails. */}
@@ -164,7 +161,7 @@ function JobFail() {
 									<MolmakerTextField
 										fullWidth
 										label="Calculation"
-										value={reversedCalculationTypes[job.calculation_type]}
+										value={formatCalculationType(job.calculation_type)}
 										onChange={() => {}}
 										sx={{ mb: 2 }}
 										slotProps={{

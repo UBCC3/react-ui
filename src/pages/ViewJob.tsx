@@ -7,8 +7,7 @@ import { MolmakerPageTitle, MolmakerTextField, MolmakerAlert } from "../componen
 import MolmakerLoading from "../components/custom/MolmakerLoading";
 import NotFound from "./NotFound";
 import type { Job } from "../types";
-import { reverseMapping } from "../utils";
-import { calculationTypes } from "../constants";
+import { formatCalculationType, hasPendingCancellation } from "../utils";
 
 function ViewJob() {
 	// React Router hook used to redirect the user to result or failure pages.
@@ -80,9 +79,6 @@ function ViewJob() {
 		return <NotFound subject="Job" />;
 	}
 
-	// Reverse the calculation types mapping
-	const reversedCalculationTypes = reverseMapping(calculationTypes);
-
 	return (
 		<Box bgcolor={"rgb(247, 249, 252)"} p={4}>
 			{/* Error message */}
@@ -118,7 +114,11 @@ function ViewJob() {
 									<MolmakerTextField
 										fullWidth
 										label="Status"
-										value={job.status}
+										value={
+											hasPendingCancellation(job)
+												? `${job.status} — cancellation requested`
+												: job.status
+										}
 										onChange={() => {}}
 										sx={{ mb: 2 }}
 										slotProps={{
@@ -152,7 +152,7 @@ function ViewJob() {
 									<MolmakerTextField
 										fullWidth
 										label="Calculation"
-										value={reversedCalculationTypes[job.calculation_type]}
+										value={formatCalculationType(job.calculation_type)}
 										onChange={() => {}}
 										sx={{ mb: 2 }}
 										slotProps={{
