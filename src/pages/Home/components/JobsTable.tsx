@@ -9,11 +9,12 @@ import {
 	Chip,
 	Box,
 	Typography,
+	LinearProgress,
 } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { ArrowDownAZ, ArrowUpAZ } from "lucide-react";
 import type { Job } from "../../../types";
-import { formatCalculationType, formatRuntime } from "../../../utils";
+import { formatCalculationType, formatRuntime, getJobsTableContentState } from "../../../utils";
 import JobStatusDisplay from "./JobStatusDisplay";
 
 /**
@@ -39,6 +40,7 @@ interface JobsTableProps {
 		submitted_at: boolean;
 		completed_at: boolean;
 	};
+	loading: boolean;
 }
 
 /**
@@ -61,6 +63,7 @@ export default function JobsTable({
 	onSort,
 	onRowClick,
 	displayColumns,
+	loading,
 }: JobsTableProps) {
 	// Comparator that handles strings, dates, and structures-length
 	const comparator = React.useCallback(
@@ -94,6 +97,8 @@ export default function JobsTable({
 
 	// Then slice for pagination
 	const paginatedJobs = sortedJobs.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+	const visibleColumnCount = Math.max(1, Object.values(displayColumns).filter(Boolean).length);
+	const contentState = getJobsTableContentState(loading, paginatedJobs.length);
 
 	/**
 	 * Renders a sortable table header cell.
@@ -126,6 +131,11 @@ export default function JobsTable({
 
 	return (
 		<TableContainer>
+			{loading && (
+				<LinearProgress
+					aria-label={paginatedJobs.length > 0 ? "Refreshing jobs" : "Loading jobs"}
+				/>
+			)}
 			<Table>
 				<TableHead sx={{ bgcolor: grey[200] }}>
 					<TableRow>
@@ -142,9 +152,17 @@ export default function JobsTable({
 					</TableRow>
 				</TableHead>
 				<TableBody>
-					{paginatedJobs.length === 0 ? (
+					{contentState === "loading" ? (
 						<TableRow>
-							<TableCell colSpan={8} align="center">
+							<TableCell colSpan={visibleColumnCount} align="center">
+								<Typography variant="body2" color="text.secondary" role="status">
+									Loading jobs…
+								</Typography>
+							</TableCell>
+						</TableRow>
+					) : contentState === "empty" ? (
+						<TableRow>
+							<TableCell colSpan={visibleColumnCount} align="center">
 								<Typography variant="body2" color="text.secondary">
 									Nothing here yet — run your first analysis from the sidebar.
 								</Typography>

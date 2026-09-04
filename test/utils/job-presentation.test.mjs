@@ -5,6 +5,8 @@ import { createServer } from "vite";
 let server;
 let presentation;
 let tagInput;
+let jobEditDraft;
+let jobsTableState;
 
 before(async () => {
 	server = await createServer({
@@ -15,6 +17,8 @@ before(async () => {
 	});
 	presentation = await server.ssrLoadModule("/src/utils/jobPresentation.ts");
 	tagInput = await server.ssrLoadModule("/src/utils/tagInput.ts");
+	jobEditDraft = await server.ssrLoadModule("/src/utils/jobEditDraft.ts");
+	jobsTableState = await server.ssrLoadModule("/src/utils/jobsTableState.ts");
 });
 
 after(async () => {
@@ -57,4 +61,16 @@ test("shows cancellation requests only while the job is non-terminal", () => {
 test("detects only non-whitespace uncommitted tag text", () => {
 	assert.equal(tagInput.hasUncommittedTag("draft"), true);
 	assert.equal(tagInput.hasUncommittedTag("   "), false);
+});
+
+test("does not reseed an open edit draft when polling returns the same job", () => {
+	assert.equal(jobEditDraft.shouldSeedJobEditDraft(true, "job-1", "job-1"), false);
+	assert.equal(jobEditDraft.shouldSeedJobEditDraft(true, "job-1", "job-2"), true);
+	assert.equal(jobEditDraft.shouldSeedJobEditDraft(false, null, "job-1"), false);
+});
+
+test("shows loading instead of an empty state until jobs finish loading", () => {
+	assert.equal(jobsTableState.getJobsTableContentState(true, 0), "loading");
+	assert.equal(jobsTableState.getJobsTableContentState(false, 0), "empty");
+	assert.equal(jobsTableState.getJobsTableContentState(true, 5), "ready");
 });

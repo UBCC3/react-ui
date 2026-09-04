@@ -99,6 +99,12 @@ export {
 
 export { hasUncommittedTag } from "./tagInput";
 
+export { createJobEditSnapshot, haveSameJobTags, shouldSeedJobEditDraft } from "./jobEditDraft";
+export type { JobEditSnapshot } from "./jobEditDraft";
+
+export { getJobsTableContentState } from "./jobsTableState";
+export type { JobsTableContentState } from "./jobsTableState";
+
 export { parseXyzAtoms } from "./parseXyz";
 export type { XyzAtom } from "./parseXyz";
 
