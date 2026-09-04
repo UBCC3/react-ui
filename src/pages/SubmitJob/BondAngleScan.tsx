@@ -30,6 +30,7 @@ import { useScanSpec } from "../../hooks/UseScanSpec";
 import ScanSpecFields from "../../components/ScanSpecFields";
 import JobTagsInput from "../../components/JobTagsInput";
 import { hasUncommittedTag } from "../../utils";
+import { getErrorMessage } from "../../utils/errorMessage";
 
 export default function BondAngleScan() {
 	// used to redirect the user after the job is successfully submitted
@@ -268,7 +269,8 @@ export default function BondAngleScan() {
 					structureTags,
 				);
 				if (structureResponse.error) {
-					throw new Error(structureResponse.error);
+					setError(structureResponse.error);
+					return;
 				}
 				structureIdToUse = structureResponse.data.structure_id;
 			}
@@ -284,15 +286,14 @@ export default function BondAngleScan() {
 				tags: jobTags,
 			});
 			if (response.error) {
-				throw new Error(response.error);
+				setError(response.error);
+				return;
 			}
 
 			setSubmitAttempted(false);
 			navigate("/");
 		} catch (err) {
-			setError(
-				err instanceof Error ? err.message : "Failed to submit job. Please try again later.",
-			);
+			setError(getErrorMessage(err, "Failed to submit job. Please try again later."));
 			console.error("Failed to submit job", err);
 		} finally {
 			setLoading(false);
