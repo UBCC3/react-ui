@@ -48,6 +48,7 @@ import { Keyword, KeywordEditor } from "./KeywordEditor";
 import { grey } from "@mui/material/colors";
 import JobTagsInput from "../../components/JobTagsInput";
 import { hasUncommittedTag } from "../../utils";
+import { getErrorMessage } from "../../utils/errorMessage";
 
 /**
  * AdvancedAnalysis renders the advanced job submission page.
@@ -380,7 +381,8 @@ const AdvancedAnalysis = () => {
 					structureTags,
 				);
 				if (structureResponse.error) {
-					throw new Error(structureResponse.error);
+					setError(structureResponse.error);
+					return;
 				}
 				structureIdToUse = structureResponse.data.structure_id;
 			}
@@ -400,16 +402,15 @@ const AdvancedAnalysis = () => {
 				tags: jobTags,
 			});
 			if (response.error) {
-				throw new Error(response.error);
+				setError(response.error);
+				return;
 			}
 
 			// Job submitted successfully, redirect to job list
 			setSubmitAttempted(false);
 			navigate("/");
 		} catch (err) {
-			setError(
-				err instanceof Error ? err.message : "Failed to submit job. Please try again later.",
-			);
+			setError(getErrorMessage(err, "Failed to submit job. Please try again later."));
 			console.error("Failed to submit job", err);
 		} finally {
 			setLoading(false);

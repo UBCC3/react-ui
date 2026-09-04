@@ -28,6 +28,7 @@ import { APP_BAR_HEIGHT } from "../../constants";
 import { grey } from "@mui/material/colors";
 import JobTagsInput from "../../components/JobTagsInput";
 import { hasUncommittedTag } from "../../utils";
+import { getErrorMessage } from "../../utils/errorMessage";
 
 export default function StandardAnalysis() {
 	// used to redirect the user after the job is successfully submitted
@@ -264,7 +265,8 @@ export default function StandardAnalysis() {
 					structureTags,
 				);
 				if (structureResponse.error) {
-					throw new Error(structureResponse.error);
+					setError(structureResponse.error);
+					return;
 				}
 				structureIdToUse = structureResponse.data.structure_id;
 			}
@@ -281,17 +283,14 @@ export default function StandardAnalysis() {
 				tags: jobTags,
 			});
 			if (response.error) {
-				throw new Error(response.error);
+				setError(response.error);
+				return;
 			}
 
 			// Return to the home page after successful submission
 			navigate("/");
 		} catch (err) {
-			setError(
-				err instanceof Error
-					? err.message
-					: "Submit failed. Please check your input and try again.",
-			);
+			setError(getErrorMessage(err, "Submit failed. Please check your input and try again."));
 			console.error("Submit failed:", err);
 		} finally {
 			setLoading(false);
