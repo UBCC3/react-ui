@@ -14,6 +14,23 @@ export type JobFailureReason =
 
 export type JobArchiveUploadStatus = "pending" | "disabled" | "uploaded" | "unavailable";
 
+export interface JobResourceRange {
+	default: number;
+	minimum: number;
+	maximum: number;
+}
+
+export interface JobResourceConfig {
+	can_customize: boolean;
+	time_limit_minutes: JobResourceRange;
+	memory_mb: JobResourceRange;
+}
+
+export interface JobResourceSelection {
+	timeLimitMinutes?: number;
+	memoryMb?: number;
+}
+
 interface Job {
 	job_id: string;
 	submitted_at: string;

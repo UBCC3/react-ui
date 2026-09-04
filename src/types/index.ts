@@ -1,4 +1,4 @@
-import Job from "./Job";
+import Job, { JobResourceConfig, JobResourceSelection } from "./Job";
 import Structure from "./Structure";
 import Response from "./Response";
 import {
@@ -17,6 +17,8 @@ import GroupRequest from "./Request";
 
 export type {
 	Job,
+	JobResourceConfig,
+	JobResourceSelection,
 	Structure,
 	Response,
 	Orbital,

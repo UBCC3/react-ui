@@ -37,7 +37,7 @@ import {
 	getStructuresTags,
 	submitCustomCalculation,
 } from "../../services/api";
-import { Structure } from "../../types";
+import { JobResourceSelection, Structure } from "../../types";
 import { getChemicalFormula } from "../../services/api";
 import { APP_BAR_HEIGHT } from "../../constants";
 import { useScanSpec } from "../../hooks/UseScanSpec";
@@ -49,6 +49,7 @@ import { grey } from "@mui/material/colors";
 import JobTagsInput from "../../components/JobTagsInput";
 import { hasUncommittedTag } from "../../utils";
 import { getErrorMessage } from "../../utils/errorMessage";
+import JobResourceSettings from "../../components/JobResourceSettings";
 
 /**
  * AdvancedAnalysis renders the advanced job submission page.
@@ -79,6 +80,8 @@ const AdvancedAnalysis = () => {
 	const [jobNotes, setJobNotes] = useState<string>("");
 	const [jobTags, setJobTags] = useState<string[]>([]);
 	const [jobTagInput, setJobTagInput] = useState<string>("");
+	const [resourceSettings, setResourceSettings] = useState<JobResourceSelection>({});
+	const [resourceSettingsValid, setResourceSettingsValid] = useState(true);
 
 	// controls the source of the molecule
 	const [source, setSource] = useState<"upload" | "library">("upload");
@@ -323,6 +326,10 @@ const AdvancedAnalysis = () => {
 		setSubmitAttempted(true);
 		setError(null);
 		if (hasUncommittedTag(jobTagInput)) return;
+		if (!resourceSettingsValid) {
+			setError("Please correct the resource settings before submitting.");
+			return;
+		}
 
 		let structureIdToUse = selectedStructure;
 		const uploadFile = file;
@@ -400,6 +407,7 @@ const AdvancedAnalysis = () => {
 				jobName,
 				jobNotes: jobNotes ?? undefined,
 				tags: jobTags,
+				...resourceSettings,
 			});
 			if (response.error) {
 				setError(response.error);
@@ -712,6 +720,15 @@ const AdvancedAnalysis = () => {
 										<KeywordEditor maxEntries={20} onChange={handleKeywordsChange} />
 									</AccordionDetails>
 								</Accordion>
+								<Divider />
+								<Grid sx={{ mx: 2 }}>
+									<JobResourceSettings
+										onChange={(value, isValid) => {
+											setResourceSettings(value);
+											setResourceSettingsValid(isValid);
+										}}
+									/>
+								</Grid>
 								<Grid sx={{ mx: 2, mb: 3 }}>
 									<Button
 										type="submit"

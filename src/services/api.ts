@@ -1,5 +1,13 @@
 import axios from "axios";
-import { Group, Job, JobArtifactKind, Response, Structure } from "../types";
+import {
+	Group,
+	Job,
+	JobArtifactKind,
+	JobResourceConfig,
+	JobResourceSelection,
+	Response,
+	Structure,
+} from "../types";
 import { User } from "@auth0/auth0-react";
 import { MAX_PAGE_SIZE } from "../constants";
 
@@ -412,6 +420,33 @@ export const cancelJob = async (jobId: string, token: string): Promise<Response>
 };
 
 /**
+ * Returns effective resource defaults and bounds, plus whether the caller may
+ * customize them.
+ */
+export const getJobResourceSettings = async (token: string): Promise<Response> => {
+	try {
+		const API = createBackendAPI(token);
+		const res = await API.get<JobResourceConfig>("/calculation/resource-settings");
+		return { status: res.status, data: res.data };
+	} catch (error: any) {
+		console.error("Failed to fetch job resource settings", error);
+		return {
+			status: error.response?.status || 500,
+			error: error.response?.data?.detail || error.message,
+		};
+	}
+};
+
+function appendJobResourceSettings(formData: FormData, params: JobResourceSelection): void {
+	if (params.timeLimitMinutes !== undefined) {
+		formData.append("time_limit_minutes", String(params.timeLimitMinutes));
+	}
+	if (params.memoryMb !== undefined) {
+		formData.append("memory_mb", String(params.memoryMb));
+	}
+}
+
+/**
  * Submits a standard-analysis job. The backend uploads to the cluster and
  * advances the job status in the background.
  */
@@ -426,7 +461,7 @@ export const submitStandardAnalysisJob = async (
 		jobName: string;
 		jobNotes?: string;
 		tags?: string[];
-	},
+	} & JobResourceSelection,
 ): Promise<Response> => {
 	const formData = new FormData();
 	if (params.file) formData.append("file", params.file);
@@ -437,6 +472,7 @@ export const submitStandardAnalysisJob = async (
 	formData.append("job_name", params.jobName);
 	if (params.jobNotes) formData.append("job_notes", params.jobNotes);
 	(params.tags ?? []).forEach((t) => formData.append("tags", t));
+	appendJobResourceSettings(formData, params);
 
 	try {
 		const API = createBackendAPI(token);
@@ -469,7 +505,7 @@ export const submitCustomCalculation = async (
 		jobName: string;
 		jobNotes?: string;
 		tags?: string[];
-	},
+	} & JobResourceSelection,
 ): Promise<Response> => {
 	const formData = new FormData();
 	if (params.file) formData.append("file", params.file);
@@ -484,6 +520,7 @@ export const submitCustomCalculation = async (
 	formData.append("job_name", params.jobName);
 	if (params.jobNotes) formData.append("job_notes", params.jobNotes);
 	(params.tags ?? []).forEach((t) => formData.append("tags", t));
+	appendJobResourceSettings(formData, params);
 
 	try {
 		const API = createBackendAPI(token);
@@ -521,7 +558,7 @@ export const submitBondAngleScan = async (
 		jobName: string;
 		jobNotes?: string;
 		tags?: string[];
-	},
+	} & JobResourceSelection,
 ): Promise<Response> => {
 	const formData = new FormData();
 	if (params.file) formData.append("file", params.file);
@@ -532,6 +569,7 @@ export const submitBondAngleScan = async (
 	formData.append("job_name", params.jobName);
 	if (params.jobNotes) formData.append("job_notes", params.jobNotes);
 	(params.tags ?? []).forEach((t) => formData.append("tags", t));
+	appendJobResourceSettings(formData, params);
 
 	try {
 		const API = createBackendAPI(token);

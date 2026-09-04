@@ -23,12 +23,13 @@ import {
 	getMultiplicities,
 	submitStandardAnalysisJob,
 } from "../../services/api";
-import { Structure } from "../../types";
+import { JobResourceSelection, Structure } from "../../types";
 import { APP_BAR_HEIGHT } from "../../constants";
 import { grey } from "@mui/material/colors";
 import JobTagsInput from "../../components/JobTagsInput";
 import { hasUncommittedTag } from "../../utils";
 import { getErrorMessage } from "../../utils/errorMessage";
+import JobResourceSettings from "../../components/JobResourceSettings";
 
 export default function StandardAnalysis() {
 	// used to redirect the user after the job is successfully submitted
@@ -48,6 +49,8 @@ export default function StandardAnalysis() {
 	const [jobNotes, setJobNotes] = useState<string>("");
 	const [jobTags, setJobTags] = useState<string[]>([]);
 	const [jobTagInput, setJobTagInput] = useState<string>("");
+	const [resourceSettings, setResourceSettings] = useState<JobResourceSelection>({});
+	const [resourceSettingsValid, setResourceSettingsValid] = useState(true);
 
 	// controls the source of the molecule
 	const [source, setSource] = useState<"upload" | "library">("upload");
@@ -233,6 +236,10 @@ export default function StandardAnalysis() {
 		setSubmitAttempted(true);
 		setError(null);
 		if (hasUncommittedTag(jobTagInput)) return;
+		if (!resourceSettingsValid) {
+			setError("Please correct the resource settings before submitting.");
+			return;
+		}
 
 		let structureIdToUse = selectedStructure;
 		const uploadFile = file;
@@ -281,6 +288,7 @@ export default function StandardAnalysis() {
 				jobName,
 				jobNotes: jobNotes ?? undefined,
 				tags: jobTags,
+				...resourceSettings,
 			});
 			if (response.error) {
 				setError(response.error);
@@ -481,6 +489,15 @@ export default function StandardAnalysis() {
 										</Grid>
 									</Grid>
 								</Box>
+								<Divider />
+								<Grid sx={{ mx: 2 }}>
+									<JobResourceSettings
+										onChange={(value, isValid) => {
+											setResourceSettings(value);
+											setResourceSettingsValid(isValid);
+										}}
+									/>
+								</Grid>
 								{/* Submit button */}
 								<Grid sx={{ mx: 2, mb: 3 }}>
 									<Box display="flex" alignItems="center" gap={1}>
