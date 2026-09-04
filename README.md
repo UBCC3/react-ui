@@ -49,7 +49,15 @@ React UI for MolMaker
    npm run dev
    ```
 
+   The development and production build commands automatically verify and
+   unpack the Git-tracked JSmol runtime. No separate JSmol download or
+   server-side `public` directory is required.
+
 ## JSmol result-viewer checks
+
+JSmol 16.3.33 is stored as a pinned compressed archive under `vendor/`.
+`npm run dev` and `npm run build` extract it automatically, and production
+builds fail if required viewer assets are missing or unexpectedly small.
 
 Run the fast TypeScript regression tests with:
 

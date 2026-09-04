@@ -54,6 +54,7 @@ const EnergyViewer: React.FC<EnergyViewerProps> = ({
 		loadScript: inputXyz ? jmolInlineLoadScript("input", inputXyz) : "",
 		onReadyScript: `zoom 50; connect auto`,
 		skip: loading || inputLoading || !inputXyz,
+		onError: setError,
 	});
 
 	const { open, accordionOpen, toggle, handleAccordionChange } = useResultDrawer({

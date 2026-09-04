@@ -25,5 +25,5 @@ dist-ssr
 *.sln
 *.sw?
 
-# Jsmol lib
-public
+# JSmol is generated from the pinned archive under vendor/.
+public/vendor/jsmol/

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from "react";
-import { Paper, Typography, Box, Skeleton, SxProps, Theme } from "@mui/material";
+import { Alert, Paper, Typography, Box, Skeleton, SxProps, Theme } from "@mui/material";
 import { blue, grey } from "@mui/material/colors";
 import { Atom } from "lucide-react";
 import { useJsmolViewer } from "../../hooks/UseJsmolViewer";
@@ -46,7 +46,7 @@ const MolmakerMoleculePreview: React.FC<MolmakerMoleculePreviewProp> = ({
 		[data],
 	);
 
-	const { viewerRef, viewerObj } = useJsmolViewer({
+	const { viewerRef, viewerObj, viewerError } = useJsmolViewer({
 		viewerObjId,
 		src: "",
 		loadScript,
@@ -135,7 +135,18 @@ const MolmakerMoleculePreview: React.FC<MolmakerMoleculePreviewProp> = ({
 			</Typography>
 			<Box sx={{ position: "relative", height: maxHeight ?? 400, borderRadius: 2 }}>
 				{data ? (
-					<Box ref={viewerRef} sx={{ width: "100%", height: "100%", boxSizing: "border-box" }} />
+					<>
+						<Box ref={viewerRef} sx={{ width: "100%", height: "100%", boxSizing: "border-box" }} />
+						{viewerError && (
+							<Alert
+								severity="error"
+								role="alert"
+								sx={{ position: "absolute", top: 16, right: 16, left: 16, zIndex: 1 }}
+							>
+								{viewerError}
+							</Alert>
+						)}
+					</>
 				) : (
 					<Box display="flex" justifyContent="center" alignItems="center" height="100%">
 						<Skeleton
